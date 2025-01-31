@@ -1,4 +1,4 @@
-import { object, string } from "zod"
+import { object, string, z } from "zod"
 
 const getPasswordSchema = (type: "password" | "confirmPassword") =>
   string({ required_error: `${type} is required` })
@@ -40,4 +40,10 @@ export const resetPasswordSchema = object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+})
+export const updateUserInfoSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(20, "Name must be at most 20 characters"),
 })
