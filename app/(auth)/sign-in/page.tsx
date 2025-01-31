@@ -92,9 +92,9 @@ export default function SignIn() {
     )
     setPendingGoogle(false)
   }
-
+  <div className="min-h-screen pt-20 flex flex-col"></div>
   return (
-    <div className="grow flex items-center justify-center p-4">
+    <div className="grow flex items-center justify-center p-4 min-h-screen pt-20 flex flex-col">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-3xl font-bold text-center text-gray-800">
