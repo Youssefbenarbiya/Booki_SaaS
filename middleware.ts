@@ -29,7 +29,7 @@ export default async function authMiddleware(request: NextRequest) {
     }
   )
 
-  // If no session exists
+  // If no session exists any route wil redirect to sign up except auth and password routes
   if (!session) {
     if (isAuthRoute || isPasswordRoute) {
       return NextResponse.next()

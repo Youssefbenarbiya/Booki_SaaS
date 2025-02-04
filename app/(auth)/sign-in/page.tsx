@@ -1,5 +1,5 @@
 "use client"
-import { FaGoogle } from "react-icons/fa"
+import { FaFacebook, FaGoogle } from "react-icons/fa"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -30,6 +30,7 @@ export default function SignIn() {
   const { toast } = useToast()
   const [pendingCredentials, setPendingCredentials] = useState(false)
   const [pendingGoogle, setPendingGoogle] = useState(false)
+  const [pendingFacebook, setPendingFacebook] = useState(false)
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
@@ -92,6 +93,31 @@ export default function SignIn() {
     )
     setPendingGoogle(false)
   }
+
+    const handleSignInWithFacebook = async () => {
+      await authClient.signIn.social(
+        {
+          provider: "facebook",
+        },
+        {
+          onRequest: () => {
+            setPendingFacebook(true)
+          },
+          onSuccess: async () => {
+            router.push("/")
+            router.refresh()
+          },
+          onError: (ctx: ErrorContext) => {
+            toast({
+              title: "Something went wrong",
+              description: ctx.error.message ?? "Something went wrong.",
+              variant: "destructive",
+            })
+          },
+        }
+      )
+      setPendingFacebook(false)
+    }
   <div className="min-h-screen pt-20 flex flex-col"></div>
   return (
     <div className="grow flex items-center justify-center p-4 min-h-screen pt-20  flex-col">
@@ -146,6 +172,17 @@ export default function SignIn() {
               Continue with Google
             </LoadingButton>
           </div>
+
+          <div className="mt-4">
+            <LoadingButton
+              pending={pendingFacebook}
+              onClick={handleSignInWithFacebook}
+            >
+              <FaFacebook className="w-4 h-4 mr-2" />
+              Continue with Facebook
+            </LoadingButton>
+          </div>
+
           <div className="mt-4 text-center text-sm">
             <Link
               href="/forgot-password"
