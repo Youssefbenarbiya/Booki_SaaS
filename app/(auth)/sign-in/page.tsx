@@ -1,38 +1,37 @@
 "use client"
-import { FaFacebook, FaGoogle } from "react-icons/fa"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import LoadingButton from "@/components/loading-button"
-import { signInSchema } from "@/lib/zod"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import Image from "next/image"
+import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-
-import Link from "next/link"
-import { useState } from "react"
+import { FiEye, FiEyeOff } from "react-icons/fi"
+import { signInSchema } from "@/lib/zod"
 import { authClient } from "@/auth-client"
-import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import LoadingButton from "@/components/loading-button"
 import { ErrorContext } from "@better-fetch/fetch"
-
+import GoogleSignIn from "../(Oauth)/google"
+import FacebookSignIn from "../(Oauth)/facebook"
 export default function SignIn() {
   const router = useRouter()
   const { toast } = useToast()
   const [pendingCredentials, setPendingCredentials] = useState(false)
-  const [pendingGoogle, setPendingGoogle] = useState(false)
-  const [pendingFacebook, setPendingFacebook] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
 
-  const form = useForm<z.infer<typeof signInSchema>>({
+  const slides = [
+    "/assets/loginImg.jpg",
+    // Add more slide images here
+  ]
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
       email: "",
@@ -69,130 +68,134 @@ export default function SignIn() {
     setPendingCredentials(false)
   }
 
-  const handleSignInWithGoogle = async () => {
-    await authClient.signIn.social(
-      {
-        provider: "google",
-      },
-      {
-        onRequest: () => {
-          setPendingGoogle(true)
-        },
-        onSuccess: async () => {
-          router.push("/")
-          router.refresh()
-        },
-        onError: (ctx: ErrorContext) => {
-          toast({
-            title: "Something went wrong",
-            description: ctx.error.message ?? "Something went wrong.",
-            variant: "destructive",
-          })
-        },
-      }
-    )
-    setPendingGoogle(false)
-  }
-
-    const handleSignInWithFacebook = async () => {
-      await authClient.signIn.social(
-        {
-          provider: "facebook",
-        },
-        {
-          onRequest: () => {
-            setPendingFacebook(true)
-          },
-          onSuccess: async () => {
-            router.push("/")
-            router.refresh()
-          },
-          onError: (ctx: ErrorContext) => {
-            toast({
-              title: "Something went wrong",
-              description: ctx.error.message ?? "Something went wrong.",
-              variant: "destructive",
-            })
-          },
-        }
-      )
-      setPendingFacebook(false)
-    }
-  <div className="min-h-screen pt-20 flex flex-col"></div>
   return (
-    <div className="grow flex items-center justify-center p-4 min-h-screen pt-20  flex-col">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center text-gray-800">
-            Sign In
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleCredentialsSignIn)}
-              className="space-y-6"
-            >
-              {["email", "password"].map((field) => (
-                <FormField
-                  control={form.control}
-                  key={field}
-                  name={field as keyof z.infer<typeof signInSchema>}
-                  render={({ field: fieldProps }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {field.charAt(0).toUpperCase() + field.slice(1)}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type={field === "password" ? "password" : "email"}
-                          placeholder={`Enter your ${field}`}
-                          {...fieldProps}
-                          autoComplete={
-                            field === "password" ? "current-password" : "email"
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
-              <LoadingButton pending={pendingCredentials}>
-                Sign in
-              </LoadingButton>
-            </form>
-          </Form>
-          <div className="mt-4">
-            <LoadingButton
-              pending={pendingGoogle}
-              onClick={handleSignInWithGoogle}
-            >
-              <FaGoogle className="w-4 h-4 mr-2" />
-              Continue with Google
-            </LoadingButton>
+    <div className="min-h-screen grid grid-cols-2 mt-[50px]">
+      {/* Left Column */}
+      <div className="p-8 max-w-[480px] mx-auto w-full flex flex-col justify-center h-[600px]">
+        <div className="mb-12">
+          <Image
+            src="/assets/icons/logo.png"
+            alt="Logo"
+            width={64}
+            height={64}
+          />
+
+          <h1 className="text-[1.75rem] font-serif mb-1">Login</h1>
+          <p className="text-gray-600 text-sm">
+            Login to access your Ostelflow account
+          </p>
+        </div>
+
+        <form
+          onSubmit={handleSubmit(handleCredentialsSignIn)}
+          className="space-y-4"
+        >
+          {/* Email Input */}
+          <div className="space-y-1">
+            <Input
+              type="email"
+              placeholder="john.doe@gmail.com"
+              className="h-12 border-gray-300"
+              {...register("email")}
+            />
+            {errors.email && (
+              <p className="text-red-600 text-sm">{errors.email.message}</p>
+            )}
           </div>
 
-          <div className="mt-4">
-            <LoadingButton
-              pending={pendingFacebook}
-              onClick={handleSignInWithFacebook}
+          {/* Password Input */}
+          <div className="space-y-1 relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••••••"
+              className="h-12 border-gray-300"
+              {...register("password")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-3.5 text-gray-400"
             >
-              <FaFacebook className="w-4 h-4 mr-2" />
-              Continue with Facebook
-            </LoadingButton>
+              {showPassword ? (
+                <FiEyeOff className="w-5 h-5" />
+              ) : (
+                <FiEye className="w-5 h-5" />
+              )}
+            </button>
+            {errors.password && (
+              <p className="text-red-600 text-sm">{errors.password.message}</p>
+            )}
           </div>
 
-          <div className="mt-4 text-center text-sm">
+          {/* Remember Me & Forgot Password */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Checkbox id="remember" />
+              <label
+                htmlFor="remember"
+                className="text-sm text-gray-600 leading-none"
+              >
+                Remember me
+              </label>
+            </div>
             <Link
               href="/forgot-password"
-              className="text-primary hover:underline"
+              className="text-[#FF5C00] text-sm hover:underline"
             >
-              Forgot password?
+              Forgot Password?
             </Link>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Login Button */}
+          <LoadingButton pending={pendingCredentials}>Login</LoadingButton>
+
+          <div className="text-center text-sm">
+            Don&apos;t have an account?{" "}
+            <Link href="/sign-up" className="text-[#FF5C00] hover:underline">
+              Register
+            </Link>
+          </div>
+
+          {/* OR Divider */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-4 text-gray-500">Or login with</span>
+            </div>
+          </div>
+
+          {/* Social Login Buttons */}
+          <div className="grid grid-cols-2 gap-4">
+            <FacebookSignIn />
+            <GoogleSignIn />
+          </div>
+        </form>
+      </div>
+
+      {/* Right Column */}
+      <div className="relative">
+        <div className="absolute inset-0 h-[600px]">
+          <Image
+            src={slides[currentSlide] || "/assets/loginImg.jpg"}
+            alt="Login banner"
+            fill
+            className="object-cover "
+          />
+        </div>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                index === currentSlide ? "bg-white" : "bg-white/50"
+              }`}
+              onClick={() => setCurrentSlide(index)}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

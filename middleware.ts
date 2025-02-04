@@ -5,18 +5,25 @@ import type { Session } from "@/auth"
 const authRoutes = ["/sign-in", "/sign-up"]
 const passwordRoutes = ["/reset-password", "/forgot-password"]
 const adminRoutes = ["/admin"]
+const notProtectedRoutes = ["/contact", "/about", "/faq", "/blog"] // Fixed "/blog" path
 
 export default async function authMiddleware(request: NextRequest) {
   const pathName = request.nextUrl.pathname
 
-  // Skip middleware for the root path `/`
-  if (pathName === "/") {
+  // Skip middleware for these paths
+  if (
+    pathName === "/" ||
+    pathName.startsWith("/_next/") ||
+    pathName.startsWith("/assets")
+  ) {
     return NextResponse.next()
   }
 
+  // Check if current route is in any protected category
   const isAuthRoute = authRoutes.includes(pathName)
   const isPasswordRoute = passwordRoutes.includes(pathName)
   const isAdminRoute = adminRoutes.includes(pathName)
+  const isNotProtected = notProtectedRoutes.includes(pathName) // New check
 
   // Fetch session data
   const { data: session } = await betterFetch<Session>(
@@ -29,7 +36,12 @@ export default async function authMiddleware(request: NextRequest) {
     }
   )
 
-  // If no session exists any route wil redirect to sign up except auth and password routes
+  // Allow access to not-protected routes regardless of session
+  if (isNotProtected) {
+    return NextResponse.next()
+  }
+
+  // Handle unauthenticated users
   if (!session) {
     if (isAuthRoute || isPasswordRoute) {
       return NextResponse.next()
@@ -37,12 +49,12 @@ export default async function authMiddleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in", request.url))
   }
 
-  // If a session exists and user tries to access auth or password routes
+  // Redirect authenticated users from auth/password routes
   if (isAuthRoute || isPasswordRoute) {
     return NextResponse.redirect(new URL("/", request.url))
   }
 
-  // If user tries to access admin routes without admin role
+  // Protect admin routes
   if (isAdminRoute && session.user.role !== "admin") {
     return NextResponse.redirect(new URL("/", request.url))
   }
@@ -50,10 +62,7 @@ export default async function authMiddleware(request: NextRequest) {
   return NextResponse.next()
 }
 
-// Middleware matcher configuration
+// Middleware matcher configuration remains the same
 export const config = {
-  matcher: [
-    // Match all paths except for API and static files
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 }

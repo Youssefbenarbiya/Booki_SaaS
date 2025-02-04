@@ -1,6 +1,4 @@
 "use client"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Form,
   FormControl,
@@ -11,19 +9,23 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import LoadingButton from "@/components/loading-button"
-
+import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
-
 import { signUpSchema } from "@/lib/zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import type { z } from "zod"
 import { authClient } from "@/auth-client"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { Eye, EyeOff } from "lucide-react"
+import Image from "next/image"
+import GoogleSignIn from "../(Oauth)/google"
 
 export default function SignUp() {
   const [pending, setPending] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof signUpSchema>>({
@@ -67,55 +69,198 @@ export default function SignUp() {
   }
 
   return (
-    <div className="grow flex items-center justify-center p-4 min-h-screen pt-20  flex-col">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center text-gray-800">
-            Create Account
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div className="flex h-[600px] mt-[50px]">
+      {/* Left side - Image */}
+      <div className="hidden lg:block lg:w-[calc(50%-100px)] relative h-full overflow-hidden rounded-lg">
+        <Image
+          src="/assets/registerImg.jpg"
+          alt="Forest view from below"
+          fill
+          className="object-cover"
+        />
+      </div>
+
+      {/* Right side - Form */}
+      <div className="w-full lg:w-[calc(50%+100px)] flex flex-col p-8 lg:p-12 h-full">
+        <div className="max-w-md mx-auto w-full">
+          {/* Title */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-semibold mb-2">Sign in</h2>
+            <p className="text-gray-600">
+              Let&apos;s get you all set up so you can access your personal
+              account.
+            </p>
+          </div>
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {["name", "email", "password", "confirmPassword"].map((field) => (
-                <FormField
-                  control={form.control}
-                  key={field}
-                  name={field as keyof z.infer<typeof signUpSchema>}
-                  render={({ field: fieldProps }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {field.charAt(0).toUpperCase() + field.slice(1)}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center w-full gap-4">
+                      <FormLabel className="text-sm font-medium min-w-[120px]">
+                        Name
                       </FormLabel>
-                      <FormControl>
+                      <FormControl className="flex-1">
                         <Input
-                          type={
-                            field.includes("password")
-                              ? "password"
-                              : field === "email"
-                              ? "email"
-                              : "text"
-                          }
-                          placeholder={`Enter your ${field}`}
-                          {...fieldProps}
-                          autoComplete="off"
+                          placeholder="John Doe"
+                          {...field}
+                          className="h-12 w-full"
                         />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
-              <LoadingButton pending={pending}>Sign up</LoadingButton>
+                    </div>
+                    <FormMessage className="ml-[136px]" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center w-full gap-4">
+                      <FormLabel className="text-sm font-medium min-w-[120px]">
+                        Email
+                      </FormLabel>
+                      <FormControl className="flex-1">
+                        <Input
+                          type="email"
+                          placeholder="john.doe@gmail.com"
+                          {...field}
+                          className="h-12 w-full"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="ml-[136px]" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center w-full gap-4">
+                      <FormLabel className="text-sm font-medium min-w-[120px]">
+                        Password
+                      </FormLabel>
+                      <FormControl className="flex-1">
+                        <div className="relative w-full">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            {...field}
+                            className="h-12 w-full"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                    </div>
+                    <FormMessage className="ml-[136px]" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center w-full gap-4">
+                      <FormLabel className="text-sm font-medium min-w-[120px]">
+                        Confirm Password
+                      </FormLabel>
+                      <FormControl className="flex-1">
+                        <div className="relative w-full">
+                          <Input
+                            type={showConfirmPassword ? "text" : "password"}
+                            {...field}
+                            className="h-12 w-full"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                    </div>
+                    <FormMessage className="ml-[136px]" />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center space-x-2">
+                <Checkbox id="terms" />
+                <label htmlFor="terms" className="text-sm text-gray-600">
+                  I agree to all the{" "}
+                  <Link href="#" className="text-orange-500 hover:underline">
+                    Terms
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="#" className="text-orange-500 hover:underline">
+                    Privacy Policies
+                  </Link>
+                </label>
+              </div>
+
+              <LoadingButton pending={pending}>Create account</LoadingButton>
+
+              <div className="text-center text-sm text-gray-600">
+                Already have an account?{" "}
+                <Link
+                  href="/sign-in"
+                  className="text-orange-500 hover:underline"
+                >
+                  Login
+                </Link>
+              </div>
+
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">
+                    Or Sign up with
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <GoogleSignIn />
+                <button className="h-12 px-4 border rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                  <span>Facebook</span>
+                </button>
+              </div>
             </form>
           </Form>
-          <div className="mt-4 text-center text-sm">
-            <Link href="/sign-in" className="text-primary hover:underline">
-              Already have an account? Sign in
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

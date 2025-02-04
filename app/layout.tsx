@@ -29,20 +29,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        - <Navbar />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          + <Navbar />
+          <Navbar />
           <div className="flex h-screen flex-col">
             <main className="flex-1 wrapper">{children}</main>
           </div>
-          + <Toaster />
+          <Toaster />
         </ThemeProvider>
-        - <Toaster />
       </body>
     </html>
   )

@@ -11,7 +11,7 @@ import {
 } from "../ui/dropdown-menu"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
-import SignoutButton from "../signout-button"
+import SignoutButton from "./signout-button"
 
 export default async function Navbar() {
   const session = await auth.api.getSession({
@@ -22,7 +22,7 @@ export default async function Navbar() {
   })
 
   return (
-    <nav className="flex justify-between items-center py-3 px-4 fixed top-0 left-0 right-0 z-50 bg-background text-foreground border-b">
+    <nav className="flex justify-between items-center py-3 px-4 fixed top-0 left-0 right-0 z-50 bg-background text-foreground border-b h-[30px]">
       <Link href="/" className="text-xl font-bold">
         Booki
       </Link>
