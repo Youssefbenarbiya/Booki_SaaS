@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
 import GoogleSignIn from "../(Oauth)/google"
+import FacebookSignIn from "../(Oauth)/facebook"
 
 export default function SignUp() {
   const [pending, setPending] = useState(false)
@@ -35,6 +36,7 @@ export default function SignUp() {
       email: "",
       password: "",
       confirmPassword: "",
+      phoneNumber: "",
     },
   })
 
@@ -44,7 +46,9 @@ export default function SignUp() {
         email: values.email,
         password: values.password,
         name: values.name,
-      },
+        phoneNumber: values.phoneNumber,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
       {
         onRequest: () => {
           setPending(true)
@@ -69,7 +73,7 @@ export default function SignUp() {
   }
 
   return (
-    <div className="flex h-[600px] mt-[50px]">
+    <div className="flex h-[600px] ">
       {/* Left side - Image */}
       <div className="hidden lg:block lg:w-[calc(50%-100px)] relative h-full overflow-hidden rounded-lg">
         <Image
@@ -138,7 +142,29 @@ export default function SignUp() {
                   </FormItem>
                 )}
               />
-
+              {/* Phone Number Input */}
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center w-full gap-4">
+                      <FormLabel className="text-sm font-medium min-w-[120px]">
+                        Phone Number
+                      </FormLabel>
+                      <FormControl className="flex-1">
+                        <Input
+                          type="tel"
+                          placeholder="+216 4567890"
+                          {...field}
+                          className="h-12 w-full"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="ml-[136px]" />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="password"
@@ -249,13 +275,8 @@ export default function SignUp() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <FacebookSignIn />
                 <GoogleSignIn />
-                <button className="h-12 px-4 border rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                  </svg>
-                  <span>Facebook</span>
-                </button>
               </div>
             </form>
           </Form>

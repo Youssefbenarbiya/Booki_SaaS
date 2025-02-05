@@ -15,11 +15,21 @@ const getNameSchema = () =>
     .min(1, "Name is required")
     .max(50, "Name must be less than 50 characters")
 
+const getPhoneNumberSchema = () => {
+  return string()
+    .min(10, "Phone number must be at least 10 digits long")
+    .max(15, "Phone number must not exceed 15 digits")
+    .regex(
+      /^\+?[0-9]*$/,
+      "Phone number must be a valid format (e.g., +1234567890)"
+    )
+}
 export const signUpSchema = object({
   name: getNameSchema(),
   email: getEmailSchema(),
   password: getPasswordSchema("password"),
   confirmPassword: getPasswordSchema("confirmPassword"),
+  phoneNumber: getPhoneNumberSchema(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],

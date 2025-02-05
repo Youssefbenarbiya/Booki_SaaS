@@ -4,6 +4,7 @@ import "./globals.css"
 import Navbar from "@/components/navbar/navbar"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "next-themes"
+import Header from "@/components/header/header"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
+          <Header />
+
           <div className="flex h-screen flex-col">
             <main className="flex-1 wrapper">{children}</main>
           </div>

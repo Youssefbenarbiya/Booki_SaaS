@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -25,8 +25,17 @@ export default function SignIn() {
 
   const slides = [
     "/assets/loginImg.jpg",
+    "/assets/registerImg.jpg",
+
     // Add more slide images here
   ]
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
+    }, 5000) 
+
+    return () => clearInterval(interval) 
+  }, [slides.length])
   const {
     register,
     handleSubmit,
@@ -181,19 +190,19 @@ export default function SignIn() {
             src={slides[currentSlide] || "/assets/loginImg.jpg"}
             alt="Login banner"
             fill
-            className="object-cover "
+            className="object-cover"
           />
-        </div>
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentSlide ? "bg-white" : "bg-white/50"
-              }`}
-              onClick={() => setCurrentSlide(index)}
-            />
-          ))}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 mt-[50px]">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentSlide ? "bg-white" : "bg-white/50"
+                }`}
+                onClick={() => setCurrentSlide(index)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
