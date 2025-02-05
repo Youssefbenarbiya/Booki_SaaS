@@ -16,12 +16,10 @@ export default async function ProfilePage() {
     return redirect("/sign-in")
   }
   return (
-    <div className="flex h-screen min-h-screen pt-20 flex-col">
-      <main className="flex-1 wrapper mx-auto space-y-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl">
+    <div >
         <h2 className="h2-bold">Profile</h2>
         <UpdateUserInfo session={session} />
         <div className="mb-24" />
-      </main>
     </div>
   )
 }

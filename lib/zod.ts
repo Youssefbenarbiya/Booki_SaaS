@@ -51,9 +51,20 @@ export const resetPasswordSchema = object({
   message: "Passwords don't match",
   path: ["confirmPassword"],
 })
+
 export const updateUserInfoSchema = z.object({
   name: z
     .string()
     .min(2, "Name must be at least 2 characters")
-    .max(20, "Name must be at most 20 characters"),
+    .max(20, "Name must be at most 20 characters")
+    .optional(),
+  email: getEmailSchema().optional(),
+  image: z.string().optional(),
+  password: getPasswordSchema("password").optional(),
+  phoneNumber: getPhoneNumberSchema().optional(),
+  address: z
+    .string()
+    .min(5, "Address must be at least 5 characters")
+    .max(100, "Address must be at most 100 characters")
+    .optional(),
 })

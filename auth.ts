@@ -25,7 +25,11 @@ export const auth = betterAuth({
       },
       phoneNumber: {
         type: "string",
-        required: true
+        required: true,
+      },
+      address: {
+        type: "string",
+        required: false,
       },
     },
     changeEmail: {
