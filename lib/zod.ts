@@ -51,20 +51,56 @@ export const resetPasswordSchema = object({
   message: "Passwords don't match",
   path: ["confirmPassword"],
 })
+//export const updateUserInfoSchema = z.object({
+//   name: z
+//     .string()
+//     .min(2, "Name must be at least 2 characters")
+//     .max(20, "Name must be at most 20 characters")
+//     .optional(),
+//   email: getEmailSchema().optional(),
+//   image: z.string().optional(),
+//   password: z
+//     .string()
+//     .min(8, "Password must be at least 8 characters")
+//     .optional(),
+//   newPassword: z
+//     .string()
+//     .min(8, "Password must be at least 8 characters")
+//     .optional(),
+//   currentPassword: z.string().optional(),
+//   phoneNumber: getPhoneNumberSchema().optional(),
+//   address: z
+//     .string()
+//     .min(5, "Address must be at least 5 characters")
+//     .max(100, "Address must be at most 100 characters")
+//     .optional(),
+// })
+// 
 
 export const updateUserInfoSchema = z.object({
   name: z
-    .string()
-    .min(2, "Name must be at least 2 characters")
-    .max(20, "Name must be at most 20 characters")
+    .string({ required_error: "Name is required" })
+    .min(2, { message: "Name must be at least 2 characters" })
+    .max(20, { message: "Name must be at most 20 characters" })
     .optional(),
   email: getEmailSchema().optional(),
   image: z.string().optional(),
-  password: getPasswordSchema("password").optional(),
+  password: z
+    .string({ required_error: "Password is required" })
+    .min(8, { message: "Password must be at least 8 characters" })
+    .optional(),
+  newPassword: z
+    .string({ required_error: "New password is required" })
+    .min(8, { message: "New password must be at least 8 characters" })
+    .optional(),
+  currentPassword: z
+    .string({ required_error: "Current password is required" })
+    .min(1, { message: "Current password is required" })
+    .optional(),
   phoneNumber: getPhoneNumberSchema().optional(),
   address: z
-    .string()
-    .min(5, "Address must be at least 5 characters")
-    .max(100, "Address must be at most 100 characters")
+    .string({ required_error: "Address is required" })
+    .min(5, { message: "Address must be at least 5 characters" })
+    .max(100, { message: "Address must be at most 100 characters" })
     .optional(),
 })

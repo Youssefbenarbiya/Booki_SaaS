@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { z } from "zod"
+import type { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { FiEye, FiEyeOff } from "react-icons/fi"
@@ -13,9 +13,10 @@ import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import LoadingButton from "@/components/loading-button"
-import { ErrorContext } from "@better-fetch/fetch"
+import type { ErrorContext } from "@better-fetch/fetch"
 import GoogleSignIn from "../(Oauth)/google"
 import FacebookSignIn from "../(Oauth)/facebook"
+
 export default function SignIn() {
   const router = useRouter()
   const { toast } = useToast()
@@ -26,16 +27,17 @@ export default function SignIn() {
   const slides = [
     "/assets/loginImg.jpg",
     "/assets/registerImg.jpg",
-
     // Add more slide images here
   ]
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
-    }, 5000) 
+    }, 5000)
 
-    return () => clearInterval(interval) 
-  }, [slides.length])
+    return () => clearInterval(interval)
+  }, [])
+
   const {
     register,
     handleSubmit,
@@ -78,121 +80,127 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen grid grid-cols-2 mt-[50px]">
+    <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Column */}
-      <div className="p-8 max-w-[480px] mx-auto w-full flex flex-col justify-center h-[600px]">
-        <div className="mb-12">
-          <Image
-            src="/assets/icons/logo.png"
-            alt="Logo"
-            width={64}
-            height={64}
-          />
-
-          <h1 className="text-[1.75rem] font-serif mb-1">Login</h1>
-          <p className="text-gray-600 text-sm">
-            Login to access your Ostelflow account
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleSubmit(handleCredentialsSignIn)}
-          className="space-y-4"
-        >
-          {/* Email Input */}
-          <div className="space-y-1">
-            <Input
-              type="email"
-              placeholder="john.doe@gmail.com"
-              className="h-12 border-gray-300"
-              {...register("email")}
+      <div className="w-full md:w-1/ px-8 pb-8 x-col justify-center ">
+        <div className="max-w-[480px] mx-auto w-full">
+          <div className="mb-12">
+            <Image
+              src="/assets/icons/logo.png"
+              alt="Logo"
+              width={64}
+              height={64}
+              className="rounded-lg"
             />
-            {errors.email && (
-              <p className="text-red-600 text-sm">{errors.email.message}</p>
-            )}
+            <h1 className="text-[1.75rem] font-serif mb-1">Login</h1>
+            <p className="text-gray-600 text-sm">
+              Login to access your Ostelflow account
+            </p>
           </div>
 
-          {/* Password Input */}
-          <div className="space-y-1 relative">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="••••••••••••"
-              className="h-12 border-gray-300"
-              {...register("password")}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3.5 text-gray-400"
-            >
-              {showPassword ? (
-                <FiEyeOff className="w-5 h-5" />
-              ) : (
-                <FiEye className="w-5 h-5" />
+          <form
+            onSubmit={handleSubmit(handleCredentialsSignIn)}
+            className="space-y-4"
+          >
+            {/* Email Input */}
+            <div className="space-y-1">
+              <Input
+                type="email"
+                placeholder="john.doe@gmail.com"
+                className="h-12 border-gray-300"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-red-600 text-sm">{errors.email.message}</p>
               )}
-            </button>
-            {errors.password && (
-              <p className="text-red-600 text-sm">{errors.password.message}</p>
-            )}
-          </div>
+            </div>
 
-          {/* Remember Me & Forgot Password */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="remember" />
-              <label
-                htmlFor="remember"
-                className="text-sm text-gray-600 leading-none"
+            {/* Password Input */}
+            <div className="space-y-1 relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••••••"
+                className="h-12 border-gray-300"
+                {...register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3.5 text-gray-400"
               >
-                Remember me
-              </label>
+                {showPassword ? (
+                  <FiEyeOff className="w-5 h-5" />
+                ) : (
+                  <FiEye className="w-5 h-5" />
+                )}
+              </button>
+              {errors.password && (
+                <p className="text-red-600 text-sm">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
-            <Link
-              href="/forgot-password"
-              className="text-[#FF5C00] text-sm hover:underline"
-            >
-              Forgot Password?
-            </Link>
-          </div>
 
-          {/* Login Button */}
-          <LoadingButton pending={pendingCredentials}>Login</LoadingButton>
-
-          <div className="text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/sign-up" className="text-[#FF5C00] hover:underline">
-              Register
-            </Link>
-          </div>
-
-          {/* OR Divider */}
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+            {/* Remember Me & Forgot Password */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="remember" />
+                <label
+                  htmlFor="remember"
+                  className="text-sm text-gray-600 leading-none"
+                >
+                  Remember me
+                </label>
+              </div>
+              <Link
+                href="/forgot-password"
+                className="text-[#FF5C00] text-sm hover:underline"
+              >
+                Forgot Password?
+              </Link>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-4 text-gray-500">Or login with</span>
-            </div>
-          </div>
 
-          {/* Social Login Buttons */}
-          <div className="grid grid-cols-2 gap-4">
-            <FacebookSignIn />
-            <GoogleSignIn />
-          </div>
-        </form>
+            {/* Login Button */}
+            <LoadingButton pending={pendingCredentials}>Login</LoadingButton>
+
+            <div className="text-center text-sm">
+              Don&apos;t have an account?{" "}
+              <Link href="/sign-up" className="text-[#FF5C00] hover:underline">
+                Register
+              </Link>
+            </div>
+
+            {/* OR Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-4 text-gray-500">
+                  Or login with
+                </span>
+              </div>
+            </div>
+
+            {/* Social Login Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FacebookSignIn />
+              <GoogleSignIn />
+            </div>
+          </form>
+        </div>
       </div>
 
       {/* Right Column */}
-      <div className="relative">
-        <div className="absolute inset-0 h-[600px]">
+      <div className="w-full md:w-1/2  h-[520px]  relative">
+        <div className="absolute inset-0">
           <Image
             src={slides[currentSlide] || "/assets/loginImg.jpg"}
             alt="Login banner"
             fill
             className="object-cover"
           />
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 mt-[50px]">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2">
             {slides.map((_, index) => (
               <button
                 key={index}

@@ -73,27 +73,24 @@ export default function SignUp() {
   }
 
   return (
-    <div className="flex h-[600px] ">
+    <div className="flex h-screen ">
       {/* Left side - Image */}
-      <div className="hidden lg:block lg:w-[calc(50%-100px)] relative h-full overflow-hidden rounded-lg">
+      <div className="hidden lg:block lg:w-[calc(50%-100px)] relative overflow-hidden rounded-lg">
         <Image
           src="/assets/registerImg.jpg"
           alt="Forest view from below"
           fill
           className="object-cover"
+          priority
         />
       </div>
 
       {/* Right side - Form */}
-      <div className="w-full lg:w-[calc(50%+100px)] flex flex-col p-8 lg:p-12 h-full">
-        <div className="max-w-md mx-auto w-full">
+      <div className="w-full lg:w-[calc(50%+100px)] flex flex-col px-8">
+        <div className="max-w-md mx-auto w-full py-8">
           {/* Title */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-semibold mb-2">Sign in</h2>
-            <p className="text-gray-600">
-              Let&apos;s get you all set up so you can access your personal
-              account.
-            </p>
+          <div >
+            <h2 className="text-3xl font-semibold ">Register</h2>
           </div>
 
           <Form {...form}>

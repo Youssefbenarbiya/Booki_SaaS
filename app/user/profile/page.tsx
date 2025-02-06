@@ -17,7 +17,6 @@ export default async function ProfilePage() {
   }
   return (
     <div >
-        <h2 className="h2-bold">Profile</h2>
         <UpdateUserInfo session={session} />
         <div className="mb-24" />
     </div>
