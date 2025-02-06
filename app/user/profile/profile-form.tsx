@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { Loader2 } from "lucide-react"
+import { useState, ChangeEvent } from "react"
+import { Loader2, Pen } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,12 +16,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import type { Session } from "@/lib/auth/type"
 import { updateUserInfoSchema } from "@/lib/zod"
-import { authClient } from "@/auth-client"
 import { z } from "zod"
+import { handleImageUpload } from "@/actions/upload-image"
+import { authClient } from "@/auth-client"
 
 type UserFormType = z.infer<typeof updateUserInfoSchema>
 
@@ -28,6 +30,8 @@ export function UpdateUserInfo({ session }: { session: Session }) {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("account")
   const [submittingField, setSubmittingField] = useState<string | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const form = useForm<UserFormType>({
     resolver: zodResolver(updateUserInfoSchema),
@@ -35,7 +39,6 @@ export function UpdateUserInfo({ session }: { session: Session }) {
       image: user.image || "",
       name: user.name || "",
       email: user.email || "",
-      // Never prefill password fields.
       password: "",
       newPassword: "",
       currentPassword: "",
@@ -44,102 +47,70 @@ export function UpdateUserInfo({ session }: { session: Session }) {
     },
   })
 
-  async function onSubmit(fieldName: keyof UserFormType) {
-    try {
-      // Trigger validation for the field (or fields) involved.
-      let valid = await form.trigger(fieldName)
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      try {
+        setIsUploading(true)
+        const file = e.target.files[0]
+        const previewURL = URL.createObjectURL(file)
+        setImagePreview(previewURL)
 
-      // If updating password (via newPassword) also validate currentPassword.
-      if (fieldName === "newPassword") {
-        const validCurrent = await form.trigger("currentPassword")
-        valid = valid && validCurrent
-      }
+        const formData = new FormData()
+        formData.append("file", file)
 
-      if (!valid) {
-        const errorMessage =
-          form.formState.errors[fieldName]?.message ||
-          (fieldName === "newPassword" &&
-            form.formState.errors.currentPassword?.message) ||
-          "Invalid input"
-        toast({
-          title: "Validation Error",
-          description: errorMessage,
-          variant: "destructive",
-        })
-        return
-      }
+        const uploadedUrl = await handleImageUpload(formData)
 
-      setSubmittingField(fieldName)
+        form.setValue("image", uploadedUrl)
 
-      if (fieldName === "email") {
-        const newEmail = form.getValues("email") || ""
-        await authClient.changeEmail({ newEmail })
-        toast({
-          title: "Check your inbox",
-          description:
-            "A verification link was sent to your new email address.",
-        })
-      } else if (fieldName === "newPassword") {
-        const newPassword = form.getValues("newPassword") || ""
-        const currentPassword = form.getValues("currentPassword") || ""
-        await authClient.changePassword({ newPassword, currentPassword })
         toast({
           title: "Success!",
-          description: "Your password has been updated successfully.",
+          description: "Profile image updated.",
         })
-      } else {
-        const fieldValue = form.getValues(fieldName)
-        const values = { [fieldName]: fieldValue }
-        await authClient.updateUser(values)
+        await authClient.updateUser({ image: uploadedUrl })
+        console.log("Image uploaded:", uploadedUrl)
+      } catch (error: any) {
         toast({
-          title: "Success!",
-          description: `Your ${fieldName} has been updated.`,
-        })
-      }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      const errMsg = error.message || error
-      // Check if the error message suggests the current password is wrong.
-      if (errMsg.toLowerCase().includes("current password")) {
-        toast({
-          title: "Error!",
-          description: "Current password is wrong.",
+          title: "Upload Error",
+          description: error.message,
           variant: "destructive",
         })
-      } else {
-        toast({
-          title: "Error!",
-          description: errMsg,
-          variant: "destructive",
-        })
+      } finally {
+        setIsUploading(false)
       }
-    } finally {
-      setSubmittingField(null)
     }
   }
-
   return (
     <div className="w-full">
-      <div className="relative h-48 w-full">
-        <Image
-          src="/assets/ProfileBanner.jpg"
-          alt="Profile banner"
-          fill
-          style={{ objectFit: "cover" }}
-        />
-      </div>
-
       <div className="max-w-4xl mx-auto px-4 relative -mt-24">
         <div className="flex items-end mb-6">
-          <div className="rounded-full w-32 h-32 bg-gray-200 border-4 border-white overflow-hidden relative">
-            <Image
-              src={
-                user.image || "/assets/ProfileBanner.jpg?height=128&width=128"
-              }
-              alt="Profile"
-              fill
-              style={{ objectFit: "cover" }}
-            />
+          {/* Profile image container */}
+          <div className="relative">
+            <div className="rounded-full w-32 h-32 bg-gray-200 border-4 border-white overflow-hidden relative">
+              <Image
+                // Use the local preview if available, otherwise fallback to user.image
+                src={
+                  imagePreview ||
+                  user.image ||
+                  "/assets/ProfileBanner.jpg?height=128&width=128"
+                }
+                alt="Profile"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+              {/* Overlay edit button */}
+            </div>
+            <div>
+              <label className="absolute bottom-0 right-0 bg-orange-600 rounded-full p-1 shadow cursor-pointer">
+                <Pen className="w-4 h-4 text-gray-700" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  disabled={isUploading}
+                />
+              </label>
+            </div>
           </div>
           <div className="ml-4 mb-2">
             <h2 className="text-2xl font-bold">{user.name}</h2>
@@ -290,7 +261,6 @@ export function UpdateUserInfo({ session }: { session: Session }) {
                         </FormControl>
                         <FormMessage />
                       </div>
-                      {/* IMPORTANT: Use "newPassword" here */}
                       <Button
                         type="button"
                         variant="outline"
@@ -370,37 +340,6 @@ export function UpdateUserInfo({ session }: { session: Session }) {
                     </FormItem>
                   )}
                 />
-
-                {/* Image Field */}
-                <FormField
-                  control={form.control}
-                  name="image"
-                  render={({ field }) => (
-                    <FormItem className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <FormLabel>Profile Image URL</FormLabel>
-                        <FormControl>
-                          <Input {...field} className="mt-1" />
-                        </FormControl>
-                        <FormMessage />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={submittingField === "image"}
-                        onClick={() => onSubmit("image")}
-                        className="mt-7"
-                      >
-                        {submittingField === "image" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Change"
-                        )}
-                      </Button>
-                    </FormItem>
-                  )}
-                />
               </div>
             </Form>
           </div>
@@ -431,4 +370,73 @@ export function UpdateUserInfo({ session }: { session: Session }) {
       </div>
     </div>
   )
+
+  async function onSubmit(fieldName: keyof UserFormType) {
+    try {
+      // Validate the field (or fields) involved.
+      let valid = await form.trigger(fieldName)
+      if (fieldName === "newPassword") {
+        const validCurrent = await form.trigger("currentPassword")
+        valid = valid && validCurrent
+      }
+      if (!valid) {
+        const errorMessage =
+          form.formState.errors[fieldName]?.message ||
+          (fieldName === "newPassword" &&
+            form.formState.errors.currentPassword?.message) ||
+          "Invalid input"
+        toast({
+          title: "Validation Error",
+          description: errorMessage,
+          variant: "destructive",
+        })
+        return
+      }
+
+      setSubmittingField(fieldName)
+
+      if (fieldName === "email") {
+        const newEmail = form.getValues("email")!
+        await authClient.changeEmail({ newEmail })
+        toast({
+          title: "Check your inbox",
+          description:
+            "A verification link was sent to your new email address.",
+        })
+      } else if (fieldName === "newPassword") {
+        const newPassword = form.getValues("newPassword")!
+        const currentPassword = form.getValues("currentPassword")!
+        await authClient.changePassword({ newPassword, currentPassword })
+        toast({
+          title: "Success!",
+          description: "Your password has been updated successfully.",
+        })
+      } else {
+        const fieldValue = form.getValues(fieldName)!
+        const values = { [fieldName]: fieldValue }
+        await authClient.updateUser(values)
+        toast({
+          title: "Success!",
+          description: `Your ${fieldName} has been updated.`,
+        })
+      }
+    } catch (error: any) {
+      const errMsg = error.message || error
+      if (errMsg.toLowerCase().includes("current password")) {
+        toast({
+          title: "Error!",
+          description: "Current password is wrong.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Error!",
+          description: errMsg,
+          variant: "destructive",
+        })
+      }
+    } finally {
+      setSubmittingField(null)
+    }
+  }
 }

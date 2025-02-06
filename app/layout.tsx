@@ -39,9 +39,8 @@ export default function RootLayout({
           <Navbar />
           <Header />
 
-          <div className="flex h-screen flex-col">
-            <main className="flex-1 wrapper">{children}</main>
-          </div>
+            {children}
+          
           <Toaster />
         </ThemeProvider>
       </body>
