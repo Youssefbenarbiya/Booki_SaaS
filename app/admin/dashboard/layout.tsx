@@ -45,8 +45,8 @@ export default async function DashboardLayout({
               </Link>
             </li>
             <li className="mb-2">
-              <Link href="/admin/dashboard/flights" className="text-blue-500">
-                Flights
+              <Link href="/admin/dashboard/trips" className="text-blue-500">
+                Trips
               </Link>
             </li>
             <li className="mb-2">

@@ -5,6 +5,9 @@ import {
   timestamp,
   integer,
   varchar,
+  serial,
+  date,
+  decimal,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
@@ -61,18 +64,51 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updated_at"),
 })
 
-export const flight = pgTable("flight", {
-  id: varchar("id").primaryKey(),
-  flightNumber: varchar("flight_number").notNull(),
-  departureAirport: varchar("departure_airport").notNull(),
-  arrivalAirport: varchar("arrival_airport").notNull(),
-  departureTime: timestamp("departure_time").notNull(),
-  arrivalTime: timestamp("arrival_time").notNull(),
-  price: varchar("price").notNull(),
-  availableSeats: integer("available_seats").notNull(),
-  images: text("images").array().default([]).notNull(),
-  createdAt: timestamp("created_at").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
+export const trips = pgTable("trips", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  destination: varchar("destination", { length: 255 }).notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  capacity: integer("capacity").notNull(),
+  isAvailable: boolean("is_available").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+})
+
+export const tripImages = pgTable("trip_images", {
+  id: serial("id").primaryKey(),
+  tripId: integer("trip_id")
+    .references(() => trips.id, { onDelete: "cascade" })
+    .notNull(),
+  imageUrl: text("image_url").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
+export const tripActivities = pgTable("trip_activities", {
+  id: serial("id").primaryKey(),
+  tripId: integer("trip_id")
+    .references(() => trips.id, { onDelete: "cascade" })
+    .notNull(),
+  activityName: varchar("activity_name", { length: 255 }).notNull(),
+  description: text("description"),
+  scheduledDate: date("scheduled_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
+export const tripBookings = pgTable("trip_bookings", {
+  id: serial("id").primaryKey(),
+  tripId: integer("trip_id")
+    .references(() => trips.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" })
+    .notNull(),
+  seatsBooked: integer("seats_booked").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  bookingDate: timestamp("booking_date").defaultNow(),
 })
 
 export const hotel = pgTable("hotel", {
@@ -138,3 +174,34 @@ export const roomAvailabilityRelations = relations(
     }),
   })
 )
+
+export const tripsRelations = relations(trips, ({ many }) => ({
+  images: many(tripImages),
+  activities: many(tripActivities),
+  bookings: many(tripBookings),
+}))
+
+export const tripImagesRelations = relations(tripImages, ({ one }) => ({
+  trip: one(trips, {
+    fields: [tripImages.tripId],
+    references: [trips.id],
+  }),
+}))
+
+export const tripActivitiesRelations = relations(tripActivities, ({ one }) => ({
+  trip: one(trips, {
+    fields: [tripActivities.tripId],
+    references: [trips.id],
+  }),
+}))
+
+export const tripBookingsRelations = relations(tripBookings, ({ one }) => ({
+  trip: one(trips, {
+    fields: [tripBookings.tripId],
+    references: [trips.id],
+  }),
+  user: one(user, {
+    fields: [tripBookings.userId],
+    references: [user.id],
+  }),
+}))

@@ -9,7 +9,7 @@ export async function uploadImages(formData: FormData) {
     const uploadDir = join(process.cwd(), "public", "uploads")
     try {
       await mkdir(uploadDir, { recursive: true })
-    } catch (error) {
+    } catch {
       // Directory might already exist, ignore error
     }
 
@@ -23,12 +23,15 @@ export async function uploadImages(formData: FormData) {
       const buffer = Buffer.from(bytes)
 
       // Create a unique filename
-      const uniqueFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '-')}`
+      const uniqueFilename = `${Date.now()}-${file.name.replace(
+        /[^a-zA-Z0-9.-]/g,
+        "-"
+      )}`
       const path = join(uploadDir, uniqueFilename)
 
       // Write the file
       await writeFile(path, buffer)
-      
+
       // Return the path that will be stored in the database
       return `/uploads/${uniqueFilename}`
     } catch (error) {
@@ -39,4 +42,4 @@ export async function uploadImages(formData: FormData) {
     console.error("Error in uploadImages:", error)
     throw new Error("Failed to upload images")
   }
-} 
+}
