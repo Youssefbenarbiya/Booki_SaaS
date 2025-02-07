@@ -4,8 +4,9 @@ import {
   text,
   timestamp,
   integer,
-  numeric,
+  varchar,
 } from "drizzle-orm/pg-core"
+import { relations } from "drizzle-orm"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -61,14 +62,79 @@ export const verification = pgTable("verification", {
 })
 
 export const flight = pgTable("flight", {
-  id: text("id").primaryKey(), // Use UUID or any unique string
-  flightNumber: text("flight_number").notNull().unique(),
-  departureAirport: text("departure_airport").notNull(),
-  arrivalAirport: text("arrival_airport").notNull(),
+  id: varchar("id").primaryKey(),
+  flightNumber: varchar("flight_number").notNull(),
+  departureAirport: varchar("departure_airport").notNull(),
+  arrivalAirport: varchar("arrival_airport").notNull(),
   departureTime: timestamp("departure_time").notNull(),
   arrivalTime: timestamp("arrival_time").notNull(),
-  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  price: varchar("price").notNull(),
   availableSeats: integer("available_seats").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  images: text("images").array().default([]).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
 })
+
+export const hotel = pgTable("hotel", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  address: text("address").notNull(),
+  city: varchar("city").notNull(),
+  country: varchar("country").notNull(),
+  rating: integer("rating").notNull(), // 1-5 stars
+  amenities: text("amenities").array().default([]).notNull(),
+  images: text("images").array().default([]).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+})
+
+export const room = pgTable("room", {
+  id: varchar("id").primaryKey(),
+  hotelId: varchar("hotel_id")
+    .notNull()
+    .references(() => hotel.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  capacity: integer("capacity").notNull(),
+  pricePerNight: varchar("price_per_night").notNull(),
+  roomType: varchar("room_type").notNull(), // e.g., "single", "double", "suite"
+  amenities: text("amenities").array().default([]).notNull(),
+  images: text("images").array().default([]).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+})
+
+export const roomAvailability = pgTable("room_availability", {
+  id: varchar("id").primaryKey(),
+  roomId: varchar("room_id")
+    .notNull()
+    .references(() => room.id, { onDelete: "cascade" }),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  isAvailable: boolean("is_available").notNull().default(true),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+})
+
+export const hotelRelations = relations(hotel, ({ many }) => ({
+  rooms: many(room),
+}))
+
+export const roomRelations = relations(room, ({ one, many }) => ({
+  hotel: one(hotel, {
+    fields: [room.hotelId],
+    references: [hotel.id],
+  }),
+  availabilities: many(roomAvailability),
+}))
+
+export const roomAvailabilityRelations = relations(
+  roomAvailability,
+  ({ one }) => ({
+    room: one(room, {
+      fields: [roomAvailability.roomId],
+      references: [room.id],
+    }),
+  })
+)

@@ -2,6 +2,7 @@
 // app/dashboard/flights/page.tsx
 import { getFlights } from "@/actions/flightActions"
 import Link from "next/link"
+import Image from "next/image"
 import DeleteFlightButton from "./[flightId]/DeleteFlightButton"
 
 export default async function FlightsPage() {
@@ -19,10 +20,26 @@ export default async function FlightsPage() {
         {flights.map((flight: any) => (
           <li
             key={flight.id}
-            className="mb-2 border p-4 rounded flex justify-between items-center"
+            className="mb-2 border p-4 rounded flex gap-4 items-center"
           >
+            {/* Flight image */}
+            <div className="relative w-32 h-32 flex-shrink-0">
+              {flight.images?.[0] ? (
+                <Image
+                  src={flight.images[0]}
+                  alt={flight.flightNumber}
+                  fill
+                  className="object-cover rounded-lg"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-400">No image</span>
+                </div>
+              )}
+            </div>
+
             {/* Flight information */}
-            <div>
+            <div className="flex-grow">
               <p>
                 <strong>{flight.flightNumber}</strong>:{" "}
                 {flight.departureAirport} → {flight.arrivalAirport}

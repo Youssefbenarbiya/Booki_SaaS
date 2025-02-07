@@ -1,0 +1,32 @@
+import * as z from "zod"
+
+export const roomSchema = z.object({
+  id: z.string().optional(), // Optional for new rooms
+  name: z.string().min(1, "Room name is required"),
+  description: z.string().min(1, "Description is required"),
+  capacity: z.number().int().positive("Capacity must be positive"),
+  pricePerNight: z.number().positive("Price must be positive"),
+  roomType: z.enum(["single", "double", "suite", "family"]),
+  amenities: z.array(z.string()),
+  images: z.array(z.string()).default([]),
+  availabilities: z.array(z.object({
+    startDate: z.date(),
+    endDate: z.date(),
+    isAvailable: z.boolean(),
+  })).optional(),
+})
+
+export const hotelSchema = z.object({
+  name: z.string().min(1, "Hotel name is required"),
+  description: z.string().min(1, "Description is required"),
+  address: z.string().min(1, "Address is required"),
+  city: z.string().min(1, "City is required"),
+  country: z.string().min(1, "Country is required"),
+  rating: z.number().int().min(1).max(5),
+  amenities: z.array(z.string()),
+  images: z.array(z.string()).max(10).optional(),
+  rooms: z.array(roomSchema),
+})
+
+export type HotelInput = z.infer<typeof hotelSchema>
+export type RoomInput = z.infer<typeof roomSchema> 

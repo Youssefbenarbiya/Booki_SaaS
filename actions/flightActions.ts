@@ -8,26 +8,32 @@ import { eq } from "drizzle-orm"
 
 // Create a new flight.
 export async function createFlight(data: FlightInput) {
-  // Parse data: the output will be of type Flight (with dates as Date)
-  const validatedData = flightSchema.parse(data)
+  try {
+    // Parse data: the output will be of type Flight (with dates as Date)
+    const validatedData = flightSchema.parse(data)
 
-  const newFlight = await db
-    .insert(flight)
-    .values({
-      id: crypto.randomUUID(),
-      flightNumber: validatedData.flightNumber,
-      departureAirport: validatedData.departureAirport,
-      arrivalAirport: validatedData.arrivalAirport,
-      departureTime: validatedData.departureTime, // Date
-      arrivalTime: validatedData.arrivalTime, // Date
-      price: validatedData.price.toString(), // Convert number to string (for a numeric column)
-      availableSeats: validatedData.availableSeats,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .returning()
+    const newFlight = await db
+      .insert(flight)
+      .values({
+        id: crypto.randomUUID(),
+        flightNumber: validatedData.flightNumber,
+        departureAirport: validatedData.departureAirport,
+        arrivalAirport: validatedData.arrivalAirport,
+        departureTime: validatedData.departureTime,
+        arrivalTime: validatedData.arrivalTime,
+        price: validatedData.price.toString(),
+        availableSeats: validatedData.availableSeats,
+        images: validatedData.images || [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning()
 
-  return newFlight[0]
+    return newFlight[0]
+  } catch (error) {
+    console.error("Error creating flight:", error)
+    throw error
+  }
 }
 
 // Update an existing flight.
@@ -44,6 +50,7 @@ export async function updateFlight(flightId: string, data: FlightInput) {
       arrivalTime: validatedData.arrivalTime,
       price: validatedData.price.toString(), // Convert to string
       availableSeats: validatedData.availableSeats,
+      images: validatedData.images || [], // Add support for images array
       updatedAt: new Date(),
     })
     .where(eq(flight.id, flightId))
