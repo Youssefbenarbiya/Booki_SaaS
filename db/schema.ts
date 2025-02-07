@@ -61,7 +61,7 @@ export const verification = pgTable("verification", {
 })
 
 export const flight = pgTable("flight", {
-  id: text("id").primaryKey(), 
+  id: text("id").primaryKey(), // Use UUID or any unique string
   flightNumber: text("flight_number").notNull().unique(),
   departureAirport: text("departure_airport").notNull(),
   arrivalAirport: text("arrival_airport").notNull(),

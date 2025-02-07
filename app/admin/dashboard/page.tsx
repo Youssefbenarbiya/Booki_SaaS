@@ -1,28 +1,9 @@
-import { Metadata } from "next"
-import { headers } from "next/headers"
-import { auth } from "@/auth"
-import { redirect } from "next/navigation"
-
-export const metadata: Metadata = {
-  title: `Dashboard`,
-}
-
-export default async function DashboardPage() {
-  const session = await auth.api.getSession({
-    query: {
-      disableCookieCache: true,
-    },
-    headers: await headers(),
-  })
-  if (!session) {
-    return redirect("/sign-in")
-  }
-  if (session.user.role !== "admin") {
-    return redirect("/")
-  }
+// app/admin/dashboard/page.tsx
+export default function DashboardPage() {
   return (
     <div>
-      <p>Dashboard page</p>
+      <h1 className="text-2xl font-bold">Dashboard Home</h1>
+      <p>Welcome to the admin dashboard!</p>
     </div>
   )
 }

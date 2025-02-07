@@ -1,15 +1,14 @@
-// src/actions/upload-image.ts
 "use server"
 
 import { writeFile } from "fs/promises"
 import path from "path"
 import { revalidatePath } from "next/cache"
 //import { v2 as cloudinary } from "cloudinary" // ONLY if using Cloudinary
-import { authClient } from "@/auth-client" // adjust the import if your authClient is somewhere else
+import { authClient } from "@/auth-client" 
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/jpeg"]
-const UPLOAD_DIRECTORY = "/uploads" // Define the upload directory
+const UPLOAD_DIRECTORY = "/uploads" 
 
 async function uploadImage(file: File): Promise<string> {
   if (file.size > MAX_FILE_SIZE) {
