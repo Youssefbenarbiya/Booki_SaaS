@@ -18,7 +18,7 @@ export default async function ProfilePage() {
   }
   return (
     <div>
-      <div className="relative w-full h-[200px]">
+      <div className="relative w-full h-[200px] ">
         <Image
           src="/assets/ProfileBanner.jpg"
           alt="Profile banner"
@@ -27,6 +27,7 @@ export default async function ProfilePage() {
           sizes="100vw"
           style={{
             objectFit: "cover",
+            objectPosition: "top",
           }}
         />
       </div>

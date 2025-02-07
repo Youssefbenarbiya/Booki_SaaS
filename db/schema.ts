@@ -1,4 +1,11 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  pgTable,
+  text,
+  timestamp,
+  integer,
+  numeric,
+} from "drizzle-orm/pg-core"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -51,4 +58,17 @@ export const verification = pgTable("verification", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),
+})
+
+export const flight = pgTable("flight", {
+  id: text("id").primaryKey(), 
+  flightNumber: text("flight_number").notNull().unique(),
+  departureAirport: text("departure_airport").notNull(),
+  arrivalAirport: text("arrival_airport").notNull(),
+  departureTime: timestamp("departure_time").notNull(),
+  arrivalTime: timestamp("arrival_time").notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  availableSeats: integer("available_seats").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })

@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { resetPasswordSchema } from "@/lib/zod"
+import { resetPasswordSchema } from "@/lib/validations/zod"
 import LoadingButton from "@/components/loading-button"
 import { authClient } from "@/auth-client"
 import { useToast } from "@/hooks/use-toast"

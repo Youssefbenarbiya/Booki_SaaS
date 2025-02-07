@@ -17,7 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { authClient } from "@/auth-client"
 import { useToast } from "@/hooks/use-toast"
-import { forgotPasswordSchema } from "@/lib/zod"
+import { forgotPasswordSchema } from "@/lib/validations/zod"
 
 export default function ForgotPassword() {
   const { toast } = useToast()

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import LoadingButton from "@/components/loading-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
-import { signUpSchema } from "@/lib/zod"
+import { signUpSchema } from "@/lib/validations/zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { z } from "zod"
@@ -89,7 +89,7 @@ export default function SignUp() {
       <div className="w-full lg:w-[calc(50%+100px)] flex flex-col px-8">
         <div className="max-w-md mx-auto w-full py-8">
           {/* Title */}
-          <div >
+          <div>
             <h2 className="text-3xl font-semibold ">Register</h2>
           </div>
 
