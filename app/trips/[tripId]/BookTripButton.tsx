@@ -1,13 +1,12 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+
+import { authClient } from "@/auth-client"
 
 export default function BookTripButton({ tripId }: { tripId: number }) {
-  const { data: session } = useSession()
-  const router = useRouter()
-  const [isOpen, setIsOpen] = useState(false)
+ const session = authClient.useSession() 
+   const router = useRouter()
 
   function handleBooking() {
     if (!session) {
