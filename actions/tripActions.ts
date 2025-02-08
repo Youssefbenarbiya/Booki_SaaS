@@ -1,7 +1,7 @@
 "use server"
 
 import db from "../db/drizzle"
-import { trips, tripImages, tripActivities } from "@/db/schema"
+import { trips, tripImages, tripActivities, tripBookings } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
@@ -43,7 +43,7 @@ export async function createTrip(data: TripInput) {
           destination: validatedData.destination,
           startDate: validatedData.startDate.toISOString(),
           endDate: validatedData.endDate.toISOString(),
-          price: validatedData.price.toString(), // Convert to string
+          price: validatedData.price.toString(),
           capacity: validatedData.capacity,
           isAvailable: validatedData.isAvailable,
         })
@@ -87,6 +87,7 @@ export async function getTrips() {
       with: {
         images: true,
         activities: true,
+        bookings: true,
       },
     })
     return trips
@@ -103,6 +104,7 @@ export async function getTripById(id: number) {
       with: {
         images: true,
         activities: true,
+        bookings: true,
       },
     })
     return trip
@@ -126,7 +128,7 @@ export async function updateTrip(id: number, data: TripInput) {
           destination: validatedData.destination,
           startDate: validatedData.startDate.toISOString(),
           endDate: validatedData.endDate.toISOString(),
-          price: validatedData.price.toString(), // Convert to string here too
+          price: validatedData.price.toString(),
           capacity: validatedData.capacity,
           isAvailable: validatedData.isAvailable,
         })

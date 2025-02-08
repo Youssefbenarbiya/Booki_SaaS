@@ -55,6 +55,7 @@ export async function createBooking({
         .where(eq(trips.id, tripId))
 
       revalidatePath(`/trips/${tripId}`)
+      revalidatePath("/dashboard/bookings")
       return booking
     })
   } catch (error) {
@@ -68,7 +69,11 @@ export async function getBookingsByUserId(userId: string) {
     const bookings = await db.query.tripBookings.findMany({
       where: eq(tripBookings.userId, userId),
       with: {
-        trip: true,
+        trip: {
+          with: {
+            images: true,
+          },
+        },
       },
     })
     return bookings
