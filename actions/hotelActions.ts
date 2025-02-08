@@ -10,7 +10,6 @@ export async function createHotel(data: HotelInput) {
     const validatedData = hotelSchema.parse(data)
     const hotelId = crypto.randomUUID()
 
-    // Start a transaction to create hotel and rooms
     return await db.transaction(async (tx) => {
       // Create hotel
       const [newHotel] = await tx
@@ -30,7 +29,7 @@ export async function createHotel(data: HotelInput) {
         })
         .returning()
 
-      // Create rooms
+      // Create rooms with images
       const roomPromises = validatedData.rooms.map(async (roomData) => {
         const roomId = crypto.randomUUID()
         const [newRoom] = await tx
@@ -44,7 +43,7 @@ export async function createHotel(data: HotelInput) {
             pricePerNight: roomData.pricePerNight.toString(),
             roomType: roomData.roomType,
             amenities: roomData.amenities,
-            images: roomData.images || [],
+            images: roomData.images || [], // Save room images
             createdAt: new Date(),
             updatedAt: new Date(),
           })
@@ -102,7 +101,7 @@ export async function updateHotel(hotelId: string, data: HotelInput) {
       // Update rooms
       const roomPromises = validatedData.rooms.map(async (roomData) => {
         if (roomData.id) {
-          // Update existing room
+          // Update existing room with images
           const [updatedRoom] = await tx
             .update(room)
             .set({
@@ -112,14 +111,14 @@ export async function updateHotel(hotelId: string, data: HotelInput) {
               pricePerNight: roomData.pricePerNight.toString(),
               roomType: roomData.roomType,
               amenities: roomData.amenities,
-              images: roomData.images || [],
+              images: roomData.images || [], // Update room images
               updatedAt: new Date(),
             })
             .where(eq(room.id, roomData.id))
             .returning()
           return updatedRoom
         } else {
-          // Create new room
+          // Create new room with images
           const [newRoom] = await tx
             .insert(room)
             .values({
@@ -131,7 +130,7 @@ export async function updateHotel(hotelId: string, data: HotelInput) {
               pricePerNight: roomData.pricePerNight.toString(),
               roomType: roomData.roomType,
               amenities: roomData.amenities,
-              images: roomData.images || [],
+              images: roomData.images || [], // Save room images for new room
               createdAt: new Date(),
               updatedAt: new Date(),
             })
@@ -191,6 +190,22 @@ export async function getHotelById(hotelId: string) {
     return result
   } catch (error) {
     console.error("Error getting hotel:", error)
+    throw error
+  }
+}
+
+export async function getRoomById(roomId: string) {
+  try {
+    const result = await db.query.room.findFirst({
+      where: eq(room.id, roomId),
+      with: {
+        hotel: true,
+        availabilities: true,
+      },
+    })
+    return result
+  } catch (error) {
+    console.error("Error getting room:", error)
     throw error
   }
 }
