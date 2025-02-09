@@ -1,7 +1,7 @@
 "use server"
 
 import db from "../db/drizzle"
-import { roomBookings, room } from "@/db/schema"
+import { roomBookings } from "@/db/schema"
 import { eq, and, or, between } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -25,8 +25,16 @@ export async function createRoomBooking({
         where: and(
           eq(roomBookings.roomId, roomId),
           or(
-            between(roomBookings.checkIn, checkIn, checkOut),
-            between(roomBookings.checkOut, checkIn, checkOut)
+            between(
+              roomBookings.checkIn,
+              checkIn.toISOString(),
+              checkOut.toISOString()
+            ),
+            between(
+              roomBookings.checkOut,
+              checkIn.toISOString(),
+              checkOut.toISOString()
+            )
           )
         ),
       })
@@ -86,8 +94,16 @@ export async function checkRoomAvailability(
       where: and(
         eq(roomBookings.roomId, roomId),
         or(
-          between(roomBookings.checkIn, checkIn, checkOut),
-          between(roomBookings.checkOut, checkIn, checkOut)
+          between(
+            roomBookings.checkIn,
+            checkIn.toISOString(),
+            checkOut.toISOString()
+          ),
+          between(
+            roomBookings.checkOut,
+            checkIn.toISOString(),
+            checkOut.toISOString()
+          )
         )
       ),
     })
@@ -97,4 +113,4 @@ export async function checkRoomAvailability(
     console.error("Error checking room availability:", error)
     throw error
   }
-} 
+}

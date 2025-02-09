@@ -4,6 +4,7 @@ import { createRoomBooking } from "@/actions/roomBookingActions"
 import { formatPrice } from "@/lib/utils"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { Calendar, Clock } from "lucide-react"
 
 interface BookRoomFormProps {
   roomId: string
@@ -11,10 +12,10 @@ interface BookRoomFormProps {
   userId: string
 }
 
-export default function BookRoomForm({ 
-  roomId, 
+export default function BookRoomForm({
+  roomId,
   pricePerNight,
-  userId 
+  userId,
 }: BookRoomFormProps) {
   const router = useRouter()
   const [checkIn, setCheckIn] = useState<string>("")
@@ -25,7 +26,7 @@ export default function BookRoomForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    
+
     const checkInDate = new Date(checkIn)
     const checkOutDate = new Date(checkOut)
 
@@ -34,8 +35,6 @@ export default function BookRoomForm({
       return
     }
 
-    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))
-    
     startTransition(async () => {
       try {
         const booking = await createRoomBooking({
@@ -44,7 +43,9 @@ export default function BookRoomForm({
           checkIn: checkInDate,
           checkOut: checkOutDate,
         })
-        router.push(`/hotels/${roomId}/book/confirmation?bookingId=${booking.id}`)
+        router.push(
+          `/hotels/${roomId}/book/confirmation?bookingId=${booking.id}`
+        )
       } catch (error) {
         console.error("Error booking room:", error)
         setError("Failed to book room. Please try again.")
@@ -52,62 +53,103 @@ export default function BookRoomForm({
     })
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="card bg-base-100 shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Book Your Stay</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <label className="block font-medium mb-1">
-            Check-in Date
-          </label>
-          <input
-            type="date"
-            value={checkIn}
-            onChange={(e) => setCheckIn(e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            className="input input-bordered w-full"
-            required
-          />
-        </div>
+  const nights =
+    checkIn && checkOut
+      ? Math.ceil(
+          (new Date(checkOut).getTime() - new Date(checkIn).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      : 0
 
-        <div>
-          <label className="block font-medium mb-1">
-            Check-out Date
-          </label>
-          <input
-            type="date"
-            value={checkOut}
-            onChange={(e) => setCheckOut(e.target.value)}
-            min={checkIn || new Date().toISOString().split('T')[0]}
-            className="input input-bordered w-full"
-            required
-          />
+  return (
+    <div className="rounded-lg border bg-card text-card-foreground shadow-lg">
+      <div className="flex flex-col space-y-1.5 p-6">
+        <h3 className="text-2xl font-semibold leading-none tracking-tight">
+          Book Your Stay
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Select your check-in and check-out dates
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-6 p-6 pt-0">
+        <div className="grid gap-6">
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Check-in Date
+                </div>
+              </label>
+              <input
+                type="date"
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Check-out Date
+                </div>
+              </label>
+              <input
+                type="date"
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                min={checkIn || new Date().toISOString().split("T")[0]}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                required
+              />
+            </div>
+          </div>
         </div>
 
         {checkIn && checkOut && (
-          <div className="text-lg font-semibold">
-            Total Price: {formatPrice(
-              pricePerNight * 
-              Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24))
-            )}
+          <div className="rounded-lg bg-muted p-4">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span>Duration</span>
+              </div>
+              <span>
+                {nights} night{nights !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-sm font-medium">Total Price</span>
+              <span className="text-lg font-semibold">
+                {formatPrice(pricePerNight * nights)}
+              </span>
+            </div>
           </div>
         )}
 
         {error && (
-          <div className="alert alert-error">
+          <div className="rounded-lg bg-destructive/15 p-4 text-sm text-destructive">
             {error}
           </div>
         )}
 
         <button
           type="submit"
-          className="btn btn-primary w-full"
+          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
           disabled={isPending}
         >
-          {isPending ? "Processing..." : "Confirm Booking"}
+          {isPending ? (
+            <>
+              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Processing...
+            </>
+          ) : (
+            "Confirm Booking"
+          )}
         </button>
-      </div>
-    </form>
+      </form>
+    </div>
   )
-} 
+}

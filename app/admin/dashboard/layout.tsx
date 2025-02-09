@@ -1,12 +1,14 @@
 // app/admin/dashboard/layout.tsx
-import { Metadata } from "next"
+import type { Metadata } from "next"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import Link from "next/link"
+import { Sidebar } from "../../../components/dashboardComponent/Sidebar"
+import { MobileNav } from "../../../components/dashboardComponent/MobileNav"
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: "Admin Dashboard",
+  description: "Admin dashboard for managing the application",
 }
 
 export default async function DashboardLayout({
@@ -14,50 +16,23 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Perform authentication
   const session = await auth.api.getSession({
-    query: {
-      disableCookieCache: true,
-    },
     headers: await headers(),
   })
 
-  if (!session) {
-    redirect("/sign-in")
-  }
-  if (session.user.role !== "admin") {
-    redirect("/")
+  if (!session || session.user.role !== "admin") {
+    redirect("/auth/signin")
   }
 
   return (
-    <div className="flex h-screen">
-      {/* Main content area: add right margin so it doesn’t get covered by the sidebar */}
-      <main className="flex-1 p-4 mr-64">{children}</main>
-
-      {/* Sidebar fixed on the right */}
-      <aside className="w-64 bg-gray-100 p-4 fixed right-0 top-0 h-full border-l border-gray-200">
-        <h2 className="text-lg font-bold mb-4">Dashboard Navigation</h2>
-        <nav>
-          <ul>
-            <li className="mb-2">
-              <Link href="/admin/dashboard" className="text-blue-500">
-                Home
-              </Link>
-            </li>
-            <li className="mb-2">
-              <Link href="/admin/dashboard/trips" className="text-blue-500">
-                Trips
-              </Link>
-            </li>
-            <li className="mb-2">
-              <Link href="/admin/dashboard/hotels" className="text-blue-500">
-                Hotels
-              </Link>
-            </li>
-            {/* Add additional navigation items here */}
-          </ul>
-        </nav>
-      </aside>
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <MobileNav />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+          <div className="container mx-auto px-6 py-8">{children}</div>
+        </main>
+      </div>
     </div>
   )
 }
