@@ -16,18 +16,21 @@ export default async function TripDetailsPage({
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid gap-8 md:grid-cols-2">
+    <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="grid gap-10 md:grid-cols-2">
         {/* Images Gallery */}
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             {trip.images.map((image, index) => (
-              <div key={image.id} className="relative aspect-video">
+              <div
+                key={image.id}
+                className="relative aspect-video rounded-lg overflow-hidden shadow transition-transform duration-300 hover:scale-105"
+              >
                 <Image
                   src={image.imageUrl}
                   alt={`${trip.name} image ${index + 1}`}
                   fill
-                  className="object-cover rounded-lg"
+                  className="object-cover"
                 />
               </div>
             ))}
@@ -35,29 +38,35 @@ export default async function TripDetailsPage({
         </div>
 
         {/* Trip Details */}
-        <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow p-8 space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">{trip.name}</h1>
-            <p className="text-xl text-gray-600 mt-2">{trip.destination}</p>
+            <h1 className="text-4xl font-bold text-gray-900">{trip.name}</h1>
+            <p className="text-lg text-gray-500 mt-2">{trip.destination}</p>
           </div>
 
           <div className="flex justify-between items-center">
-            <div className="text-2xl font-bold">{formatPrice(trip.price)}</div>
-            <div className="text-gray-600">
+            <div className="text-2xl font-bold text-green-600">
+              {formatPrice(trip.price)}
+            </div>
+            <div className="text-sm text-gray-500">
               {trip.capacity} spots available
             </div>
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold mb-2">Trip Duration</h2>
-            <p>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Trip Duration
+            </h2>
+            <p className="text-gray-600">
               {new Date(trip.startDate).toLocaleDateString()} -{" "}
               {new Date(trip.endDate).toLocaleDateString()}
             </p>
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold mb-2">Description</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Description
+            </h2>
             <p className="text-gray-600 whitespace-pre-wrap">
               {trip.description}
             </p>
@@ -66,14 +75,18 @@ export default async function TripDetailsPage({
           {/* Activities Section */}
           {trip.activities.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Included Activities</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Included Activities
+              </h2>
               <div className="space-y-4">
                 {trip.activities.map((activity) => (
                   <div
                     key={activity.id}
-                    className="card bg-base-100 shadow-sm p-4"
+                    className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-300"
                   >
-                    <h3 className="font-medium">{activity.activityName}</h3>
+                    <h3 className="font-medium text-gray-800">
+                      {activity.activityName}
+                    </h3>
                     {activity.description && (
                       <p className="text-sm text-gray-600 mt-1">
                         {activity.description}
@@ -97,7 +110,7 @@ export default async function TripDetailsPage({
               <BookTripButton tripId={trip.id} />
             </div>
           ) : (
-            <div className="alert alert-error mt-8">
+            <div className="bg-red-50 border border-red-300 text-red-700 p-4 rounded-lg mt-8">
               This trip is currently not available for booking.
             </div>
           )}
@@ -105,4 +118,4 @@ export default async function TripDetailsPage({
       </div>
     </div>
   )
-} 
+}

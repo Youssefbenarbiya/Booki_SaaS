@@ -165,82 +165,102 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Edit Hotel</h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <div className="max-w-4xl mx-auto px-4 py-10">
+      <h1 className="text-3xl font-bold mb-8 text-gray-900">Edit Hotel</h1>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Hotel Details Section */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <div>
-            <label className="block font-medium">Hotel Name</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Hotel Name
+            </label>
             <input
               type="text"
               {...register("name")}
-              className="input input-bordered w-full"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
             />
             {errors.name && (
-              <p className="text-red-500">{errors.name.message}</p>
+              <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
             )}
           </div>
 
           <div>
-            <label className="block font-medium">Rating (1-5)</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Rating (1-5)
+            </label>
             <input
               type="number"
               min="1"
               max="5"
               {...register("rating", { valueAsNumber: true })}
-              className="input input-bordered w-full"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
             />
             {errors.rating && (
-              <p className="text-red-500">{errors.rating.message}</p>
+              <p className="mt-1 text-xs text-red-600">
+                {errors.rating.message}
+              </p>
             )}
           </div>
 
           <div className="md:col-span-2">
-            <label className="block font-medium">Description</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Description
+            </label>
             <textarea
               {...register("description")}
-              className="textarea textarea-bordered w-full"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
               rows={3}
             />
             {errors.description && (
-              <p className="text-red-500">{errors.description.message}</p>
+              <p className="mt-1 text-xs text-red-600">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block font-medium">City</label>
+            <label className="block text-sm font-medium text-gray-700">
+              City
+            </label>
             <input
               type="text"
               {...register("city")}
-              className="input input-bordered w-full"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
             />
             {errors.city && (
-              <p className="text-red-500">{errors.city.message}</p>
+              <p className="mt-1 text-xs text-red-600">{errors.city.message}</p>
             )}
           </div>
 
           <div>
-            <label className="block font-medium">Country</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Country
+            </label>
             <input
               type="text"
               {...register("country")}
-              className="input input-bordered w-full"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
             />
             {errors.country && (
-              <p className="text-red-500">{errors.country.message}</p>
+              <p className="mt-1 text-xs text-red-600">
+                {errors.country.message}
+              </p>
             )}
           </div>
 
           <div className="md:col-span-2">
-            <label className="block font-medium">Address</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Address
+            </label>
             <input
               type="text"
               {...register("address")}
-              className="input input-bordered w-full"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
             />
             {errors.address && (
-              <p className="text-red-500">{errors.address.message}</p>
+              <p className="mt-1 text-xs text-red-600">
+                {errors.address.message}
+              </p>
             )}
           </div>
         </div>
@@ -257,9 +277,9 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
         />
 
         {/* Rooms Section */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Rooms</h2>
+        <div className="space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-800">Rooms</h2>
             <button
               type="button"
               onClick={() => {
@@ -276,16 +296,21 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                 setRoomImagePreviews((prev) => [...prev, []])
                 setRoomUploadErrors((prev) => [...prev, ""])
               }}
-              className="btn btn-secondary btn-sm"
+              className="inline-flex items-center rounded-md bg-green-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
             >
               Add Room
             </button>
           </div>
 
           {fields.map((field, index) => (
-            <div key={field.id} className="card bg-base-100 shadow-lg p-4">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-medium">Room {index + 1}</h3>
+            <div
+              key={field.id}
+              className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-800">
+                  Room {index + 1}
+                </h3>
                 <button
                   type="button"
                   onClick={() => {
@@ -306,32 +331,36 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                       return newErrors
                     })
                   }}
-                  className="btn btn-sm btn-error"
+                  className="inline-flex items-center rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition"
                 >
                   Remove Room
                 </button>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label className="block font-medium">Room Name</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Room Name
+                  </label>
                   <input
                     type="text"
                     {...register(`rooms.${index}.name`)}
-                    className="input input-bordered w-full"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                   />
                   {errors.rooms?.[index]?.name && (
-                    <p className="text-red-500">
+                    <p className="mt-1 text-xs text-red-600">
                       {errors.rooms[index]?.name?.message}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block font-medium">Room Type</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Room Type
+                  </label>
                   <select
                     {...register(`rooms.${index}.roomType`)}
-                    className="select select-bordered w-full"
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                   >
                     <option value="single">Single</option>
                     <option value="double">Double</option>
@@ -339,54 +368,60 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                     <option value="family">Family</option>
                   </select>
                   {errors.rooms?.[index]?.roomType && (
-                    <p className="text-red-500">
+                    <p className="mt-1 text-xs text-red-600">
                       {errors.rooms[index]?.roomType?.message}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block font-medium">Capacity</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Capacity
+                  </label>
                   <input
                     type="number"
                     {...register(`rooms.${index}.capacity`, {
                       valueAsNumber: true,
                     })}
-                    className="input input-bordered w-full"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                   />
                   {errors.rooms?.[index]?.capacity && (
-                    <p className="text-red-500">
+                    <p className="mt-1 text-xs text-red-600">
                       {errors.rooms[index]?.capacity?.message}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block font-medium">Price per Night</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Price per Night
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     {...register(`rooms.${index}.pricePerNight`, {
                       valueAsNumber: true,
                     })}
-                    className="input input-bordered w-full"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                   />
                   {errors.rooms?.[index]?.pricePerNight && (
-                    <p className="text-red-500">
+                    <p className="mt-1 text-xs text-red-600">
                       {errors.rooms[index]?.pricePerNight?.message}
                     </p>
                   )}
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block font-medium">Description</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
                   <textarea
                     {...register(`rooms.${index}.description`)}
-                    className="textarea textarea-bordered w-full"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                     rows={2}
                   />
                   {errors.rooms?.[index]?.description && (
-                    <p className="text-red-500">
+                    <p className="mt-1 text-xs text-red-600">
                       {errors.rooms[index]?.description?.message}
                     </p>
                   )}
@@ -429,10 +464,11 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
           ))}
         </div>
 
+        {/* Form Actions */}
         <div className="flex gap-4">
           <button
             type="submit"
-            className="btn btn-primary"
+            className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isPending}
           >
             {isPending ? "Updating..." : "Update Hotel"}
@@ -440,7 +476,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="btn btn-secondary"
+            className="inline-flex items-center rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
           >
             Cancel
           </button>

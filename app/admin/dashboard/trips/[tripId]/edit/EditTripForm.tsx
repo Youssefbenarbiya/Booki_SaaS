@@ -57,7 +57,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
       price: trip.price,
       capacity: trip.capacity,
       isAvailable: trip.isAvailable,
-      activities: trip.activities.map(activity => ({
+      activities: trip.activities.map((activity) => ({
         activityName: activity.activityName,
         description: activity.description || undefined,
         scheduledDate: activity.scheduledDate || undefined,
@@ -69,7 +69,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
     try {
       // Handle existing and new images
       let imageUrls = trip.images.map((img) => img.imageUrl)
-      
+
       if (images.length > 0) {
         try {
           const newUrls = await Promise.all(
@@ -101,7 +101,10 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit((data) => startTransition(() => onSubmit(data)))} className="space-y-6">
+    <form
+      onSubmit={handleSubmit((data) => startTransition(() => onSubmit(data)))}
+      className="space-y-6"
+    >
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="block font-medium">Trip Name</label>
@@ -110,9 +113,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
             {...register("name")}
             className="input input-bordered w-full"
           />
-          {errors.name && (
-            <p className="text-red-500">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="text-red-500">{errors.name.message}</p>}
         </div>
 
         <div>
@@ -214,7 +215,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
       <div className="flex gap-4">
         <button
           type="submit"
-          className="btn btn-primary"
+          className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded disabled:opacity-50"
           disabled={isPending}
         >
           {isPending ? "Updating..." : "Update Trip"}
@@ -222,11 +223,11 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="btn btn-outline"
+          className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded"
         >
           Cancel
         </button>
       </div>
     </form>
   )
-} 
+}
