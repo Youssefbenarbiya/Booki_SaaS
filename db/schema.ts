@@ -64,6 +64,11 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updated_at"),
 })
 
+// --------------
+// Trip Related
+// --------------
+
+// Trips table
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -78,103 +83,43 @@ export const trips = pgTable("trips", {
   updatedAt: timestamp("updated_at").defaultNow(),
 })
 
+// Trip Images table
 export const tripImages = pgTable("trip_images", {
   id: serial("id").primaryKey(),
   tripId: integer("trip_id")
-    .references(() => trips.id, { onDelete: "cascade" })
-    .notNull(),
+    .notNull()
+    .references(() => trips.id, { onDelete: "cascade" }),
   imageUrl: text("image_url").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 })
 
+// Trip Activities table
 export const tripActivities = pgTable("trip_activities", {
   id: serial("id").primaryKey(),
   tripId: integer("trip_id")
-    .references(() => trips.id, { onDelete: "cascade" })
-    .notNull(),
+    .notNull()
+    .references(() => trips.id, { onDelete: "cascade" }),
   activityName: varchar("activity_name", { length: 255 }).notNull(),
   description: text("description"),
   scheduledDate: date("scheduled_date"),
   createdAt: timestamp("created_at").defaultNow(),
 })
 
+// Trip Bookings table
 export const tripBookings = pgTable("trip_bookings", {
   id: serial("id").primaryKey(),
   tripId: integer("trip_id")
-    .references(() => trips.id, { onDelete: "cascade" })
-    .notNull(),
+    .notNull()
+    .references(() => trips.id, { onDelete: "cascade" }),
   userId: text("user_id")
-    .references(() => user.id, { onDelete: "cascade" })
-    .notNull(),
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   seatsBooked: integer("seats_booked").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   bookingDate: timestamp("booking_date").defaultNow(),
 })
 
-export const hotel = pgTable("hotel", {
-  id: varchar("id").primaryKey(),
-  name: varchar("name").notNull(),
-  description: text("description").notNull(),
-  address: text("address").notNull(),
-  city: varchar("city").notNull(),
-  country: varchar("country").notNull(),
-  rating: integer("rating").notNull(), // 1-5 stars
-  amenities: text("amenities").array().default([]).notNull(),
-  images: text("images").array().default([]).notNull(),
-  createdAt: timestamp("created_at").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
-})
-
-export const room = pgTable("room", {
-  id: varchar("id").primaryKey(),
-  hotelId: varchar("hotel_id")
-    .notNull()
-    .references(() => hotel.id, { onDelete: "cascade" }),
-  name: varchar("name").notNull(),
-  description: text("description").notNull(),
-  capacity: integer("capacity").notNull(),
-  pricePerNight: varchar("price_per_night").notNull(),
-  roomType: varchar("room_type").notNull(), // e.g., "single", "double", "suite"
-  amenities: text("amenities").array().default([]).notNull(),
-  images: text("images").array().default([]).notNull(),
-  createdAt: timestamp("created_at").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
-})
-
-export const roomAvailability = pgTable("room_availability", {
-  id: varchar("id").primaryKey(),
-  roomId: varchar("room_id")
-    .notNull()
-    .references(() => room.id, { onDelete: "cascade" }),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  isAvailable: boolean("is_available").notNull().default(true),
-  createdAt: timestamp("created_at").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
-})
-
-export const hotelRelations = relations(hotel, ({ many }) => ({
-  rooms: many(room),
-}))
-
-export const roomRelations = relations(room, ({ one, many }) => ({
-  hotel: one(hotel, {
-    fields: [room.hotelId],
-    references: [hotel.id],
-  }),
-  availabilities: many(roomAvailability),
-}))
-
-export const roomAvailabilityRelations = relations(
-  roomAvailability,
-  ({ one }) => ({
-    room: one(room, {
-      fields: [roomAvailability.roomId],
-      references: [room.id],
-    }),
-  })
-)
-
+// Trip Relations
 export const tripsRelations = relations(trips, ({ many }) => ({
   images: many(tripImages),
   activities: many(tripActivities),
@@ -202,6 +147,107 @@ export const tripBookingsRelations = relations(tripBookings, ({ one }) => ({
   }),
   user: one(user, {
     fields: [tripBookings.userId],
+    references: [user.id],
+  }),
+}))
+
+// -------------------
+// Hotel & Room Related
+// -------------------
+
+// Hotel table
+export const hotel = pgTable("hotel", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  address: text("address").notNull(),
+  city: varchar("city").notNull(),
+  country: varchar("country").notNull(),
+  rating: integer("rating").notNull(), // e.g., 1-5 stars
+  amenities: text("amenities").array().default([]).notNull(),
+  images: text("images").array().default([]).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// Room table
+export const room = pgTable("room", {
+  id: varchar("id").primaryKey(),
+  hotelId: varchar("hotel_id")
+    .notNull()
+    .references(() => hotel.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  capacity: integer("capacity").notNull(),
+  pricePerNight: decimal("price_per_night", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
+  roomType: varchar("room_type").notNull(), // e.g., "single", "double", "suite"
+  amenities: text("amenities").array().default([]).notNull(),
+  images: text("images").array().default([]).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// Room Availability table
+export const roomAvailability = pgTable("room_availability", {
+  id: varchar("id").primaryKey(),
+  roomId: varchar("room_id")
+    .notNull()
+    .references(() => room.id, { onDelete: "cascade" }),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  isAvailable: boolean("is_available").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// Room Bookings table (new)
+export const roomBookings = pgTable("room_bookings", {
+  id: serial("id").primaryKey(),
+  roomId: varchar("room_id")
+    .notNull()
+    .references(() => room.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  checkIn: date("check_in").notNull(),
+  checkOut: date("check_out").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  bookingDate: timestamp("booking_date").defaultNow(),
+})
+
+// Hotel & Room Relations
+export const hotelRelations = relations(hotel, ({ many }) => ({
+  rooms: many(room),
+}))
+
+export const roomRelations = relations(room, ({ one, many }) => ({
+  hotel: one(hotel, {
+    fields: [room.hotelId],
+    references: [hotel.id],
+  }),
+  availabilities: many(roomAvailability),
+}))
+
+export const roomAvailabilityRelations = relations(
+  roomAvailability,
+  ({ one }) => ({
+    room: one(room, {
+      fields: [roomAvailability.roomId],
+      references: [room.id],
+    }),
+  })
+)
+
+export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
+  room: one(room, {
+    fields: [roomBookings.roomId],
+    references: [room.id],
+  }),
+  user: one(user, {
+    fields: [roomBookings.userId],
     references: [user.id],
   }),
 }))

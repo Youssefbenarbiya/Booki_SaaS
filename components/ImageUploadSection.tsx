@@ -6,9 +6,9 @@ import { type Dispatch, type SetStateAction } from "react"
 interface ImageUploadSectionProps {
   label: string
   images: File[]
-  setImages: (images: File[] | ((prev: File[]) => File[])) => void
+  setImages: Dispatch<SetStateAction<File[]>>
   previewUrls: string[]
-  setPreviewUrls: (urls: string[] | ((prev: string[]) => string[])) => void
+  setPreviewUrls: Dispatch<SetStateAction<string[]>>
   uploadError: string
   setUploadError: (error: string) => void
 }
