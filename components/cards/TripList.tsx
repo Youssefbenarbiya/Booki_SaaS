@@ -1,9 +1,8 @@
-
 import Image from "next/image"
 import Link from "next/link"
 import { formatPrice } from "@/lib/utils"
 
-type Trip = Awaited<ReturnType<typeof import("@/actions/tripActions").getTrips>>[number]
+type Trip = Awaited<ReturnType<typeof import("@/actions/searchTrips").searchTrips>>[number]
 
 interface TripListProps {
   trips: Trip[]
