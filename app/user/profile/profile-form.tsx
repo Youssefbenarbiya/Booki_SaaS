@@ -95,7 +95,8 @@ export function UpdateUserInfo({ session }: { session: Session }) {
                 }
                 alt="Profile"
                 fill
-                style={{ objectFit: "cover" }}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
               />
               {/* Overlay edit button */}
             </div>

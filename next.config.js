@@ -1,18 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-      crypto: false,
-    }
-    return config
-  },
   images: {
-    domains: ['localhost', 'res.cloudinary.com'],
+    domains: [
+      "localhost",
+      "res.cloudinary.com",
+      "platform-lookaside.fbsbx.com",
+    ],
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
   },
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig

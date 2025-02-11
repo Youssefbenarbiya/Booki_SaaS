@@ -22,9 +22,21 @@ export function ImageUploadSection({
   uploadError = "",
   setUploadError,
 }: ImageUploadSectionProps) {
+  const MAX_FILE_SIZE = 6 * 1024 * 1024 // 6MB in bytes
+
+  const handleFileValidation = (file: File) => {
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError(`File ${file.name} exceeds 6MB limit`)
+      return false
+    }
+    return true
+  }
+
   const handleSingleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (!handleFileValidation(file)) return
 
     if (images.length + 1 > 10) {
       setUploadError("Maximum 10 images allowed")
@@ -39,14 +51,19 @@ export function ImageUploadSection({
 
   const handleMultipleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    if (images.length + files.length > 10) {
+    
+    // Validate all files
+    const validFiles = files.filter(file => handleFileValidation(file))
+    if (validFiles.length !== files.length) return
+    
+    if (images.length + validFiles.length > 10) {
       setUploadError("Maximum 10 images allowed")
       return
     }
 
-    const newPreviewUrls = files.map((file) => URL.createObjectURL(file))
+    const newPreviewUrls = validFiles.map((file) => URL.createObjectURL(file))
     setPreviewUrls((prev) => [...prev, ...newPreviewUrls])
-    setImages((prev) => [...prev, ...files])
+    setImages((prev) => [...prev, ...validFiles])
     setUploadError("")
   }
 

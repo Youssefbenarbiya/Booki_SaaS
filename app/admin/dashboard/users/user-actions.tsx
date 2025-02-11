@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Ban, Shield, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { banUser, unbanUser, setUserRole, deleteUser } from "./actions"
+import { banUser, unbanUser, setUserRole, deleteUser } from "../../../../actions/manageUsersActions"
 import type { User } from "./columns"
 
 export function UserActions({ user }: { user: User }) {

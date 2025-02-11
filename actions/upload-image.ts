@@ -4,16 +4,16 @@ import { writeFile } from "fs/promises"
 import path from "path"
 import { revalidatePath } from "next/cache"
 //import { v2 as cloudinary } from "cloudinary" // ONLY if using Cloudinary
-import { authClient } from "@/auth-client" 
+import { authClient } from "@/auth-client"
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+const MAX_FILE_SIZE = 6 * 1024 * 1024 // 2MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/jpeg"]
-const UPLOAD_DIRECTORY = "/uploads" 
+const UPLOAD_DIRECTORY = "/uploads"
 
 async function uploadImage(file: File): Promise<string> {
   if (file.size > MAX_FILE_SIZE) {
     throw new Error("File size exceeds 2MB limit")
-  }
+  } 
 
   if (!ALLOWED_TYPES.includes(file.type)) {
     throw new Error("Invalid file type (only JPG/PNG/WEBP allowed)")
@@ -65,12 +65,12 @@ export async function handleImageUpload(formData: FormData): Promise<string> {
       await authClient.updateUser({ image: imageUrl })
       revalidatePath("/profile")
       return imageUrl
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (updateErr: any) {
       console.error("Database update error:", updateErr)
       throw new Error("Failed to update profile in database.")
     }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (uploadError: any) {
     console.error("Image upload error:", uploadError)
     throw new Error(uploadError.message || "Image upload failed.")
