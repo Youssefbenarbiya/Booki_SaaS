@@ -20,10 +20,10 @@ export default function DeleteHotelButton({ hotelId }: { hotelId: string }) {
   return (
     <button
       onClick={handleDelete}
-      className="btn btn-sm btn-error"
       disabled={isPending}
+      className="inline-flex items-center rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isPending ? "Deleting..." : "Delete"}
     </button>
   )
-} 
+}

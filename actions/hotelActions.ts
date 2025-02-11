@@ -162,17 +162,11 @@ export async function deleteHotel(hotelId: string) {
 }
 
 export async function getHotels() {
-  try {
-    const hotels = await db.query.hotel.findMany({
-      with: {
-        rooms: true,
-      },
-    })
-    return hotels
-  } catch (error) {
-    console.error("Error getting hotels:", error)
-    throw error
-  }
+  return await db.query.hotel.findMany({
+    with: {
+      rooms: true
+    }
+  })
 }
 
 export async function getHotelById(hotelId: string) {

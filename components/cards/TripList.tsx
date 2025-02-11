@@ -1,25 +1,18 @@
-import { getTrips } from "@/actions/tripActions"
-import Link from "next/link"
 import Image from "next/image"
+import Link from "next/link"
 import { formatPrice } from "@/lib/utils"
-import DeleteTripButton from "./[tripId]/DeleteTripButton"
 
-export default async function TripsPage() {
-  const trips = await getTrips()
+type Trip = Awaited<
+  ReturnType<typeof import("@/actions/searchTrips").searchTrips>
+>[number]
 
+interface TripListProps {
+  trips: Trip[]
+}
+
+export default function TripList({ trips }: TripListProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Trips</h1>
-        <Link
-          href="/admin/dashboard/trips/new"
-          className="mt-4 sm:mt-0 inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          Add New Trip
-        </Link>
-      </div>
-
       {/* Trips List */}
       <div className="flex flex-col gap-6">
         {trips.map((trip) => (
@@ -44,33 +37,26 @@ export default async function TripsPage() {
                 </h2>
                 <p className="text-sm text-gray-500">{trip.destination}</p>
                 <p className="mt-2 font-medium text-lg text-green-600">
-                  {formatPrice(trip.price)}
+                  {formatPrice(Number(trip.price))}
                 </p>
               </div>
               <div className="flex items-center justify-between">
                 <span
                   className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                    trip.isAvailable
+                    trip.capacity > 0
                       ? "text-green-800 bg-green-100"
                       : "text-red-800 bg-red-100"
                   }`}
                 >
-                  {trip.isAvailable ? "Available" : "Not Available"}
+                  {trip.capacity > 0 ? "Available" : "Not Available"}
                 </span>
                 <div className="flex space-x-2">
                   <Link
-                    href={`/admin/dashboard/trips/${trip.id}/edit`}
-                    className="inline-flex items-center rounded-md border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Edit
-                  </Link>
-                  <Link
-                    href={`/admin/dashboard/trips/${trip.id}`}
+                    href={`/trips/${trip.id}`}
                     className="inline-flex items-center rounded-md bg-orange-600 px-3 py-1 text-sm font-medium text-white shadow hover:bg-blue-700 transition-colors"
                   >
-                    View
+                    View Details
                   </Link>
-                  <DeleteTripButton tripId={trip.id} />
                 </div>
               </div>
             </div>

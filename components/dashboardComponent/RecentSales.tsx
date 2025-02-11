@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { formatPrice } from "@/lib/utils"
 
-interface RecentSale {
+interface Sale {
   id: string
   name: string
   email: string
@@ -11,14 +11,14 @@ interface RecentSale {
 }
 
 interface RecentSalesProps {
-  sales: RecentSale[]
+  sales: Sale[]
 }
 
 export function RecentSales({ sales }: RecentSalesProps) {
   return (
     <div className="space-y-8">
       {sales.map((sale) => (
-        <div key={sale.id} className="flex items-center">
+        <div key={`${sale.id}-${sale.date.getTime()}`} className="flex items-center">
           <Avatar className="h-9 w-9">
             <AvatarImage
               src={sale.avatar || ""}

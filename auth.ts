@@ -1,4 +1,3 @@
-// auth.ts
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import db from "./db/drizzle"
@@ -83,5 +82,6 @@ export const auth = betterAuth({
     },
   },
 })
+export type Session = typeof auth.$Infer.Session
 
 export type Auth = typeof auth

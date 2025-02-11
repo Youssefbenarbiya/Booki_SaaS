@@ -80,7 +80,7 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+    <div className="flex min-h-screen ml-[200px]  mt-[50px]">
       {/* Left Column */}
       <div className="w-full md:w-1/ px-8 pb-8 x-col justify-center ">
         <div className="max-w-[480px] mx-auto w-full">
@@ -192,13 +192,13 @@ export default function SignIn() {
       </div>
 
       {/* Right Column */}
-      <div className="w-full md:w-1/2  h-[520px]  relative">
-        <div className="absolute inset-0">
+      <div className="md:w-1/2  h-[520px]  relative w-[30%] mr-[200px]">
+        <div className="absolute inset-y-0 -left-8 right-8 rounded-xl overflow-hidden">
           <Image
             src={slides[currentSlide] || "/assets/loginImg.jpg"}
             alt="Login banner"
             fill
-            className="object-cover"
+            className="object-cover rounded-lg"
           />
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2">
             {slides.map((_, index) => (
