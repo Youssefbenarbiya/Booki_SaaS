@@ -1,3 +1,4 @@
+import { Footer } from "@/components/footer/footer"
 import { NavigationTabs } from "./navigation-tabs"
 import { SearchForm } from "./search-form"
 import { SearchResults } from "./search-results"
@@ -30,7 +31,7 @@ export default async function HomePage({
           backgroundColor: "rgba(0,0,0,0.4)",
         }}
       >
-        <div className="container mx-auto px-4 pt-8">
+        <div className="container mx-auto px-4 pt-8 ">
           <NavigationTabs activeTab={searchType} />
           <div className="max-w-4xl mx-auto mb-12">
             <h1 className="text-4xl font-bold text-center text-white mb-8">
@@ -42,6 +43,7 @@ export default async function HomePage({
       </div>
       {/* Pass the resolved search params to the child component */}
       <SearchResults searchParams={resolvedSearchParams} />
+      <Footer />
     </main>
   )
 }
