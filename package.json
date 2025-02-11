@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "db:push": "bunx drizzle-kit push --config=drizzle.config.ts",
-    "db:studio": "bunx drizzle-kit studio --config=drizzle.config.ts"
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "db:studio": "drizzle-kit studio --config=drizzle.config.ts",
+    "db:drop": "drizzle-kit drop --config=drizzle.config.ts"
   },
   "dependencies": {
     "@better-fetch/fetch": "^1.1.12",
@@ -29,6 +32,7 @@
     "@radix-ui/react-toast": "^1.2.5",
     "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-toggle-group": "^1.1.1",
+    "@tanstack/react-table": "^8.20.6",
     "better-auth": "^1.1.15",
     "checkbox": "^0.0.1",
     "class-variance-authority": "^0.7.1",

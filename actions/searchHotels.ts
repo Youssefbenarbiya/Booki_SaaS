@@ -1,7 +1,7 @@
 "use server"
 
 import db from "@/db/drizzle"
-import { hotel, room } from "@/db/schema"
+import { hotel } from "@/db/schema"
 import { and, like } from "drizzle-orm"
 
 export async function searchHotels(city: string, checkIn: string, checkOut: string) {
