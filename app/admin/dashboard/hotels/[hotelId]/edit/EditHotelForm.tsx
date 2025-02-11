@@ -1,6 +1,6 @@
 // EditHotelForm.tsx
 "use client"
-
+import Image from "next/image"
 import { useTransition, useState } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -22,7 +22,7 @@ interface EditHotelFormProps {
     country: string
     rating: number
     amenities: string[]
-    images: string[] // existing hotel image URLs
+    images: string[] 
     rooms: Array<{
       id: string
       name: string
@@ -31,7 +31,7 @@ interface EditHotelFormProps {
       pricePerNight: string
       roomType: string
       amenities: string[]
-      images: string[] // existing room image URLs
+      images: string[] 
     }>
   }
 }
@@ -304,10 +304,12 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                   <div className="flex gap-2 flex-wrap">
                     {existingHotelImages.map((url, i) => (
                       <div key={i} className="relative">
-                        <img
+                        <Image
                           src={url}
                           alt={`Hotel Image ${i + 1}`}
                           className="w-20 h-20 object-cover rounded"
+                          width={80}
+                          height={80}
                         />
                         <button
                           type="button"
@@ -509,10 +511,12 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                           <div className="flex gap-2 flex-wrap">
                             {existingRoomImages[index].map((url, j) => (
                               <div key={j} className="relative">
-                                <img
+                                <Image
                                   src={url}
                                   alt={`Room ${index + 1} Image ${j + 1}`}
                                   className="w-20 h-20 object-cover rounded"
+                                  width={80}
+                                  height={80}
                                 />
                                 <button
                                   type="button"

@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Home, Plane, Hotel, Users, Settings, LogOut } from "lucide-react"
+import { Home, Plane, Hotel, Users, BookOpen, LogOut } from "lucide-react"
 
 const navItems = [
   { name: "Home", href: "/admin/dashboard", icon: Home },
   { name: "Trips", href: "/admin/dashboard/trips", icon: Plane },
   { name: "Hotels", href: "/admin/dashboard/hotels", icon: Hotel },
   { name: "Users", href: "/admin/dashboard/users", icon: Users },
-  { name: "Settings", href: "/admin/dashboard/settings", icon: Settings },
+  { name: "Blogs", href: "/admin/dashboard/blogs", icon: BookOpen },
 ]
 
 export function Sidebar() {
