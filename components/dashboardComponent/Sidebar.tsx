@@ -19,9 +19,9 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden lg:flex lg:flex-col w-64 bg-white border-r border-gray-200">
+    <aside className="hidden lg:flex lg:flex-col w-64 bg-background border-r border-border">
       <div className="px-4 py-6">
-        <h2 className="text-2xl font-bold text-orange-600">Admin Dashboard</h2>
+        <h2 className="text-2xl font-bold text-primary">Admin Dashboard</h2>
       </div>
       <ScrollArea className="flex-1 px-4">
         <nav className="space-y-2">
@@ -30,8 +30,8 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start",
-                  pathname === item.href && "bg-orange-100 text-orange-600"
+                  "w-full justify-start text-foreground hover:bg-muted",
+                  pathname === item.href && "bg-accent text-accent-foreground"
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />

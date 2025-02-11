@@ -73,20 +73,21 @@ export default function SignUp() {
   }
 
   return (
-    <div className="flex h-screen ">
+    <div className="flex min-h-screen ml-[200px] ">
       {/* Left side - Image */}
-      <div className="hidden lg:block lg:w-[calc(50%-100px)] relative overflow-hidden rounded-lg">
+      <div className="w-[30%] ml-16">
         <Image
           src="/assets/registerImg.jpg"
           alt="Forest view from below"
-          fill
-          className="object-cover"
+          width={400}
+          height={800}
+          className="object-cover rounded-2xl"
           priority
         />
       </div>
 
       {/* Right side - Form */}
-      <div className="w-full lg:w-[calc(50%+100px)] flex flex-col px-8">
+      <div className="w-1/2">
         <div className="max-w-md mx-auto w-full py-8">
           {/* Title */}
           <div>

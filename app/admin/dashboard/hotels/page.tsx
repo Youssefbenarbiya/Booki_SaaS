@@ -19,15 +19,15 @@ export default async function HotelsPage() {
         </Link>
       </div>
 
-      {/* Hotels Grid */}
-      <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3 place-items-center">
+      {/* Hotels List */}
+      <div className="space-y-6">
         {hotels.map((hotel) => (
           <div
             key={hotel.id}
-            className="bg-white rounded-2xl shadow-md overflow-hidden transition transform hover:scale-[1.02] hover:shadow-lg w-full max-w-xs"
+            className="bg-white rounded-2xl shadow-md overflow-hidden transition transform hover:scale-[1.02] hover:shadow-lg w-full flex flex-col md:flex-row items-center"
           >
             {/* Hotel Image */}
-            <figure className="relative h-56 w-full">
+            <figure className="relative w-full md:w-1/3 h-48 md:h-56 flex-shrink-0">
               {hotel.images?.[0] ? (
                 <Image
                   src={hotel.images[0]}
@@ -43,7 +43,7 @@ export default async function HotelsPage() {
             </figure>
 
             {/* Hotel Details */}
-            <div className="p-5 space-y-3">
+            <div className="p-5 w-full md:w-2/3 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-800">
                   {hotel.name}
