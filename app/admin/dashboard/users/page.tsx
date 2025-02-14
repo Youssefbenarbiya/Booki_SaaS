@@ -10,10 +10,15 @@ export default async function UsersPage() {
     limit: 100,
   })
 
+  const formattedUsers = users.map((user) => ({
+    ...user,
+    createdAt: user.createdAt.toISOString(),
+  }))
+
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">User Management</h1>
-      <DataTable columns={columns} data={users} />
+      <DataTable columns={columns} data={formattedUsers} />
     </div>
   )
 }
