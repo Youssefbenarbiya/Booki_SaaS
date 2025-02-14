@@ -15,11 +15,10 @@ interface SearchParams {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: SearchParams | Promise<SearchParams>
+  searchParams: Promise<SearchParams>
 }) {
-  // Await the searchParams so that you get the actual value
-  const resolvedSearchParams = await searchParams
-  const searchType = resolvedSearchParams.type || "trips"
+  const resolvedParams = await searchParams
+  const searchType = resolvedParams.type || "trips"
 
   return (
     <main>
@@ -41,8 +40,7 @@ export default async function HomePage({
           </div>
         </div>
       </div>
-      {/* Pass the resolved search params to the child component */}
-      <SearchResults searchParams={resolvedSearchParams} />
+      <SearchResults searchParams={resolvedParams} />
       <Footer />
     </main>
   )
