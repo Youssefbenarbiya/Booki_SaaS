@@ -5,13 +5,15 @@ import { notFound } from "next/navigation"
 export default async function EditHotelPage({
   params,
 }: {
-  params: { hotelId: string }
+  params: Promise<{ hotelId: string }>
 }) {
-  const hotel = await getHotelById(params.hotelId)
+  const hotelId = (await params).hotelId
+
+  const hotel = await getHotelById(hotelId)
 
   if (!hotel) {
     notFound()
   }
 
   return <EditHotelForm hotel={hotel} />
-} 
+}

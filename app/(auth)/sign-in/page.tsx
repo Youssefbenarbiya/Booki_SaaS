@@ -36,7 +36,7 @@ export default function SignIn() {
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [slides.length])
 
   const {
     register,
