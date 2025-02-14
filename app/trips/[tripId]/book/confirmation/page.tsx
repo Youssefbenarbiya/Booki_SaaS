@@ -8,8 +8,9 @@ import { formatPrice } from "@/lib/utils"
 export default async function BookingConfirmationPage({
   params,
 }: {
-  params: { tripId: string }
+  params: Promise<{ tripId: string }>
 }) {
+  const { tripId } = await params
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -18,7 +19,7 @@ export default async function BookingConfirmationPage({
     redirect("/auth/signin")
   }
 
-  const trip = await getTripById(parseInt(params.tripId))
+  const trip = await getTripById(parseInt(tripId))
 
   if (!trip) {
     redirect("/trips")
@@ -39,8 +40,13 @@ export default async function BookingConfirmationPage({
             <div>
               <h2 className="text-xl font-semibold mb-4">Trip Details</h2>
               <div className="space-y-2">
-                <p><span className="font-medium">Trip:</span> {trip.name}</p>
-                <p><span className="font-medium">Destination:</span> {trip.destination}</p>
+                <p>
+                  <span className="font-medium">Trip:</span> {trip.name}
+                </p>
+                <p>
+                  <span className="font-medium">Destination:</span>{" "}
+                  {trip.destination}
+                </p>
                 <p>
                   <span className="font-medium">Duration:</span>{" "}
                   {new Date(trip.startDate).toLocaleDateString()} -{" "}
@@ -57,7 +63,8 @@ export default async function BookingConfirmationPage({
 
             <div className="text-center space-y-4">
               <p className="text-gray-600">
-                You will receive a confirmation email shortly with all the details.
+                You will receive a confirmation email shortly with all the
+                details.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/dashboard/bookings" className="btn btn-primary">
@@ -73,4 +80,4 @@ export default async function BookingConfirmationPage({
       </div>
     </div>
   )
-} 
+}

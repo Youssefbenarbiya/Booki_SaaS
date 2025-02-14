@@ -55,11 +55,11 @@ export async function createHotel(data: HotelInput) {
             roomData.availabilities.map((availability) => ({
               id: crypto.randomUUID(),
               roomId: roomId,
-              startDate: availability.startDate,
-              endDate: availability.endDate,
+              startDate: availability.startDate.toISOString(),
+              endDate: availability.endDate.toISOString(),
               isAvailable: availability.isAvailable,
-              createdAt: new Date(),
-              updatedAt: new Date(),
+              createdAt: new Date(), 
+              updatedAt: new Date(), 
             }))
           )
         }
@@ -164,8 +164,8 @@ export async function deleteHotel(hotelId: string) {
 export async function getHotels() {
   return await db.query.hotel.findMany({
     with: {
-      rooms: true
-    }
+      rooms: true,
+    },
   })
 }
 

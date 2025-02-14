@@ -6,9 +6,10 @@ import EditTripForm from "./EditTripForm"
 export default async function EditTripPage({
   params,
 }: {
-  params: { tripId: string }
+  params: Promise<{ tripId: string }>
 }) {
-  const trip = await getTripById(parseInt(params.tripId))
+  const { tripId } = await params
+  const trip = await getTripById(parseInt(tripId))
 
   if (!trip) {
     notFound()
@@ -16,13 +17,13 @@ export default async function EditTripPage({
   const transformedTrip = {
     id: trip.id,
     name: trip.name,
-    description: trip.description ?? "", 
+    description: trip.description ?? "",
     destination: trip.destination,
     startDate: new Date(trip.startDate),
-    endDate: new Date(trip.endDate), 
-    price: Number(trip.price), 
+    endDate: new Date(trip.endDate),
+    price: Number(trip.price),
     capacity: trip.capacity,
-    isAvailable: trip.isAvailable ?? false, 
+    isAvailable: trip.isAvailable ?? false,
     images: trip.images.map((img: any) => ({
       id: img.id,
       imageUrl: img.imageUrl,
