@@ -8,8 +8,9 @@ import { formatPrice } from "@/lib/utils"
 export default async function BookRoomPage({
   params,
 }: {
-  params: { roomId: string }
+  params: Promise<{ roomId: string }>
 }) {
+  const { roomId } = await params
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -18,7 +19,7 @@ export default async function BookRoomPage({
     redirect("/auth/signin")
   }
 
-  const room = await getRoomById(params.roomId)
+  const room = await getRoomById(roomId)
 
   if (!room) {
     notFound()
@@ -32,16 +33,28 @@ export default async function BookRoomPage({
         <div className="card bg-base-100 shadow-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Room Summary</h2>
           <div className="space-y-2">
-            <p><span className="font-medium">Room:</span> {room.name}</p>
-            <p><span className="font-medium">Hotel:</span> {room.hotel.name}</p>
-            <p><span className="font-medium">Type:</span> {room.roomType}</p>
-            <p><span className="font-medium">Capacity:</span> {room.capacity} guests</p>
-            <p><span className="font-medium">Price per Night:</span> {formatPrice(room.pricePerNight)}</p>
+            <p>
+              <span className="font-medium">Room:</span> {room.name}
+            </p>
+            <p>
+              <span className="font-medium">Hotel:</span> {room.hotel.name}
+            </p>
+            <p>
+              <span className="font-medium">Type:</span> {room.roomType}
+            </p>
+            <p>
+              <span className="font-medium">Capacity:</span> {room.capacity}{" "}
+              guests
+            </p>
+            <p>
+              <span className="font-medium">Price per Night:</span>{" "}
+              {formatPrice(room.pricePerNight)}
+            </p>
           </div>
         </div>
 
         {/* Booking Form */}
-        <BookRoomForm 
+        <BookRoomForm
           roomId={room.id}
           pricePerNight={parseFloat(room.pricePerNight)}
           userId={session.user.id}
@@ -49,4 +62,4 @@ export default async function BookRoomPage({
       </div>
     </div>
   )
-} 
+}

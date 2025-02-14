@@ -8,9 +8,10 @@ import DeleteTripButton from "./DeleteTripButton"
 export default async function TripDetailsPage({
   params,
 }: {
-  params: { tripId: string }
+  params: Promise<{ tripId: string }>
 }) {
-  const trip = await getTripById(parseInt(params.tripId))
+  const { tripId } = await params
+  const trip = await getTripById(parseInt(tripId))
 
   if (!trip) {
     notFound()

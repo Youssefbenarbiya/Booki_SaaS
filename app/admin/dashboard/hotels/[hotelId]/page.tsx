@@ -4,13 +4,15 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import DeleteHotelButton from "./DeleteHotelButton"
 
+
 export default async function HotelDetailsPage({
   params,
 }: {
-  params: { hotelId: string }
+  params: Promise<{ hotelId: string }>
 }) {
-  const hotel = await getHotelById(params.hotelId)
+  const { hotelId } = await params
 
+  const hotel = await getHotelById(hotelId)
   if (!hotel) {
     notFound()
   }

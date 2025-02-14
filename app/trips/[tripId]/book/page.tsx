@@ -8,8 +8,9 @@ import { formatPrice } from "@/lib/utils"
 export default async function BookTripPage({
   params,
 }: {
-  params: { tripId: string }
+  params: Promise<{ tripId: string }>
 }) {
+  const { tripId } = await params
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -18,7 +19,7 @@ export default async function BookTripPage({
     redirect("/auth/signin")
   }
 
-  const trip = await getTripById(parseInt(params.tripId))
+  const trip = await getTripById(parseInt(tripId))
 
   if (!trip || !trip.isAvailable) {
     notFound()
@@ -32,24 +33,37 @@ export default async function BookTripPage({
         <div className="card bg-base-100 shadow-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Trip Summary</h2>
           <div className="space-y-2">
-            <p><span className="font-medium">Trip:</span> {trip.name}</p>
-            <p><span className="font-medium">Destination:</span> {trip.destination}</p>
-            <p><span className="font-medium">Duration:</span> {" "}
-              {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+            <p>
+              <span className="font-medium">Trip:</span> {trip.name}
             </p>
-            <p><span className="font-medium">Price per Person:</span> {formatPrice(trip.price)}</p>
-            <p><span className="font-medium">Available Spots:</span> {trip.capacity}</p>
+            <p>
+              <span className="font-medium">Destination:</span>{" "}
+              {trip.destination}
+            </p>
+            <p>
+              <span className="font-medium">Duration:</span>{" "}
+              {new Date(trip.startDate).toLocaleDateString()} -{" "}
+              {new Date(trip.endDate).toLocaleDateString()}
+            </p>
+            <p>
+              <span className="font-medium">Price per Person:</span>{" "}
+              {formatPrice(trip.price)}
+            </p>
+            <p>
+              <span className="font-medium">Available Spots:</span>{" "}
+              {trip.capacity}
+            </p>
           </div>
         </div>
 
         {/* Booking Form */}
-        <BookingForm 
-          tripId={trip.id} 
+        <BookingForm
+          tripId={trip.id}
           maxSeats={trip.capacity}
-          pricePerSeat={trip.price}
+          pricePerSeat={parseFloat(trip.price)}
           userId={session.user.id}
         />
       </div>
     </div>
   )
-} 
+}
