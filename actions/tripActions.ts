@@ -33,48 +33,46 @@ export async function createTrip(data: TripInput) {
   try {
     const validatedData = tripSchema.parse(data)
 
-    return await db.transaction(async (tx) => {
-      // Create trip
-      const [trip] = await tx
-        .insert(trips)
-        .values({
-          name: validatedData.name,
-          description: validatedData.description,
-          destination: validatedData.destination,
-          startDate: validatedData.startDate.toISOString(),
-          endDate: validatedData.endDate.toISOString(),
-          price: validatedData.price.toString(),
-          capacity: validatedData.capacity,
-          isAvailable: validatedData.isAvailable,
-        })
-        .returning()
+    // Create trip
+    const [trip] = await db
+      .insert(trips)
+      .values({
+        name: validatedData.name,
+        description: validatedData.description,
+        destination: validatedData.destination,
+        startDate: validatedData.startDate.toISOString(),
+        endDate: validatedData.endDate.toISOString(),
+        price: validatedData.price.toString(),
+        capacity: validatedData.capacity,
+        isAvailable: validatedData.isAvailable,
+      })
+      .returning()
 
-      // Add images
-      if (validatedData.images.length > 0) {
-        await tx.insert(tripImages).values(
-          validatedData.images.map((url) => ({
-            tripId: trip.id,
-            imageUrl: url,
-          }))
-        )
-      }
+    // Add images
+    if (validatedData.images.length > 0) {
+      await db.insert(tripImages).values(
+        validatedData.images.map((url) => ({
+          tripId: trip.id,
+          imageUrl: url,
+        }))
+      )
+    }
 
-      // Add activities
-      if (validatedData.activities?.length) {
-        await tx.insert(tripActivities).values(
-          validatedData.activities.map((activity) => ({
-            tripId: trip.id,
-            activityName: activity.activityName,
-            description: activity.description,
-            scheduledDate: activity.scheduledDate?.toISOString(),
-          }))
-        )
-      }
+    // Add activities
+    if (validatedData.activities?.length) {
+      await db.insert(tripActivities).values(
+        validatedData.activities.map((activity) => ({
+          tripId: trip.id,
+          activityName: activity.activityName,
+          description: activity.description,
+          scheduledDate: activity.scheduledDate?.toISOString(),
+        }))
+      )
+    }
 
-      revalidatePath("/admin/dashboard/trips")
-      revalidatePath("/")
-      return trip
-    })
+    revalidatePath("/admin/dashboard/trips")
+    revalidatePath("/")
+    return trip
   } catch (error) {
     console.error("Error creating trip:", error)
     throw error
@@ -118,51 +116,49 @@ export async function updateTrip(id: number, data: TripInput) {
   try {
     const validatedData = tripSchema.parse(data)
 
-    return await db.transaction(async (tx) => {
-      // Update trip
-      const [trip] = await tx
-        .update(trips)
-        .set({
-          name: validatedData.name,
-          description: validatedData.description,
-          destination: validatedData.destination,
-          startDate: validatedData.startDate.toISOString(),
-          endDate: validatedData.endDate.toISOString(),
-          price: validatedData.price.toString(),
-          capacity: validatedData.capacity,
-          isAvailable: validatedData.isAvailable,
-        })
-        .where(eq(trips.id, id))
-        .returning()
+    // Update trip
+    const [trip] = await db
+      .update(trips)
+      .set({
+        name: validatedData.name,
+        description: validatedData.description,
+        destination: validatedData.destination,
+        startDate: validatedData.startDate.toISOString(),
+        endDate: validatedData.endDate.toISOString(),
+        price: validatedData.price.toString(),
+        capacity: validatedData.capacity,
+        isAvailable: validatedData.isAvailable,
+      })
+      .where(eq(trips.id, id))
+      .returning()
 
-      // Update images
-      await tx.delete(tripImages).where(eq(tripImages.tripId, id))
-      if (validatedData.images.length > 0) {
-        await tx.insert(tripImages).values(
-          validatedData.images.map((url) => ({
-            tripId: trip.id,
-            imageUrl: url,
-          }))
-        )
-      }
+    // Update images
+    await db.delete(tripImages).where(eq(tripImages.tripId, id))
+    if (validatedData.images.length > 0) {
+      await db.insert(tripImages).values(
+        validatedData.images.map((url) => ({
+          tripId: trip.id,
+          imageUrl: url,
+        }))
+      )
+    }
 
-      // Update activities
-      await tx.delete(tripActivities).where(eq(tripActivities.tripId, id))
-      if (validatedData.activities?.length) {
-        await tx.insert(tripActivities).values(
-          validatedData.activities.map((activity) => ({
-            tripId: trip.id,
-            activityName: activity.activityName,
-            description: activity.description,
-            scheduledDate: activity.scheduledDate?.toISOString(),
-          }))
-        )
-      }
+    // Update activities
+    await db.delete(tripActivities).where(eq(tripActivities.tripId, id))
+    if (validatedData.activities?.length) {
+      await db.insert(tripActivities).values(
+        validatedData.activities.map((activity) => ({
+          tripId: trip.id,
+          activityName: activity.activityName,
+          description: activity.description,
+          scheduledDate: activity.scheduledDate?.toISOString(),
+        }))
+      )
+    }
 
-      revalidatePath("/admin/dashboard/trips")
-      revalidatePath("/")
-      return trip
-    })
+    revalidatePath("/admin/dashboard/trips")
+    revalidatePath("/")
+    return trip
   } catch (error) {
     console.error("Error updating trip:", error)
     throw error
