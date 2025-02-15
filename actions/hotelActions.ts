@@ -10,7 +10,6 @@ export async function createHotel(data: HotelInput) {
     const validatedData = hotelSchema.parse(data)
     const hotelId = crypto.randomUUID()
 
-    // Create hotel
     const [newHotel] = await db
       .insert(hotel)
       .values({
