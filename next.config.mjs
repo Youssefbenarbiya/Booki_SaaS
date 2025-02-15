@@ -1,12 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
-      "localhost",
-      "res.cloudinary.com",
-      "platform-lookaside.fbsbx.com",
-      "booki-hazel.vercel.app", // Fixed spacing in hostname
-    ],
     remotePatterns: [
       {
         protocol: "https",
@@ -18,11 +12,6 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverActions: {
-      bodySizeLimit: "10mb",
-    },
-  },
 }
 
-module.exports = nextConfig
+export default nextConfig
