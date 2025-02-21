@@ -1,7 +1,6 @@
 "use client"
 import Image from "next/image"
 import Link from "next/link"
-import { useParams } from "next/navigation"
 
 interface BlogPost {
   title: string
@@ -15,8 +14,6 @@ interface BlogPost {
 }
 
 export default function BlogDetail() {
-  const params = useParams()
-  
   const blogPost: BlogPost = {
     title: "Travel Stories For Now and the Future",
     category: "Perfect | Tips",
@@ -26,7 +23,7 @@ export default function BlogDetail() {
         title: "Rice Terraces, Tegalalang",
         description: `The Tegalalang Rice Terraces in Ubud are famous for their beautiful scenes of rice paddies and their innovative irrigation system. Known as subak, the traditional Balinese irrigation system is now a UNESCO World Heritage Site. The rice terraces offer a perfect vantage point to observe the traditional Balinese farming techniques that have been passed down through generations.
 
-        The terraces are a testament to the Balinese people's harmonious relationship with nature, showcasing their sophisticated farming methods while creating breathtaking landscapes that attract visitors from around the world.`,
+The terraces are a testament to the Balinese people's harmonious relationship with nature, showcasing their sophisticated farming methods while creating breathtaking landscapes that attract visitors from around the world.`,
         image: "/assets/blog1.jpeg"
       }
     ]
@@ -135,4 +132,4 @@ export default function BlogDetail() {
       </div>
     </div>
   )
-} 
+}
