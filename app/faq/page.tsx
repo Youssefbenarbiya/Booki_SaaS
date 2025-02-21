@@ -7,9 +7,11 @@ import {
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Mail } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 export default function FAQ() {
+  const router = useRouter()
   const faqs = [
     {
       question: "What types of hotels and rooms can I book?",
@@ -47,13 +49,17 @@ export default function FAQ() {
       question:
         "How do I prepare for my tour and what should I expect on the day of the tour?",
       answer:
-        "Once you’ve booked your tour, we’ll send you a detailed confirmation email with everything you need to know. This includes what to bring, what to wear, and what to expect on the day of your tour [3].",
+        "Once you've booked your tour, we'll send you a detailed confirmation email with everything you need to know. This includes what to bring, what to wear, and what to expect on the day of your tour [3].",
     },
   ]
 
   const [expandedItem, setExpandedItem] = useState<string | undefined>(
     undefined
   )
+
+  const handleContactClick = () => {
+    router.push('/contact')
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
@@ -101,7 +107,10 @@ export default function FAQ() {
         <h2 className="text-xl font-semibold mb-4">
           Can&apos;t find what you are looking for?
         </h2>
-        <Button className="bg-[#F68B1F] hover:bg-[#E57D1E] text-white">
+        <Button 
+          className="bg-[#F68B1F] hover:bg-[#E57D1E] text-white"
+          onClick={handleContactClick}
+        >
           <Mail className="mr-2 h-4 w-4" />
           Email Us
         </Button>
