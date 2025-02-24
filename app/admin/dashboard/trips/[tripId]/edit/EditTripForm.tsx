@@ -67,22 +67,18 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
 
   async function onSubmit(data: TripInput) {
     try {
-      // Filter out blob URLs (new images not yet uploaded)
-      // This gives you the existing image URLs that the user did not remove.
-      const existingImageUrls = imagePreviews.filter(
-        (url) => !url.startsWith("blob:")
-      )
+      // Handle existing and new images
+      let imageUrls = trip.images.map((img) => img.imageUrl)
 
-      // Upload new images if there are any
-      let newImageUrls: string[] = []
       if (images.length > 0) {
         try {
-          newImageUrls = await Promise.all(
+          const newUrls = await Promise.all(
             images.map(async (file) => {
               const formData = await fileToFormData(file)
               return uploadImages(formData)
             })
           )
+          imageUrls = [...imageUrls, ...newUrls]
         } catch (error) {
           console.error("Error uploading images:", error)
           setUploadError("Failed to upload images")
@@ -90,16 +86,12 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
         }
       }
 
-      // Combine the remaining existing images with the newly uploaded ones.
-      const imageUrls = [...existingImageUrls, ...newImageUrls]
-
-      // Prepare the final data to update the trip.
-      const formattedData: TripInput = {
+      // Update trip with all image URLs
+      const formattedData = {
         ...data,
         images: imageUrls,
       }
 
-      // Call the server action to update the trip.
       await updateTrip(trip.id, formattedData)
       router.push("/admin/dashboard/trips")
       router.refresh()

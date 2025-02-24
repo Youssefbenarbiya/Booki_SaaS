@@ -2,6 +2,8 @@ import { Footer } from "@/components/footer/footer"
 import { NavigationTabs } from "./navigation-tabs"
 import { SearchForm } from "./search-form"
 import { SearchResults } from "./search-results"
+import TopVacations from "@/components/home/topVacations"
+import TopDestinations from "@/components/home/topDestinations"
 
 interface SearchParams {
   type?: string
@@ -18,29 +20,32 @@ export default async function HomePage({
   searchParams: Promise<SearchParams>
 }) {
   const resolvedParams = await searchParams
-  const searchType = resolvedParams.type || "trips"
+  const searchType = resolvedParams.type || "hotels"
 
   return (
     <main>
       <div
-        className="h-[400px] relative bg-cover bg-center"
+        className="min-h-[600px] relative bg-cover bg-center flex items-center"
         style={{
-          backgroundImage: "url('/hero-bg.jpg')",
+          backgroundImage: "url('hero-bg.jpg')",
           backgroundBlendMode: "overlay",
-          backgroundColor: "rgba(0,0,0,0.4)",
+          backgroundColor: "rgba(0,0,0,0.3)",
         }}
       >
-        <div className="container mx-auto px-4 pt-8 ">
-          <NavigationTabs activeTab={searchType} />
-          <div className="max-w-4xl mx-auto mb-12">
-            <h1 className="text-4xl font-bold text-center text-white mb-8">
-              Find Your Next {searchType === "trips" ? "Adventure" : "Stay"}
-            </h1>
-            <SearchForm type={searchType as "trips" | "hotels"} />
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="relative">
+              <div className="absolute -top-10 left-0">
+                <NavigationTabs activeTab={searchType} />
+              </div>
+              <SearchForm type={searchType as "trips" | "hotels"} />
+            </div>
           </div>
         </div>
       </div>
       <SearchResults searchParams={resolvedParams} />
+      <TopVacations />
+      <TopDestinations/>
       <Footer />
     </main>
   )

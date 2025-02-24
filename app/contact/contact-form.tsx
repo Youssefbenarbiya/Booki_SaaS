@@ -15,19 +15,28 @@ import {
   FormField,
   FormItem,
   FormMessage,
+  FormLabel,
 } from "@/components/ui/form"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // Import the server action to send the email
 import { sendContactForm } from "./actions"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { countries } from "@/lib/countries" // You'll need to create this
 
 // Define the form schema (same as in actions.ts)
 const formSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number is required"),
+  countryCode: z.string().min(1, "Country code is required"),
+  phone: z.string().min(6, "Phone number is required"),
   subject: z.enum(["general-inquiry", "Hotels", "Trips"]),
   message: z.string().min(10, "Message is required"),
 })
@@ -42,9 +51,9 @@ export function ContactForm() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      email: "",
+      countryCode: "+216", // Tunisia country code
       phone: "",
-      subject: "general-inquiry", // Default subject
+      subject: "general-inquiry",
       message: "",
     },
   })
@@ -62,7 +71,7 @@ export function ContactForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {/* Display submission message */}
         {submitMessage && (
           <div className="p-4 rounded-md bg-green-100 text-green-700">
@@ -70,45 +79,53 @@ export function ContactForm() {
           </div>
         )}
 
-        {/* Name fields */}
-        <div className="grid sm:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="firstName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>First Name</FormLabel>
+              <FormControl>
+                <Input placeholder="First Name" {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="lastName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Last Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Last Name" {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <div className="flex gap-2">
           <FormField
             control={form.control}
-            name="firstName"
+            name="countryCode"
             render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Input placeholder="First Name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Input placeholder="Last Name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Email and Phone fields */}
-        <div className="grid sm:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Input placeholder="Email" type="email" {...field} />
-                </FormControl>
-                <FormMessage />
+              <FormItem className="w-[120px]">
+                <FormLabel>Code</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Code" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="+216">🇹🇳 +216</SelectItem>
+                    <SelectItem value="+33">🇫🇷 +33</SelectItem>
+                    <SelectItem value="+1">🇺🇸 +1</SelectItem>
+                    {/* Add more country codes as needed */}
+                  </SelectContent>
+                </Select>
               </FormItem>
             )}
           />
@@ -116,75 +133,49 @@ export function ContactForm() {
             control={form.control}
             name="phone"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex-1">
+                <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="Phone Number" type="tel" {...field} />
+                  <Input placeholder="Phone Number" {...field} />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
-        {/* Subject selection */}
         <FormField
           control={form.control}
           name="subject"
           render={({ field }) => (
             <FormItem>
+              <FormLabel>Subject</FormLabel>
               <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value="general-inquiry"
-                      id="general-inquiry"
-                    />
-                    <Label htmlFor="general-inquiry">general-inquiry</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Hotels" id="Hotels" />
-                    <Label htmlFor="Hotels">Hotels</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Trips" id="Trips" />
-                    <Label htmlFor="Trips">Trips</Label>
-                  </div>
-                </RadioGroup>
+                <Select {...field}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general-inquiry">General Inquiry</SelectItem>
+                    <SelectItem value="Hotels">Hotels</SelectItem>
+                    <SelectItem value="Trips">Trips</SelectItem>
+                  </SelectContent>
+                </Select>
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
-
-        {/* Message field */}
         <FormField
           control={form.control}
           name="message"
           render={({ field }) => (
             <FormItem>
+              <FormLabel>Message</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Write your message..."
-                  className="min-h-[150px]"
-                  {...field}
-                />
+                <Textarea placeholder="Your message" {...field} />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
-
-        {/* Submit button */}
-        <Button
-          type="submit"
-          className="w-full bg-orange-500 hover:bg-orange-600"
-        >
-          Send Message
-        </Button>
+        <Button type="submit">Send Message</Button>
       </form>
     </Form>
   )

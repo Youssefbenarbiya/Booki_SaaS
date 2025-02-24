@@ -10,8 +10,8 @@ import nodemailer from "nodemailer"
 const formSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number is required"),
+  countryCode: z.string().min(1, "Country code is required"),
+  phone: z.string().min(6, "Phone number is required"),
   subject: z.enum(["general-inquiry", "Hotels", "Trips"]),
   message: z.string().min(10, "Message is required"),
 })
@@ -32,14 +32,13 @@ export const sendContactForm = async (values: Inputs) => {
     // 2. Define the email options
     const mailOptions = {
       from: process.env.EMAIL_FROM, // Sender address
-      to: process.env.EMAIL_FROM, // Recipient address
+      to: "youssefbenarbia345@gmail.com", // Set default email here
       subject: `Contact Form Submission - ${values.subject}`,
       html: `
         <h1>Contact Form Submission</h1>
         <p><strong>First Name:</strong> ${values.firstName}</p>
         <p><strong>Last Name:</strong> ${values.lastName}</p>
-        <p><strong>Email:</strong> ${values.email}</p>
-        <p><strong>Phone:</strong> ${values.phone}</p>
+        <p><strong>Phone:</strong> ${values.countryCode} ${values.phone}</p>
         <p><strong>Subject:</strong> ${values.subject}</p>
         <p><strong>Message:</strong></p>
         <p>${values.message}</p>

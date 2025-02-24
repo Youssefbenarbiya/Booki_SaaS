@@ -24,9 +24,9 @@ export default function BlogDetail() {
         description: `The Tegalalang Rice Terraces in Ubud are famous for their beautiful scenes of rice paddies and their innovative irrigation system. Known as subak, the traditional Balinese irrigation system is now a UNESCO World Heritage Site. The rice terraces offer a perfect vantage point to observe the traditional Balinese farming techniques that have been passed down through generations.
 
 The terraces are a testament to the Balinese people's harmonious relationship with nature, showcasing their sophisticated farming methods while creating breathtaking landscapes that attract visitors from around the world.`,
-        image: "/assets/blog1.jpeg"
-      }
-    ]
+        image: "/assets/blog1.jpeg",
+      },
+    ],
   }
 
   return (
@@ -36,7 +36,9 @@ The terraces are a testament to the Balinese people's harmonious relationship wi
         {/* Header */}
         <div className="mb-8">
           <div className="text-sm text-gray-600 mb-2">{blogPost.category}</div>
-          <h1 className="text-4xl font-serif font-bold mb-4">{blogPost.title}</h1>
+          <h1 className="text-4xl font-serif font-bold mb-4">
+            {blogPost.title}
+          </h1>
         </div>
 
         {/* Hero Image */}
@@ -78,7 +80,11 @@ The terraces are a testament to the Balinese people's harmonious relationship wi
           <h3 className="text-xl font-semibold mb-4">Recent Post</h3>
           <div className="space-y-4">
             {[1, 2, 3].map((_, index) => (
-              <Link href={`/blog/recent-post-${index}`} key={index} className="group flex gap-3">
+              <Link
+                href={`/blog/recent-post-${index}`}
+                key={index}
+                className="group flex gap-3"
+              >
                 <div className="relative w-20 h-20 shrink-0 rounded overflow-hidden">
                   <Image
                     src="/assets/blog1.jpeg"
@@ -102,13 +108,22 @@ The terraces are a testament to the Balinese people's harmonious relationship wi
         <div>
           <h3 className="text-xl font-semibold mb-4">Categories</h3>
           <div className="space-y-2">
-            <Link href="/blog?category=perfect" className="block text-gray-600 hover:text-orange-500">
+            <Link
+              href="/blog?category=perfect"
+              className="block text-gray-600 hover:text-orange-500"
+            >
               Perfect
             </Link>
-            <Link href="/blog?category=tips" className="block text-gray-600 hover:text-orange-500">
+            <Link
+              href="/blog?category=tips"
+              className="block text-gray-600 hover:text-orange-500"
+            >
               Tips
             </Link>
-            <Link href="/blog?category=destination" className="block text-gray-600 hover:text-orange-500">
+            <Link
+              href="/blog?category=destination"
+              className="block text-gray-600 hover:text-orange-500"
+            >
               Destination
             </Link>
           </div>
@@ -118,7 +133,8 @@ The terraces are a testament to the Balinese people's harmonious relationship wi
         <div className="bg-orange-50 p-6 rounded-lg">
           <h3 className="text-xl font-semibold mb-2">Have Any Question?</h3>
           <p className="text-gray-600 mb-4">
-            Ready to help if you have any questions, we will help provide a solution.
+            Ready to help if you have any questions, we will help provide a
+            solution.
           </p>
           <div className="flex items-center text-orange-500">
             <span className="mr-2">📞</span>

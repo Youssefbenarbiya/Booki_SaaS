@@ -72,52 +72,45 @@ export default async function Header() {
             </ul>
           </nav>
           <div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild className="mr-[100px]">
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
-                {session ? (
-                  <>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                          {session.user?.name}
-                        </p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                          {session.user?.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuItem>
-                      <Link href="/user/profile" className="w-full">
-                        Profile
-                      </Link>
-                    </DropdownMenuItem>
-                    {session.user.role == "admin" && (
-                      <DropdownMenuItem>
-                        <Link href="/admin/dashboard" className="w-full">
-                          Dashboard
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-
-                    <DropdownMenuItem className="p-0 mb-1">
-                      <SignoutButton />
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings" className="w-full">
-                      Settings
+            {session ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild className="mr-[100px]">
+                  <Button variant="ghost" size="icon">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {session.user?.name}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {session.user?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem>
+                    <Link href="/user/profile" className="w-full">
+                      Profile
                     </Link>
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {session.user.role == "admin" && (
+                    <DropdownMenuItem>
+                      <Link href="/admin/dashboard" className="w-full">
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem className="p-0 mb-1">
+                    <SignoutButton />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="mr-[100px] w-10 h-10" />
+            )}
           </div>
         </div>
       </div>

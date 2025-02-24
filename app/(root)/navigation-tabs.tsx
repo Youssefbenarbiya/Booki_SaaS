@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation"
 
 export function NavigationTabs({
-  activeTab = "trips",
+  activeTab = "trip",
 }: {
   activeTab?: string
 }) {
@@ -17,27 +17,27 @@ export function NavigationTabs({
   }
 
   return (
-    <div className="flex justify-center mb-8">
-      <div className="inline-flex bg-white rounded-lg p-1 shadow-md">
+    <div className="flex">
+      <div className="inline-flex bg-white rounded-t-lg border-t border-x border-gray-200">
         <button
-          onClick={() => handleTabChange("trips")}
-          className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === "trips"
-              ? "bg-orange-500 text-white"
-              : "text-gray-500 hover:text-gray-700"
+          onClick={() => handleTabChange("trip")}
+          className={`px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
+            activeTab === "trip"
+              ? "bg-white text-black border-b-2 border-yellow-400"
+              : "text-gray-600 hover:text-gray-900"
           }`}
         >
-          Trips
+          ✈️ Trip
         </button>
         <button
           onClick={() => handleTabChange("hotels")}
-          className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
             activeTab === "hotels"
-              ? "bg-orange-500 text-white"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-white text-black border-b-2 border-yellow-400"
+              : "text-gray-600 hover:text-gray-900"
           }`}
         >
-          Hotels
+          🏨 Hotels
         </button>
       </div>
     </div>

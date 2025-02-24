@@ -28,7 +28,7 @@ const hotelSearchSchema = z.object({
 })
 
 interface SearchFormProps {
-  type: "trips" | "hotels"
+  type: "trips" | "hotels" | "flight" | "rent"
 }
 
 export function SearchForm({ type }: SearchFormProps) {
@@ -66,9 +66,9 @@ export function SearchForm({ type }: SearchFormProps) {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="bg-white rounded-lg shadow-lg p-2"
+          className="bg-white rounded-lg border border-gray-200 shadow-sm"
         >
-          <div className="flex flex-col md:flex-row gap-2">
+          <div className="flex flex-col md:flex-row gap-2 p-2">
             <FormField
               control={form.control}
               name="city"
@@ -182,9 +182,9 @@ export function SearchForm({ type }: SearchFormProps) {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="bg-white rounded-lg shadow-lg p-2"
+        className="bg-white rounded-lg border border-gray-200 shadow-sm"
       >
-        <div className="flex flex-col md:flex-row gap-2">
+        <div className="flex flex-col md:flex-row gap-2 p-2">
           <FormField
             control={form.control}
             name="destination"
