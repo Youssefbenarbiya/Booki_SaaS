@@ -1,7 +1,6 @@
 import { Footer } from "@/components/footer/footer"
 import { NavigationTabs } from "./navigation-tabs"
 import { SearchForm } from "./search-form"
-import { SearchResults } from "./search-results"
 import TopVacations from "@/components/home/topVacations"
 import TopDestinations from "@/components/home/topDestinations"
 
@@ -38,14 +37,13 @@ export default async function HomePage({
               <div className="absolute -top-10 left-0">
                 <NavigationTabs activeTab={searchType} />
               </div>
-              <SearchForm type={searchType as "trips" | "hotels"} />
+              <SearchForm type={searchType as "trips" | "hotels" | "rent"} />
             </div>
           </div>
         </div>
       </div>
-      <SearchResults searchParams={resolvedParams} />
       <TopVacations />
-      <TopDestinations/>
+      <TopDestinations />
       <Footer />
     </main>
   )

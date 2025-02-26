@@ -2,11 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation"
 
-export function NavigationTabs({
-  activeTab = "trip",
-}: {
-  activeTab?: string
-}) {
+export function NavigationTabs({ activeTab = "trip" }: { activeTab?: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -38,6 +34,16 @@ export function NavigationTabs({
           }`}
         >
           🏨 Hotels
+        </button>
+        <button
+          onClick={() => handleTabChange("rent")}
+          className={`px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
+            activeTab === "rent"
+              ? "bg-white text-black border-b-2 border-yellow-400"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          🚗 Rent
         </button>
       </div>
     </div>
