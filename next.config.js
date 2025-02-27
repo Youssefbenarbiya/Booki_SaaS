@@ -5,7 +5,7 @@ const nextConfig = {
       "localhost",
       "res.cloudinary.com",
       "platform-lookaside.fbsbx.com",
-      "booki-hazel.vercel.app", // Fixed spacing in hostname
+      "booki-hazel.vercel.app", 
     ],
     remotePatterns: [
       {

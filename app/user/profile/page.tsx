@@ -1,9 +1,7 @@
 import { auth } from "@/auth"
 import { Metadata } from "next"
-import { headers } from "next/headers"
 import { UpdateUserInfo } from "./profile-form"
-import { redirect } from "next/navigation"
-import Image from "next/image"
+import { headers } from "next/headers"
 
 export const metadata: Metadata = {
   title: `Customer Profile`,
@@ -11,30 +9,20 @@ export const metadata: Metadata = {
 
 export default async function ProfilePage() {
   const session = await auth.api.getSession({
+    query: {
+      disableCookieCache: true,
+    },
     headers: await headers(),
   })
+
   if (!session) {
-    return redirect("/sign-in")
+    return null
   }
+
   return (
     <div>
-      <div className="relative w-full h-[200px] ">
-        <Image
-          src="/assets/ProfileBanner.jpg"
-          alt="Profile banner"
-          fill
-          priority
-          sizes="100vw"
-          style={{
-            objectFit: "cover",
-            objectPosition: "top",
-          }}
-        />
-      </div>
-      <div className="mb-24" />
-
+      <div className="bg-gray-100 h-[200px]">{/* Profile Banner */}</div>
       <UpdateUserInfo session={session} />
-      <div className="mb-24" />
     </div>
   )
 }
