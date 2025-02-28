@@ -48,10 +48,7 @@ export default function SignUp() {
       password: values.password,
       name: values.name,
       phoneNumber: values.phoneNumber,
-      // Pass isAgency through metadata so the database hook can handle it
-      metadata: {
-        isAgency: values.isAgency,
-      },
+      role: values.isAgency ? "agency" : "user",
     }
 
     console.log("Data sent to authClient:", data)

@@ -3,30 +3,11 @@ import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import db from "./db/drizzle"
 import { sendEmail } from "./actions/email"
-import { admin, openAPI } from "better-auth/plugins"
+import { openAPI } from "better-auth/plugins"
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
-  databaseHooks: {
-    user: {
-      create: {
-        before: async (user: any) => {
-          // Get the isAgency value from the metadata
-          const isAgency = user.metadata?.isAgency
-
-          // Return modified user data
-          return {
-            data: {
-              ...user,
-              role: isAgency ? "agency" : "user",
-              // Remove metadata from final user object
-              metadata: undefined,
-            },
-          }
-        },
-      },
-    },
-  },
+  
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
@@ -67,11 +48,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    openAPI(),
-    admin({
-      roles: ["user", "admin", "agency"],
-      impersonationSessionDuration: 60 * 60 * 24 * 7,
-    }),
+    openAPI()
   ],
   emailAndPassword: {
     enabled: true,
