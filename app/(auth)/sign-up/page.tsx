@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import {
   Form,
@@ -37,38 +38,43 @@ export default function SignUp() {
       password: "",
       confirmPassword: "",
       phoneNumber: "",
+      isAgency: false,
     },
   })
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
-    await authClient.signUp.email(
-      {
-        email: values.email,
-        password: values.password,
-        name: values.name,
-        phoneNumber: values.phoneNumber,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
-      {
-        onRequest: () => {
-          setPending(true)
-        },
-        onSuccess: () => {
-          toast({
-            title: "Account created",
-            description:
-              "Your account has been created. Check your email for a verification link.",
-          })
-        },
-        onError: (ctx) => {
-          console.log("error", ctx)
-          toast({
-            title: "Something went wrong",
-            description: ctx.error.message ?? "Something went wrong.",
-          })
-        },
-      }
-    )
+    const data = {
+      email: values.email,
+      password: values.password,
+      name: values.name,
+      phoneNumber: values.phoneNumber,
+      // Pass isAgency through metadata so the database hook can handle it
+      metadata: {
+        isAgency: values.isAgency,
+      },
+    }
+
+    console.log("Data sent to authClient:", data)
+
+    await authClient.signUp.email(data as any, {
+      onRequest: () => {
+        setPending(true)
+      },
+      onSuccess: () => {
+        toast({
+          title: "Account created",
+          description:
+            "Your account has been created. Check your email for a verification link.",
+        })
+      },
+      onError: (ctx) => {
+        console.log("error", ctx)
+        toast({
+          title: "Something went wrong",
+          description: ctx.error.message ?? "Something went wrong.",
+        })
+      },
+    })
     setPending(false)
   }
 
@@ -140,6 +146,7 @@ export default function SignUp() {
                   </FormItem>
                 )}
               />
+
               {/* Phone Number Input */}
               <FormField
                 control={form.control}
@@ -163,6 +170,7 @@ export default function SignUp() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="password"
@@ -231,6 +239,24 @@ export default function SignUp() {
                       </FormControl>
                     </div>
                     <FormMessage className="ml-[136px]" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isAgency"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 ml-[136px]">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Register as an Agency</FormLabel>
+                    </div>
                   </FormItem>
                 )}
               />

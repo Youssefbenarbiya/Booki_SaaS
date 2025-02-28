@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import db from "./db/drizzle"
@@ -6,6 +7,26 @@ import { admin, openAPI } from "better-auth/plugins"
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user: any) => {
+          // Get the isAgency value from the metadata
+          const isAgency = user.metadata?.isAgency
+
+          // Return modified user data
+          return {
+            data: {
+              ...user,
+              role: isAgency ? "agency" : "user",
+              // Remove metadata from final user object
+              metadata: undefined,
+            },
+          }
+        },
+      },
+    },
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
@@ -13,7 +34,7 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      role: { type: "string", required: true, default: () => "user" },
+      role: { type: "string", required: true },
       phoneNumber: { type: "string", required: true },
       address: { type: "string", required: false },
       image: { type: "string", required: false },
@@ -48,7 +69,7 @@ export const auth = betterAuth({
   plugins: [
     openAPI(),
     admin({
-      roles: ["user", "admin"],
+      roles: ["user", "admin", "agency"],
       impersonationSessionDuration: 60 * 60 * 24 * 7,
     }),
   ],
@@ -73,11 +94,11 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, token }) => {
-      const verificationUrl = `${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${token}`
+      const verificationUrl = `${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${token}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`
       await sendEmail({
         to: user.email,
         subject: "Verify your email",
-        text: `Verify email: ${verificationUrl}`,
+        text: `Click the link to verify your email of Booki : ${verificationUrl}`,
       })
     },
   },

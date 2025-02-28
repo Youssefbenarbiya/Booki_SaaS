@@ -29,6 +29,7 @@ export const signUpSchema = object({
   email: getEmailSchema(),
   password: getPasswordSchema("password"),
   confirmPassword: getPasswordSchema("confirmPassword"),
+  isAgency: z.boolean().optional(),
   phoneNumber: getPhoneNumberSchema(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -75,7 +76,7 @@ export const resetPasswordSchema = object({
 //     .max(100, "Address must be at most 100 characters")
 //     .optional(),
 // })
-// 
+//
 
 export const updateUserInfoSchema = z.object({
   name: z
