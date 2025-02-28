@@ -1,9 +1,10 @@
+// app/home/page.tsx
 import { Footer } from "@/components/footer/footer"
 import { NavigationTabs } from "./navigation-tabs"
 import { SearchForm } from "./search-form"
 import TopVacations from "@/components/home/topVacations"
 import TopDestinations from "@/components/home/topDestinations"
-
+import { SearchResults } from "./search-results"
 interface SearchParams {
   type?: string
   destination?: string
@@ -42,6 +43,7 @@ export default async function HomePage({
           </div>
         </div>
       </div>
+      <SearchResults searchParams={resolvedParams} />
       <TopVacations />
       <TopDestinations />
       <Footer />

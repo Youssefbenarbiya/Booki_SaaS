@@ -2,7 +2,11 @@
 
 import { useRouter, useSearchParams } from "next/navigation"
 
-export function NavigationTabs({ activeTab = "trip" }: { activeTab?: string }) {
+export function NavigationTabs({
+  activeTab = "trips",
+}: {
+  activeTab?: string
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -16,14 +20,14 @@ export function NavigationTabs({ activeTab = "trip" }: { activeTab?: string }) {
     <div className="flex">
       <div className="inline-flex bg-white rounded-t-lg border-t border-x border-gray-200">
         <button
-          onClick={() => handleTabChange("trip")}
+          onClick={() => handleTabChange("trips")}
           className={`px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
-            activeTab === "trip"
+            activeTab === "trips"
               ? "bg-white text-black border-b-2 border-yellow-400"
               : "text-gray-600 hover:text-gray-900"
           }`}
         >
-          ✈️ Trip
+          ✈️ Trips
         </button>
         <button
           onClick={() => handleTabChange("hotels")}
