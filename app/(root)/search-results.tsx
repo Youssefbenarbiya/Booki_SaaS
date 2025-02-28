@@ -66,11 +66,15 @@ export async function SearchResults({
       searchParams.checkIn &&
       searchParams.checkOut
     ) {
+      console.log("Hotel search params:", searchParams)
+
       const hotels = await searchHotels(
         searchParams.city,
         searchParams.checkIn,
         searchParams.checkOut
       )
+
+      console.log(`Search returned ${hotels.length} hotels`)
 
       if (hotels.length === 0) {
         return (
