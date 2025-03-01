@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { PriceRangeFilter } from "./PriceRangeFilter"
 import { StarRatingFilter } from "./StarRatingFilter"
 import { AmenitiesFilter } from "./AmenitiesFilter"
+import { SearchFilterBar } from "./SearchFilterBar"
 import { X } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "../ui/separator"
@@ -15,6 +16,11 @@ interface HotelFilterProps {
   className?: string
   onMobileClose?: () => void
   isMobileView?: boolean
+  searchParams?: {
+    city?: string
+    checkIn?: string
+    checkOut?: string
+  }
 }
 
 export function HotelFilter({
@@ -22,6 +28,7 @@ export function HotelFilter({
   className = "",
   onMobileClose,
   isMobileView = false,
+  searchParams = {},
 }: HotelFilterProps) {
   const [filters, setFilters] = useState({
     priceRange: { min: 0, max: 1000 },
@@ -73,6 +80,14 @@ export function HotelFilter({
             </Button>
           )}
         </div>
+
+        <SearchFilterBar
+          initialCity={searchParams?.city}
+          initialCheckIn={searchParams?.checkIn}
+          initialCheckOut={searchParams?.checkOut}
+        />
+
+        <Separator className="my-4" />
 
         <Button
           variant="outline"

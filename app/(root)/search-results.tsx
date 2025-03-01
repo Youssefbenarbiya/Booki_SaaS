@@ -84,10 +84,6 @@ export function SearchResults({
   }, [searchParams])
 
   const handleFilterChange = (filters: any) => {
-    // Apply filters to hotel data
-    // This is a simple client-side implementation
-    // In a real app, you might want to fetch filtered data from the server
-
     const filtered = hotelsData.filter((hotel) => {
       // Filter by price
       const minPrice = Math.min(
@@ -173,25 +169,12 @@ export function SearchResults({
   }
 
   if (searchParams.type === "hotels") {
-    if (filteredHotels.length === 0) {
-      return (
-        <div className="container mx-auto px-4">
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold text-gray-900">
-              No hotels found
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Try adjusting your search criteria to find more results
-            </p>
-          </div>
-        </div>
-      )
-    }
-
     return (
       <div className="container mx-auto px-4 py-8">
         <h2 className="text-2xl font-semibold mb-6">
-          Found {filteredHotels.length} hotels in {searchParams.city}
+          {hotelsData.length > 0
+            ? `Found ${filteredHotels.length} hotels in ${searchParams.city}`
+            : "No hotels found for your search criteria"}
         </h2>
 
         <div className="flex flex-col md:flex-row gap-8">
@@ -209,6 +192,7 @@ export function SearchResults({
                   onFilterChange={handleFilterChange}
                   isMobileView={true}
                   className="border-0 shadow-none"
+                  searchParams={searchParams}
                 />
               </SheetContent>
             </Sheet>
@@ -218,14 +202,28 @@ export function SearchResults({
           {isDesktop && (
             <div className="hidden md:block w-64 shrink-0">
               <div className="sticky top-24">
-                <HotelFilter onFilterChange={handleFilterChange} />
+                <HotelFilter
+                  onFilterChange={handleFilterChange}
+                  searchParams={searchParams}
+                />
               </div>
             </div>
           )}
 
-          {/* Hotel Results */}
+          {/* Hotel Results or Empty State */}
           <div className="flex-1">
-            <HotelList hotels={filteredHotels} />
+            {filteredHotels.length > 0 ? (
+              <HotelList hotels={filteredHotels} />
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No hotels match your filters
+                </h3>
+                <p className="text-gray-600">
+                  Try adjusting your filter criteria to see more results
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
