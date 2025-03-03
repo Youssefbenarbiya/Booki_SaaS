@@ -4,13 +4,16 @@ import { notFound, redirect } from "next/navigation"
 import BookRoomForm from "./BookRoomForm"
 import { getRoomById } from "@/actions/hotelActions"
 import { formatPrice } from "@/lib/utils"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
+import Image from "next/image"
 
 export default async function BookRoomPage({
   params,
 }: {
-  params: Promise<{ roomId: string }>
+  params: Promise<{ roomId: string; hotelId: string }>
 }) {
-  const { roomId } = await params
+  const { roomId, hotelId } = await params
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -27,28 +30,58 @@ export default async function BookRoomPage({
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Book Your Room</h1>
+      <div className="mb-6">
+        <Link
+          href={`/hotels/${hotelId}`}
+          className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to hotel
+        </Link>
+      </div>
+
+      <h1 className="text-2xl font-semibold mb-8">Book Your Room</h1>
+
       <div className="grid gap-8 md:grid-cols-2">
         {/* Room Summary */}
-        <div className="card bg-base-100 shadow-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Room Summary</h2>
-          <div className="space-y-2">
-            <p>
-              <span className="font-medium">Room:</span> {room.name}
+
+          {room.images && room.images.length > 0 && (
+            <div className="relative h-48 mb-4 rounded-lg overflow-hidden">
+              <Image
+                src={room.images[0] || "/placeholder.svg"}
+                alt={room.name}
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <p className="flex justify-between">
+              <span className="font-medium text-gray-700">Room:</span>
+              <span>{room.name}</span>
             </p>
-            <p>
-              <span className="font-medium">Hotel:</span> {room.hotel.name}
+            <p className="flex justify-between">
+              <span className="font-medium text-gray-700">Hotel:</span>
+              <span>{room.hotel.name}</span>
             </p>
-            <p>
-              <span className="font-medium">Type:</span> {room.roomType}
+            <p className="flex justify-between">
+              <span className="font-medium text-gray-700">Type:</span>
+              <span>{room.roomType}</span>
             </p>
-            <p>
-              <span className="font-medium">Capacity:</span> {room.capacity}{" "}
-              guests
+            <p className="flex justify-between">
+              <span className="font-medium text-gray-700">Capacity:</span>
+              <span>{room.capacity} guests</span>
             </p>
-            <p>
-              <span className="font-medium">Price per Night:</span>{" "}
-              {formatPrice(room.pricePerNight)}
+            <p className="flex justify-between">
+              <span className="font-medium text-gray-700">
+                Price per Night:
+              </span>
+              <span className="font-semibold text-black">
+                {formatPrice(room.pricePerNight)}
+              </span>
             </p>
           </div>
         </div>
@@ -56,7 +89,7 @@ export default async function BookRoomPage({
         {/* Booking Form */}
         <BookRoomForm
           roomId={room.id}
-          pricePerNight={parseFloat(room.pricePerNight)}
+          pricePerNight={Number.parseFloat(room.pricePerNight)}
           userId={session.user.id}
         />
       </div>

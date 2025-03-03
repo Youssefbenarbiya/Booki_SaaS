@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { createRoomBooking } from "@/actions/roomBookingActions"
 import { formatPrice } from "@/lib/utils"
 import { useState, useTransition } from "react"
@@ -62,22 +64,22 @@ export default function BookRoomForm({
       : 0
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-lg">
-      <div className="flex flex-col space-y-1.5 p-6">
+    <div className="rounded-lg border bg-white text-gray-900 shadow-lg">
+      <div className="flex flex-col space-y-1.5 p-6 border-b">
         <h3 className="text-2xl font-semibold leading-none tracking-tight">
           Book Your Stay
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-500">
           Select your check-in and check-out dates
         </p>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-6 p-6 pt-0">
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
         <div className="grid gap-6">
           <div className="grid gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <label className="text-sm font-medium leading-none">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-4 w-4 text-gray-500" />
                   Check-in Date
                 </div>
               </label>
@@ -86,14 +88,14 @@ export default function BookRoomForm({
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
                 min={new Date().toISOString().split("T")[0]}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
                 required
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <label className="text-sm font-medium leading-none">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-4 w-4 text-gray-500" />
                   Check-out Date
                 </div>
               </label>
@@ -102,7 +104,7 @@ export default function BookRoomForm({
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
                 min={checkIn || new Date().toISOString().split("T")[0]}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
                 required
               />
             </div>
@@ -110,10 +112,10 @@ export default function BookRoomForm({
         </div>
 
         {checkIn && checkOut && (
-          <div className="rounded-lg bg-muted p-4">
+          <div className="rounded-lg bg-gray-50 p-4">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4 text-gray-500" />
                 <span>Duration</span>
               </div>
               <span>
@@ -122,7 +124,7 @@ export default function BookRoomForm({
             </div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-sm font-medium">Total Price</span>
-              <span className="text-lg font-semibold">
+              <span className="text-lg font-semibold text-black">
                 {formatPrice(pricePerNight * nights)}
               </span>
             </div>
@@ -130,14 +132,14 @@ export default function BookRoomForm({
         )}
 
         {error && (
-          <div className="rounded-lg bg-destructive/15 p-4 text-sm text-destructive">
+          <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">
             {error}
           </div>
         )}
 
         <button
           type="submit"
-          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-yellow-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2 disabled:opacity-50"
           disabled={isPending}
         >
           {isPending ? (

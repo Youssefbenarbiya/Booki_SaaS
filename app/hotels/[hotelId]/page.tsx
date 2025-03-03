@@ -1,32 +1,58 @@
-import { getHotelById } from "@/actions/hotelActions"
 import { notFound } from "next/navigation"
+import { hotel, room } from "@/db/schema"
+import { eq } from "drizzle-orm"
+
 import HotelHeader from "@/components/hotel-details/HotelHeader"
 import HotelGallery from "@/components/hotel-details/HotelGallery"
 import HotelInfo from "@/components/hotel-details/HotelInfo"
-import RoomsList from "@/components/hotel-details/RoomsList"
 
-export default async function HotelDetailsPage({
+import db from "@/db/drizzle"
+import RoomsList from "@/components/hotel-details/RoomsList"
+import BookRoomAction from "@/components/hotel-details/BookRoomAction"
+
+export default async function HotelPage({
   params,
 }: {
-  params: Promise<{ hotelId: string }>
+  params: { hotelId: string }
 }) {
-  const { hotelId } = await params
+  const hotelData = await db.query.hotel.findFirst({
+    where: eq(hotel.id, params.hotelId),
+  })
 
-  const hotel = await getHotelById(hotelId)
-  if (!hotel) {
+  if (!hotelData) {
     notFound()
   }
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <HotelHeader />
-      
-      <div className="grid gap-8 lg:grid-cols-2">
-        <HotelGallery images={hotel.images} hotelName={hotel.name} />
-        <HotelInfo hotel={hotel} />
-      </div>
+  const rooms = await db.query.room.findMany({
+    where: eq(room.hotelId, params.hotelId),
+  })
 
-      <RoomsList rooms={hotel.rooms.map(room => ({...room, pricePerNight: Number(room.pricePerNight)}))} />
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <HotelHeader hotelName={hotelData.name} />
+
+      <HotelGallery images={hotelData.images} hotelName={hotelData.name} />
+
+      <HotelInfo
+        hotel={{
+          name: hotelData.name,
+          rating: hotelData.rating || 5,
+          address: hotelData.address || "",
+          city: hotelData.city || "",
+          country: hotelData.country || "",
+          description: hotelData.description || "",
+          amenities: hotelData.amenities,
+        }}
+      />
+
+      <RoomsList
+        rooms={rooms.map((room) => ({
+          ...room,
+          hotelId: params.hotelId,
+        }))}
+      />
+
+      <BookRoomAction />
     </div>
   )
 }

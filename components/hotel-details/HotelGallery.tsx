@@ -6,27 +6,36 @@ type HotelGalleryProps = {
 }
 
 export default function HotelGallery({ images, hotelName }: HotelGalleryProps) {
+  if (!images || images.length === 0) {
+    return <p className="text-gray-500">No images available</p>
+  }
+
+  const mainImage = images[0]
+  const thumbnails = images.slice(1, 5)
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800">Images</h2>
-      <div className="grid grid-cols-2 gap-4">
-        {images && images.length > 0 ? (
-          images.map((image, index) => (
-            <div
-              key={index}
-              className="relative aspect-video rounded-lg overflow-hidden shadow transition hover:shadow-lg"
-            >
-              <Image
-                src={image}
-                alt={`${hotelName} image ${index + 1}`}
-                fill
-                className="object-cover"
-              />
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-500">No images available</p>
-        )}
+    <div className="grid grid-cols-4 gap-2 h-[400px]">
+      <div className="col-span-2 row-span-2 relative rounded-lg overflow-hidden">
+        <Image
+          src={mainImage || "/placeholder.svg"}
+          alt={`${hotelName} main image`}
+          fill
+          className="object-cover"
+        />
+      </div>
+      {thumbnails.map((image, index) => (
+        <div key={index} className="relative rounded-lg overflow-hidden">
+          <Image
+            src={image || "/placeholder.svg"}
+            alt={`${hotelName} image ${index + 2}`}
+            fill
+            className="object-cover"
+          />
+        </div>
+      ))}
+      <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 text-sm font-semibold shadow-md">
+        <span className="text-black">$740</span>
+        <span className="text-yellow-500 ml-1">/ night</span>
       </div>
     </div>
   )
