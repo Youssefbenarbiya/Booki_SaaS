@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { type Dispatch, type SetStateAction } from "react"
+import { type Dispatch, type SetStateAction, ChangeEvent } from "react"
 
 interface ImageUploadSectionProps {
   label: string
@@ -11,6 +11,7 @@ interface ImageUploadSectionProps {
   setPreviewUrls: Dispatch<SetStateAction<string[]>>
   uploadError: string
   setUploadError: (error: string) => void
+  onDeleteImage?: (index: number) => void
 }
 
 export function ImageUploadSection({
@@ -21,6 +22,7 @@ export function ImageUploadSection({
   setPreviewUrls,
   uploadError = "",
   setUploadError,
+  onDeleteImage,
 }: ImageUploadSectionProps) {
   const MAX_FILE_SIZE = 6 * 1024 * 1024 // 6MB in bytes
 
@@ -32,30 +34,15 @@ export function ImageUploadSection({
     return true
   }
 
-  const handleSingleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!handleFileValidation(file)) return
-
-    if (images.length + 1 > 10) {
-      setUploadError("Maximum 10 images allowed")
-      return
-    }
-
-    const newPreviewUrl = URL.createObjectURL(file)
-    setPreviewUrls((prev) => [...prev, newPreviewUrl])
-    setImages((prev) => [...prev, file])
-    setUploadError("")
-  }
-
-  const handleMultipleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMultipleImageChange = (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
     const files = Array.from(e.target.files || [])
-    
+
     // Validate all files
-    const validFiles = files.filter(file => handleFileValidation(file))
+    const validFiles = files.filter((file) => handleFileValidation(file))
     if (validFiles.length !== files.length) return
-    
+
     if (images.length + validFiles.length > 10) {
       setUploadError("Maximum 10 images allowed")
       return
@@ -68,12 +55,16 @@ export function ImageUploadSection({
   }
 
   const handleDeleteImage = (index: number) => {
-    setPreviewUrls((prev) => {
-      const newUrls = prev.filter((_, i) => i !== index)
-      URL.revokeObjectURL(prev[index])
-      return newUrls
-    })
-    setImages((prev) => prev.filter((_, i) => i !== index))
+    if (onDeleteImage) {
+      onDeleteImage(index)
+    } else {
+      setPreviewUrls((prev) => {
+        const newUrls = prev.filter((_, i) => i !== index)
+        URL.revokeObjectURL(prev[index])
+        return newUrls
+      })
+      setImages((prev) => prev.filter((_, i) => i !== index))
+    }
   }
 
   return (
@@ -84,19 +75,6 @@ export function ImageUploadSection({
 
       <div className="space-y-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          {/* Single Image Upload */}
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-2">
-              Add Single Image
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleSingleImageChange}
-              className="file-input file-input-bordered w-full"
-            />
-          </div>
-
           {/* Multiple Images Upload */}
           <div className="flex-1">
             <label className="block text-sm font-medium mb-2">
@@ -112,9 +90,7 @@ export function ImageUploadSection({
           </div>
         </div>
 
-        {uploadError && (
-          <p className="text-red-500 text-sm">{uploadError}</p>
-        )}
+        {uploadError && <p className="text-red-500 text-sm">{uploadError}</p>}
 
         {/* Image Count Warning */}
         <p className="text-sm text-gray-600">
@@ -130,8 +106,10 @@ export function ImageUploadSection({
               <Image
                 src={url}
                 alt={`Image preview ${index + 1}`}
-                fill
+                width={200}
+                height={200}
                 className="object-cover rounded-lg"
+
               />
               <button
                 type="button"
@@ -158,4 +136,4 @@ export function ImageUploadSection({
       )}
     </div>
   )
-} 
+}
