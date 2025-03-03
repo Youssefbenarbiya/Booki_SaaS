@@ -15,6 +15,9 @@ interface HotelCardProps {
 }
 
 export function HotelCard({ hotel }: HotelCardProps) {
+  // Add console log to debug
+  console.log("Hotel data:", hotel.id)
+
   return (
     <div className="card bg-white shadow-xl rounded-lg overflow-hidden">
       {hotel.images?.[0] && (
