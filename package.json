@@ -14,7 +14,7 @@
     "db:drop": "drizzle-kit drop --config=drizzle.config.ts"
   },
   "dependencies": {
-    "@better-fetch/fetch": "^1.1.12",
+    "@better-fetch/fetch": "^1.1.15",
     "@hookform/resolvers": "^3.10.0",
     "@neondatabase/serverless": "^0.10.4",
     "@radix-ui/react-accordion": "^1.2.3",
@@ -37,7 +37,7 @@
     "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@tanstack/react-table": "^8.20.6",
-    "better-auth": "^1.1.15",
+    "better-auth": "1.2",
     "checkbox": "^0.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

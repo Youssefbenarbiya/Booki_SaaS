@@ -91,6 +91,7 @@ export default function SignIn() {
               width={64}
               height={64}
               className="rounded-lg"
+              priority
             />
             <h1 className="text-[1.75rem] font-serif mb-1">Login</h1>
             <p className="text-gray-600 text-sm">
@@ -197,7 +198,8 @@ export default function SignIn() {
           <Image
             src={slides[currentSlide] || "/assets/loginImg.jpg"}
             alt="Login banner"
-            fill
+            width={400}
+            height={600}
             className="object-cover rounded-lg"
           />
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2">

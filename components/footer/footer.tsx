@@ -8,7 +8,7 @@ import FooterGallery from "./footerGalory"
 export function Footer() {
   return (
     <div>
-      <FooterGallery/>
+      <FooterGallery />
       <footer className="w-full bg-black text-white px-6 py-12">
         <div className="container grid gap-8 lg:grid-cols-[1.5fr_2fr_1fr]">
           <div className="space-y-4">
@@ -161,6 +161,7 @@ export function Footer() {
               width={40}
               height={25}
               className="h-[25px] w-auto"
+              style={{ width: "auto", height: "auto" }}
             />
             <Image
               src="/assets/mastercard.png"
@@ -168,6 +169,7 @@ export function Footer() {
               width={40}
               height={25}
               className="h-[25px] w-auto"
+              style={{ width: "auto", height: "auto" }}
             />
           </div>
         </div>
