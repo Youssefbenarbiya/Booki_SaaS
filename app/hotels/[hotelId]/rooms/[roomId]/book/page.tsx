@@ -83,6 +83,25 @@ export default async function BookRoomPage({
                 {formatPrice(room.pricePerNight)}
               </span>
             </p>
+
+            {/* Room Amenities */}
+            {room.amenities && room.amenities.length > 0 && (
+              <div className="mt-4">
+                <h3 className="font-medium text-gray-700 mb-2">
+                  Room Amenities:
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {room.amenities.map((amenity, index) => (
+                    <span
+                      key={index}
+                      className="bg-gray-100 text-gray-800 text-xs rounded-full px-2 py-1"
+                    >
+                      {amenity}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

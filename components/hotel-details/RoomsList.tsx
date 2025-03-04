@@ -1,82 +1,101 @@
-import RoomCard from "./RoomCard"
+import Link from "next/link"
+import Image from "next/image"
+import { formatPrice } from "@/lib/utils"
 
-type Room = {
-  id: string
-  name: string
-  roomType: string
-  description: string
-  capacity: number
-  pricePerNight: number
-  hotelId: string
-  images?: string[]
-  amenities?: string[]
-  availabilities?: {
-    startDate: string
-    endDate: string
-    isAvailable: boolean
-  }[]
+interface RoomsListProps {
+  rooms: Array<{
+    id: string
+    name: string
+    description: string | null
+    capacity: number | null
+    pricePerNight: string
+    roomType: string | null
+    images: string[] | null
+    amenities: string[] | null
+    hotelId: string
+  }>
 }
 
-type RoomsListProps = {
-  rooms: Room[]
-  onBookRoom?: (roomId: string) => void
-}
+export default function RoomsList({ rooms }: RoomsListProps) {
+  if (!rooms.length) {
+    return (
+      <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+        <p className="text-center text-gray-500">No rooms available</p>
+      </div>
+    )
+  }
 
-export default function RoomsList({ rooms, onBookRoom }: RoomsListProps) {
   return (
-    <div className="mt-10">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Available rooms</h2>
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-              in
-            </div>
-            <span>Check-in</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-              out
-            </div>
-            <span>Check-out</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="mt-8">
+      <h2 className="text-xl font-semibold mb-4">Available Rooms</h2>
+      <div className="space-y-6">
         {rooms.map((room) => (
-          <RoomCard key={room.id} room={room as any} onBookRoom={onBookRoom} />
-        ))}
-      </div>
+          <div
+            key={room.id}
+            className="border border-gray-200 rounded-lg overflow-hidden bg-white"
+          >
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="relative h-64 md:h-full">
+                {room.images && room.images.length > 0 ? (
+                  <Image
+                    src={room.images[0]}
+                    alt={room.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center bg-gray-100">
+                    <p className="text-gray-400">No image available</p>
+                  </div>
+                )}
+              </div>
+              <div className="p-4 md:col-span-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold">{room.name}</h3>
+                    <p className="text-sm text-gray-500">
+                      {room.roomType} • Up to {room.capacity} guests
+                    </p>
+                  </div>
+                  <p className="text-lg font-bold">
+                    {formatPrice(room.pricePerNight)}
+                    <span className="text-sm font-normal text-gray-500">
+                      /night
+                    </span>
+                  </p>
+                </div>
 
-      <div className="mt-16">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Our customers say</h2>
-          <button className="bg-yellow-500 text-white px-4 py-2 rounded text-sm font-medium">
-            View all reviews
-          </button>
-        </div>
+                <p className="mt-2 text-gray-700">{room.description}</p>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="bg-white p-4 rounded-lg border border-gray-200"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200"></div>
-                <div>
-                  <p className="font-medium">Guest Name</p>
-                  <div className="text-yellow-500 text-sm">★★★★★</div>
+                {/* Room Amenities */}
+                {room.amenities && room.amenities.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-sm mb-2">Amenities</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {room.amenities.map((amenity, index) => (
+                        <span
+                          key={index}
+                          className="bg-gray-100 text-gray-800 text-xs rounded-full px-2 py-1"
+                        >
+                          {amenity}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 flex justify-end">
+                  <Link
+                    href={`/hotels/${room.hotelId}/rooms/${room.id}/book`}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Book Now
+                  </Link>
                 </div>
               </div>
-              <p className="text-sm text-gray-600">
-                Great hotel with amazing amenities. The staff was very friendly
-                and helpful. Would definitely stay here again!
-              </p>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   )

@@ -1,14 +1,9 @@
 import {
   MapPin,
-  Wifi,
-  Coffee,
-  Tv,
-  Car,
-  Snowflake,
-  Utensils,
+  Star,
 } from "lucide-react"
 
-type HotelInfoProps = {
+interface HotelInfoProps {
   hotel: {
     name: string
     rating: number
@@ -16,49 +11,46 @@ type HotelInfoProps = {
     city: string
     country: string
     description: string
-    amenities?: string[]
+    amenities: string[] | null
   }
 }
 
 export default function HotelInfo({ hotel }: HotelInfoProps) {
   return (
-    <div className="mt-10">
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Overview</h2>
-        <p className="text-gray-600 leading-relaxed">{hotel.description}</p>
+    <div className="mt-6">
+      <div className="flex items-center gap-2 mb-2">
+        <h2 className="text-2xl font-bold">{hotel.name}</h2>
+        <div className="flex items-center">
+          <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+          <span className="ml-1 text-sm font-medium">{hotel.rating}</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Amenities</h2>
-          <div className="grid grid-cols-2 gap-y-4">
-            <div className="flex items-center gap-2">
-              <Wifi className="h-5 w-5 text-gray-600" />
-              <span className="text-gray-700">Free WiFi</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Coffee className="h-5 w-5 text-gray-600" />
-              <span className="text-gray-700">Breakfast</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Tv className="h-5 w-5 text-gray-600" />
-              <span className="text-gray-700">Flat-screen TV</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Car className="h-5 w-5 text-gray-600" />
-              <span className="text-gray-700">Free parking</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Snowflake className="h-5 w-5 text-gray-600" />
-              <span className="text-gray-700">Air conditioning</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Utensils className="h-5 w-5 text-gray-600" />
-              <span className="text-gray-700">Restaurant</span>
-            </div>
+      <p className="text-gray-500 mb-4">
+        {hotel.address}, {hotel.city}, {hotel.country}
+      </p>
+
+      <div className="prose max-w-none mb-6">
+        <p>{hotel.description}</p>
+      </div>
+
+      {hotel.amenities && hotel.amenities.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-3">Hotel Amenities</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {hotel.amenities.map((amenity, index) => (
+              <div
+                key={index}
+                className="bg-gray-100 rounded-md px-3 py-2 text-sm text-gray-700"
+              >
+                {amenity}
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
         <div>
           <h2 className="text-xl font-semibold mb-4">Location/Map</h2>
           <div className="relative h-[200px] rounded-lg overflow-hidden bg-gray-200">
