@@ -256,17 +256,18 @@ export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
 
 
 
-export const cars = pgTable('cars', {
-  id: serial('id').primaryKey(),
-  model: varchar('model', { length: 100 }).notNull(),
-  brand: varchar('brand', { length: 100 }).notNull(),
-  year: integer('year').notNull(),
-  plateNumber: varchar('plate_number', { length: 20 }).notNull().unique(),
-  color: varchar('color', { length: 50 }).notNull(),
-  price: integer('price').notNull(),
-  isAvailable: boolean('is_available').default(true),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+export const cars = pgTable("cars", {
+  id: serial("id").primaryKey(),
+  model: varchar("model", { length: 100 }).notNull(),
+  brand: varchar("brand", { length: 100 }).notNull(),
+  year: integer("year").notNull(),
+  plateNumber: varchar("plate_number", { length: 20 }).notNull().unique(),
+  color: varchar("color", { length: 50 }).notNull(),
+  price: integer("price").notNull(),
+  images: text("images").array().default([]).notNull(),
+  isAvailable: boolean("is_available").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 })
 
 export const carBookings = pgTable('car_bookings', {

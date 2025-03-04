@@ -1,12 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { CarsTable } from "./components/cars-table";
-import { columns } from "./components/columns";
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { getCars } from "./actions/carActions";
+import { Button } from "@/components/ui/button"
+import { CarsTable } from "./cars-table"
+import { columns } from "./columns"
+import Link from "next/link"
+import { Plus } from "lucide-react"
+import { getCars } from "../../../../actions/carActions"
 
 export default async function CarsPage() {
-  const { cars } = await getCars();
+  const { cars } = await getCars()
 
   return (
     <div className="space-y-4">
@@ -22,5 +22,5 @@ export default async function CarsPage() {
 
       <CarsTable columns={columns} data={cars} />
     </div>
-  );
+  )
 }
