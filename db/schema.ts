@@ -254,11 +254,8 @@ export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
   }),
 }))
 
-<<<<<<< HEAD
-=======
 
 
->>>>>>> souleimen
 export const cars = pgTable("cars", {
   id: serial("id").primaryKey(),
   model: varchar("model", { length: 100 }).notNull(),

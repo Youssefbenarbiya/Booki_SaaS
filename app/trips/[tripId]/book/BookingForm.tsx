@@ -1,6 +1,6 @@
 "use client"
 
-import { createBooking } from "@/actions/bookingActions"
+import { createBooking } from "@/actions/tripBookingActions"
 import { formatPrice } from "@/lib/utils"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
