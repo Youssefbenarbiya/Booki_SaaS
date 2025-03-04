@@ -253,3 +253,41 @@ export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
     references: [user.id],
   }),
 }))
+
+export const cars = pgTable("cars", {
+  id: serial("id").primaryKey(),
+  model: varchar("model", { length: 100 }).notNull(),
+  brand: varchar("brand", { length: 100 }).notNull(),
+  year: integer("year").notNull(),
+  plateNumber: varchar("plate_number", { length: 20 }).notNull().unique(),
+  color: varchar("color", { length: 50 }).notNull(),
+  price: integer("price").notNull(),
+  images: text("images").array().default([]).notNull(),
+  isAvailable: boolean("is_available").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+})
+
+export const carBookings = pgTable("car_bookings", {
+  id: serial("id").primaryKey(),
+  carId: integer("car_id").references(() => cars.id),
+  customerName: varchar("customer_name", { length: 255 }).notNull(),
+  customerEmail: varchar("customer_email", { length: 255 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  totalPrice: integer("total_price").notNull(),
+  status: varchar("status", { length: 20 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+})
+
+export const carsRelations = relations(cars, ({ many }) => ({
+  bookings: many(carBookings),
+}))
+
+export const carBookingsRelations = relations(carBookings, ({ one }) => ({
+  car: one(cars, {
+    fields: [carBookings.carId],
+    references: [cars.id],
+  }),
+}))

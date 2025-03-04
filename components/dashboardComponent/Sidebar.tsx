@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Home, Plane, Hotel, Users, BookOpen, LogOut } from "lucide-react"
+import { Home, Plane, Hotel, Users, BookOpen, LogOut, Car } from "lucide-react"
 
 const navItems = [
   { name: "Home", href: "/admin/dashboard", icon: Home },
@@ -13,6 +13,7 @@ const navItems = [
   { name: "Hotels", href: "/admin/dashboard/hotels", icon: Hotel },
   { name: "Users", href: "/admin/dashboard/users", icon: Users },
   { name: "Blogs", href: "/admin/dashboard/blogs", icon: BookOpen },
+  { name: "cars", href: "/admin/dashboard/cars", icon: Car },
 ]
 
 export function Sidebar() {
