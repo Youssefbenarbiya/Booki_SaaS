@@ -12,6 +12,30 @@ import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
 import { Building, BedDouble, Plus, Trash2 } from "lucide-react"
 
+// Available amenities for hotels and rooms
+const HOTEL_AMENITIES = [
+  "Free WiFi",
+  "Free Parking",
+  "Free Breakfast",
+  "Swimming Pool",
+  "Gym/Fitness Center",
+  "Spa",
+  "Air Conditioning",
+  "Restaurant",
+  "Pet Friendly",
+]
+
+const ROOM_AMENITIES = [
+  "Free WiFi",
+  "Air Conditioning",
+  "TV",
+  "Fridge",
+  "Minibar",
+  "Safe",
+  "Bathtub",
+  "Shower",
+]
+
 interface EditHotelFormProps {
   hotel: {
     id: string
@@ -22,7 +46,7 @@ interface EditHotelFormProps {
     country: string
     rating: number
     amenities: string[]
-    images: string[] 
+    images: string[]
     rooms: Array<{
       id: string
       name: string
@@ -31,7 +55,7 @@ interface EditHotelFormProps {
       pricePerNight: string
       roomType: string
       amenities: string[]
-      images: string[] 
+      images: string[]
     }>
   }
 }
@@ -297,6 +321,27 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                 )}
               </div>
 
+              {/* Hotel Amenities */}
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-medium">Hotel Amenities</label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {HOTEL_AMENITIES.map((amenity) => (
+                    <div key={amenity} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`amenity-${amenity}`}
+                        value={amenity}
+                        {...register("amenities")}
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <label htmlFor={`amenity-${amenity}`} className="text-sm">
+                        {amenity}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Existing Hotel Images */}
               {existingHotelImages.length > 0 && (
                 <div className="md:col-span-2">
@@ -499,6 +544,35 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                           {errors.rooms[index]?.description?.message}
                         </p>
                       )}
+                    </div>
+
+                    {/* Room Amenities */}
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium">
+                        Room Amenities
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {ROOM_AMENITIES.map((amenity) => (
+                          <div
+                            key={`${index}-${amenity}`}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              id={`room-${index}-amenity-${amenity}`}
+                              value={amenity}
+                              {...register(`rooms.${index}.amenities`)}
+                              className="rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <label
+                              htmlFor={`room-${index}-amenity-${amenity}`}
+                              className="text-sm"
+                            >
+                              {amenity}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Existing Room Images */}
