@@ -1,5 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
+interface Trip {
+  id: number
+  name: string
+  createdAt: Date | null
+  updatedAt: Date | null
+  description: string | null
+  destination: string
+  startDate: string
+  endDate: string
+  price: string
+  capacity: number
+  isAvailable: boolean | null
+  images: any[] 
+  activities: any[] 
+}
+
+interface Hotel {
+  id: string
+  name: string
+  address: string
+  createdAt: Date
+  updatedAt: Date
+  description: string
+  images: string[]
+  city: string
+  country: string
+  rating: number
+  amenities: string[]
+  rooms: any[] 
+}
 
 import { useState, useEffect } from "react"
 import { searchTrips } from "@/actions/searchTrips"
@@ -26,11 +56,12 @@ export function SearchResults({
 }: {
   searchParams: SearchParams
 }) {
-  const [hotelsData, setHotelsData] = useState([])
-  const [tripsData, setTripsData] = useState([])
+  // Explicitly type the state arrays
+  const [hotelsData, setHotelsData] = useState<Hotel[]>([])
+  const [tripsData, setTripsData] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filteredHotels, setFilteredHotels] = useState([])
+  const [filteredHotels, setFilteredHotels] = useState<Hotel[]>([])
 
   const isDesktop = useMediaQuery("(min-width: 768px)")
 

@@ -15,7 +15,7 @@ interface RoomCardProps {
   checkOut?: string
 }
 
-export default function RoomCard({ room, onBookRoom }: RoomCardProps) {
+export default function RoomCard({ room }: RoomCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition">
       <div className="relative h-48">

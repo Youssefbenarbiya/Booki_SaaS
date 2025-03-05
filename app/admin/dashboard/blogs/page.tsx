@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { BlogsTable } from "./components/blogs-table"
-import { columns } from "./components/columns"
+import { BlogsTable } from "./blogs-table"
+import { columns } from "./columns"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { getBlogs } from "../../../../actions/blogActions"

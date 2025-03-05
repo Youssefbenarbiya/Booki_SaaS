@@ -3,23 +3,23 @@ import { getCarById } from "../../../../../actions/carActions"
 import { CarForm } from "../new/car-form"
 
 interface CarEditPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }> 
 }
 
 export default async function CarEditPage({ params }: CarEditPageProps) {
-  // Wait for params to be ready before accessing properties
   const { id: paramId } = await params
-  const id = parseInt(paramId)
+
+  const id = Number(paramId)
 
   if (isNaN(id)) {
     notFound()
   }
 
-  const { car } = await getCarById(id).catch(() => {
+  const { car } = await getCarById(id).catch(() => ({ car: null }))
+
+  if (!car) {
     notFound()
-  })
+  }
 
   return (
     <div className="space-y-4">

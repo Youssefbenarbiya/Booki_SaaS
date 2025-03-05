@@ -26,7 +26,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
-
+import Image from "next/image"
 export const columns: ColumnDef<CarType>[] = [
   {
     accessorKey: "images",
@@ -34,7 +34,7 @@ export const columns: ColumnDef<CarType>[] = [
     cell: ({ row }) => {
       const images = row.original.images as string[]
       return images && images.length > 0 ? (
-        <img
+        <Image
           src={images[0]}
           alt={`${row.original.brand} ${row.original.model}`}
           className="w-16 h-16 object-cover rounded"

@@ -7,9 +7,9 @@ export interface CarType {
   color: string
   price: number
   images?: string[]
-  isAvailable: boolean
-  createdAt: Date
-  updatedAt: Date
+  isAvailable: boolean | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type CarFormValues = {

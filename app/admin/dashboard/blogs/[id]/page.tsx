@@ -6,15 +6,21 @@ import {
 import { BlogForm } from "../new/blog-form"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-
 import { headers } from "next/headers"
+
 interface BlogEditPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }>
 }
 
 export default async function BlogEditPage({ params }: BlogEditPageProps) {
+  // Await the params to resolve
+  const resolvedParams = await params
+
+  // Ensure params is correctly typed
+  if (!resolvedParams || !resolvedParams.id) {
+    notFound()
+  }
+
   // Get the current user session
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -25,18 +31,15 @@ export default async function BlogEditPage({ params }: BlogEditPageProps) {
     redirect("/sign-in")
   }
 
-  // Parse the blog ID
-  const id = parseInt(params.id)
-
+  // Parse the blog ID safely
+  const id = Number(resolvedParams.id)
   if (isNaN(id)) {
     notFound()
   }
 
   // Fetch blog and categories
   const [{ blog }, { categories }] = await Promise.all([
-    getBlogById(id).catch(() => {
-      notFound()
-    }),
+    getBlogById(id).catch(() => ({ blog: null })), // Avoid throwing inside Promise.all
     getBlogCategories(),
   ])
 

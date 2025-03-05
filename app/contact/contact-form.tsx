@@ -4,8 +4,6 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-
-// UI Components (adjust these imports to your UI library)
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,7 +12,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormMessage,
   FormLabel,
 } from "@/components/ui/form"
 import {
@@ -27,9 +24,7 @@ import {
 
 // Import the server action to send the email
 import { sendContactForm } from "./actions"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { countries } from "@/lib/countries" // You'll need to create this
+
 
 // Define the form schema (same as in actions.ts)
 const formSchema = z.object({

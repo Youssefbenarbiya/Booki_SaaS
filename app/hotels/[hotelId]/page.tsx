@@ -1,7 +1,4 @@
 import { notFound } from "next/navigation"
-import { hotel, room } from "@/db/schema"
-import { eq } from "drizzle-orm"
-
 import HotelHeader from "@/components/hotel-details/HotelHeader"
 import HotelGallery from "@/components/hotel-details/HotelGallery"
 import HotelInfo from "@/components/hotel-details/HotelInfo"
@@ -9,23 +6,26 @@ import HotelInfo from "@/components/hotel-details/HotelInfo"
 import db from "@/db/drizzle"
 import RoomsList from "@/components/hotel-details/RoomsList"
 import BookRoomAction from "@/components/hotel-details/BookRoomAction"
+import { getHotelById } from "@/actions/getHotelById"
+
+export async function generateStaticParams() {
+  const hotels = await db.query.hotel.findMany()
+
+  return hotels.map((hotel) => ({
+    hotelId: hotel.id.toString(),
+  }))
+}
 
 export default async function HotelPage({
   params,
 }: {
   params: { hotelId: string }
 }) {
-  const hotelData = await db.query.hotel.findFirst({
-    where: eq(hotel.id, params.hotelId),
-  })
+  const hotelData = await getHotelById(params.hotelId)
 
   if (!hotelData) {
     notFound()
   }
-
-  const rooms = await db.query.room.findMany({
-    where: eq(room.hotelId, params.hotelId),
-  })
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -46,7 +46,7 @@ export default async function HotelPage({
       />
 
       <RoomsList
-        rooms={rooms.map((room) => ({
+        rooms={hotelData.rooms.map((room) => ({
           ...room,
           hotelId: params.hotelId,
         }))}

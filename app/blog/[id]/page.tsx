@@ -13,15 +13,17 @@ export async function generateStaticParams() {
 }
 
 export default async function BlogDetail({
-  params,
+  params: promiseParams,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const blogId = parseInt(params.id)
+  const { id: paramId } = await promiseParams
+  const blogId = parseInt(paramId)
+
   const { blog } = await getBlogById(blogId)
 
   if (!blog) {
-    notFound()
+    return notFound()
   }
 
   return (
@@ -30,7 +32,9 @@ export default async function BlogDetail({
       <div className="flex-grow max-w-4xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="text-sm text-gray-600 mb-2">{blog.category.name}</div>
+          <div className="text-sm text-gray-600 mb-2">
+            {blog.category?.name || "Uncategorized"}
+          </div>
           <h1 className="text-4xl font-serif font-bold mb-4">{blog.title}</h1>
           <div className="flex items-center gap-3 mt-4">
             {blog.author?.image && (
@@ -73,7 +77,7 @@ export default async function BlogDetail({
           <div dangerouslySetInnerHTML={{ __html: blog.content }} />
 
           {/* Show additional images if available */}
-          {blog.images && blog.images.length > 0 && (
+          {blog.images?.length > 0 && (
             <div className="mt-8 space-y-8">
               {blog.images.map((image, index) => (
                 <div
@@ -117,11 +121,10 @@ export default async function BlogDetail({
           </div>
         )}
 
-        {/* Recent Posts will be added here */}
+        {/* Recent Posts */}
         <div>
-          <h3 className="text-xl font-semibold mb-4">Recent Post</h3>
+          <h3 className="text-xl font-semibold mb-4">Recent Posts</h3>
           <div className="space-y-4">
-            {/* This would need another query to get recent posts */}
             {[1, 2, 3].map((_, index) => (
               <Link
                 href={`/blog/recent-post-${index}`}
@@ -140,7 +143,7 @@ export default async function BlogDetail({
                   <h4 className="text-sm font-medium group-hover:text-orange-500 line-clamp-2">
                     Travel Stories For Now and the Future
                   </h4>
-                  <p className="text-xs text-gray-500 mt-1">8 Place in 2022</p>
+                  <p className="text-xs text-gray-500 mt-1">8 Places in 2022</p>
                 </div>
               </Link>
             ))}
@@ -172,12 +175,11 @@ export default async function BlogDetail({
           </div>
         </div>
 
-        {/* Have Any Question Box */}
+        {/* Have Any Questions Box */}
         <div className="bg-orange-50 p-6 rounded-lg">
-          <h3 className="text-xl font-semibold mb-2">Have Any Question?</h3>
+          <h3 className="text-xl font-semibold mb-2">Have Any Questions?</h3>
           <p className="text-gray-600 mb-4">
-            Ready to help if you have any questions, we will help provide a
-            solution.
+            Ready to help if you have any questions, we will provide a solution.
           </p>
           <div className="flex items-center text-orange-500">
             <span className="mr-2">📞</span>
