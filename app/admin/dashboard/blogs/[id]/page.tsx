@@ -1,45 +1,48 @@
-import { notFound } from "next/navigation";
-import { getBlogById, getBlogCategories } from "../actions/blogActions";
-import { BlogForm } from "../new/blog-form";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation"
+import {
+  getBlogById,
+  getBlogCategories,
+} from "../../../../../actions/blogActions"
+import { BlogForm } from "../new/blog-form"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 
-import { headers } from "next/headers";
+import { headers } from "next/headers"
 interface BlogEditPageProps {
   params: {
-    id: string;
-  };
+    id: string
+  }
 }
 
 export default async function BlogEditPage({ params }: BlogEditPageProps) {
   // Get the current user session
   const session = await auth.api.getSession({
     headers: await headers(),
-  });
+  })
 
   // Check if user is authenticated
   if (!session || !session.user) {
-    redirect("/sign-in");
+    redirect("/sign-in")
   }
 
   // Parse the blog ID
-  const id = parseInt(params.id);
+  const id = parseInt(params.id)
 
   if (isNaN(id)) {
-    notFound();
+    notFound()
   }
 
   // Fetch blog and categories
   const [{ blog }, { categories }] = await Promise.all([
     getBlogById(id).catch(() => {
-      notFound();
+      notFound()
     }),
     getBlogCategories(),
-  ]);
+  ])
 
   // Check if blog exists
   if (!blog) {
-    notFound();
+    notFound()
   }
 
   return (
@@ -55,5 +58,5 @@ export default async function BlogEditPage({ params }: BlogEditPageProps) {
         authorId={session.user.id}
       />
     </div>
-  );
+  )
 }

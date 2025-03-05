@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import { useState, useEffect, ChangeEvent } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { ImageUploadSection } from "@/components/ImageUploadSection";
-import { TipTapEditor } from "@/components/TipTapEditor";
+import { useState, useEffect, ChangeEvent } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import { ImageUploadSection } from "@/components/ImageUploadSection"
+import { TipTapEditor } from "@/components/TipTapEditor"
 import {
   Form,
   FormControl,
@@ -18,18 +18,18 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from "@/components/ui/form";
+} from "@/components/ui/form"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { createBlog, updateBlog } from "../actions/blogActions";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+} from "@/components/ui/select"
+import { createBlog, updateBlog } from "../../../../../actions/blogActions"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 // Define a schema for blog data validation
 const formSchema = z.object({
@@ -43,34 +43,34 @@ const formSchema = z.object({
     .default(5),
   tags: z.string().optional(),
   published: z.boolean().default(false),
-});
+})
 
 interface Category {
-  id: number;
-  name: string;
+  id: number
+  name: string
 }
 
 interface Blog {
-  id: number;
-  title: string;
-  content: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  images: string[];
-  published: boolean;
-  publishedAt: Date | null;
-  categoryId: number | null;
-  authorId: string | null;
-  views: number;
-  readTime: number | null;
-  tags: string[] | null;
+  id: number
+  title: string
+  content: string
+  excerpt: string | null
+  featuredImage: string | null
+  images: string[]
+  published: boolean
+  publishedAt: Date | null
+  categoryId: number | null
+  authorId: string | null
+  views: number
+  readTime: number | null
+  tags: string[] | null
 }
 
 interface BlogFormProps {
-  initialData?: Blog;
-  categories: Category[];
-  isEditing?: boolean;
-  authorId: string;
+  initialData?: Blog
+  categories: Category[]
+  isEditing?: boolean
+  authorId: string
 }
 
 export function BlogForm({
@@ -79,27 +79,25 @@ export function BlogForm({
   isEditing = false,
   authorId,
 }: BlogFormProps) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [featuredImage, setFeaturedImage] = useState<File | null>(null);
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [featuredImage, setFeaturedImage] = useState<File | null>(null)
   const [featuredImagePreview, setFeaturedImagePreview] = useState<string>(
     initialData?.featuredImage || ""
-  );
-  const [images, setImages] = useState<File[]>([]);
+  )
+  const [images, setImages] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>(
     initialData?.images || []
-  );
-  const [uploadError, setUploadError] = useState("");
-  const [editorContent, setEditorContent] = useState(
-    initialData?.content || ""
-  );
-  const [isMounted, setIsMounted] = useState(false);
+  )
+  const [uploadError, setUploadError] = useState("")
+  const [editorContent, setEditorContent] = useState(initialData?.content || "")
+  const [isMounted, setIsMounted] = useState(false)
 
   // Fix hydration issues by only showing editor after component mounts
   useEffect(() => {
-    setIsMounted(true);
-    setEditorContent(initialData?.content || "");
-  }, [initialData?.content]);
+    setIsMounted(true)
+    setEditorContent(initialData?.content || "")
+  }, [initialData?.content])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -112,89 +110,91 @@ export function BlogForm({
       tags: initialData?.tags?.join(", ") || "",
       published: initialData?.published || false,
     },
-  });
+  })
 
   // Handle featured image upload
   const handleFeaturedImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+      const file = e.target.files[0]
 
       if (file.size > 6 * 1024 * 1024) {
-        setUploadError("Featured image must be less than 6MB");
-        return;
+        setUploadError("Featured image must be less than 6MB")
+        return
       }
 
-      setFeaturedImage(file);
-      setFeaturedImagePreview(URL.createObjectURL(file));
-      setUploadError("");
+      setFeaturedImage(file)
+      setFeaturedImagePreview(URL.createObjectURL(file))
+      setUploadError("")
     }
-  };
+  }
 
   // Handle editor content change
   const handleEditorChange = (content: string) => {
-    setEditorContent(content);
-    form.setValue("content", content, { shouldValidate: true });
-  };
+    setEditorContent(content)
+    form.setValue("content", content, { shouldValidate: true })
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      setLoading(true);
+      setLoading(true)
 
-      const formData = new FormData();
+      const formData = new FormData()
 
       // Add text data to formData
-      formData.append("title", values.title);
-      formData.append("content", editorContent);
-      formData.append("excerpt", values.excerpt || "");
-      formData.append("categoryId", values.categoryId);
-      formData.append("readTime", values.readTime.toString());
-      formData.append("tags", values.tags || "");
-      formData.append("published", values.published.toString());
+      formData.append("title", values.title)
+      formData.append("content", editorContent)
+      formData.append("excerpt", values.excerpt || "")
+      formData.append("categoryId", values.categoryId)
+      formData.append("readTime", values.readTime.toString())
+      formData.append("tags", values.tags || "")
+      formData.append("published", values.published.toString())
 
       // Add featured image if present
       if (featuredImage) {
-        formData.append("featuredImage", featuredImage);
+        formData.append("featuredImage", featuredImage)
       }
 
       // Add existing featured image URL for update
       if (isEditing && initialData?.featuredImage) {
-        formData.append("currentFeaturedImage", initialData.featuredImage);
+        formData.append("currentFeaturedImage", initialData.featuredImage)
       }
 
       // Add all images from ImageUploadSection
       if (images.length > 0) {
         images.forEach((image) => {
-          formData.append("images", image);
-        });
+          formData.append("images", image)
+        })
       }
 
       // For updating, include current images
       if (isEditing && initialData?.images) {
-        formData.append("currentImages", JSON.stringify(initialData.images));
+        formData.append("currentImages", JSON.stringify(initialData.images))
       }
 
       if (isEditing && initialData) {
-        const result = await updateBlog(initialData.id, formData);
+        const result = await updateBlog(initialData.id, formData)
         if (result.error) {
-          toast.error(result.error);
-          return;
+          toast.error(result.error)
+          return
         }
       } else {
-        const result = await createBlog(formData, authorId);
+        const result = await createBlog(formData, authorId)
         if (result.error) {
-          toast.error(result.error);
-          return;
+          toast.error(result.error)
+          return
         }
       }
 
-      toast.success(isEditing ? "Blog updated successfully!" : "Blog created successfully!");
-      router.refresh();
-      router.push('/admin/dashboard/blogs');
+      toast.success(
+        isEditing ? "Blog updated successfully!" : "Blog created successfully!"
+      )
+      router.refresh()
+      router.push("/admin/dashboard/blogs")
     } catch (error) {
-      console.error("Form submission error:", error);
-      toast.error("Something went wrong. Please try again.");
+      console.error("Form submission error:", error)
+      toast.error("Something went wrong. Please try again.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
@@ -406,5 +406,5 @@ export function BlogForm({
         </Button>
       </form>
     </Form>
-  );
+  )
 }

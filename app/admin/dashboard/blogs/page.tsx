@@ -1,12 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { BlogsTable } from "./components/blogs-table";
-import { columns } from "./components/columns";
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { getBlogs } from "./actions/blogActions";
+import { Button } from "@/components/ui/button"
+import { BlogsTable } from "./components/blogs-table"
+import { columns } from "./components/columns"
+import Link from "next/link"
+import { Plus } from "lucide-react"
+import { getBlogs } from "../../../../actions/blogActions"
 
 export default async function BlogsPage() {
-  const { blogs } = await getBlogs();
+  const { blogs } = await getBlogs()
 
   return (
     <div className="space-y-4">
@@ -22,5 +22,5 @@ export default async function BlogsPage() {
 
       <BlogsTable columns={columns} data={blogs} />
     </div>
-  );
+  )
 }

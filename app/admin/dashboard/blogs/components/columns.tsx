@@ -1,48 +1,48 @@
-"use client";
+"use client"
 
-import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ColumnDef } from "@tanstack/react-table"
+import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { deleteBlog } from "../actions/blogActions";
-import Link from "next/link";
-import Image from "next/image";
-import { format } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+} from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import { deleteBlog } from "../../../../../actions/blogActions"
+import Link from "next/link"
+import Image from "next/image"
+import { format } from "date-fns"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export type Blog = {
-  id: number;
-  title: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  published: boolean;
-  publishedAt: Date | null;
-  views: number;
-  readTime: number | null;
-  createdAt: Date;
+  id: number
+  title: string
+  excerpt: string | null
+  featuredImage: string | null
+  published: boolean
+  publishedAt: Date | null
+  views: number
+  readTime: number | null
+  createdAt: Date
   author: {
-    id: string;
-    name: string;
-    image: string | null;
-  } | null;
+    id: string
+    name: string
+    image: string | null
+  } | null
   category: {
-    id: number;
-    name: string;
-  } | null;
-};
+    id: number
+    name: string
+  } | null
+}
 
 export const columns: ColumnDef<Blog>[] = [
   {
     accessorKey: "featuredImage",
     header: "Image",
     cell: ({ row }) => {
-      const image = row.original.featuredImage;
+      const image = row.original.featuredImage
       return image ? (
         <div className="relative w-16 h-12">
           <Image
@@ -56,7 +56,7 @@ export const columns: ColumnDef<Blog>[] = [
         <div className="w-16 h-12 bg-gray-100 flex items-center justify-center rounded">
           <span className="text-xs text-gray-500">No image</span>
         </div>
-      );
+      )
     },
   },
   {
@@ -70,30 +70,30 @@ export const columns: ColumnDef<Blog>[] = [
           Title
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      );
+      )
     },
     cell: ({ row }) => {
-      const title: string = row.getValue("title");
+      const title: string = row.getValue("title")
       return (
         <div className="font-medium max-w-[200px] truncate" title={title}>
           {title}
         </div>
-      );
+      )
     },
   },
   {
     accessorKey: "category.name",
     header: "Category",
     cell: ({ row }) => {
-      const category = row.original.category?.name || "Uncategorized";
-      return <div>{category}</div>;
+      const category = row.original.category?.name || "Uncategorized"
+      return <div>{category}</div>
     },
   },
   {
     accessorKey: "author",
     header: "Author",
     cell: ({ row }) => {
-      const author = row.original.author;
+      const author = row.original.author
       return author ? (
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
@@ -109,19 +109,19 @@ export const columns: ColumnDef<Blog>[] = [
         </div>
       ) : (
         "Unknown"
-      );
+      )
     },
   },
   {
     accessorKey: "published",
     header: "Status",
     cell: ({ row }) => {
-      const isPublished = row.getValue("published");
+      const isPublished = row.getValue("published")
       return isPublished ? (
         <Badge>Published</Badge>
       ) : (
         <Badge variant="outline">Draft</Badge>
-      );
+      )
     },
   },
   {
@@ -135,11 +135,11 @@ export const columns: ColumnDef<Blog>[] = [
           Date
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      );
+      )
     },
     cell: ({ row }) => {
-      const date = row.original.createdAt;
-      return <div>{format(new Date(date), "MMM d, yyyy")}</div>;
+      const date = row.original.createdAt
+      return <div>{format(new Date(date), "MMM d, yyyy")}</div>
     },
   },
   {
@@ -153,13 +153,13 @@ export const columns: ColumnDef<Blog>[] = [
           Views
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      );
+      )
     },
   },
   {
     id: "actions",
     cell: ({ row }) => {
-      const blog = row.original;
+      const blog = row.original
 
       return (
         <DropdownMenu>
@@ -188,7 +188,7 @@ export const columns: ColumnDef<Blog>[] = [
                 if (
                   window.confirm("Are you sure you want to delete this blog?")
                 ) {
-                  deleteBlog(blog.id);
+                  deleteBlog(blog.id)
                 }
               }}
             >
@@ -197,7 +197,7 @@ export const columns: ColumnDef<Blog>[] = [
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      );
+      )
     },
   },
-];
+]
