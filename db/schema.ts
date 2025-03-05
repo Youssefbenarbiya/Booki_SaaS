@@ -291,3 +291,47 @@ export const carBookingsRelations = relations(carBookings, ({ one }) => ({
     references: [cars.id],
   }),
 }))
+
+// Blog Categories table
+export const blogCategories = pgTable("blog_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+})
+// Blogs table
+export const blogs = pgTable("blogs", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt"),
+  featuredImage: text("featured_image"),
+  images: text("images").array().default([]).notNull(),
+  published: boolean("published").default(false).notNull(),
+  publishedAt: timestamp("published_at"),
+  categoryId: integer("category_id").references(() => blogCategories.id),
+  authorId: text("author_id").references(() => user.id),
+  views: integer("views").default(0),
+  readTime: integer("read_time"),
+  tags: text("tags").array().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+})
+// Blog Relations
+export const blogRelations = relations(blogs, ({ one }) => ({
+  category: one(blogCategories, {
+    fields: [blogs.categoryId],
+    references: [blogCategories.id],
+  }),
+  author: one(user, {
+    fields: [blogs.authorId],
+    references: [user.id],
+  }),
+}))
+export const blogCategoriesRelations = relations(
+  blogCategories,
+  ({ many }) => ({
+    blogs: many(blogs),
+  })
+)
