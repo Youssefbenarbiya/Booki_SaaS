@@ -254,8 +254,6 @@ export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
   }),
 }))
 
-
-
 export const cars = pgTable("cars", {
   id: serial("id").primaryKey(),
   model: varchar("model", { length: 100 }).notNull(),
@@ -270,17 +268,17 @@ export const cars = pgTable("cars", {
   updatedAt: timestamp("updated_at").defaultNow(),
 })
 
-export const carBookings = pgTable('car_bookings', {
-  id: serial('id').primaryKey(),
-  carId: integer('car_id').references(() => cars.id),
-  customerName: varchar('customer_name', { length: 255 }).notNull(),
-  customerEmail: varchar('customer_email', { length: 255 }).notNull(),
-  startDate: timestamp('start_date').notNull(),
-  endDate: timestamp('end_date').notNull(),
-  totalPrice: integer('total_price').notNull(),
-  status: varchar('status', { length: 20 }).default('pending'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+export const carBookings = pgTable("car_bookings", {
+  id: serial("id").primaryKey(),
+  carId: integer("car_id").references(() => cars.id),
+  customerName: varchar("customer_name", { length: 255 }).notNull(),
+  customerEmail: varchar("customer_email", { length: 255 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  totalPrice: integer("total_price").notNull(),
+  status: varchar("status", { length: 20 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 })
 
 export const carsRelations = relations(cars, ({ many }) => ({
