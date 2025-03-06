@@ -3,7 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import DeleteHotelButton from "./DeleteHotelButton"
-
+import HotelLocationMap from "@/components/HotelLocationMap"
 
 export default async function HotelDetailsPage({
   params,
@@ -99,6 +99,24 @@ export default async function HotelDetailsPage({
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Hotel Location Map */}
+      <div className="mt-10">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Location</h2>
+        <div className="bg-white rounded-lg shadow p-6">
+          {hotel.latitude && hotel.longitude ? (
+            <div className="h-[400px]">
+              <HotelLocationMap
+                latitude={hotel.latitude}
+                longitude={hotel.longitude}
+                height="400px"
+              />
+            </div>
+          ) : (
+            <p className="text-gray-500">No location coordinates available for this hotel.</p>
+          )}
         </div>
       </div>
 
