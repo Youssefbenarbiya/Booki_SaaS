@@ -37,16 +37,32 @@ export default function BookRoomForm({
       return
     }
 
+    // Calculate nights and total price
+    const nights = Math.ceil(
+      (new Date(checkOut).getTime() - new Date(checkIn).getTime()) /
+        (1000 * 60 * 60 * 24)
+    )
+
+    const totalPrice = pricePerNight * nights
+
     startTransition(async () => {
       try {
+        // Get hotelId from URL path
+        const pathParts = window.location.pathname.split("/")
+        const hotelId = pathParts[2] // Extract hotelId from /hotels/[hotelId]/rooms/...
+
         const booking = await createRoomBooking({
           roomId,
           userId,
           checkIn: checkInDate,
           checkOut: checkOutDate,
+          totalPrice, // Pass the calculated total price
+          status: "confirmed", // Set status as confirmed
         })
+
+        // Use the proper URL structure that matches your folder structure
         router.push(
-          `/hotels/${roomId}/book/confirmation?bookingId=${booking.id}`
+          `/hotels/${hotelId}/rooms/${roomId}/book/confirmation?bookingId=${booking.id}`
         )
       } catch (error) {
         console.error("Error booking room:", error)

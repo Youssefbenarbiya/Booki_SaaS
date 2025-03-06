@@ -10,6 +10,8 @@ interface CreateRoomBookingParams {
   userId: string
   checkIn: Date
   checkOut: Date
+  totalPrice?: number
+  status?: string
 }
 
 export async function createRoomBooking({
@@ -17,48 +19,71 @@ export async function createRoomBooking({
   userId,
   checkIn,
   checkOut,
+  totalPrice,
+  status,
 }: CreateRoomBookingParams) {
   try {
-    return await db.transaction(async (tx) => {
-      // Check if room exists and is available for these dates
-      const existingBookings = await tx.query.roomBookings.findMany({
-        where: and(
-          eq(roomBookings.roomId, roomId),
-          or(
-            between(
-              roomBookings.checkIn,
-              checkIn.toISOString(),
-              checkOut.toISOString()
-            ),
-            between(
-              roomBookings.checkOut,
-              checkIn.toISOString(),
-              checkOut.toISOString()
-            )
+    // Check if room exists and is available for these dates
+    const existingBookings = await db.query.roomBookings.findMany({
+      where: and(
+        eq(roomBookings.roomId, roomId),
+        or(
+          between(
+            roomBookings.checkIn,
+            checkIn.toISOString(),
+            checkOut.toISOString()
+          ),
+          between(
+            roomBookings.checkOut,
+            checkIn.toISOString(),
+            checkOut.toISOString()
           )
-        ),
+        )
+      ),
+    })
+
+    if (existingBookings.length > 0) {
+      throw new Error("Room is not available for these dates")
+    }
+
+    // If totalPrice is not provided, calculate it based on room price and nights
+    let finalTotalPrice = totalPrice
+
+    if (!finalTotalPrice) {
+      // Get room price from database
+      const room = await db.query.room.findFirst({
+        where: eq(room.id, roomId),
       })
 
-      if (existingBookings.length > 0) {
-        throw new Error("Room is not available for these dates")
+      if (!room) {
+        throw new Error("Room not found")
       }
 
-      // Create booking
-      const [booking] = await tx
-        .insert(roomBookings)
-        .values({
-          roomId,
-          userId,
-          checkIn: checkIn.toISOString(),
-          checkOut: checkOut.toISOString(),
-          status: "pending",
-        })
-        .returning()
+      // Calculate nights
+      const nights = Math.ceil(
+        (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+      )
 
-      revalidatePath(`/hotels/${booking.roomId}`)
-      revalidatePath("/dashboard/bookings")
-      return booking
-    })
+      // Calculate total price
+      finalTotalPrice = parseFloat(room.pricePerNight) * nights
+    }
+
+    // Create booking with the correct total price
+    const [booking] = await db
+      .insert(roomBookings)
+      .values({
+        roomId,
+        userId,
+        checkIn: checkIn.toISOString(),
+        checkOut: checkOut.toISOString(),
+        totalPrice: finalTotalPrice.toString(), 
+        status: status || "pending",
+      })
+      .returning()
+
+    revalidatePath(`/hotels/${booking.roomId}`)
+    revalidatePath("/dashboard/bookings")
+    return booking
   } catch (error) {
     console.error("Error creating room booking:", error)
     throw error

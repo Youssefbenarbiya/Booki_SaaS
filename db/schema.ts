@@ -218,6 +218,10 @@ export const roomBookings = pgTable("room_bookings", {
     .references(() => user.id, { onDelete: "cascade" }),
   checkIn: date("check_in").notNull(),
   checkOut: date("check_out").notNull(),
+  totalPrice: decimal("total_price", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   bookingDate: timestamp("booking_date").defaultNow(),
 })
