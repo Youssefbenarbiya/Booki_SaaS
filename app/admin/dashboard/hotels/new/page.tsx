@@ -9,7 +9,14 @@ import { createHotel } from "@/actions/hotelActions"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
-import { Building, BedDouble, Plus, Trash2 } from "lucide-react"
+import { Building, BedDouble, Plus, Trash2, MapPin } from "lucide-react"
+import dynamic from "next/dynamic"
+
+// Dynamically import the map component to avoid SSR issues with Leaflet
+const LocationMapSelector = dynamic(
+  () => import("@/components/LocationMapSelector"),
+  { ssr: false }
+)
 
 // Available amenities for hotels and rooms
 const HOTEL_AMENITIES = [
@@ -43,6 +50,8 @@ export default function NewHotelPage() {
     register,
     control,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<HotelInput>({
     resolver: zodResolver(hotelSchema),
@@ -64,6 +73,10 @@ export default function NewHotelPage() {
     name: "rooms",
   })
 
+  // Get current values for latitude and longitude
+  const latitude = watch("latitude")
+  const longitude = watch("longitude")
+
   // State for hotel images
   const [hotelImages, setHotelImages] = useState<File[]>([])
   const [hotelImagePreviews, setHotelImagePreviews] = useState<string[]>([])
@@ -73,6 +86,12 @@ export default function NewHotelPage() {
   const [roomImages, setRoomImages] = useState<File[][]>([[]])
   const [roomImagePreviews, setRoomImagePreviews] = useState<string[][]>([[]])
   const [roomUploadErrors, setRoomUploadErrors] = useState<string[]>([""])
+
+  // Handle location selection
+  const handleLocationSelected = (lat: number, lng: number) => {
+    setValue("latitude", lat)
+    setValue("longitude", lng)
+  }
 
   async function onSubmit(data: HotelInput) {
     try {
@@ -263,6 +282,30 @@ export default function NewHotelPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Add Location Map section */}
+              <div className="md:col-span-2 space-y-2 mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="h-5 w-5" />
+                  <h3 className="text-lg font-medium">Hotel Location</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Select the exact location of your hotel on the map. You can
+                  search for an address or click directly on the map.
+                </p>
+                <LocationMapSelector
+                  initialLatitude={latitude}
+                  initialLongitude={longitude}
+                  onLocationSelected={handleLocationSelected}
+                  height="400px"
+                  enableSearch={true}
+                />
+                {errors.latitude || errors.longitude ? (
+                  <p className="text-sm text-destructive">
+                    Please select a valid location on the map
+                  </p>
+                ) : null}
               </div>
 
               <div className="md:col-span-2">

@@ -165,7 +165,9 @@ export const hotel = pgTable("hotel", {
   address: text("address").notNull(),
   city: varchar("city").notNull(),
   country: varchar("country").notNull(),
-  rating: integer("rating").notNull(), // e.g., 1-5 stars
+  rating: integer("rating").notNull(),
+  latitude: text("latitude"),
+  longitude: text("longitude"),
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),

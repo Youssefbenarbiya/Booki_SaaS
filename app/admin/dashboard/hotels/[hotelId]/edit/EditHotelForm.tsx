@@ -10,7 +10,14 @@ import { updateHotel } from "@/actions/hotelActions"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
-import { Building, BedDouble, Plus, Trash2 } from "lucide-react"
+import { Building, BedDouble, Plus, Trash2, MapPin } from "lucide-react"
+import dynamic from "next/dynamic"
+
+// Dynamically import the map component to avoid SSR issues with Leaflet
+const LocationMapSelector = dynamic(
+  () => import("@/components/LocationMapSelector"),
+  { ssr: false }
+)
 
 // Available amenities for hotels and rooms
 const HOTEL_AMENITIES = [
@@ -47,6 +54,8 @@ interface EditHotelFormProps {
     rating: number
     amenities: string[]
     images: string[]
+    latitude?: string | null
+    longitude?: string | null
     rooms: Array<{
       id: string
       name: string
@@ -64,11 +73,21 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
+  // Convert string coordinates to numbers
+  const initialLatitude = hotel.latitude
+    ? parseFloat(hotel.latitude)
+    : undefined
+  const initialLongitude = hotel.longitude
+    ? parseFloat(hotel.longitude)
+    : undefined
+
   // Initialize react-hook-form with default values.
   const {
     register,
     control,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<HotelInput>({
     resolver: zodResolver(hotelSchema),
@@ -81,6 +100,8 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
       rating: hotel.rating,
       amenities: hotel.amenities,
       images: hotel.images, // will be updated on submit
+      latitude: initialLatitude,
+      longitude: initialLongitude,
       rooms: hotel.rooms.map((room) => ({
         id: room.id,
         name: room.name,
@@ -93,6 +114,16 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
       })),
     },
   })
+
+  // Get current values for latitude and longitude
+  const latitude = watch("latitude")
+  const longitude = watch("longitude")
+
+  // Handle location selection
+  const handleLocationSelected = (lat: number, lng: number) => {
+    setValue("latitude", lat)
+    setValue("longitude", lng)
+  }
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -340,6 +371,30 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Hotel Location Map Section */}
+              <div className="md:col-span-2 space-y-2 mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="h-5 w-5" />
+                  <h3 className="text-lg font-medium">Hotel Location</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Update the exact location of your hotel on the map. You can
+                  search for an address or click directly on the map.
+                </p>
+                <LocationMapSelector
+                  initialLatitude={latitude}
+                  initialLongitude={longitude}
+                  onLocationSelected={handleLocationSelected}
+                  height="400px"
+                  enableSearch={true}
+                />
+                {errors.latitude || errors.longitude ? (
+                  <p className="text-sm text-destructive">
+                    Please select a valid location on the map
+                  </p>
+                ) : null}
               </div>
 
               {/* Existing Hotel Images */}

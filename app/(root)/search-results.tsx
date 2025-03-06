@@ -12,8 +12,8 @@ interface Trip {
   price: string
   capacity: number
   isAvailable: boolean | null
-  images: any[] 
-  activities: any[] 
+  images: any[]
+  activities: any[]
 }
 
 interface Hotel {
@@ -28,19 +28,20 @@ interface Hotel {
   country: string
   rating: number
   amenities: string[]
-  rooms: any[] 
+  rooms: any[]
 }
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { searchTrips } from "@/actions/searchTrips"
 import { searchHotels } from "@/actions/searchHotels"
-import TripList from "@/components/cards/TripList"
 import HotelList from "@/components/cards/HotelList"
 import { HotelFilter } from "@/components/filter/HotelFilter"
+import { TripFilter } from "@/components/filter/TripFilter"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { SlidersHorizontal } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import TripCard from "@/components/cards/TripCard"
 
 interface SearchParams {
   type?: string
@@ -62,6 +63,7 @@ export function SearchResults({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filteredHotels, setFilteredHotels] = useState<Hotel[]>([])
+  const [filteredTrips, setFilteredTrips] = useState<Trip[]>([])
 
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
@@ -87,6 +89,7 @@ export function SearchResults({
             searchParams.startDate
           )
           setTripsData(trips)
+          setFilteredTrips(trips)
         }
 
         if (
@@ -114,35 +117,108 @@ export function SearchResults({
     fetchData()
   }, [searchParams])
 
-  const handleFilterChange = (filters: any) => {
-    const filtered = hotelsData.filter((hotel) => {
-      // Filter by price
-      const minPrice = Math.min(
-        ...hotel.rooms.map((r) => Number(r.pricePerNight))
-      )
-      if (
-        minPrice < filters.priceRange.min ||
-        minPrice > filters.priceRange.max
-      ) {
-        return false
-      }
+  const handleHotelFilterChange = useCallback(
+    (filters: any) => {
+      const filtered = hotelsData.filter((hotel) => {
+        // Filter by price
+        const minPrice = Math.min(
+          ...hotel.rooms.map((r) => Number(r.pricePerNight))
+        )
+        if (
+          minPrice < filters.priceRange.min ||
+          minPrice > filters.priceRange.max
+        ) {
+          return false
+        }
 
-      // Filter by ratings
-      if (
-        filters.ratings.length > 0 &&
-        !filters.ratings.includes(Math.floor(hotel.rating))
-      ) {
-        return false
-      }
+        // Filter by ratings
+        if (
+          filters.ratings.length > 0 &&
+          !filters.ratings.includes(Math.floor(hotel.rating))
+        ) {
+          return false
+        }
 
-      // For amenities, we would need a proper amenities field on hotels
-      // This is just a placeholder implementation
+        // For amenities, we would need a proper amenities field on hotels
+        // This is just a placeholder implementation
 
-      return true
-    })
+        return true
+      })
 
-    setFilteredHotels(filtered)
-  }
+      setFilteredHotels(filtered)
+    },
+    [hotelsData]
+  )
+
+  const handleTripFilterChange = useCallback(
+    (filters: any) => {
+      const filtered = tripsData.filter((trip) => {
+        // Filter by price
+        const tripPrice = Number(trip.price)
+        if (
+          tripPrice < filters.priceRange.min ||
+          tripPrice > filters.priceRange.max
+        ) {
+          return false
+        }
+
+        // Filter by duration
+        const startDate = new Date(trip.startDate)
+        const endDate = new Date(trip.endDate)
+        const durationDays = Math.ceil(
+          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+
+        if (
+          durationDays < filters.duration.min ||
+          durationDays > filters.duration.max
+        ) {
+          return false
+        }
+
+        // Filter by ratings - assuming trips have a rating property
+        if (
+          filters.ratings.length > 0 &&
+          trip.rating &&
+          !filters.ratings.includes(Math.floor(trip.rating))
+        ) {
+          return false
+        }
+
+        // Filter by amenities - assuming trip activities can be matched with amenities
+        if (filters.amenities.length > 0) {
+          // This is simplified and would need to be adjusted based on your actual data structure
+          const tripAmenities = trip.activities.map((a: any) =>
+            a.activityName.toLowerCase()
+          )
+          const hasAllRequiredAmenities = filters.amenities.every(
+            (amenity: string) =>
+              tripAmenities.some((a: string) =>
+                a.includes(amenity.toLowerCase())
+              )
+          )
+
+          if (!hasAllRequiredAmenities) {
+            return false
+          }
+        }
+
+        // Filter by categories - assuming trips have a category property
+        if (
+          filters.categories.length > 0 &&
+          trip.category &&
+          !filters.categories.includes(trip.category)
+        ) {
+          return false
+        }
+
+        return true
+      })
+
+      setFilteredTrips(filtered)
+    },
+    [tripsData]
+  )
 
   if (!searchParams.type) {
     return null
@@ -171,35 +247,75 @@ export function SearchResults({
     )
   }
 
-  if (searchParams.type === "trips" && tripsData.length === 0) {
+  if (searchParams.type === "trips") {
+    // Remove the early return when no trips are found to keep sidebar visible
     return (
-      <div className="container mx-auto px-4">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold text-gray-900">
-            No trips found
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Try adjusting your search criteria to find more results
-          </p>
-        </div>
-      </div>
-    )
-  }
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-semibold mb-6">
+          {filteredTrips.length > 0
+            ? `Found ${filteredTrips.length} trips for your search`
+            : "No trips match your filters"}
+        </h2>
 
-  if (searchParams.type === "trips" && tripsData.length > 0) {
-    return (
-      <div className="container mx-auto px-4">
-        <div className="py-8">
-          <h2 className="text-2xl font-semibold mb-6">
-            Found {tripsData.length} trips for your search
-          </h2>
-          <TripList trips={tripsData} />
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Mobile Filter Button & Sheet */}
+          {!isDesktop && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="mb-4 md:hidden">
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  Filter Trips
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[85vh] pt-6 px-0">
+                <TripFilter
+                  onFilterChange={handleTripFilterChange}
+                  isMobileView={true}
+                  className="border-0 shadow-none"
+                  searchParams={searchParams}
+                />
+              </SheetContent>
+            </Sheet>
+          )}
+
+          {/* Desktop Filter Sidebar */}
+          {isDesktop && (
+            <div className="hidden md:block w-64 shrink-0">
+              <div className="sticky top-24">
+                <TripFilter
+                  onFilterChange={handleTripFilterChange}
+                  searchParams={searchParams}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Trip Results or Empty State */}
+          <div className="flex-1">
+            {filteredTrips.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredTrips.map((trip) => (
+                  <TripCard key={trip.id} trip={trip} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center h-60 flex flex-col justify-center">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No trips match your filters
+                </h3>
+                <p className="text-gray-600">
+                  Try adjusting your filter criteria to see more results
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     )
   }
 
   if (searchParams.type === "hotels") {
+    // Existing hotel search results code
     return (
       <div className="container mx-auto px-4 py-8">
         <h2 className="text-2xl font-semibold mb-6">
@@ -220,7 +336,7 @@ export function SearchResults({
               </SheetTrigger>
               <SheetContent side="bottom" className="h-[85vh] pt-6 px-0">
                 <HotelFilter
-                  onFilterChange={handleFilterChange}
+                  onFilterChange={handleHotelFilterChange}
                   isMobileView={true}
                   className="border-0 shadow-none"
                   searchParams={searchParams}
@@ -234,7 +350,7 @@ export function SearchResults({
             <div className="hidden md:block w-64 shrink-0">
               <div className="sticky top-24">
                 <HotelFilter
-                  onFilterChange={handleFilterChange}
+                  onFilterChange={handleHotelFilterChange}
                   searchParams={searchParams}
                 />
               </div>

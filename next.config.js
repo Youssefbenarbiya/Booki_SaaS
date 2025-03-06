@@ -5,7 +5,7 @@ const nextConfig = {
       "localhost",
       "res.cloudinary.com",
       "platform-lookaside.fbsbx.com",
-      "booki-hazel.vercel.app", 
+      "booki-hazel.vercel.app",
     ],
     remotePatterns: [
       {
@@ -15,6 +15,10 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
+        hostname: "source.unsplash.com",
       },
     ],
   },
