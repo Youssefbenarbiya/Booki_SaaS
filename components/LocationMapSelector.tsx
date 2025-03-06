@@ -26,19 +26,24 @@ interface LocationMapSelectorProps {
   onLocationSelected: (lat: number, lng: number) => void
   height?: string
   enableSearch?: boolean
+  readOnly?: boolean
 }
 
 function MapMarker({
   position,
   onPositionChange,
+  readOnly = false,
 }: {
   position: [number, number]
   onPositionChange: (position: [number, number]) => void
+  readOnly?: boolean
 }) {
-  // Handle map clicks and update the marker
+  // Handle map clicks and update the marker only if not in read-only mode
   useMapEvents({
     click: (e) => {
-      onPositionChange([e.latlng.lat, e.latlng.lng])
+      if (!readOnly) {
+        onPositionChange([e.latlng.lat, e.latlng.lng])
+      }
     },
   })
 
@@ -51,6 +56,7 @@ export default function LocationMapSelector({
   onLocationSelected,
   height = "400px",
   enableSearch = true,
+  readOnly = false,
 }: LocationMapSelectorProps) {
   // Default position if none provided
   const defaultPosition: [number, number] = [51.505, -0.09] // London as default
@@ -71,8 +77,10 @@ export default function LocationMapSelector({
 
   // Handle position changes from user interactions (map click or search)
   const handlePositionChange = (newPosition: [number, number]) => {
-    isUserInteraction.current = true
-    setPosition(newPosition)
+    if (!readOnly) {
+      isUserInteraction.current = true
+      setPosition(newPosition)
+    }
   }
 
   // Only notify parent when position changes from user interaction
@@ -93,7 +101,7 @@ export default function LocationMapSelector({
 
   // Search for address using OpenStreetMap Nominatim API
   const searchAddress = async () => {
-    if (!searchQuery) return
+    if (!searchQuery || readOnly) return
 
     setIsSearching(true)
     try {
@@ -113,6 +121,8 @@ export default function LocationMapSelector({
 
   // Select a search result
   const selectSearchResult = (result: any) => {
+    if (readOnly) return
+
     const newPosition: [number, number] = [
       parseFloat(result.lat),
       parseFloat(result.lon),
@@ -124,7 +134,7 @@ export default function LocationMapSelector({
 
   return (
     <div className="w-full space-y-2">
-      {enableSearch && (
+      {enableSearch && !readOnly && (
         <div className="relative">
           <div className="flex gap-2">
             <input
@@ -170,6 +180,11 @@ export default function LocationMapSelector({
           center={position}
           zoom={13}
           style={{ height: "100%", width: "100%" }}
+          dragging={!readOnly}
+          touchZoom={!readOnly}
+          doubleClickZoom={!readOnly}
+          scrollWheelZoom={!readOnly}
+          zoomControl={!readOnly}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -178,13 +193,16 @@ export default function LocationMapSelector({
           <MapMarker
             position={position}
             onPositionChange={handlePositionChange}
+            readOnly={readOnly}
           />
         </MapContainer>
       </div>
-      <div className="text-xs text-muted-foreground">
-        Click on the map to select a location. Current position:{" "}
-        {position[0].toFixed(6)}, {position[1].toFixed(6)}
-      </div>
+      {!readOnly && (
+        <div className="text-xs text-muted-foreground">
+          Click on the map to select a location. Current position:{" "}
+          {position[0].toFixed(6)}, {position[1].toFixed(6)}
+        </div>
+      )}
     </div>
   )
 }

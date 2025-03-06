@@ -112,10 +112,13 @@ export default async function HotelDetailsPage({
                 latitude={hotel.latitude}
                 longitude={hotel.longitude}
                 height="400px"
+                readOnly={true}
               />
             </div>
           ) : (
-            <p className="text-gray-500">No location coordinates available for this hotel.</p>
+            <p className="text-gray-500">
+              No location coordinates available for this hotel.
+            </p>
           )}
         </div>
       </div>
