@@ -1,7 +1,5 @@
-import {
-  MapPin,
-  Star,
-} from "lucide-react"
+import { MapPin, Star } from "lucide-react"
+import HotelLocationMap from "../HotelLocationMap"
 
 interface HotelInfoProps {
   hotel: {
@@ -12,6 +10,8 @@ interface HotelInfoProps {
     country: string
     description: string
     amenities: string[] | null
+    latitude?: number | string
+    longitude?: number | string
   }
 }
 
@@ -53,15 +53,13 @@ export default function HotelInfo({ hotel }: HotelInfoProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
         <div>
           <h2 className="text-xl font-semibold mb-4">Location/Map</h2>
-          <div className="relative h-[200px] rounded-lg overflow-hidden bg-gray-200">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <MapPin className="h-8 w-8 text-yellow-500" />
-            </div>
-            <div className="absolute bottom-2 right-2">
-              <button className="bg-yellow-500 text-white text-xs font-medium px-3 py-1 rounded">
-                View on map
-              </button>
-            </div>
+          <div className="relative h-[200px] rounded-lg overflow-hidden">
+            <HotelLocationMap
+              latitude={hotel.latitude}
+              longitude={hotel.longitude}
+              height="200px"
+              readOnly={true}
+            />
           </div>
           <p className="mt-2 text-sm text-gray-600 flex items-start">
             <MapPin className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
