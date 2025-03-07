@@ -4,7 +4,6 @@ import HotelGallery from "@/components/hotel-details/HotelGallery"
 import HotelInfo from "@/components/hotel-details/HotelInfo"
 import db from "@/db/drizzle"
 import RoomsList from "@/components/hotel-details/RoomsList"
-import BookRoomAction from "@/components/hotel-details/BookRoomAction"
 import { getHotelById } from "@/actions/getHotelById"
 
 export async function generateStaticParams() {
@@ -53,7 +52,6 @@ export default async function HotelPage({
         }))}
       />
 
-      <BookRoomAction />
     </div>
   )
 }
