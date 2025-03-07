@@ -54,7 +54,7 @@ export function HotelCard({ hotel }: HotelCardProps) {
             <p className="text-lg font-semibold">
               {formatPrice(
                 Math.min(
-                  ...hotel.rooms.map((room) => Number(room.pricePerNight))
+                  ...hotel.rooms.map((room) => Number(room.pricePerNightChild))
                 )
               )}
               <span className="text-sm font-normal text-muted-foreground">

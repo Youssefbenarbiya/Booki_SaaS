@@ -62,6 +62,8 @@ export default function NewHotelPage() {
           amenities: [],
           capacity: 2,
           roomType: "double",
+          pricePerNightAdult: 0,
+          pricePerNightChild: 0,
           availabilities: [],
         },
       ],
@@ -340,7 +342,8 @@ export default function NewHotelPage() {
                     amenities: [],
                     images: [],
                     capacity: 2,
-                    pricePerNight: 0,
+                    pricePerNightAdult: 0,
+                    pricePerNightChild: 0,
                     roomType: "double",
                   })
                   setRoomImages((prev) => [...prev, []])
@@ -441,23 +444,43 @@ export default function NewHotelPage() {
                       )}
                     </div>
 
-                    <div>
-                      <label className="block font-medium">
-                        Price per Night
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register(`rooms.${index}.pricePerNight`, {
-                          valueAsNumber: true,
-                        })}
-                        className="input input-bordered w-full"
-                      />
-                      {errors.rooms?.[index]?.pricePerNight && (
-                        <p className="text-red-500">
-                          {errors.rooms[index]?.pricePerNight?.message}
-                        </p>
-                      )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-medium">
+                          Price per Night (Adult)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...register(`rooms.${index}.pricePerNightAdult`, {
+                            valueAsNumber: true,
+                          })}
+                          className="input input-bordered w-full"
+                        />
+                        {errors.rooms?.[index]?.pricePerNightAdult && (
+                          <p className="text-red-500">
+                            {errors.rooms[index]?.pricePerNightAdult?.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block font-medium">
+                          Price per Night (Child 6-17)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...register(`rooms.${index}.pricePerNightChild`, {
+                            valueAsNumber: true,
+                          })}
+                          className="input input-bordered w-full"
+                        />
+                        {errors.rooms?.[index]?.pricePerNightChild && (
+                          <p className="text-red-500">
+                            {errors.rooms[index]?.pricePerNightChild?.message}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="md:col-span-2">

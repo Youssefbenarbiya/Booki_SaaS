@@ -43,6 +43,7 @@ const ROOM_AMENITIES = [
   "Shower",
 ]
 
+// Update the interface so that each room has separate pricing fields.
 interface EditHotelFormProps {
   hotel: {
     id: string
@@ -61,7 +62,8 @@ interface EditHotelFormProps {
       name: string
       description: string
       capacity: number
-      pricePerNight: string
+      pricePerNightAdult: string
+      pricePerNightChild: string
       roomType: string
       amenities: string[]
       images: string[]
@@ -107,7 +109,9 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
         name: room.name,
         description: room.description,
         capacity: room.capacity,
-        pricePerNight: parseFloat(room.pricePerNight),
+        // Convert the string values to numbers for editing.
+        pricePerNightAdult: parseFloat(room.pricePerNightAdult),
+        pricePerNightChild: parseFloat(room.pricePerNightChild),
         roomType: room.roomType as "single" | "double" | "suite" | "family",
         amenities: room.amenities,
         images: room.images, // will be updated on submit
@@ -218,13 +222,15 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
         // ----------------------------
         // Prepare Final Data
         // ----------------------------
+        // Note: We now convert the separate pricing values.
         const formattedData = {
           ...data,
           images: hotelImageUrls,
           rooms: data.rooms.map((room, index) => ({
             ...room,
             images: roomImageUrls[index] || [],
-            pricePerNight: Number(room.pricePerNight),
+            pricePerNightAdult: Number(room.pricePerNightAdult),
+            pricePerNightChild: Number(room.pricePerNightChild),
           })),
         }
 
@@ -463,7 +469,8 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                     amenities: [],
                     images: [],
                     capacity: 2,
-                    pricePerNight: 0,
+                    pricePerNightAdult: 0,
+                    pricePerNightChild: 0,
                     roomType: "double",
                   })
                   setNewRoomImages((prev) => [...prev, []])
@@ -568,23 +575,46 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                       )}
                     </div>
 
-                    <div>
-                      <label className="block font-medium">
-                        Price per Night
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register(`rooms.${index}.pricePerNight`, {
-                          valueAsNumber: true,
-                        })}
-                        className="input input-bordered w-full"
-                      />
-                      {errors.rooms?.[index]?.pricePerNight && (
-                        <p className="text-red-500">
-                          {errors.rooms[index]?.pricePerNight?.message}
-                        </p>
-                      )}
+                    {/* Updated Pricing Section */}
+                    <div className="md:col-span-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-medium">
+                            Price per Night (Adult)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            {...register(`rooms.${index}.pricePerNightAdult`, {
+                              valueAsNumber: true,
+                            })}
+                            className="input input-bordered w-full"
+                          />
+                          {errors.rooms?.[index]?.pricePerNightAdult && (
+                            <p className="text-red-500">
+                              {errors.rooms[index]?.pricePerNightAdult?.message}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block font-medium">
+                            Price per Night (Child)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            {...register(`rooms.${index}.pricePerNightChild`, {
+                              valueAsNumber: true,
+                            })}
+                            className="input input-bordered w-full"
+                          />
+                          {errors.rooms?.[index]?.pricePerNightChild && (
+                            <p className="text-red-500">
+                              {errors.rooms[index]?.pricePerNightChild?.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="md:col-span-2">

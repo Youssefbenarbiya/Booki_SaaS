@@ -49,7 +49,7 @@ export default function RoomCard({ room }: RoomCardProps) {
         <div className="mt-3 flex items-center justify-between">
           <div className="text-lg font-semibold">
             <span className="text-black">
-              {formatPrice(Number(room.pricePerNight))}
+              {formatPrice(Number(room.pricePerNightAdult))}
             </span>
             <span className="text-sm font-normal text-gray-500">/night</span>
           </div>

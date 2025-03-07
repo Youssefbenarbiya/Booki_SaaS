@@ -162,7 +162,7 @@ export default async function HotelDetailsPage({
                     <strong>Capacity:</strong> {room.capacity} guests
                   </p>
                   <p>
-                    <strong>Price:</strong> ${room.pricePerNight}/night
+                    <strong>Price:</strong> ${room.pricePerNightAdult}/night
                   </p>
                 </div>
                 {/* Additional Room Images Gallery */}

@@ -8,7 +8,8 @@ interface RoomsListProps {
     name: string
     description: string | null
     capacity: number | null
-    pricePerNight: string
+    pricePerNightChild: string
+    pricePerNightAdult: string
     roomType: string | null
     images: string[] | null
     amenities: string[] | null
@@ -58,7 +59,7 @@ export default function RoomsList({ rooms }: RoomsListProps) {
                     </p>
                   </div>
                   <p className="text-lg font-bold">
-                    {formatPrice(room.pricePerNight)}
+                    {formatPrice(room.pricePerNightChild)}
                     <span className="text-sm font-normal text-gray-500">
                       /night
                     </span>

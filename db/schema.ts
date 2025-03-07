@@ -183,7 +183,11 @@ export const room = pgTable("room", {
   name: varchar("name").notNull(),
   description: text("description").notNull(),
   capacity: integer("capacity").notNull(),
-  pricePerNight: decimal("price_per_night", {
+  pricePerNightAdult: decimal("price_per_night_adult", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
+  pricePerNightChild: decimal("price_per_night_child", {
     precision: 10,
     scale: 2,
   }).notNull(),
