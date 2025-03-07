@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  Booki-db:
+    image: postgres
+    restart: always
+    container_name: Booki-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: booki  
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+
+volumes:
+  postgres:
