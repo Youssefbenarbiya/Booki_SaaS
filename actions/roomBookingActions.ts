@@ -65,7 +65,10 @@ export async function createRoomBooking({
       )
 
       // Calculate total price
-      finalTotalPrice = parseFloat(room.pricePerNight) * nights
+      finalTotalPrice =
+        (parseFloat(room.pricePerNightAdult) +
+          parseFloat(room.pricePerNightChild)) *
+        nights
     }
 
     // Create booking with the correct total price
@@ -76,7 +79,7 @@ export async function createRoomBooking({
         userId,
         checkIn: checkIn.toISOString(),
         checkOut: checkOut.toISOString(),
-        totalPrice: finalTotalPrice.toString(), 
+        totalPrice: finalTotalPrice.toString(),
         status: status || "pending",
       })
       .returning()

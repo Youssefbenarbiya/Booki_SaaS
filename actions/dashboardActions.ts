@@ -47,7 +47,7 @@ export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
         revenue: sql<number>`
           SUM(
             DATE_PART('day', ${roomBookings.checkOut}::timestamp - ${roomBookings.checkIn}::timestamp) * 
-            ${room.pricePerNight}::decimal
+            ${room.pricePerNightAdult}::decimal
           )
         `,
       })
@@ -113,7 +113,7 @@ export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
         name: user.name,
         email: user.email,
         amount: sql<number>`
-          DATE_PART('day', ${roomBookings.checkOut}::timestamp - ${roomBookings.checkIn}::timestamp) * ${room.pricePerNight}::decimal
+          DATE_PART('day', ${roomBookings.checkOut}::timestamp - ${roomBookings.checkIn}::timestamp) * ${room.pricePerNightAdult}::decimal
         `,
         date: roomBookings.bookingDate,
         avatar: user.image,

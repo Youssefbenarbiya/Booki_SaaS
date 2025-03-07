@@ -11,9 +11,9 @@ import Image from "next/image"
 export default async function BookRoomPage({
   params,
 }: {
-  params: Promise<{ roomId: string; hotelId: string }>
+  params: { roomId: string; hotelId: string }
 }) {
-  const { roomId, hotelId } = await params
+  const { roomId, hotelId } = params
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -77,14 +77,21 @@ export default async function BookRoomPage({
             </p>
             <p className="flex justify-between">
               <span className="font-medium text-gray-700">
-                Price per Night:
+                Price per Night (Adult):
               </span>
               <span className="font-semibold text-black">
-                {formatPrice(room.pricePerNight)}
+                {formatPrice(Number(room.pricePerNightAdult))}
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-medium text-gray-700">
+                Price per Night (Child):
+              </span>
+              <span className="font-semibold text-black">
+                {formatPrice(Number(room.pricePerNightChild))}
               </span>
             </p>
 
-            {/* Room Amenities */}
             {room.amenities && room.amenities.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-medium text-gray-700 mb-2">
@@ -108,7 +115,8 @@ export default async function BookRoomPage({
         {/* Booking Form */}
         <BookRoomForm
           roomId={room.id}
-          pricePerNight={Number.parseFloat(room.pricePerNight)}
+          pricePerNightAdult={Number(room.pricePerNightAdult)}
+          pricePerNightChild={Number(room.pricePerNightChild)}
           userId={session.user.id}
         />
       </div>
