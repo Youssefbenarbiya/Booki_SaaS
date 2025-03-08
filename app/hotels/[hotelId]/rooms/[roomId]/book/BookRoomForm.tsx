@@ -32,6 +32,12 @@ interface BookRoomFormProps {
   pricePerNightAdult: number
   pricePerNightChild: number
   userId: string
+  userDetails: {
+    name: string
+    surname: string
+    email: string
+    telephone: string
+  }
 }
 
 export default function BookRoomForm({
@@ -39,6 +45,7 @@ export default function BookRoomForm({
   pricePerNightAdult,
   pricePerNightChild,
   userId,
+  userDetails,
 }: BookRoomFormProps) {
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
@@ -59,6 +66,13 @@ export default function BookRoomForm({
   >([])
 
   const formatDate = format
+
+  const [formDetails, setFormDetails] = useState({
+    name: userDetails.name,
+    surname: userDetails.surname,
+    telephone: userDetails.telephone,
+    email: userDetails.email,
+  })
 
   // Calculate nights from selected dates.
   const nights =
@@ -386,17 +400,37 @@ export default function BookRoomForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="Enter your name" required />
+                <Input
+                  id="name"
+                  value={formDetails.name}
+                  onChange={(e) =>
+                    setFormDetails({ ...formDetails, name: e.target.value })
+                  }
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="surname">Surname</Label>
-                <Input id="surname" placeholder="Enter your surname" required />
+                <Input
+                  id="surname"
+                  value={formDetails.surname}
+                  onChange={(e) =>
+                    setFormDetails({ ...formDetails, surname: e.target.value })
+                  }
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="telephone">Telephone Number</Label>
                 <Input
                   id="telephone"
-                  placeholder="Enter your telephone number"
+                  value={formDetails.telephone}
+                  onChange={(e) =>
+                    setFormDetails({
+                      ...formDetails,
+                      telephone: e.target.value,
+                    })
+                  }
                   required
                 />
               </div>
@@ -405,7 +439,10 @@ export default function BookRoomForm({
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email address"
+                  value={formDetails.email}
+                  onChange={(e) =>
+                    setFormDetails({ ...formDetails, email: e.target.value })
+                  }
                   required
                 />
               </div>
