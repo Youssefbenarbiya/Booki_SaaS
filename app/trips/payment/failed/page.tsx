@@ -1,52 +1,28 @@
-import { redirect } from "next/navigation"
-import { auth } from "@/auth"
-import { headers } from "next/headers"
-import { updateTripBookingPaymentStatus } from "@/actions/tripBookingActions"
 import { Button } from "@/components/ui/button"
-import { AlertCircle } from "lucide-react"
+import { XCircle } from "lucide-react"
 import Link from "next/link"
 
-export default async function PaymentFailedPage({
-  searchParams,
-}: {
-  searchParams: { bookingId?: string }
-}) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  if (!session) {
-    redirect("/auth/signin")
-  }
-
-  const { bookingId } = searchParams
-
-  if (!bookingId) {
-    redirect("/dashboard/bookings")
-  }
-
-  // Update the booking payment status to failed
-  await updateTripBookingPaymentStatus(parseInt(bookingId), "failed", "flouci")
-
+export default function PaymentFailedPage() {
   return (
-    <div className="container max-w-lg mx-auto py-16 px-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-        <div className="flex justify-center mb-4">
-          <AlertCircle className="h-16 w-16 text-red-500" />
-        </div>
-        
+    <div className="container mx-auto px-4 py-16 flex flex-col items-center">
+      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg text-center">
+        <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">Payment Failed</h1>
         <p className="text-gray-600 mb-6">
-          Your payment could not be processed. Please try again or use a different payment method.
+          We couldn&apos;t process your payment. Please try again or contact
+          support if the problem persists.
         </p>
-        
-        <div className="space-y-3">
-          <Link href={`/trips/${bookingId}/book`} className="w-full block">
-            <Button className="w-full">Try Again</Button>
+
+        <div className="flex flex-col space-y-3">
+          <Link href="/trips">
+            <Button variant="default" className="w-full">
+              Browse Trips
+            </Button>
           </Link>
-          
-          <Link href="/dashboard/bookings" className="w-full block">
-            <Button variant="outline" className="w-full">View My Bookings</Button>
+          <Link href="/contact">
+            <Button variant="outline" className="w-full">
+              Contact Support
+            </Button>
           </Link>
         </div>
       </div>

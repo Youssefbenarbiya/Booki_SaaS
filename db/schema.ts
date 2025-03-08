@@ -117,10 +117,13 @@ export const tripBookings = pgTable("trip_bookings", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   seatsBooked: integer("seats_booked").notNull(),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   bookingDate: timestamp("booking_date").defaultNow(),
-  paymentStatus: varchar("payment_status", { length: 20 }).default("pending"),
+  paymentId: varchar("payment_id", { length: 255 }),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
   paymentMethod: varchar("payment_method", { length: 50 }),
+  paymentDate: timestamp("payment_date"),
 })
 
 // Trip Relations

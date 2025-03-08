@@ -20,7 +20,8 @@ export default async function BookTripPage({
     redirect(`/auth/signin?callbackUrl=/trips/${params.tripId}/book`)
   }
 
-  const trip = await getTripById(parseInt(params.tripId))
+  const tripId = parseInt(params.tripId)
+  const trip = await getTripById(tripId)
 
   if (!trip) {
     redirect("/trips")

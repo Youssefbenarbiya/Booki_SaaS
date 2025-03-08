@@ -2,15 +2,15 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
 
-export default function PaymentSuccessPage() {
+export default function TripConfirmationPage() {
   return (
     <div className="container mx-auto px-4 py-16 flex flex-col items-center">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg text-center">
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
+        <h1 className="text-2xl font-bold mb-2">Booking Confirmed!</h1>
         <p className="text-gray-600 mb-6">
-          Your payment has been processed successfully. Thank you for your
-          booking!
+          Your booking has been confirmed and payment was successful. Thank you
+          for choosing our service!
         </p>
 
         <div className="flex flex-col space-y-3">

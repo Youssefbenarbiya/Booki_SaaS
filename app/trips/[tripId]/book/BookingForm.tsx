@@ -1,9 +1,8 @@
 "use client"
 
-import { createBooking } from "@/actions/tripBookingActions"
+import { createBookingWithPayment } from "@/actions/tripBookingActions"
 import { formatPrice } from "@/lib/utils"
 import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
 import {
   Card,
   CardContent,
@@ -16,8 +15,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Minus, Plus, CheckCircle, Loader2 } from "lucide-react"
-import { TripPaymentMethodSelector } from "@/app/trips/components/TripPaymentMethodSelector"
-import { generateTripPaymentLink } from "@/services/tripPaymentService"
 
 interface BookingFormProps {
   tripId: number
@@ -32,12 +29,9 @@ export default function BookingForm({
   pricePerSeat,
   userId,
 }: BookingFormProps) {
-  const router = useRouter()
   const [seats, setSeats] = useState(1)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
-  const [paymentMethod, setPaymentMethod] = useState<"flouci" | "stripe">("flouci")
-  const [createdBookingId, setCreatedBookingId] = useState<number | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -50,59 +44,26 @@ export default function BookingForm({
 
     startTransition(async () => {
       try {
-        console.log("Creating booking with:", { tripId, userId, seats, totalPrice: seats * pricePerSeat });
-        
-        // Create booking first
-        const booking = await createBooking({
+        const result = await createBookingWithPayment({
           tripId,
           userId,
           seatsBooked: seats,
+          pricePerSeat,
         })
 
-        if (!booking || !booking.id) {
-          throw new Error("Failed to create booking - no booking ID returned");
+        if (!result.paymentLink) {
+          throw new Error("No payment link received")
         }
 
-        console.log("Booking created successfully:", booking);
-        setCreatedBookingId(booking.id);
-
-        // Calculate total amount
-        const totalAmount = seats * pricePerSeat;
-        console.log("Processing payment for amount:", totalAmount);
-
-        // Handle payment based on selected method
-        if (paymentMethod === "flouci") {
-          try {
-            // Generate Flouci payment link
-            const { paymentLink } = await generateTripPaymentLink({
-              amount: totalAmount,
-              bookingId: booking.id,
-              developerTrackingId: `trip_${booking.id}`
-            });
-            
-            if (!paymentLink) {
-              throw new Error("Failed to generate payment link - no link returned");
-            }
-            
-            console.log("Payment link generated successfully:", paymentLink);
-            
-            // Redirect to payment page
-            router.push(paymentLink);
-          } catch (paymentError) {
-            console.error("Payment link generation failed:", paymentError);
-            setError(`Payment error: ${paymentError.message || "Could not process payment"}`);
-            
-            // Fallback to mock payment system if Flouci fails
-            console.log("Using mock payment system as fallback");
-            router.push(`/trips/mock-payment?bookingId=${booking.id}&amount=${totalAmount}`);
-          }
-        } else if (paymentMethod === "stripe") {
-          // For now, redirect to not found page as per requirements
-          router.push('/not-found');
-        }
+        // Redirect to Flouci payment page
+        window.location.href = result.paymentLink
       } catch (error) {
-        console.error("Error booking trip:", error);
-        setError(`Failed to book trip: ${error.message || "Please try again"}`);
+        console.error("Error booking trip:", error)
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to book trip. Please try again."
+        )
       }
     })
   }
@@ -168,26 +129,9 @@ export default function BookingForm({
             </p>
           </div>
 
-          {/* Payment Method Selector */}
-          <TripPaymentMethodSelector 
-            selectedMethod={paymentMethod} 
-            onSelect={setPaymentMethod} 
-          />
-
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
-              {createdBookingId && (
-                <div className="mt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => router.push('/dashboard/bookings')}
-                  >
-                    View your booking
-                  </Button>
-                </div>
-              )}
             </Alert>
           )}
 
@@ -213,7 +157,7 @@ export default function BookingForm({
               ) : (
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Pay Now
+                  Confirm Booking
                 </>
               )}
             </Button>
