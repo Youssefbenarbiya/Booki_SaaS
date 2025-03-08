@@ -10,6 +10,7 @@ const APP_SECRET = "bc9ff7c5-31d9-4d2a-83ad-a71ae68aad2f"
 interface GeneratePaymentParams {
   amount: number // in millimes (dinars * 1000)
   bookingId: number | string
+  bookingType: 'room' | 'trip' // Added type to differentiate between room and trip bookings
   developerTrackingId?: string
   sessionTimeoutSecs?: number
 }
@@ -17,6 +18,7 @@ interface GeneratePaymentParams {
 export async function generatePaymentLink({
   amount,
   bookingId,
+  bookingType,
   developerTrackingId = "",
   sessionTimeoutSecs = 1200,
 }: GeneratePaymentParams) {
@@ -26,6 +28,15 @@ export async function generatePaymentLink({
 
     // Create the base URL for success and failure redirects
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    
+    // Set the appropriate success and fail paths based on booking type
+    const successPath = bookingType === 'room' 
+      ? `/payment/success?bookingId=${bookingId}` 
+      : `/trips/payment/success?bookingId=${bookingId}`
+    
+    const failPath = bookingType === 'room'
+      ? `/payment/failed?bookingId=${bookingId}`
+      : `/trips/payment/failed?bookingId=${bookingId}`
 
     const response = await fetch(`${FLOUCI_API_URL}/generate_payment`, {
       method: "POST",
@@ -38,9 +49,9 @@ export async function generatePaymentLink({
         amount: amountInMillimes.toString(),
         accept_card: "true",
         session_timeout_secs: sessionTimeoutSecs,
-        success_link: `${baseUrl}/payment/success?bookingId=${bookingId}`,
-        fail_link: `${baseUrl}/payment/failed?bookingId=${bookingId}`,
-        developer_tracking_id: developerTrackingId || `booking_${bookingId}`,
+        success_link: `${baseUrl}${successPath}`,
+        fail_link: `${baseUrl}${failPath}`,
+        developer_tracking_id: developerTrackingId || `${bookingType}_${bookingId}`,
       }),
     })
 
