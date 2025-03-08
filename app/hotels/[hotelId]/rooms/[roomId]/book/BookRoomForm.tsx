@@ -38,6 +38,7 @@ interface BookRoomFormProps {
     email: string
     telephone: string
   }
+  capacity: number
 }
 
 export default function BookRoomForm({
@@ -46,6 +47,7 @@ export default function BookRoomForm({
   pricePerNightChild,
   userId,
   userDetails,
+  capacity,
 }: BookRoomFormProps) {
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
@@ -59,7 +61,9 @@ export default function BookRoomForm({
   const [childCount, setChildCount] = useState(0)
   const [infantCount, setInfantCount] = useState(0)
   const [isPending, startTransition] = useTransition()
-  const [error, setError] = useState("")
+  const [dateError, setDateError] = useState("")
+  const [ticketError, setTicketError] = useState("")
+  const [submissionError, setSubmissionError] = useState("")
   const [isLoadingDates, setIsLoadingDates] = useState(true)
   const [bookedDateRanges, setBookedDateRanges] = useState<
     Array<{ start: Date; end: Date }>
@@ -73,6 +77,10 @@ export default function BookRoomForm({
     telephone: userDetails.telephone,
     email: userDetails.email,
   })
+
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    "flouci" | "stripe"
+  >("flouci")
 
   // Calculate nights from selected dates.
   const nights =
@@ -88,6 +96,9 @@ export default function BookRoomForm({
     nights *
     (adultCount * parseFloat(pricePerNightAdult.toString()) +
       childCount * parseFloat(pricePerNightChild.toString()))
+
+  // Add total guests calculation
+  const totalGuests = adultCount + childCount + infantCount
 
   // Fetch booked dates when component mounts
   useEffect(() => {
@@ -139,21 +150,60 @@ export default function BookRoomForm({
     )
   }
 
-  // Modified handleSubmit to check availability again before booking
+  // Ticket count handlers with capacity validation
+  const handleAdultChange = (increment: boolean) => {
+    const newCount = increment ? adultCount + 1 : Math.max(0, adultCount - 1)
+    const newTotal = newCount + childCount + infantCount
+
+    if (newTotal > capacity) {
+      setTicketError(`Total guests cannot exceed room capacity of ${capacity}`)
+      return
+    }
+    setTicketError("")
+    setAdultCount(newCount)
+  }
+
+  const handleChildChange = (increment: boolean) => {
+    const newCount = increment ? childCount + 1 : Math.max(0, childCount - 1)
+    const newTotal = adultCount + newCount + infantCount
+
+    if (newTotal > capacity) {
+      setTicketError(`Total guests cannot exceed room capacity of ${capacity}`)
+      return
+    }
+    setTicketError("")
+    setChildCount(newCount)
+  }
+
+  const handleInfantChange = (increment: boolean) => {
+    const newCount = increment ? infantCount + 1 : Math.max(0, infantCount - 1)
+    const newTotal = adultCount + childCount + newCount
+
+    if (newTotal > capacity) {
+      setTicketError(`Total guests cannot exceed room capacity of ${capacity}`)
+      return
+    }
+    setTicketError("")
+    setInfantCount(newCount)
+  }
+
+  // Modified handleSubmit to handle different payment methods
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setError("")
+    setDateError("")
+    setTicketError("")
+    setSubmissionError("")
 
     if (!dateRange.from || !dateRange.to) {
-      setError("Please select a valid date range")
+      setDateError("Please select a valid date range")
       return
     }
     if (dateRange.from >= dateRange.to) {
-      setError("Check-out date must be after check-in date")
+      setDateError("Check-out date must be after check-in date")
       return
     }
     if (adultCount < 1) {
-      setError("At least one adult is required")
+      setTicketError("At least one adult is required")
       return
     }
 
@@ -165,7 +215,7 @@ export default function BookRoomForm({
     )
 
     if (!isAvailable) {
-      setError(
+      setSubmissionError(
         "Selected dates are no longer available. Please choose different dates."
       )
       return
@@ -173,7 +223,13 @@ export default function BookRoomForm({
 
     startTransition(async () => {
       try {
-        // Create booking and get payment link
+        if (selectedPaymentMethod === "stripe") {
+          // Redirect to not found page for now
+          window.location.href = "/not-found"
+          return
+        }
+
+        // Create booking with Flouci
         const booking = (await createRoomBooking({
           roomId,
           userId,
@@ -186,18 +242,14 @@ export default function BookRoomForm({
           initiatePayment: true,
         })) as BookingWithPayment
 
-        console.log("Booking response:", booking) // Add this for debugging
-
-        // If payment link is available, redirect to payment page
         if (booking.paymentLink) {
-          console.log("Redirecting to:", booking.paymentLink) // Add this for debugging
           window.location.href = booking.paymentLink
         } else {
-          setError("Payment link not generated. Please try again.")
+          setSubmissionError("Payment link not generated. Please try again.")
         }
       } catch (err) {
         console.error("Error booking room:", err)
-        setError(
+        setSubmissionError(
           err instanceof Error
             ? err.message
             : "Failed to book room. Please try again."
@@ -289,6 +341,9 @@ export default function BookRoomForm({
                   )}
                 </PopoverContent>
               </Popover>
+              {dateError && (
+                <p className="text-red-600 text-sm mt-1">{dateError}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="time">What time?</Label>
@@ -316,7 +371,7 @@ export default function BookRoomForm({
                   <button
                     type="button"
                     className="w-6 h-6 flex items-center justify-center bg-[#FF8A00] text-white rounded-md"
-                    onClick={() => setAdultCount(Math.max(0, adultCount - 1))}
+                    onClick={() => handleAdultChange(false)}
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -324,7 +379,7 @@ export default function BookRoomForm({
                   <button
                     type="button"
                     className="w-6 h-6 flex items-center justify-center bg-[#FF8A00] text-white rounded-md"
-                    onClick={() => setAdultCount(adultCount + 1)}
+                    onClick={() => handleAdultChange(true)}
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -342,7 +397,7 @@ export default function BookRoomForm({
                   <button
                     type="button"
                     className="w-6 h-6 flex items-center justify-center bg-[#FF8A00] text-white rounded-md"
-                    onClick={() => setChildCount(Math.max(0, childCount - 1))}
+                    onClick={() => handleChildChange(false)}
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -350,7 +405,7 @@ export default function BookRoomForm({
                   <button
                     type="button"
                     className="w-6 h-6 flex items-center justify-center bg-[#FF8A00] text-white rounded-md"
-                    onClick={() => setChildCount(childCount + 1)}
+                    onClick={() => handleChildChange(true)}
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -369,7 +424,7 @@ export default function BookRoomForm({
                   <button
                     type="button"
                     className="w-6 h-6 flex items-center justify-center bg-[#FF8A00] text-white rounded-md"
-                    onClick={() => setInfantCount(Math.max(0, infantCount - 1))}
+                    onClick={() => handleInfantChange(false)}
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -377,13 +432,19 @@ export default function BookRoomForm({
                   <button
                     type="button"
                     className="w-6 h-6 flex items-center justify-center bg-[#FF8A00] text-white rounded-md"
-                    onClick={() => setInfantCount(infantCount + 1)}
+                    onClick={() => handleInfantChange(true)}
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             </div>
+            <div className="mt-2 text-sm text-gray-600">
+              Total Guests: {totalGuests} / {capacity}
+            </div>
+            {ticketError && (
+              <p className="text-red-600 text-sm mt-1">{ticketError}</p>
+            )}
           </div>
         </div>
 
@@ -456,15 +517,19 @@ export default function BookRoomForm({
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#FF8A00] text-white font-bold">
               3
             </div>
-            <h2 className="text-[#FF8A00] font-medium">Payment Information</h2>
+            <h2 className="text-[#FF8A00] font-medium">Payment Method</h2>
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-md">
-            <p className="text-sm text-gray-600 mb-2">
-              You will be redirected to Flouci payment gateway to complete your
-              payment securely.
-            </p>
-            <div className="flex items-center gap-2 mb-2">
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setSelectedPaymentMethod("flouci")}
+              className={`p-4 border rounded-lg flex flex-col items-center gap-2 ${
+                selectedPaymentMethod === "flouci"
+                  ? "border-[#FF8A00] bg-[#FFF8EE]"
+                  : "border-gray-200"
+              }`}
+            >
               <Image
                 src="/assets/payment/flouci-logo.png"
                 alt="Flouci"
@@ -472,30 +537,54 @@ export default function BookRoomForm({
                 height={30}
                 className="object-contain"
               />
+              <div className="flex gap-2">
+                <Image
+                  src="/assets/payment/visa.png"
+                  alt="Visa"
+                  width={40}
+                  height={30}
+                  className="object-contain"
+                />
+                <Image
+                  src="/assets/payment/mastercard.png"
+                  alt="Mastercard"
+                  width={40}
+                  height={30}
+                  className="object-contain"
+                />
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedPaymentMethod("stripe")}
+              className={`p-4 border rounded-lg flex flex-col items-center gap-2 ${
+                selectedPaymentMethod === "stripe"
+                  ? "border-[#FF8A00] bg-[#FFF8EE]"
+                  : "border-gray-200"
+              }`}
+            >
               <Image
-                src="/assets/payment/visa.png"
-                alt="Visa"
-                width={40}
+                src="/assets/payment/stripe.png"
+                alt="Stripe"
+                width={80}
                 height={30}
                 className="object-contain"
               />
-              <Image
-                src="/assets/payment/mastercard.png"
-                alt="Mastercard"
-                width={40}
-                height={30}
-                className="object-contain"
-              />
-            </div>
-            <p className="text-xs text-gray-500">
-              Your payment information is encrypted and secure.
-            </p>
+              <p className="text-sm text-gray-500">Coming Soon</p>
+            </button>
           </div>
+
+          <p className="text-xs text-gray-500 text-center">
+            Your payment information is encrypted and secure.
+          </p>
         </div>
 
-        {/* Error message */}
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-md">{error}</div>
+        {/* Submission Error */}
+        {submissionError && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-md">
+            {submissionError}
+          </div>
         )}
 
         {/* Total and Submit */}

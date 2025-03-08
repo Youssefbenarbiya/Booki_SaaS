@@ -128,6 +128,7 @@ export default async function BookRoomPage({
             email: session.user.email || "",
             telephone: session.user.phoneNumber || "",
           }}
+          capacity={room.capacity}
         />
       </div>
     </div>
