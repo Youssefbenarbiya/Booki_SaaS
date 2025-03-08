@@ -119,11 +119,8 @@ export const tripBookings = pgTable("trip_bookings", {
   seatsBooked: integer("seats_booked").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   bookingDate: timestamp("booking_date").defaultNow(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  paymentId: varchar("payment_id", { length: 255 }),
-  paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
+  paymentStatus: varchar("payment_status", { length: 20 }).default("pending"),
   paymentMethod: varchar("payment_method", { length: 50 }),
-  paymentDate: timestamp("payment_date"),
 })
 
 // Trip Relations

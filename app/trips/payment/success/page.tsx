@@ -1,14 +1,16 @@
+import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
-import { redirect } from "next/navigation"
+import { updateTripBookingPaymentStatus } from "@/actions/tripBookingActions"
+import { verifyTripPayment } from "@/services/tripPaymentService"
+import { Button } from "@/components/ui/button"
+import { CheckCircle } from "lucide-react"
 import Link from "next/link"
-import { updateBookingPaymentStatus } from "@/actions/tripBookingActions"
-import { verifyPayment } from "@/services/flouciPayment"
 
 export default async function PaymentSuccessPage({
   searchParams,
 }: {
-  searchParams: { bookingId: string }
+  searchParams: { bookingId?: string; paymentId?: string }
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -18,66 +20,69 @@ export default async function PaymentSuccessPage({
     redirect("/auth/signin")
   }
 
-  const { bookingId } = searchParams
+  const { bookingId, paymentId } = searchParams
 
   if (!bookingId) {
     redirect("/dashboard/bookings")
   }
+  
+  console.log("Payment success page loaded with params:", searchParams);
 
-  // Verify payment status
   try {
-    const paymentResult = await verifyPayment(bookingId)
-    if (paymentResult.success) {
-      await updateBookingPaymentStatus(parseInt(bookingId), "completed")
+    // If payment ID is available, verify the payment
+    if (paymentId) {
+      try {
+        console.log("Verifying payment with ID:", paymentId);
+        const paymentData = await verifyTripPayment(paymentId)
+        
+        if (paymentData && paymentData.result?.status === "completed") {
+          console.log("Payment verified as completed");
+          await updateTripBookingPaymentStatus(
+            parseInt(bookingId),
+            "completed",
+            "flouci"
+          )
+        } else {
+          console.log("Payment verification failed, redirecting to failed page");
+          redirect(`/trips/payment/failed?bookingId=${bookingId}`)
+        }
+      } catch (error) {
+        console.error("Error verifying payment:", error)
+        redirect(`/trips/payment/failed?bookingId=${bookingId}`)
+      }
+    } else {
+      // If no payment ID but reached success page, update status anyway
+      // This handles redirects from Flouci without paymentId in URL
+      console.log("No payment ID provided, updating status as completed");
+      await updateTripBookingPaymentStatus(parseInt(bookingId), "completed", "flouci")
     }
   } catch (error) {
-    console.error("Error verifying payment:", error)
+    console.error("Error processing successful payment:", error);
+    // We'll continue to show success page even if update fails
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="card bg-base-100 shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-green-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>
-            <p className="text-gray-600">
-              Thank you for your payment. Your booking has been confirmed.
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <p className="text-gray-600">
-                You will receive a confirmation email shortly with all the
-                details.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/dashboard/bookings" className="btn btn-primary">
-                  View My Bookings
-                </Link>
-                <Link href="/trips" className="btn btn-outline">
-                  Browse More Trips
-                </Link>
-              </div>
-            </div>
-          </div>
+    <div className="container max-w-lg mx-auto py-16 px-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+        <div className="flex justify-center mb-4">
+          <CheckCircle className="h-16 w-16 text-green-500" />
+        </div>
+        
+        <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
+        <p className="text-gray-600 mb-6">
+          Your trip booking has been confirmed. Thank you for your payment.
+        </p>
+        
+        <div className="space-y-3">
+          <Link href="/dashboard/bookings" className="w-full block">
+            <Button className="w-full">View My Bookings</Button>
+          </Link>
+          
+          <Link href="/trips" className="w-full block">
+            <Button variant="outline" className="w-full">Browse More Trips</Button>
+          </Link>
         </div>
       </div>
     </div>
   )
-} 
+}

@@ -4,7 +4,6 @@ import db from "../db/drizzle"
 import { tripBookings, trips } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { generatePaymentLink } from "@/services/flouciPayment"
 
 interface CreateBookingParams {
   tripId: number
@@ -18,6 +17,8 @@ export async function createBooking({
   seatsBooked,
 }: CreateBookingParams) {
   try {
+    console.log("Creating booking with params:", { tripId, userId, seatsBooked });
+    
     // Get trip to check capacity
     const trip = await db.query.trips.findFirst({
       where: eq(trips.id, tripId),
@@ -35,70 +36,74 @@ export async function createBooking({
       throw new Error("Not enough seats available")
     }
 
-    // Calculate total price
-    const totalPrice = Number(trip.price) * seatsBooked
-
-    // Create booking with pending status
+    // Create booking
     const [booking] = await db
       .insert(tripBookings)
       .values({
-        userId,
         tripId,
+        userId,
         seatsBooked,
         status: "pending",
-        totalPrice: totalPrice.toString(),
         paymentStatus: "pending",
-        bookingDate: new Date(),
+        paymentMethod: null,
       })
-      .returning()
+      .returning();
+      
+    console.log("Booking created:", booking);
 
-    // Generate payment link
-    const { paymentLink, paymentId } = await generatePaymentLink({
-      amount: totalPrice,
-      bookingId: booking.id,
-      developerTrackingId: `trip_booking_${booking.id}`,
-    })
-
-    // Update booking with payment ID
-    await db
-      .update(tripBookings)
-      .set({
-        paymentId,
-      })
-      .where(eq(tripBookings.id, booking.id))
-
-    // Update trip capacity
-    await db
-      .update(trips)
-      .set({
-        capacity: trip.capacity - seatsBooked,
-      })
-      .where(eq(trips.id, tripId))
-
-    revalidatePath(`/trips/${tripId}`)
-    revalidatePath("/dashboard/bookings")
+    // Note: We'll update the trip capacity only after successful payment
+    revalidatePath(`/trips/${tripId}`);
     
-    return { booking, paymentLink }
+    return booking;
   } catch (error) {
-    console.error("Error creating booking:", error)
-    throw error
+    console.error("Error creating booking:", error);
+    throw error;
   }
 }
 
-export async function updateBookingPaymentStatus(bookingId: number, status: string) {
+export async function updateTripBookingPaymentStatus(
+  bookingId: number,
+  status: "pending" | "completed" | "failed",
+  paymentMethod: string
+) {
   try {
+    // Get booking details
+    const booking = await db.query.tripBookings.findFirst({
+      where: eq(tripBookings.id, bookingId),
+      with: {
+        trip: true,
+      },
+    })
+
+    if (!booking) {
+      throw new Error("Booking not found")
+    }
+
+    // Update booking payment status
     await db
       .update(tripBookings)
       .set({
         paymentStatus: status,
-        status: status === "completed" ? "confirmed" : "failed",
-        paymentDate: status === "completed" ? new Date() : null,
+        paymentMethod,
+        status: status === "completed" ? "confirmed" : "pending",
       })
       .where(eq(tripBookings.id, bookingId))
 
+    // If payment is completed, update trip capacity
+    if (status === "completed" && booking.trip) {
+      await db
+        .update(trips)
+        .set({
+          capacity: booking.trip.capacity - booking.seatsBooked,
+        })
+        .where(eq(trips.id, booking.tripId))
+    }
+
+    revalidatePath(`/trips/${booking.tripId}`)
     revalidatePath("/dashboard/bookings")
+    return { success: true }
   } catch (error) {
-    console.error("Error updating booking payment status:", error)
+    console.error("Error updating payment status:", error)
     throw error
   }
 }
