@@ -14,23 +14,6 @@ interface GeneratePaymentParams {
   sessionTimeoutSecs?: number
 }
 
-interface PaymentResponse {
-  result: {
-    link: string
-    payment_id: string
-    developer_tracking_id: string
-    success: boolean
-  }
-  code: number
-  name: string
-  version: string
-}
-
-/**
- * Generates a payment link using the Flouci API
- * @param params Payment parameters
- * @returns Payment link and payment ID
- */
 export async function generatePaymentLink({
   amount,
   bookingId,
@@ -38,12 +21,12 @@ export async function generatePaymentLink({
   sessionTimeoutSecs = 1200,
 }: GeneratePaymentParams) {
   try {
-    // Convert amount to millimes if it's in dinars
+    // Convert amount to millimes (1 TND = 1000 millimes)
     const amountInMillimes = Math.round(amount * 1000)
-    
+
     // Create the base URL for success and failure redirects
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    
+
     const response = await fetch(`${FLOUCI_API_URL}/generate_payment`, {
       method: "POST",
       headers: {
@@ -62,12 +45,15 @@ export async function generatePaymentLink({
     })
 
     if (!response.ok) {
+      const errorData = await response.json()
+      console.error("Flouci API error:", errorData)
       throw new Error(`Failed to generate payment link: ${response.statusText}`)
     }
 
-    const data: PaymentResponse = await response.json()
-    
-    if (!data.result.success) {
+    const data = await response.json()
+    console.log("Flouci API response:", data) // Add this for debugging
+
+    if (!data.result?.success) {
       throw new Error("Failed to generate payment link")
     }
 
@@ -88,12 +74,15 @@ export async function generatePaymentLink({
  */
 export async function verifyPayment(paymentId: string) {
   try {
-    const response = await fetch(`${FLOUCI_API_URL}/payment_intent/${paymentId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+    const response = await fetch(
+      `${FLOUCI_API_URL}/payment_intent/${paymentId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
 
     if (!response.ok) {
       throw new Error(`Failed to verify payment: ${response.statusText}`)
@@ -111,6 +100,6 @@ export async function verifyPayment(paymentId: string) {
  * Redirect to Flouci payment page
  * @param paymentLink Payment link to redirect to
  */
-export function redirectToPayment(paymentLink: string) {
+export async function redirectToPayment(paymentLink: string) {
   redirect(paymentLink)
-} 
+}

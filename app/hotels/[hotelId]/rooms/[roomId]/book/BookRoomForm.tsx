@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, FormEvent, useTransition } from "react"
+import { useState, FormEvent, useTransition, useEffect } from "react"
 import Image from "next/image"
 import { Calendar } from "@/components/ui/calendar"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -12,14 +11,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn, formatPrice } from "@/lib/utils"
-import { format as formatDate } from "date-fns"
-import { CalendarIcon, ChevronDown, Minus, Plus } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { createRoomBooking } from "@/actions/roomBookingActions"
+import { format, isBefore, isWithinInterval } from "date-fns"
+
+import { CalendarIcon, Minus, Plus } from "lucide-react"
+import {
+  createRoomBooking,
+  checkRoomAvailability,
+  getBookedDatesForRoom,
+} from "@/actions/roomBookingActions"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
+
+interface BookingWithPayment {
+  paymentLink?: string
+}
 
 interface BookRoomFormProps {
   roomId: string
@@ -34,7 +40,6 @@ export default function BookRoomForm({
   pricePerNightChild,
   userId,
 }: BookRoomFormProps) {
-  const router = useRouter()
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
     to: Date | undefined
@@ -48,6 +53,12 @@ export default function BookRoomForm({
   const [infantCount, setInfantCount] = useState(0)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
+  const [isLoadingDates, setIsLoadingDates] = useState(true)
+  const [bookedDateRanges, setBookedDateRanges] = useState<
+    Array<{ start: Date; end: Date }>
+  >([])
+
+  const formatDate = format
 
   // Calculate nights from selected dates.
   const nights =
@@ -60,8 +71,61 @@ export default function BookRoomForm({
 
   // Calculate total price based on adult and child rates (infants are free).
   const totalPrice =
-    nights * (adultCount * pricePerNightAdult + childCount * pricePerNightChild)
+    nights *
+    (adultCount * parseFloat(pricePerNightAdult.toString()) +
+      childCount * parseFloat(pricePerNightChild.toString()))
 
+  // Fetch booked dates when component mounts
+  useEffect(() => {
+    let isMounted = true
+
+    async function fetchBookedDates() {
+      if (!roomId) return
+
+      try {
+        const bookedDates = await getBookedDatesForRoom(roomId)
+
+        if (isMounted) {
+          setBookedDateRanges(
+            bookedDates.map((range) => ({
+              start: new Date(range.start),
+              end: new Date(range.end),
+            }))
+          )
+          setIsLoadingDates(false)
+        }
+      } catch (error) {
+        console.error("Error fetching booked dates:", error)
+        if (isMounted) {
+          setIsLoadingDates(false)
+        }
+      }
+    }
+
+    fetchBookedDates()
+
+    return () => {
+      isMounted = false
+    }
+  }, [roomId])
+
+  // Function to check if a date should be disabled
+  const isDateDisabled = (date: Date) => {
+    // Disable dates before today
+    if (isBefore(date, new Date())) {
+      return true
+    }
+
+    // Check if the date falls within any booked range
+    return bookedDateRanges.some((range) =>
+      isWithinInterval(date, {
+        start: range.start,
+        end: range.end,
+      })
+    )
+  }
+
+  // Modified handleSubmit to check availability again before booking
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError("")
@@ -74,36 +138,56 @@ export default function BookRoomForm({
       setError("Check-out date must be after check-in date")
       return
     }
+    if (adultCount < 1) {
+      setError("At least one adult is required")
+      return
+    }
+
+    // Check availability one more time before booking
+    const isAvailable = await checkRoomAvailability(
+      roomId,
+      dateRange.from,
+      dateRange.to
+    )
+
+    if (!isAvailable) {
+      setError(
+        "Selected dates are no longer available. Please choose different dates."
+      )
+      return
+    }
 
     startTransition(async () => {
       try {
         // Create booking and get payment link
-        const booking = await createRoomBooking({
+        const booking = (await createRoomBooking({
           roomId,
           userId,
-          checkIn: dateRange.from,
-          checkOut: dateRange.to,
+          checkIn: dateRange.from!,
+          checkOut: dateRange.to!,
           totalPrice,
           adultCount,
           childCount,
           infantCount,
           initiatePayment: true,
-        } as any)
+        })) as BookingWithPayment
+
+        console.log("Booking response:", booking) // Add this for debugging
 
         // If payment link is available, redirect to payment page
         if (booking.paymentLink) {
+          console.log("Redirecting to:", booking.paymentLink) // Add this for debugging
           window.location.href = booking.paymentLink
         } else {
-          // If no payment link, redirect to confirmation page
-          const pathParts = window.location.pathname.split("/")
-          const hotelId = pathParts[2]
-          router.push(
-            `/hotels/${hotelId}/rooms/${roomId}/book/confirmation?bookingId=${booking.id}`
-          )
+          setError("Payment link not generated. Please try again.")
         }
       } catch (err) {
         console.error("Error booking room:", err)
-        setError("Failed to book room. Please try again.")
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to book room. Please try again."
+        )
       }
     })
   }
@@ -151,8 +235,11 @@ export default function BookRoomForm({
                       "w-full flex items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                       !dateRange.from && "text-muted-foreground"
                     )}
+                    disabled={isLoadingDates}
                   >
-                    {dateRange.from
+                    {isLoadingDates
+                      ? "Loading available dates..."
+                      : dateRange.from
                       ? dateRange.to
                         ? `${formatDate(
                             dateRange.from,
@@ -164,15 +251,28 @@ export default function BookRoomForm({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={(range) => {
-                      if (range) setDateRange(range)
-                    }}
-                    initialFocus
-                    numberOfMonths={2}
-                  />
+                  {isLoadingDates ? (
+                    <div className="p-4 flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Loading available dates...
+                    </div>
+                  ) : (
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={(range) => {
+                        if (range) {
+                          setDateRange({
+                            from: range.from,
+                            to: range.to || undefined,
+                          })
+                        }
+                      }}
+                      disabled={isDateDisabled}
+                      initialFocus
+                      numberOfMonths={2}
+                    />
+                  )}
                 </PopoverContent>
               </Popover>
             </div>
@@ -324,7 +424,8 @@ export default function BookRoomForm({
 
           <div className="bg-gray-50 p-4 rounded-md">
             <p className="text-sm text-gray-600 mb-2">
-              You will be redirected to Flouci payment gateway to complete your payment securely.
+              You will be redirected to Flouci payment gateway to complete your
+              payment securely.
             </p>
             <div className="flex items-center gap-2 mb-2">
               <Image
@@ -383,7 +484,8 @@ export default function BookRoomForm({
             </Button>
           </div>
           <p className="text-xs text-gray-500 text-center">
-            By clicking "Book Now & Pay", you agree to our terms and conditions.
+            By clicking &quot;Book Now & Pay&quot;, you agree to our terms and
+            conditions.
           </p>
         </div>
       </div>
