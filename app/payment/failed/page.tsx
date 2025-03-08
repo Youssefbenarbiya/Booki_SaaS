@@ -39,7 +39,7 @@ export default async function PaymentFailedPage({
         </div>
         <h1 className="text-2xl font-bold mb-2">Payment Failed</h1>
         <p className="text-gray-600 mb-6">
-          We couldn't process your payment. Please try again or contact customer
+          We couldn&apos;t process your payment. Please try again or contact customer
           support if the problem persists.
         </p>
         <div className="space-y-4">

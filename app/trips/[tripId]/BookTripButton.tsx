@@ -32,9 +32,15 @@ import { cn } from "@/lib/utils"
 
 interface BookTripButtonProps {
   tripId: number
+  variant?: "button" | "inline"
+  className?: string
 }
 
-export default function BookTripButton({ tripId }: BookTripButtonProps) {
+export default function BookTripButton({
+  tripId,
+  variant = "button",
+  className = "",
+}: BookTripButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [travelers, setTravelers] = useState("1")
@@ -53,22 +59,37 @@ export default function BookTripButton({ tripId }: BookTripButtonProps) {
     setIsLoading(false)
     setIsOpen(false)
 
-    // Navigate to a success page or booking confirmation
-    router.push(`/bookings/success?tripId=${tripId}`)
+    // Navigate to booking form with the collected information
+    router.push(
+      `/trips/${tripId}/book?travelers=${travelers}&date=${date?.toISOString()}`
+    )
   }
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)} className="w-full" size="lg">
-        Book This Trip
-      </Button>
+      {variant === "button" ? (
+        <Button
+          onClick={() => setIsOpen(true)}
+          className={cn("w-full", className)}
+          size="lg"
+        >
+          Book This Trip
+        </Button>
+      ) : (
+        <span
+          onClick={() => setIsOpen(true)}
+          className={cn("cursor-pointer", className)}
+        >
+          Book Now
+        </span>
+      )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Book Your Trip</DialogTitle>
             <DialogDescription>
-              Fill in the details to complete your booking.
+              Fill in the details to continue your booking.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -128,14 +149,14 @@ export default function BookTripButton({ tripId }: BookTripButtonProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" onClick={handleBookTrip} disabled={isLoading}>
+            <Button onClick={handleBookTrip} disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
                 </>
               ) : (
-                "Confirm Booking"
+                "Continue to Booking"
               )}
             </Button>
           </DialogFooter>

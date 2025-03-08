@@ -4,6 +4,18 @@ import { createBooking } from "@/actions/tripBookingActions"
 import { formatPrice } from "@/lib/utils"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Minus, Plus, CheckCircle, Loader2 } from "lucide-react"
 
 interface BookingFormProps {
   tripId: number
@@ -12,11 +24,11 @@ interface BookingFormProps {
   userId: string
 }
 
-export default function BookingForm({ 
-  tripId, 
-  maxSeats, 
+export default function BookingForm({
+  tripId,
+  maxSeats,
   pricePerSeat,
-  userId 
+  userId,
 }: BookingFormProps) {
   const router = useRouter()
   const [seats, setSeats] = useState(1)
@@ -26,12 +38,12 @@ export default function BookingForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    
+
     if (seats < 1 || seats > maxSeats) {
       setError(`Please select between 1 and ${maxSeats} seats`)
       return
     }
-    
+
     startTransition(async () => {
       try {
         const booking = await createBooking({
@@ -39,7 +51,9 @@ export default function BookingForm({
           userId,
           seatsBooked: seats,
         })
-        router.push(`/trips/${tripId}/book/confirmation?bookingId=${booking.id}`)
+        router.push(
+          `/trips/${tripId}/book/confirmation?bookingId=${booking.id}`
+        )
       } catch (error) {
         console.error("Error booking trip:", error)
         setError("Failed to book trip. Please try again.")
@@ -48,46 +62,101 @@ export default function BookingForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card bg-base-100 shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Booking Details</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <label className="block font-medium mb-1">
-            Number of Seats
-          </label>
-          <input
-            type="number"
-            min={1}
-            max={maxSeats}
-            value={seats}
-            onChange={(e) => setSeats(parseInt(e.target.value))}
-            className="input input-bordered w-full"
-            required
-          />
-          <p className="text-sm text-gray-600 mt-1">
-            Maximum {maxSeats} seats available
-          </p>
-        </div>
+    <Card className="w-full shadow-lg">
+      <CardHeader>
+        <CardTitle className="text-xl">Booking Details</CardTitle>
+      </CardHeader>
 
-        <div className="text-lg font-semibold">
-          Total Price: {formatPrice(seats * pricePerSeat)}
-        </div>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="seats" className="font-medium">
+              Number of Seats
+            </Label>
+            <div className="flex items-center space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setSeats((prev) => Math.max(1, prev - 1))}
+                className="h-10 w-10 rounded-full"
+                aria-label="Decrease seats"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
 
-        {error && (
-          <div className="alert alert-error">
-            {error}
+              <div className="relative flex-1">
+                <Input
+                  id="seats"
+                  type="number"
+                  min={1}
+                  max={maxSeats}
+                  value={seats}
+                  onChange={(e) => {
+                    const value =
+                      e.target.value === "" ? 1 : parseInt(e.target.value)
+                    setSeats(isNaN(value) ? 1 : value)
+                  }}
+                  className="text-center pr-10"
+                  required
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  seats
+                </span>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setSeats((prev) => Math.min(maxSeats, prev + 1))}
+                className="h-10 w-10 rounded-full"
+                aria-label="Increase seats"
+                disabled={seats >= maxSeats}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Maximum {maxSeats} seats available
+            </p>
           </div>
-        )}
 
-        <button
-          type="submit"
-          className="btn btn-primary w-full"
-          disabled={isPending}
-        >
-          {isPending ? "Processing..." : "Confirm Booking"}
-        </button>
-      </div>
-    </form>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <CardFooter className="flex flex-col pt-4 px-0 border-t">
+            <div className="text-lg font-semibold mb-4 w-full flex justify-between items-center">
+              <span>Total Price:</span>
+              <span className="text-primary">
+                {formatPrice((isNaN(seats) ? 1 : seats) * pricePerSeat)}
+              </span>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isPending}
+              size="lg"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Confirm Booking
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </form>
+      </CardContent>
+    </Card>
   )
-} 
+}

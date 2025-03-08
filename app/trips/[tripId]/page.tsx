@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getTripById } from "@/actions/tripActions"
 import { notFound } from "next/navigation"
 import Image from "next/image"
@@ -6,8 +7,6 @@ import {
   Clock,
   MapPin,
   Users,
-  Star,
-  Tag,
   UtensilsCrossed,
   Wifi,
   Car,
@@ -155,16 +154,18 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
             <Separator className="my-4" />
 
             <div className="flex flex-col space-y-2">
-              <Button size="lg" className="w-full">
-                Book Now
-              </Button>
+              <Link href={`/trips/${params.tripId}/book`} className="w-full">
+                <Button size="lg" className="w-full">
+                  Book Now
+                </Button>
+              </Link>
               <Button variant="outline" size="lg" className="w-full">
                 Contact Host
               </Button>
             </div>
 
             <div className="mt-4 text-xs text-gray-500 text-center">
-              You won't be charged yet
+              You won&apos;t be charged yet
             </div>
           </div>
         </div>
@@ -181,7 +182,9 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
 
             {/* Features Grid */}
             <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-4">What's Included</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                What&apos;s Included
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="flex items-center space-x-2">
                   <BedDouble className="h-5 w-5 text-primary" />
