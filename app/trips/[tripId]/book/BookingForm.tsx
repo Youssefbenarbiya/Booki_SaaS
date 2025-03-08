@@ -1,9 +1,8 @@
 "use client"
 
-import { createBooking } from "@/actions/tripBookingActions"
+import { createBookingWithPayment } from "@/actions/tripBookingActions"
 import { formatPrice } from "@/lib/utils"
 import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
 import {
   Card,
   CardContent,
@@ -30,7 +29,6 @@ export default function BookingForm({
   pricePerSeat,
   userId,
 }: BookingFormProps) {
-  const router = useRouter()
   const [seats, setSeats] = useState(1)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
@@ -46,17 +44,26 @@ export default function BookingForm({
 
     startTransition(async () => {
       try {
-        const booking = await createBooking({
+        const result = await createBookingWithPayment({
           tripId,
           userId,
           seatsBooked: seats,
+          pricePerSeat,
         })
-        router.push(
-          `/trips/${tripId}/book/confirmation?bookingId=${booking.id}`
-        )
+
+        if (!result.paymentLink) {
+          throw new Error("No payment link received")
+        }
+
+        // Redirect to Flouci payment page
+        window.location.href = result.paymentLink
       } catch (error) {
         console.error("Error booking trip:", error)
-        setError("Failed to book trip. Please try again.")
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to book trip. Please try again."
+        )
       }
     })
   }
