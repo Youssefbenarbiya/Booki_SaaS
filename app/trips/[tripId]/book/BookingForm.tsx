@@ -46,14 +46,18 @@ export default function BookingForm({
 
     startTransition(async () => {
       try {
-        const booking = await createBooking({
+        const result = await createBooking({
           tripId,
           userId,
           seatsBooked: seats,
         })
-        router.push(
-          `/trips/${tripId}/book/confirmation?bookingId=${booking.id}`
-        )
+        
+        // Redirect to Flouci payment page
+        if (result.paymentLink) {
+          window.location.href = result.paymentLink
+        } else {
+          throw new Error("Payment link not generated")
+        }
       } catch (error) {
         console.error("Error booking trip:", error)
         setError("Failed to book trip. Please try again.")
@@ -150,7 +154,7 @@ export default function BookingForm({
               ) : (
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Confirm Booking
+                  Proceed to Payment
                 </>
               )}
             </Button>

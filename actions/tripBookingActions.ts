@@ -4,6 +4,7 @@ import db from "../db/drizzle"
 import { tripBookings, trips } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { generatePaymentLink } from "@/services/flouciPayment"
 
 interface CreateBookingParams {
   tripId: number
@@ -34,16 +35,37 @@ export async function createBooking({
       throw new Error("Not enough seats available")
     }
 
-    // Create booking
+    // Calculate total price
+    const totalPrice = Number(trip.price) * seatsBooked
+
+    // Create booking with pending status
     const [booking] = await db
       .insert(tripBookings)
       .values({
-        tripId,
         userId,
+        tripId,
         seatsBooked,
         status: "pending",
+        totalPrice: totalPrice.toString(),
+        paymentStatus: "pending",
+        bookingDate: new Date(),
       })
       .returning()
+
+    // Generate payment link
+    const { paymentLink, paymentId } = await generatePaymentLink({
+      amount: totalPrice,
+      bookingId: booking.id,
+      developerTrackingId: `trip_booking_${booking.id}`,
+    })
+
+    // Update booking with payment ID
+    await db
+      .update(tripBookings)
+      .set({
+        paymentId,
+      })
+      .where(eq(tripBookings.id, booking.id))
 
     // Update trip capacity
     await db
@@ -55,9 +77,28 @@ export async function createBooking({
 
     revalidatePath(`/trips/${tripId}`)
     revalidatePath("/dashboard/bookings")
-    return booking
+    
+    return { booking, paymentLink }
   } catch (error) {
     console.error("Error creating booking:", error)
+    throw error
+  }
+}
+
+export async function updateBookingPaymentStatus(bookingId: number, status: string) {
+  try {
+    await db
+      .update(tripBookings)
+      .set({
+        paymentStatus: status,
+        status: status === "completed" ? "confirmed" : "failed",
+        paymentDate: status === "completed" ? new Date() : null,
+      })
+      .where(eq(tripBookings.id, bookingId))
+
+    revalidatePath("/dashboard/bookings")
+  } catch (error) {
+    console.error("Error updating booking payment status:", error)
     throw error
   }
 }
