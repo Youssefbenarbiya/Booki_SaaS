@@ -228,6 +228,10 @@ export const roomBookings = pgTable("room_bookings", {
   }).notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   bookingDate: timestamp("booking_date").defaultNow(),
+  paymentId: varchar("payment_id", { length: 255 }),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
+  paymentMethod: varchar("payment_method", { length: 50 }),
+  paymentDate: timestamp("payment_date"),
 })
 
 // Hotel & Room Relations

@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, FormEvent, useTransition } from "react"
+import { useState, FormEvent, useTransition, useEffect } from "react"
 import Image from "next/image"
 import { Calendar } from "@/components/ui/calendar"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -12,18 +11,33 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn, formatPrice } from "@/lib/utils"
-import { format as formatDate } from "date-fns"
-import { CalendarIcon, ChevronDown, Minus, Plus } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { createRoomBooking } from "@/actions/roomBookingActions"
+import { format, isBefore, isWithinInterval } from "date-fns"
+
+import { CalendarIcon, Minus, Plus } from "lucide-react"
+import {
+  createRoomBooking,
+  checkRoomAvailability,
+  getBookedDatesForRoom,
+} from "@/actions/roomBookingActions"
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+
+interface BookingWithPayment {
+  paymentLink?: string
+}
 
 interface BookRoomFormProps {
   roomId: string
   pricePerNightAdult: number
   pricePerNightChild: number
   userId: string
+  userDetails: {
+    name: string
+    surname: string
+    email: string
+    telephone: string
+  }
 }
 
 export default function BookRoomForm({
@@ -31,8 +45,8 @@ export default function BookRoomForm({
   pricePerNightAdult,
   pricePerNightChild,
   userId,
+  userDetails,
 }: BookRoomFormProps) {
-  const router = useRouter()
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
     to: Date | undefined
@@ -46,6 +60,19 @@ export default function BookRoomForm({
   const [infantCount, setInfantCount] = useState(0)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
+  const [isLoadingDates, setIsLoadingDates] = useState(true)
+  const [bookedDateRanges, setBookedDateRanges] = useState<
+    Array<{ start: Date; end: Date }>
+  >([])
+
+  const formatDate = format
+
+  const [formDetails, setFormDetails] = useState({
+    name: userDetails.name,
+    surname: userDetails.surname,
+    telephone: userDetails.telephone,
+    email: userDetails.email,
+  })
 
   // Calculate nights from selected dates.
   const nights =
@@ -58,8 +85,61 @@ export default function BookRoomForm({
 
   // Calculate total price based on adult and child rates (infants are free).
   const totalPrice =
-    nights * (adultCount * pricePerNightAdult + childCount * pricePerNightChild)
+    nights *
+    (adultCount * parseFloat(pricePerNightAdult.toString()) +
+      childCount * parseFloat(pricePerNightChild.toString()))
 
+  // Fetch booked dates when component mounts
+  useEffect(() => {
+    let isMounted = true
+
+    async function fetchBookedDates() {
+      if (!roomId) return
+
+      try {
+        const bookedDates = await getBookedDatesForRoom(roomId)
+
+        if (isMounted) {
+          setBookedDateRanges(
+            bookedDates.map((range) => ({
+              start: new Date(range.start),
+              end: new Date(range.end),
+            }))
+          )
+          setIsLoadingDates(false)
+        }
+      } catch (error) {
+        console.error("Error fetching booked dates:", error)
+        if (isMounted) {
+          setIsLoadingDates(false)
+        }
+      }
+    }
+
+    fetchBookedDates()
+
+    return () => {
+      isMounted = false
+    }
+  }, [roomId])
+
+  // Function to check if a date should be disabled
+  const isDateDisabled = (date: Date) => {
+    // Disable dates before today
+    if (isBefore(date, new Date())) {
+      return true
+    }
+
+    // Check if the date falls within any booked range
+    return bookedDateRanges.some((range) =>
+      isWithinInterval(date, {
+        start: range.start,
+        end: range.end,
+      })
+    )
+  }
+
+  // Modified handleSubmit to check availability again before booking
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError("")
@@ -72,32 +152,56 @@ export default function BookRoomForm({
       setError("Check-out date must be after check-in date")
       return
     }
+    if (adultCount < 1) {
+      setError("At least one adult is required")
+      return
+    }
+
+    // Check availability one more time before booking
+    const isAvailable = await checkRoomAvailability(
+      roomId,
+      dateRange.from,
+      dateRange.to
+    )
+
+    if (!isAvailable) {
+      setError(
+        "Selected dates are no longer available. Please choose different dates."
+      )
+      return
+    }
 
     startTransition(async () => {
       try {
-        // Extract hotelId from URL (assumes path like /hotels/[hotelId]/rooms/...)
-        const pathParts = window.location.pathname.split("/")
-        const hotelId = pathParts[2]
-
-        // Cast to any if your CreateRoomBookingParams type does not include these extra properties.
-        const booking = await createRoomBooking({
+        // Create booking and get payment link
+        const booking = (await createRoomBooking({
           roomId,
           userId,
-          checkIn: dateRange.from,
-          checkOut: dateRange.to,
+          checkIn: dateRange.from!,
+          checkOut: dateRange.to!,
           totalPrice,
-          status: "confirmed",
           adultCount,
           childCount,
           infantCount,
-        } as any)
+          initiatePayment: true,
+        })) as BookingWithPayment
 
-        router.push(
-          `/hotels/${hotelId}/rooms/${roomId}/book/confirmation?bookingId=${booking.id}`
-        )
+        console.log("Booking response:", booking) // Add this for debugging
+
+        // If payment link is available, redirect to payment page
+        if (booking.paymentLink) {
+          console.log("Redirecting to:", booking.paymentLink) // Add this for debugging
+          window.location.href = booking.paymentLink
+        } else {
+          setError("Payment link not generated. Please try again.")
+        }
       } catch (err) {
         console.error("Error booking room:", err)
-        setError("Failed to book room. Please try again.")
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to book room. Please try again."
+        )
       }
     })
   }
@@ -145,8 +249,11 @@ export default function BookRoomForm({
                       "w-full flex items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                       !dateRange.from && "text-muted-foreground"
                     )}
+                    disabled={isLoadingDates}
                   >
-                    {dateRange.from
+                    {isLoadingDates
+                      ? "Loading available dates..."
+                      : dateRange.from
                       ? dateRange.to
                         ? `${formatDate(
                             dateRange.from,
@@ -158,15 +265,28 @@ export default function BookRoomForm({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={(range) => {
-                      if (range) setDateRange(range)
-                    }}
-                    initialFocus
-                    numberOfMonths={2}
-                  />
+                  {isLoadingDates ? (
+                    <div className="p-4 flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Loading available dates...
+                    </div>
+                  ) : (
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={(range) => {
+                        if (range) {
+                          setDateRange({
+                            from: range.from,
+                            to: range.to || undefined,
+                          })
+                        }
+                      }}
+                      disabled={isDateDisabled}
+                      initialFocus
+                      numberOfMonths={2}
+                    />
+                  )}
                 </PopoverContent>
               </Popover>
             </div>
@@ -280,17 +400,37 @@ export default function BookRoomForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="Enter your name" required />
+                <Input
+                  id="name"
+                  value={formDetails.name}
+                  onChange={(e) =>
+                    setFormDetails({ ...formDetails, name: e.target.value })
+                  }
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="surname">Surname</Label>
-                <Input id="surname" placeholder="Enter your surname" required />
+                <Input
+                  id="surname"
+                  value={formDetails.surname}
+                  onChange={(e) =>
+                    setFormDetails({ ...formDetails, surname: e.target.value })
+                  }
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="telephone">Telephone Number</Label>
                 <Input
                   id="telephone"
-                  placeholder="Enter your telephone number"
+                  value={formDetails.telephone}
+                  onChange={(e) =>
+                    setFormDetails({
+                      ...formDetails,
+                      telephone: e.target.value,
+                    })
+                  }
                   required
                 />
               </div>
@@ -299,7 +439,10 @@ export default function BookRoomForm({
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email address"
+                  value={formDetails.email}
+                  onChange={(e) =>
+                    setFormDetails({ ...formDetails, email: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -307,122 +450,80 @@ export default function BookRoomForm({
           </div>
         </div>
 
-        {/* Section 3: Payment */}
+        {/* Payment Information */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#FF8A00] text-white font-bold">
               3
             </div>
-            <h2 className="text-[#FF8A00] font-medium">Payment</h2>
+            <h2 className="text-[#FF8A00] font-medium">Payment Information</h2>
           </div>
-          <div className="space-y-4">
-            <p className="font-medium">Select a payment method</p>
-            <RadioGroup defaultValue="visa" className="space-y-3">
-              <div className="flex items-center space-x-2 border rounded-md p-3">
-                <RadioGroupItem value="visa" id="visa" />
-                <Label htmlFor="visa" className="flex-1">
-                  VISA
-                </Label>
-                <p className="text-xs text-gray-500">
-                  You will be redirected after clicking &quot;Book now&quot;
-                </p>
-                <div className="w-12 h-8 bg-white border rounded flex items-center justify-center">
-                  <span className="text-xs font-bold text-blue-800">VISA</span>
-                </div>
-              </div>
-            </RadioGroup>
-            <Card className="mt-4 bg-[#FFF8EE] border-[#FFE8CC]">
-              <CardContent className="p-4">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-[#FF8A00]"
-                    >
-                      <path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"></path>
-                    </svg>
-                    <p className="font-medium">Pay with Credit Card</p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <div className="relative">
-                        <Input
-                          id="cardNumber"
-                          placeholder="1234 5678 9012 3456"
-                        />
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                          <ChevronDown className="h-4 w-4 text-gray-500" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="expirationDate">Expiration Date</Label>
-                      <Input id="expirationDate" placeholder="MM/YY" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cvv">Card Security Code</Label>
-                      <Input id="cvv" placeholder="***" />
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <a href="#" className="text-sm text-[#FF8A00] underline">
-                      What is this?
-                    </a>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+
+          <div className="bg-gray-50 p-4 rounded-md">
+            <p className="text-sm text-gray-600 mb-2">
+              You will be redirected to Flouci payment gateway to complete your
+              payment securely.
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <Image
+                src="/assets/payment/flouci-logo.png"
+                alt="Flouci"
+                width={80}
+                height={30}
+                className="object-contain"
+              />
+              <Image
+                src="/assets/payment/visa.png"
+                alt="Visa"
+                width={40}
+                height={30}
+                className="object-contain"
+              />
+              <Image
+                src="/assets/payment/mastercard.png"
+                alt="Mastercard"
+                width={40}
+                height={30}
+                className="object-contain"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              Your payment information is encrypted and secure.
+            </p>
           </div>
         </div>
 
-        {/* Book Now Button & Summary */}
-        <div className="flex flex-col items-center mt-8">
-          <button
-            type="submit"
-            className="bg-[#FF8A00] text-white font-medium py-3 px-8 rounded-md hover:bg-[#E67E00] transition-colors w-full md:w-auto"
-            disabled={isPending}
-          >
-            {isPending ? (
-              <>
-                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Processing...
-              </>
-            ) : (
-              "Book now"
-            )}
-          </button>
-          {dateRange.from && dateRange.to && (
-            <div className="rounded-lg bg-gray-50 p-4 mt-4 w-full">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <span>Duration</span>
-                </div>
-                <span>
-                  {nights} night{nights !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-sm font-medium">Total Price</span>
-                <span className="text-lg font-semibold text-black">
-                  {formatPrice(totalPrice)}
-                </span>
-              </div>
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-md">{error}</div>
+        )}
+
+        {/* Total and Submit */}
+        <div className="pt-4 border-t">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <p className="text-sm text-gray-500">Total Price</p>
+              <p className="text-2xl font-bold">{formatPrice(totalPrice)}</p>
             </div>
-          )}
-          {error && (
-            <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600 mt-4">
-              {error}
-            </div>
-          )}
+            <Button
+              type="submit"
+              className="bg-[#FF8A00] hover:bg-[#E67A00] text-white px-6 py-2 rounded-md"
+              disabled={isPending || !dateRange.from || !dateRange.to}
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Book Now & Pay"
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500 text-center">
+            By clicking &quot;Book Now & Pay&quot;, you agree to our terms and
+            conditions.
+          </p>
         </div>
       </div>
     </form>

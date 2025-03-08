@@ -1,9 +1,10 @@
 "use server"
 
 import db from "../db/drizzle"
-import { roomBookings } from "@/db/schema"
-import { eq, and, or, between } from "drizzle-orm"
+import { room, roomBookings } from "@/db/schema"
+import { eq, and, or, between, lte, gte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { generatePaymentLink } from "@/services/flouciPayment"
 
 interface CreateRoomBookingParams {
   roomId: string
@@ -12,6 +13,13 @@ interface CreateRoomBookingParams {
   checkOut: Date
   totalPrice?: number
   status?: string
+  adultCount?: number
+  childCount?: number
+  infantCount?: number
+}
+
+interface CreateRoomBookingWithPaymentParams extends CreateRoomBookingParams {
+  initiatePayment?: boolean
 }
 
 export async function createRoomBooking({
@@ -20,8 +28,8 @@ export async function createRoomBooking({
   checkIn,
   checkOut,
   totalPrice,
-  status,
-}: CreateRoomBookingParams) {
+  initiatePayment = true,
+}: CreateRoomBookingWithPaymentParams) {
   try {
     // Check if room exists and is available for these dates
     const existingBookings = await db.query.roomBookings.findMany({
@@ -51,11 +59,11 @@ export async function createRoomBooking({
 
     if (!finalTotalPrice) {
       // Get room price from database
-      const room = await db.query.room.findFirst({
+      const roomData = await db.query.room.findFirst({
         where: eq(room.id, roomId),
       })
 
-      if (!room) {
+      if (!roomData) {
         throw new Error("Room not found")
       }
 
@@ -66,10 +74,12 @@ export async function createRoomBooking({
 
       // Calculate total price
       finalTotalPrice =
-        (parseFloat(room.pricePerNightAdult) +
-          parseFloat(room.pricePerNightChild)) *
+        (parseFloat(roomData.pricePerNightAdult) +
+          parseFloat(roomData.pricePerNightChild)) *
         nights
     }
+
+    console.log("Creating booking with total price:", finalTotalPrice)
 
     // Create booking with the correct total price
     const [booking] = await db
@@ -80,9 +90,43 @@ export async function createRoomBooking({
         checkIn: checkIn.toISOString(),
         checkOut: checkOut.toISOString(),
         totalPrice: finalTotalPrice.toString(),
-        status: status || "pending",
+        status: "pending", // Set initial status to pending until payment is confirmed
+        paymentStatus: "pending",
       })
       .returning()
+
+    console.log("Booking created:", booking)
+
+    // If payment is requested, generate a payment link
+    if (initiatePayment) {
+      try {
+        const { paymentLink, paymentId } = await generatePaymentLink({
+          amount: parseFloat(booking.totalPrice),
+          bookingId: booking.id,
+          developerTrackingId: `room_booking_${booking.id}`,
+        })
+
+        console.log("Payment link generated:", paymentLink)
+
+        // Update booking with payment ID
+        await db
+          .update(roomBookings)
+          .set({
+            paymentId,
+          })
+          .where(eq(roomBookings.id, booking.id))
+
+        // Return booking with payment link
+        return {
+          ...booking,
+          paymentLink,
+          paymentId,
+        }
+      } catch (error) {
+        console.error("Error generating payment link:", error)
+        throw error
+      }
+    }
 
     revalidatePath(`/hotels/${booking.roomId}`)
     revalidatePath("/dashboard/bookings")
@@ -91,6 +135,38 @@ export async function createRoomBooking({
     console.error("Error creating room booking:", error)
     throw error
   }
+}
+
+export async function updateBookingPaymentStatus(
+  bookingId: number,
+  paymentStatus: string,
+  paymentMethod?: string
+) {
+  try {
+    const [updatedBooking] = await db
+      .update(roomBookings)
+      .set({
+        paymentStatus,
+        paymentMethod,
+        paymentDate: new Date(),
+        status: paymentStatus === "completed" ? "confirmed" : "pending",
+      })
+      .where(eq(roomBookings.id, bookingId))
+      .returning()
+
+    return updatedBooking
+  } catch (error) {
+    console.error("Error updating booking payment status:", error)
+    throw error
+  }
+}
+
+// Create a separate action for revalidation
+export async function revalidateBookingPages(roomId: string) {
+  "use server"
+
+  revalidatePath(`/hotels/${roomId}`)
+  revalidatePath("/dashboard/bookings")
 }
 
 export async function getRoomBookingsByUserId(userId: string) {
@@ -118,27 +194,59 @@ export async function checkRoomAvailability(
   checkOut: Date
 ) {
   try {
+    // Format dates to match the database format
+    const checkInStr = checkIn.toISOString()
+    const checkOutStr = checkOut.toISOString()
+
+    // Find any overlapping bookings
     const existingBookings = await db.query.roomBookings.findMany({
       where: and(
         eq(roomBookings.roomId, roomId),
         or(
-          between(
-            roomBookings.checkIn,
-            checkIn.toISOString(),
-            checkOut.toISOString()
+          and(
+            lte(roomBookings.checkIn, checkOutStr),
+            gte(roomBookings.checkOut, checkInStr)
           ),
-          between(
-            roomBookings.checkOut,
-            checkIn.toISOString(),
-            checkOut.toISOString()
+          and(
+            lte(roomBookings.checkIn, checkOutStr),
+            gte(roomBookings.checkIn, checkInStr)
+          ),
+          and(
+            lte(roomBookings.checkOut, checkOutStr),
+            gte(roomBookings.checkOut, checkInStr)
           )
         )
       ),
     })
 
+    // Room is available if there are no overlapping bookings
     return existingBookings.length === 0
   } catch (error) {
     console.error("Error checking room availability:", error)
+    throw error
+  }
+}
+
+// Add a new function to get all booked dates for a room
+export async function getBookedDatesForRoom(roomId: string) {
+  try {
+    const bookings = await db.query.roomBookings.findMany({
+      where: and(
+        eq(roomBookings.roomId, roomId),
+        eq(roomBookings.status, "confirmed") // Only get confirmed bookings
+      ),
+      columns: {
+        checkIn: true,
+        checkOut: true,
+      },
+    })
+
+    return bookings.map((booking) => ({
+      start: new Date(booking.checkIn),
+      end: new Date(booking.checkOut),
+    }))
+  } catch (error) {
+    console.error("Error getting booked dates:", error)
     throw error
   }
 }

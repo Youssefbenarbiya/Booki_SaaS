@@ -28,6 +28,10 @@ export default async function BookRoomPage({
     notFound()
   }
 
+  const fullName = session.user.name || ""
+  const [firstName, ...restName] = fullName.split(" ")
+  const surname = restName.join(" ")
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
@@ -118,6 +122,12 @@ export default async function BookRoomPage({
           pricePerNightAdult={Number(room.pricePerNightAdult)}
           pricePerNightChild={Number(room.pricePerNightChild)}
           userId={session.user.id}
+          userDetails={{
+            name: firstName,
+            surname: surname,
+            email: session.user.email || "",
+            telephone: session.user.phoneNumber || "",
+          }}
         />
       </div>
     </div>
