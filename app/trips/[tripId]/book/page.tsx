@@ -12,16 +12,19 @@ export default async function BookTripPage({
   params: { tripId: string }
   searchParams: { travelers?: string; date?: string }
 }) {
+  // Await the params before using its properties
+  const { tripId } = await params
+
   const session = await auth.api.getSession({
     headers: await headers(),
   })
 
   if (!session || !session.user) {
-    redirect(`/auth/signin?callbackUrl=/trips/${params.tripId}/book`)
+    redirect(`/auth/signin?callbackUrl=/trips/${tripId}/book`)
   }
 
-  const tripId = parseInt(params.tripId)
-  const trip = await getTripById(tripId)
+  const tripIdNum = parseInt(tripId)
+  const trip = await getTripById(tripIdNum)
 
   if (!trip) {
     redirect("/trips")

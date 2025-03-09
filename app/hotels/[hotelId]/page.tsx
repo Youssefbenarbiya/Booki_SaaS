@@ -13,13 +13,13 @@ export async function generateStaticParams() {
     hotelId: hotel.id.toString(),
   }))
 }
-
 export default async function HotelPage({
   params,
 }: {
   params: { hotelId: string }
 }) {
-  const hotelData = await getHotelById(params.hotelId)
+  const { hotelId } = await params 
+  const hotelData = await getHotelById(hotelId)
 
   if (!hotelData) {
     notFound()
@@ -48,10 +48,9 @@ export default async function HotelPage({
       <RoomsList
         rooms={hotelData.rooms.map((room) => ({
           ...room,
-          hotelId: params.hotelId,
+          hotelId,
         }))}
       />
-
     </div>
   )
 }

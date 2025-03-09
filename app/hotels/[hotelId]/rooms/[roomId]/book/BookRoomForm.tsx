@@ -537,22 +537,6 @@ export default function BookRoomForm({
                 height={30}
                 className="object-contain"
               />
-              <div className="flex gap-2">
-                <Image
-                  src="/assets/payment/visa.png"
-                  alt="Visa"
-                  width={40}
-                  height={30}
-                  className="object-contain"
-                />
-                <Image
-                  src="/assets/payment/mastercard.png"
-                  alt="Mastercard"
-                  width={40}
-                  height={30}
-                  className="object-contain"
-                />
-              </div>
             </button>
 
             <button
@@ -565,7 +549,7 @@ export default function BookRoomForm({
               }`}
             >
               <Image
-                src="/assets/payment/stripe.png"
+                src="/assets/payment/Stripe-logo.png"
                 alt="Stripe"
                 width={80}
                 height={30}

@@ -7,13 +7,13 @@ import { formatPrice } from "@/lib/utils"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import Image from "next/image"
-
 export default async function BookRoomPage({
   params,
 }: {
   params: { roomId: string; hotelId: string }
 }) {
-  const { roomId, hotelId } = params
+  const { roomId, hotelId } = await params
+
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -56,7 +56,8 @@ export default async function BookRoomPage({
               <Image
                 src={room.images[0] || "/placeholder.svg"}
                 alt={room.name}
-                fill
+                width={500}
+                height={500}
                 className="object-cover"
               />
             </div>

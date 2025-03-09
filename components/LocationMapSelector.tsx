@@ -10,7 +10,6 @@ import { Search } from "lucide-react"
 // Fix Leaflet icon issue in Next.js
 const defaultIcon = L.icon({
   iconUrl: "/assets/icons/marker-shadow.png",
-  shadowUrl: "/assets/icons/m",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],

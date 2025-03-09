@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatPrice, getDurationInDays, formatDateRange } from "@/lib/utils"
 import Link from "next/link"
-import { Metadata } from "next"
 
 interface TripPageProps {
   params: {
@@ -26,31 +25,10 @@ interface TripPageProps {
   }
 }
 
-export async function generateMetadata({
-  params,
-}: TripPageProps): Promise<Metadata> {
-  const trip = await getTripById(parseInt(params.tripId))
-
-  if (!trip) {
-    return {
-      title: "Trip Not Found",
-      description: "The requested trip could not be found.",
-    }
-  }
-
-  return {
-    title: `${trip.name} | Booking Site`,
-    description:
-      trip.description ||
-      `Explore ${trip.destination} with our amazing trip package.`,
-    openGraph: {
-      images: trip.images.length > 0 ? [trip.images[0].imageUrl] : [],
-    },
-  }
-}
-
 export default async function TripDetailsPage({ params }: TripPageProps) {
-  const trip = await getTripById(parseInt(params.tripId))
+  // Await params before using its properties
+  const { tripId } = await params
+  const trip = await getTripById(parseInt(tripId))
 
   if (!trip) {
     notFound()
@@ -154,7 +132,7 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
             <Separator className="my-4" />
 
             <div className="flex flex-col space-y-2">
-              <Link href={`/trips/${params.tripId}/book`} className="w-full">
+              <Link href={`/trips/${tripId}/book`} className="w-full">
                 <Button size="lg" className="w-full">
                   Book Now
                 </Button>
