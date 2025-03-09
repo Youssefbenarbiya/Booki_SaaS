@@ -96,3 +96,22 @@ export async function deleteCar(id: number) {
     throw new Error("Failed to delete car")
   }
 }
+
+export async function searchCars(
+  pickupLocation: string,
+  pickupDate: string,
+  returnDate: string
+) {
+  try {
+    // In a real app, you would use these parameters to filter cars
+    // For now, we'll just fetch all cars and consider them available
+    const availableCars = await db.query.cars.findMany({
+      where: (cars, { eq }) => eq(cars.isAvailable, true),
+    });
+
+    return availableCars;
+  } catch (error) {
+    console.error("Failed to search cars:", error);
+    return [];
+  }
+}
