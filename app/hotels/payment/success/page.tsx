@@ -1,34 +1,49 @@
 import { updateBookingPaymentStatus } from "@/actions/roomBookingActions"
+import { generateInvoiceAction } from "@/actions/generateInvoiceAction"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { headers } from "next/headers"
+import { auth } from "@/auth"
+import InvoiceDownloadButton from "@/components/InvoiceDownloadButton"
 
 interface PaymentSuccessPageProps {
-  searchParams: {
-    bookingId?: string
-  }
+  searchParams: { bookingId?: string }
 }
 
 export default async function PaymentSuccessPage({
   searchParams,
 }: PaymentSuccessPageProps) {
-  const { bookingId } = searchParams
+  // Get bookingId safely from searchParams - ensure we parse it properly
+  const bookingIdStr = searchParams.bookingId || ""
+  const bookingId = bookingIdStr ? parseInt(bookingIdStr, 10) : null
 
-  if (!bookingId) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (!bookingId || !session?.user?.id) {
     redirect("/dashboard/bookings")
   }
 
-  // Update booking payment status
+  // Update booking payment status first - do this early to ensure payment is recorded
+  await updateBookingPaymentStatus(bookingId, "completed", "flouci")
+
+  // Generate invoice path - we'll only generate it once, then provide a link to it
+  let invoicePath: string | null = null
+
   try {
-    await updateBookingPaymentStatus(
-      parseInt(bookingId),
-      "completed",
-      "flouci"
+    // Generate the invoice HTML
+    invoicePath = await generateInvoiceAction(
+      bookingId,
+      session.user.name || "Guest",
+      session.user.email || ""
     )
   } catch (error) {
-    console.error("Error updating booking payment status:", error)
+    console.error("Failed to generate invoice:", error)
+    // Continue without the invoice if generation fails
   }
 
   return (
@@ -43,6 +58,12 @@ export default async function PaymentSuccessPage({
           successfully.
         </p>
         <div className="space-y-4">
+          {invoicePath && (
+            <InvoiceDownloadButton
+              invoicePath={invoicePath}
+              bookingId={bookingId}
+            />
+          )}
           <Button asChild className="w-full">
             <Link href={`/dashboard/bookings`}>View My Bookings</Link>
           </Button>
@@ -53,4 +74,4 @@ export default async function PaymentSuccessPage({
       </Card>
     </div>
   )
-} 
+}
