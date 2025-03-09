@@ -287,23 +287,29 @@ export const cars = pgTable("cars", {
   updatedAt: timestamp("updated_at").defaultNow(),
 })
 
+// Car Bookings table
 export const carBookings = pgTable("car_bookings", {
   id: serial("id").primaryKey(),
-  carId: integer("car_id").references(() => cars.id),
-  customerName: varchar("customer_name", { length: 255 }).notNull(),
-  customerEmail: varchar("customer_email", { length: 255 }).notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  totalPrice: integer("total_price").notNull(),
-  status: varchar("status", { length: 20 }).default("pending"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  carId: integer("car_id").notNull(),
+  userId: text("user_id").notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("confirmed"),
+  fullName: text("full_name"),
+  email: text("email"),
+  phone: text("phone"),
+  address: text("address"),
+  drivingLicense: text("driving_license"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
 })
 
 export const carsRelations = relations(cars, ({ many }) => ({
   bookings: many(carBookings),
 }))
 
+// Car Bookings Relations
 export const carBookingsRelations = relations(carBookings, ({ one }) => ({
   car: one(cars, {
     fields: [carBookings.carId],
@@ -354,3 +360,4 @@ export const blogCategoriesRelations = relations(
     blogs: many(blogs),
   })
 )
+

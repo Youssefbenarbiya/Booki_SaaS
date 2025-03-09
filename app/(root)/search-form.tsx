@@ -31,7 +31,6 @@ const rentSearchSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required"),
   pickupDate: z.string().min(1, "Pickup date is required"),
   returnDate: z.string().min(1, "Return date is required"),
-  transportType: z.string().min(1, "Transport type is required"),
 })
 
 interface SearchFormProps {
@@ -58,7 +57,6 @@ export function SearchForm({ type }: SearchFormProps) {
             pickupLocation: "",
             pickupDate: "",
             returnDate: "",
-            transportType: "",
           },
   })
 
@@ -82,8 +80,6 @@ export function SearchForm({ type }: SearchFormProps) {
               .pickupLocation,
             pickupDate: (data as z.infer<typeof rentSearchSchema>).pickupDate,
             returnDate: (data as z.infer<typeof rentSearchSchema>).returnDate,
-            transportType: (data as z.infer<typeof rentSearchSchema>)
-              .transportType,
           }),
     })
     router.push(`/?${searchParams.toString()}`)
