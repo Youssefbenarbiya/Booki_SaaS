@@ -133,6 +133,11 @@ export default function BookingPage({ params }: BookingPageProps) {
         // In a real app, get from auth context
         const userId = session.data?.user.id
 
+        if (!userId) {
+          toast.error("Please log in to book a car")
+          return
+        }
+
         const result = await bookCar({
           carId,
           userId,
@@ -204,15 +209,9 @@ export default function BookingPage({ params }: BookingPageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <button
-        onClick={() => router.back()}
-        className="flex items-center text-gray-600 mb-6 hover:text-gray-900"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Car Details
-      </button>
+      
 
-      <h1 className="text-3xl font-bold mb-8">Book Your Car</h1>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Car Summary */}
