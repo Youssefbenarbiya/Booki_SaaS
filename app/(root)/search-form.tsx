@@ -61,27 +61,36 @@ export function SearchForm({ type }: SearchFormProps) {
   })
 
   function onSubmit(data: z.infer<typeof schema>) {
+    // Log the search data for debugging
+    console.log("Search form submitted:", { type, data });
+    
+    // Create a new URLSearchParams object
     const searchParams = new URLSearchParams({
       type,
       ...(type === "trips"
         ? {
             destination: (data as z.infer<typeof tripSearchSchema>).destination,
-            startDate: (data as z.infer<typeof tripSearchSchema>).startDate,
+            startDate: (data as z.infer<typeof tripSearchSchema>).startDate || new Date().toISOString().split('T')[0],
           }
         : type === "hotels"
         ? {
             city: (data as z.infer<typeof hotelSearchSchema>).city,
-            checkIn: (data as z.infer<typeof hotelSearchSchema>).checkIn,
-            checkOut: (data as z.infer<typeof hotelSearchSchema>).checkOut,
-            guests: (data as z.infer<typeof hotelSearchSchema>).guests,
+            checkIn: (data as z.infer<typeof hotelSearchSchema>).checkIn || new Date().toISOString().split('T')[0],
+            checkOut: (data as z.infer<typeof hotelSearchSchema>).checkOut || new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
+            guests: (data as z.infer<typeof hotelSearchSchema>).guests || "1",
           }
         : {
             pickupLocation: (data as z.infer<typeof rentSearchSchema>)
               .pickupLocation,
-            pickupDate: (data as z.infer<typeof rentSearchSchema>).pickupDate,
-            returnDate: (data as z.infer<typeof rentSearchSchema>).returnDate,
+            pickupDate: (data as z.infer<typeof rentSearchSchema>).pickupDate || new Date().toISOString().split('T')[0],
+            returnDate: (data as z.infer<typeof rentSearchSchema>).returnDate || new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
           }),
-    })
+    });
+    
+    // Log the final URL for debugging
+    console.log("Search URL:", `/?${searchParams.toString()}`);
+    
+    // Navigate to the search results page
     router.push(`/?${searchParams.toString()}`)
   }
 

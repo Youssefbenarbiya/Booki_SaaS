@@ -68,8 +68,9 @@ export function SearchResults({
   const [hotelsData, setHotelsData] = useState<Hotel[]>([])
   const [tripsData, setTripsData] = useState<Trip[]>([])
   const [carsData, setCarsData] = useState<Car[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchAttempted, setSearchAttempted] = useState(false)
   const [filteredHotels, setFilteredHotels] = useState<Hotel[]>([])
   const [filteredTrips, setFilteredTrips] = useState<Trip[]>([])
   const [filteredCars, setFilteredCars] = useState<Car[]>([])
@@ -80,59 +81,72 @@ export function SearchResults({
   useEffect(() => {
     const fetchData = async () => {
       if (!searchParams.type) {
-        setLoading(false)
+        setHotelsData([])
+        setTripsData([])
+        setCarsData([])
+        setFilteredHotels([])
+        setFilteredTrips([])
+        setFilteredCars([])
+        setError(null)
+        setSearchAttempted(false)
         return
       }
 
-      try {
-        setLoading(true)
-        setError(null)
+      setLoading(true)
+      setError(null)
+      setSearchAttempted(true)
 
-        if (
-          searchParams.type === "trips" &&
-          searchParams.destination &&
-          searchParams.startDate
-        ) {
+      try {
+        console.log("Search params:", searchParams)
+
+        if (searchParams.type === "trips") {
+          if (!searchParams.destination) {
+            setError("Please enter a destination")
+            setLoading(false)
+            return
+          }
+
           const trips = await searchTrips(
             searchParams.destination,
-            searchParams.startDate
+            searchParams.startDate || ""
           )
+          console.log("Trips search results:", trips)
           setTripsData(trips)
           setFilteredTrips(trips)
-        }
+        } else if (searchParams.type === "hotels") {
+          if (!searchParams.city) {
+            setError("Please enter a city")
+            setLoading(false)
+            return
+          }
 
-        if (
-          searchParams.type === "hotels" &&
-          searchParams.city &&
-          searchParams.checkIn &&
-          searchParams.checkOut
-        ) {
           const hotels = await searchHotels(
             searchParams.city,
-            searchParams.checkIn,
-            searchParams.checkOut
+            searchParams.checkIn || "",
+            searchParams.checkOut || ""
           )
+          console.log("Hotels search results:", hotels)
           setHotelsData(hotels)
           setFilteredHotels(hotels)
-        }
+        } else if (searchParams.type === "rent") {
+          if (!searchParams.pickupLocation) {
+            setError("Please enter a pickup location")
+            setLoading(false)
+            return
+          }
 
-        if (
-          searchParams.type === "rent" &&
-          searchParams.pickupLocation &&
-          searchParams.pickupDate &&
-          searchParams.returnDate
-        ) {
           const cars = await searchCars(
             searchParams.pickupLocation,
-            searchParams.pickupDate,
-            searchParams.returnDate
+            searchParams.pickupDate || "",
+            searchParams.returnDate || ""
           )
+          console.log("Cars search results:", cars)
           setCarsData(cars)
           setFilteredCars(cars)
         }
       } catch (err) {
-        setError("Error fetching data")
-        console.error(err)
+        console.error("Search error:", err)
+        setError("An error occurred while searching. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -162,6 +176,73 @@ export function SearchResults({
     [setFilteredCars]
   )
 
+  // Render a no results message
+  const renderNoResults = () => {
+    if (!searchAttempted) return null;
+    
+    let message = "No results found";
+    let suggestion = "Try different search criteria";
+    
+    if (searchParams.type === "trips") {
+      message = "No trips found";
+      suggestion = "Try a different destination or date";
+    } else if (searchParams.type === "hotels") {
+      message = "No hotels found";
+      suggestion = "Try a different city or dates";
+    } else if (searchParams.type === "rent") {
+      message = "No cars found";
+      suggestion = "Try a different location or dates";
+    }
+    
+    return (
+      <div className="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">{message}</h3>
+        <p className="text-gray-600 mb-4">{suggestion}</p>
+        {error && <p className="text-red-500">{error}</p>}
+      </div>
+    );
+  };
+
+  // Render the trip results
+  const renderTripResults = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
+      )
+    }
+
+    if (filteredTrips.length === 0) {
+      return renderNoResults();
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTrips.map((trip) => (
+          <TripCard key={trip.id} trip={trip} />
+        ))}
+      </div>
+    )
+  }
+
+  // Render the hotel results
+  const renderHotelResults = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
+      )
+    }
+
+    if (filteredHotels.length === 0) {
+      return renderNoResults();
+    }
+
+    return <HotelList hotels={filteredHotels} />
+  }
+
   // Render the car search results
   const renderCarResults = () => {
     if (loading) {
@@ -178,6 +259,10 @@ export function SearchResults({
           <p className="text-red-500">{error}</p>
         </div>
       )
+    }
+
+    if (filteredCars.length === 0) {
+      return renderNoResults();
     }
 
     return <CarList cars={filteredCars} />

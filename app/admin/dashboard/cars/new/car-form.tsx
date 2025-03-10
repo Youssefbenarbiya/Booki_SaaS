@@ -73,7 +73,7 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
           plateNumber: initialData.plateNumber,
           color: initialData.color,
           price: initialData.price,
-          isAvailable: initialData.isAvailable,
+          isAvailable: Boolean(initialData.isAvailable),
         }
       : {
           brand: "",
