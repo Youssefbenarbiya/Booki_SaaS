@@ -1,10 +1,7 @@
-"use client"
-
-import { ReactNode, useState } from "react"
+import Link from "next/link"
+import { ReactNode } from "react"
 
 export default function ProfileLayout({ children }: { children: ReactNode }) {
-  const [activeTab, setActiveTab] = useState("bookingHistory")
-
   return (
     <div className="flex">
       <aside className="w-1/4 bg-gray-100 p-4">
@@ -12,74 +9,81 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
         <nav className="mt-4">
           <ul>
             <li className="py-2">
-              <button
-                onClick={() => setActiveTab("dashboard")}
+              <Link
+                href="/profile/dashboard"
                 className="text-gray-600 hover:text-black"
               >
                 Dashboard
-              </button>
+              </Link>
             </li>
             <li className="py-2">
-              <button
-                onClick={() => setActiveTab("personal-info")}
+              <Link
+                href="/user/profile/personal-info"
                 className="text-gray-600 hover:text-black"
               >
                 Personal Information
-              </button>
+              </Link>
             </li>
             <li className="py-2">
-              <button
-                onClick={() => setActiveTab("messages")}
+              <Link
+                href="/profile/messages"
                 className="text-gray-600 hover:text-black"
               >
                 Messages
-              </button>
+              </Link>
             </li>
             <li className="py-2">
-              <a href="#favorites" className="text-gray-600 hover:text-black">
+              <Link
+                href="/profile/favorites"
+                className="text-gray-600 hover:text-black"
+              >
                 My Favorites
-              </a>
+              </Link>
             </li>
             <li className="py-2">
-              <a href="#services" className="text-gray-600 hover:text-black">
+              <Link
+                href="/profile/services"
+                className="text-gray-600 hover:text-black"
+              >
                 Add My Service
-              </a>
+              </Link>
             </li>
             <li className="py-2">
-              <a href="#compare" className="text-gray-600 hover:text-black">
+              <Link
+                href="/profile/compare"
+                className="text-gray-600 hover:text-black"
+              >
                 Compare
-              </a>
+              </Link>
             </li>
             <li className="py-2">
-              <button
-                onClick={() => setActiveTab("bookingHistory")}
+              <Link
+                href="/user/profile/bookingHistory"
                 className="text-gray-600 hover:text-black"
               >
                 History
-              </button>
+              </Link>
             </li>
             <li className="py-2">
-              <a
-                href="#quick-assistance"
+              <Link
+                href="/profile/quick-assistance"
                 className="text-gray-600 hover:text-black"
               >
                 Quick Assistance
-              </a>
+              </Link>
             </li>
             <li className="py-2">
-              <a href="#logout" className="text-gray-600 hover:text-black">
+              <Link
+                href="/profile/logout"
+                className="text-gray-600 hover:text-black"
+              >
                 Logout
-              </a>
+              </Link>
             </li>
           </ul>
         </nav>
       </aside>
-      <main className="w-3/4 p-4">
-        {activeTab === "bookingHistory" && children}
-        {activeTab === "personal-info" && children}
-        {activeTab === "messages" && <div>Messages Content</div>}
-        {activeTab === "dashboard" && <div>Dashboard Content</div>}
-      </main>
+      <main className="w-3/4 p-4">{children}</main>
     </div>
   )
 }

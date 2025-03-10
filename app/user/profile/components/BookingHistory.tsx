@@ -16,7 +16,7 @@ type BookingDisplay = {
 }
 
 export default function BookingHistoryClient({
-  initialBookings = [], // Default to an empty array if undefined
+  initialBookings = [], // Defaults to an empty array if undefined
 }: {
   initialBookings?: BookingDisplay[]
 }) {

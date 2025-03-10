@@ -1,29 +1,22 @@
 import { auth } from "@/auth"
 import { Metadata } from "next"
 import { headers } from "next/headers"
-
+import { UpdateUserInfo } from "../profile-form"
 
 export const metadata: Metadata = {
-  title: `Customer Profile`,
+  title: `Personal Information`,
 }
 
-export default async function ProfilePage() {
+export default async function PersonalInfoPage() {
   const session = await auth.api.getSession({
     query: { disableCookieCache: true },
     headers: await headers(),
   })
 
   if (!session) {
-    // Handle no session found; for example, you could redirect to signin.
+    // Handle no session case, e.g. redirect or return null
     return null
   }
 
-  // Get the user booking history
-
-  return (
-    <div>
-      <div className="bg-gray-100 h-[200px]">{/* Profile Banner */}</div>
-    
-    </div>
-  )
+  return <UpdateUserInfo session={session} />
 }
