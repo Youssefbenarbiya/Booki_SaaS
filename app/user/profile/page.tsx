@@ -1,7 +1,6 @@
 import { auth } from "@/auth"
-import { Metadata } from "next"
+import type { Metadata } from "next"
 import { headers } from "next/headers"
-
 
 export const metadata: Metadata = {
   title: `Customer Profile`,
@@ -18,12 +17,20 @@ export default async function ProfilePage() {
     return null
   }
 
-  // Get the user booking history
+  const userName = session.user?.name || "User"
 
   return (
     <div>
-      <div className="bg-gray-100 h-[200px]">{/* Profile Banner */}</div>
-    
+      <div className="bg-gray-100 h-[200px] rounded-lg mb-4">
+        {/* Profile Banner */}
+      </div>
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-4">Welcome back, {userName}</h1>
+        <p className="text-gray-600">
+          Manage your profile information, bookings, and preferences from this
+          dashboard.
+        </p>
+      </div>
     </div>
   )
 }

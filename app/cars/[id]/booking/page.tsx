@@ -130,8 +130,13 @@ export default function BookingPage({ params }: BookingPageProps) {
       try {
         setIsSubmitting(true)
 
-        // In a real app, get from auth context
+        // Get userId from session
         const userId = session.data?.user.id
+        
+        if (!userId) {
+          toast.error("Please log in to book a car")
+          return
+        }
 
         const result = await bookCar({
           carId,

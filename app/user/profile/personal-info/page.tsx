@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { Metadata } from "next"
 import { headers } from "next/headers"
-import { UpdateUserInfo } from "../profile-form"
+import { UpdateUserInfo } from "./profile-form"
 
 export const metadata: Metadata = {
   title: `Personal Information`,
@@ -18,5 +18,9 @@ export default async function PersonalInfoPage() {
     return null
   }
 
-  return <UpdateUserInfo session={session} />
+  return (
+    <div className="mt-[70px]">
+      <UpdateUserInfo session={session} />
+    </div>
+  )
 }
