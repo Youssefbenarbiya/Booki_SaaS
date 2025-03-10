@@ -8,7 +8,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { getCarById } from "@/actions/carActions"
-import { bookCar } from "@/actions/bookingActions"
+import { bookCar } from "@/actions/bookingCars"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DateRange } from "react-day-picker"
@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useSession } from "@/auth-client"
 
 const bookingFormSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -78,11 +79,7 @@ export default function BookingPage({ params }: BookingPageProps) {
     return parseFloat((totalDays * car.price).toFixed(2))
   }, [car, totalDays])
 
-  // Stable handler for date picker
-  const handleDateRangeChange = useCallback((range: DateRange | undefined) => {
-    setDateRange(range)
-  }, [])
-
+    const session = useSession()
   // Initialize form
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -133,8 +130,13 @@ export default function BookingPage({ params }: BookingPageProps) {
       try {
         setIsSubmitting(true)
 
-        // In a real app, get from auth context
-        const userId = "user123"
+        // Get userId from session
+        const userId = session.data?.user.id
+        
+        if (!userId) {
+          toast.error("Please log in to book a car")
+          return
+        }
 
         const result = await bookCar({
           carId,
@@ -164,7 +166,7 @@ export default function BookingPage({ params }: BookingPageProps) {
             endDate: dateRange.to.toISOString(),
           })
 
-          // Fixed path to success page with correct route
+          // Redirect to success page with booking details
           setTimeout(() => {
             router.push(`/cars/${carId}/booking/success?${params.toString()}`)
           }, 1000)
@@ -243,10 +245,7 @@ export default function BookingPage({ params }: BookingPageProps) {
 
             <div className="mb-4">
               <h4 className="font-medium text-gray-700 mb-2">Rental Period</h4>
-              <DatePicker
-                dateRange={dateRange}
-                setDateRange={handleDateRangeChange}
-              />
+              <DatePicker dateRange={dateRange} setDateRange={setDateRange} />
             </div>
 
             <Separator className="my-4" />
@@ -380,7 +379,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                           I agree to the terms and conditions of rental
                         </FormLabel>
                         <FormDescription>
-                          By agreeing, you confirm you&apos;ve read our terms,
+                          By agreeing, you confirm you've read our terms,
                           including the cancellation policy.
                         </FormDescription>
                       </div>

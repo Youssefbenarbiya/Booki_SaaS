@@ -38,6 +38,8 @@ export const columns: ColumnDef<CarType>[] = [
           src={images[0]}
           alt={`${row.original.brand} ${row.original.model}`}
           className="w-16 h-16 object-cover rounded"
+          width={64}
+          height={64}
         />
       ) : (
         <span>No Photo</span>

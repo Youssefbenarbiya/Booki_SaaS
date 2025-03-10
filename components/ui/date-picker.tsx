@@ -25,17 +25,6 @@ export function DatePicker({
   setDateRange,
   className,
 }: DatePickerProps) {
-  // Use a stable onSelect handler to prevent infinite updates
-  const handleSelect = React.useCallback(
-    (range: DateRange | undefined) => {
-      // Only update if the range actually changed
-      if (range !== dateRange) {
-        setDateRange(range);
-      }
-    },
-    [setDateRange, dateRange]
-  );
-
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover>
@@ -69,7 +58,7 @@ export function DatePicker({
             mode="range"
             defaultMonth={dateRange?.from}
             selected={dateRange}
-            onSelect={handleSelect}
+            onSelect={setDateRange}
             numberOfMonths={2}
             disabled={(date) => date < new Date()}
           />

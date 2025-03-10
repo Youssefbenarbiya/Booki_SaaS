@@ -1,7 +1,7 @@
 "use server"
 
 import { cars } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { and, eq, or, ilike  } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { CarFormValues } from "../app/admin/dashboard/cars/types"
 import db from "@/db/drizzle"
@@ -103,8 +103,7 @@ export async function searchCars(
   returnDate: string
 ) {
   try {
-    // In a real app, you would use these parameters to filter cars
-    // For now, we'll just fetch all cars and consider them available
+    
     const availableCars = await db.query.cars.findMany({
       where: (cars, { eq }) => eq(cars.isAvailable, true),
     });
