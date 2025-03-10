@@ -1,9 +1,9 @@
 "use client"
 
 import { ReactNode, useState } from "react"
-import Dashboard from "./components/dashboard"
+
 export default function ProfileLayout({ children }: { children: ReactNode }) {
-  const [activeTab, setActiveTab] = useState("dashboard")
+  const [activeTab, setActiveTab] = useState("bookingHistory")
 
   return (
     <div className="flex">
@@ -51,9 +51,12 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
               </a>
             </li>
             <li className="py-2">
-              <a href="#history" className="text-gray-600 hover:text-black">
+              <button
+                onClick={() => setActiveTab("bookingHistory")}
+                className="text-gray-600 hover:text-black"
+              >
                 History
-              </a>
+              </button>
             </li>
             <li className="py-2">
               <a
@@ -72,9 +75,10 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
         </nav>
       </aside>
       <main className="w-3/4 p-4">
-        {activeTab === "dashboard" && <Dashboard />}
+        {activeTab === "bookingHistory" && children}
         {activeTab === "personal-info" && children}
         {activeTab === "messages" && <div>Messages Content</div>}
+        {activeTab === "dashboard" && <div>Dashboard Content</div>}
       </main>
     </div>
   )

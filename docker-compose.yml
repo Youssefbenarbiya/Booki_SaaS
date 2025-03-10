@@ -4,12 +4,12 @@ services:
   Booki-db:
     image: postgres
     restart: always
-    container_name: Booki-db
+    container_name: Booking-db
     ports:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: example
-      POSTGRES_DB: booki  
+      POSTGRES_DB: booki
       PGDATA: /data/postgres
     volumes:
       - postgres:/data/postgres
