@@ -17,11 +17,11 @@ import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useToast } from "@/hooks/use-toast"
-import type { Session } from "@/lib/auth/type"
 import { updateUserInfoSchema } from "@/lib/validations/zod"
 import { z } from "zod"
 import { handleImageUpload } from "@/actions/upload-image"
 import { authClient } from "@/auth-client"
+import { Session } from "@/auth"
 
 type UserFormType = z.infer<typeof updateUserInfoSchema>
 
