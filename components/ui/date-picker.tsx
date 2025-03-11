@@ -18,13 +18,39 @@ interface DatePickerProps {
   dateRange: DateRange | undefined
   setDateRange: (range: DateRange | undefined) => void
   className?: string
+  disabledDateRanges?: Array<{
+    startDate: Date
+    endDate: Date
+    bookingId: number
+  }>
 }
 
 export function DatePicker({
   dateRange,
   setDateRange,
   className,
+  disabledDateRanges = [],
 }: DatePickerProps) {
+  const isDateDisabled = React.useCallback(
+    (date: Date) => {
+      if (date < new Date(new Date().setHours(0, 0, 0, 0))) {
+        return true
+      }
+
+      if (disabledDateRanges?.length) {
+        return disabledDateRanges.some((range) => {
+          const rangeStartDate = new Date(range.startDate)
+          const rangeEndDate = new Date(range.endDate)
+
+          return date >= rangeStartDate && date <= rangeEndDate
+        })
+      }
+
+      return false
+    },
+    [disabledDateRanges]
+  )
+
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover>
@@ -60,7 +86,7 @@ export function DatePicker({
             selected={dateRange}
             onSelect={setDateRange}
             numberOfMonths={2}
-            disabled={(date) => date < new Date()}
+            disabled={isDateDisabled}
           />
         </PopoverContent>
       </Popover>

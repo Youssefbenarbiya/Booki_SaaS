@@ -7,7 +7,7 @@ import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { getCarById } from "@/actions/carActions"
+import { getCarById, getCarAvailability } from "@/actions/carActions"
 import { bookCar } from "@/actions/bookingCars"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -57,15 +57,17 @@ export default function BookingPage({ params }: BookingPageProps) {
   const [car, setCar] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: new Date(new Date().setDate(new Date().getDate() + 3)),
-  })
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [bookedDateRanges, setBookedDateRanges] = useState<Array<{
+    startDate: Date
+    endDate: Date
+    bookingId: number
+  }>>([])
 
   // Calculate derived state outside of render
   const totalDays = useMemo(() => {
-    if (!dateRange?.from || !dateRange?.to) return 3
+    if (!dateRange?.from || !dateRange?.to) return 0
     return (
       Math.ceil(
         (dateRange.to.getTime() - dateRange.from.getTime()) /
@@ -93,19 +95,28 @@ export default function BookingPage({ params }: BookingPageProps) {
     },
   })
 
-  // Load car data - only once per carId
+  // Load car data and availability - only once per carId
   useEffect(() => {
     let isMounted = true
-    async function loadCar() {
+    async function loadCarAndAvailability() {
       try {
         setLoading(true)
-        const result = await getCarById(carId)
+        const [carResult, availabilityResult] = await Promise.all([
+          getCarById(carId),
+          getCarAvailability(carId)
+        ]);
+        
         if (isMounted) {
-          setCar(result.car)
+          setCar(carResult.car)
+          
+          if (availabilityResult.success && availabilityResult.bookedDateRanges) {
+            setBookedDateRanges(availabilityResult.bookedDateRanges)
+          }
+          
           setLoading(false)
         }
       } catch (err) {
-        console.error("Failed to load car:", err)
+        console.error("Failed to load car or availability:", err)
         if (isMounted) {
           setError("Failed to load car details")
           setLoading(false)
@@ -113,7 +124,7 @@ export default function BookingPage({ params }: BookingPageProps) {
       }
     }
 
-    loadCar()
+    loadCarAndAvailability()
     return () => {
       isMounted = false
     }
@@ -123,7 +134,17 @@ export default function BookingPage({ params }: BookingPageProps) {
   const onSubmit = useCallback(
     async (data: BookingFormValues) => {
       if (!dateRange?.from || !dateRange?.to) {
-        toast.error("Please select rental dates")
+        toast.error("Please select pickup and return dates", {
+          description: "You must select a date range before booking",
+          duration: 5000,
+        })
+        
+        // Scroll to date picker to make it more obvious
+        document.querySelector('.date-picker-container')?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        
         return
       }
 
@@ -242,9 +263,19 @@ export default function BookingPage({ params }: BookingPageProps) {
 
             <Separator className="my-4" />
 
-            <div className="mb-4">
+            <div className="mb-4 date-picker-container">
               <h4 className="font-medium text-gray-700 mb-2">Rental Period</h4>
-              <DatePicker dateRange={dateRange} setDateRange={setDateRange} />
+              <DatePicker 
+                dateRange={dateRange} 
+                setDateRange={setDateRange}
+                disabledDateRanges={bookedDateRanges} 
+              />
+              {!dateRange && (
+                <p className="text-sm text-blue-600 mt-2">
+                  Please select your rental dates
+                </p>
+              )}
+             
             </div>
 
             <Separator className="my-4" />
@@ -256,7 +287,7 @@ export default function BookingPage({ params }: BookingPageProps) {
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Days</span>
-                <span>{totalDays} days</span>
+                <span>{dateRange ? `${totalDays} days` : 'Select dates'}</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Insurance</span>
@@ -264,7 +295,7 @@ export default function BookingPage({ params }: BookingPageProps) {
               </div>
               <div className="flex justify-between font-bold text-lg mt-4">
                 <span>Total</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>{dateRange ? `$${totalPrice.toFixed(2)}` : 'TBD'}</span>
               </div>
             </div>
           </div>

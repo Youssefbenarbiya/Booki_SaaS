@@ -73,12 +73,7 @@ export async function bookCar({
 
       newBooking = bookingResults[0]
 
-      // Update car availability
-      await db
-        .update(cars)
-        .set({ isAvailable: false })
-        .where(eq(cars.id, carId))
-
+      // Don't set car as unavailable since we're tracking booked dates instead
       console.log("Booking saved successfully:", newBooking)
     } catch (dbError) {
       console.error("Database error:", dbError)
