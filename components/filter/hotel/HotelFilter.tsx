@@ -9,7 +9,7 @@ import { AmenitiesFilter } from "./AmenitiesFilter"
 import { SearchFilterBar } from "./SearchFilterBar"
 import { X } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "../ui/separator"
+import { Separator } from "../../ui/separator"
 
 interface HotelFilterProps {
   onFilterChange: (filters: any) => void

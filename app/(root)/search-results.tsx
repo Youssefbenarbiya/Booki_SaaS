@@ -36,7 +36,7 @@ import { searchTrips } from "@/actions/searchTrips"
 import { searchHotels } from "@/actions/searchHotels"
 import { searchCars } from "@/actions/carActions"
 import HotelList from "@/components/cards/HotelList"
-import { HotelFilter } from "@/components/filter/HotelFilter"
+import { HotelFilter } from "@/components/filter/hotel/HotelFilter"
 import { TripFilter } from "@/components/filter/TripFilter"
 import { CarList } from "@/app/cars/components/CarList"
 import { CarFilter } from "@/app/cars/components/CarFilter"
@@ -178,30 +178,30 @@ export function SearchResults({
 
   // Render a no results message
   const renderNoResults = () => {
-    if (!searchAttempted) return null;
-    
-    let message = "No results found";
-    let suggestion = "Try different search criteria";
-    
+    if (!searchAttempted) return null
+
+    let message = "No results found"
+    let suggestion = "Try different search criteria"
+
     if (searchParams.type === "trips") {
-      message = "No trips found";
-      suggestion = "Try a different destination or date";
+      message = "No trips found"
+      suggestion = "Try a different destination or date"
     } else if (searchParams.type === "hotels") {
-      message = "No hotels found";
-      suggestion = "Try a different city or dates";
+      message = "No hotels found"
+      suggestion = "Try a different city or dates"
     } else if (searchParams.type === "rent") {
-      message = "No cars found";
-      suggestion = "Try a different location or dates";
+      message = "No cars found"
+      suggestion = "Try a different location or dates"
     }
-    
+
     return (
       <div className="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">{message}</h3>
         <p className="text-gray-600 mb-4">{suggestion}</p>
         {error && <p className="text-red-500">{error}</p>}
       </div>
-    );
-  };
+    )
+  }
 
   // Render the trip results
   const renderTripResults = () => {
@@ -214,7 +214,7 @@ export function SearchResults({
     }
 
     if (filteredTrips.length === 0) {
-      return renderNoResults();
+      return renderNoResults()
     }
 
     return (
@@ -237,7 +237,7 @@ export function SearchResults({
     }
 
     if (filteredHotels.length === 0) {
-      return renderNoResults();
+      return renderNoResults()
     }
 
     return <HotelList hotels={filteredHotels} />
@@ -262,7 +262,7 @@ export function SearchResults({
     }
 
     if (filteredCars.length === 0) {
-      return renderNoResults();
+      return renderNoResults()
     }
 
     return <CarList cars={filteredCars} />
@@ -312,6 +312,7 @@ export function SearchResults({
                 <HotelFilter
                   hotelsData={hotelsData}
                   setFilteredHotels={setFilteredHotels}
+                  onFilterChange={handleHotelFilterChange}
                 />
               </div>
             )}
@@ -353,6 +354,7 @@ export function SearchResults({
                     <HotelFilter
                       hotelsData={hotelsData}
                       setFilteredHotels={setFilteredHotels}
+                      onFilterChange={handleHotelFilterChange}
                     />
                   )}
                   {searchParams.type === "trips" && (

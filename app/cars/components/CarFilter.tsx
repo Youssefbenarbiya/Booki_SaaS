@@ -22,7 +22,6 @@ export function CarFilter({
   carsData,
   setFilteredCars,
   onFilterChange,
-  isMobileView = false,
   className = "",
   searchParams,
 }: CarFilterProps) {
