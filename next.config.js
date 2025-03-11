@@ -6,6 +6,7 @@ const nextConfig = {
       "res.cloudinary.com",
       "platform-lookaside.fbsbx.com",
       "booki-hazel.vercel.app",
+      "lh3.googleusercontent.com",
     ],
     remotePatterns: [
       {
