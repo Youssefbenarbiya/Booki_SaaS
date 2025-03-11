@@ -1,5 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
+
+import { useState, useEffect, useCallback } from "react"
+import { searchTrips } from "@/actions/searchTrips"
+import { searchHotels } from "@/actions/searchHotels"
+import { searchCars } from "@/actions/carActions"
+import HotelList from "@/components/cards/HotelList"
+import { HotelFilter } from "@/components/filter/hotel/HotelFilter"
+import { TripFilter, TripFilterOptions } from "@/components/filter/TripFilter"
+import { CarList } from "@/app/cars/components/CarList"
+import { CarFilter } from "@/app/cars/components/CarFilter"
+import { Car } from "@/app/cars/components/CarCard"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Button } from "@/components/ui/button"
+import { SlidersHorizontal } from "lucide-react"
+import { useMediaQuery } from "@/hooks/use-media-query"
+import TripCard from "@/components/cards/TripCard"
+
 interface Trip {
   id: number
   name: string
@@ -16,36 +33,20 @@ interface Trip {
   activities: any[]
 }
 
+// Generic Hotel interface that works with the data we have
 interface Hotel {
   id: string
   name: string
   address: string
-  createdAt: Date
-  updatedAt: Date
-  description: string
-  images: string[]
-  city: string
-  country: string
   rating: number
   amenities: string[]
-  rooms: any[]
+  rooms: Array<{
+    id: string
+    pricePerNightAdult: string
+    [key: string]: any
+  }>
+  [key: string]: any
 }
-
-import { useState, useEffect, useCallback } from "react"
-import { searchTrips } from "@/actions/searchTrips"
-import { searchHotels } from "@/actions/searchHotels"
-import { searchCars } from "@/actions/carActions"
-import HotelList from "@/components/cards/HotelList"
-import { HotelFilter } from "@/components/filter/hotel/HotelFilter"
-import { TripFilter } from "@/components/filter/TripFilter"
-import { CarList } from "@/app/cars/components/CarList"
-import { CarFilter } from "@/app/cars/components/CarFilter"
-import { Car } from "@/app/cars/components/CarCard"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
-import { SlidersHorizontal } from "lucide-react"
-import { useMediaQuery } from "@/hooks/use-media-query"
-import TripCard from "@/components/cards/TripCard"
 
 interface SearchParams {
   type?: string
@@ -64,7 +65,6 @@ export function SearchResults({
 }: {
   searchParams: SearchParams
 }) {
-  // Explicitly type the state arrays
   const [hotelsData, setHotelsData] = useState<Hotel[]>([])
   const [tripsData, setTripsData] = useState<Trip[]>([])
   const [carsData, setCarsData] = useState<Car[]>([])
@@ -126,8 +126,15 @@ export function SearchResults({
             searchParams.checkOut || ""
           )
           console.log("Hotels search results:", hotels)
-          setHotelsData(hotels)
-          setFilteredHotels(hotels)
+          
+          // Ensure amenities is an array
+          const processedHotels = hotels.map(hotel => ({
+            ...hotel,
+            amenities: hotel.amenities || []
+          }))
+          
+          setHotelsData(processedHotels)
+          setFilteredHotels(processedHotels)
         } else if (searchParams.type === "rent") {
           if (!searchParams.pickupLocation) {
             setError("Please enter a pickup location")
@@ -141,8 +148,9 @@ export function SearchResults({
             searchParams.returnDate || ""
           )
           console.log("Cars search results:", cars)
-          setCarsData(cars)
-          setFilteredCars(cars)
+          // Cast to Car[] to fix type issues
+          setCarsData(cars as Car[])
+          setFilteredCars(cars as Car[])
         }
       } catch (err) {
         console.error("Search error:", err)
@@ -156,24 +164,34 @@ export function SearchResults({
   }, [searchParams])
 
   const handleHotelFilterChange = useCallback(
-    (filteredHotels: Hotel[]) => {
-      setFilteredHotels(filteredHotels)
+    (filteredResults: Hotel[]) => {
+      setFilteredHotels(filteredResults)
     },
-    [setFilteredHotels]
+    []
   )
 
   const handleTripFilterChange = useCallback(
-    (filteredTrips: Trip[]) => {
-      setFilteredTrips(filteredTrips)
+    (filters: TripFilterOptions) => {
+      // Apply filters to trips data
+      const filtered = tripsData.filter(trip => {
+        const price = Number(trip.price) || 0;
+        const priceMatch = price >= filters.priceRange.min && price <= filters.priceRange.max;
+        
+        // Add more filtering logic as needed
+        
+        return priceMatch;
+      });
+      
+      setFilteredTrips(filtered);
     },
-    [setFilteredTrips]
-  )
+    [tripsData]
+  );
 
   const handleCarFilterChange = useCallback(
     (filteredCars: Car[]) => {
       setFilteredCars(filteredCars)
     },
-    [setFilteredCars]
+    []
   )
 
   // Render a no results message
@@ -240,7 +258,8 @@ export function SearchResults({
       return renderNoResults()
     }
 
-    return <HotelList hotels={filteredHotels} />
+    // Cast to any to avoid type issues with HotelList
+    return <HotelList hotels={filteredHotels as any} />
   }
 
   // Render the car search results
@@ -310,17 +329,17 @@ export function SearchResults({
             {searchParams.type === "hotels" && (
               <div className="w-64">
                 <HotelFilter
-                  hotelsData={hotelsData}
-                  setFilteredHotels={setFilteredHotels}
+                  hotels={hotelsData}
                   onFilterChange={handleHotelFilterChange}
+                  searchParams={searchParams}
                 />
               </div>
             )}
             {searchParams.type === "trips" && (
               <div className="w-64">
                 <TripFilter
-                  tripsData={tripsData}
-                  setFilteredTrips={setFilteredTrips}
+                  onFilterChange={handleTripFilterChange}
+                  className=""
                 />
               </div>
             )}
@@ -330,7 +349,11 @@ export function SearchResults({
                   carsData={carsData}
                   setFilteredCars={setFilteredCars}
                   onFilterChange={handleCarFilterChange}
-                  searchParams={searchParams}
+                  searchParams={{
+                    pickupLocation: searchParams.pickupLocation || "",
+                    pickupDate: searchParams.pickupDate || "",
+                    returnDate: searchParams.returnDate || ""
+                  }}
                 />
               </div>
             )}
@@ -352,15 +375,16 @@ export function SearchResults({
                 <SheetContent side="left">
                   {searchParams.type === "hotels" && (
                     <HotelFilter
-                      hotelsData={hotelsData}
-                      setFilteredHotels={setFilteredHotels}
+                      hotels={hotelsData}
                       onFilterChange={handleHotelFilterChange}
+                      searchParams={searchParams}
+                      isMobileView
                     />
                   )}
                   {searchParams.type === "trips" && (
                     <TripFilter
-                      tripsData={tripsData}
-                      setFilteredTrips={setFilteredTrips}
+                      onFilterChange={handleTripFilterChange}
+                      isMobileView={true}
                     />
                   )}
                   {searchParams.type === "rent" && (
@@ -369,7 +393,11 @@ export function SearchResults({
                       setFilteredCars={setFilteredCars}
                       onFilterChange={handleCarFilterChange}
                       isMobileView={true}
-                      searchParams={searchParams}
+                      searchParams={{
+                        pickupLocation: searchParams.pickupLocation || "",
+                        pickupDate: searchParams.pickupDate || "",
+                        returnDate: searchParams.returnDate || ""
+                      }}
                     />
                   )}
                 </SheetContent>

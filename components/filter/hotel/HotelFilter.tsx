@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { PriceRangeFilter } from "./PriceRangeFilter"
 import { StarRatingFilter } from "./StarRatingFilter"
@@ -11,8 +11,24 @@ import { X } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "../../ui/separator"
 
+// Generic Hotel interface that works with the data we have
+interface Hotel {
+  id: string
+  name: string
+  address: string
+  rating: number
+  amenities: string[]
+  rooms: Array<{
+    id: string
+    pricePerNightAdult: string
+    [key: string]: any
+  }>
+  [key: string]: any
+}
+
 interface HotelFilterProps {
-  onFilterChange: (filters: any) => void
+  hotels: Hotel[]
+  onFilterChange: (filteredHotels: Hotel[]) => void
   className?: string
   onMobileClose?: () => void
   isMobileView?: boolean
@@ -24,6 +40,7 @@ interface HotelFilterProps {
 }
 
 export function HotelFilter({
+  hotels,
   onFilterChange,
   className = "",
   onMobileClose,
@@ -36,10 +53,85 @@ export function HotelFilter({
     amenities: [] as string[],
   })
 
+  // Calculate min and max prices from actual hotel data
+  const prices = hotels.map(h => 
+    h.rooms && h.rooms.length > 0 
+      ? Math.min(...h.rooms.map(r => Number(r.pricePerNightAdult) || 0))
+      : 0
+  )
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : 1000
+
+  // Log available amenities for debugging
+  useEffect(() => {
+    if (hotels.length > 0) {
+      const allAmenities = new Set<string>();
+      hotels.forEach(hotel => {
+        if (Array.isArray(hotel.amenities)) {
+          hotel.amenities.forEach(amenity => {
+            allAmenities.add(amenity.toLowerCase());
+          });
+        }
+      });
+      console.log("Available amenities in hotel data:", [...allAmenities]);
+    }
+  }, [hotels]);
+
+  useEffect(() => {
+    // Initialize price range based on actual hotel data
+    setFilters(prev => ({
+      ...prev,
+      priceRange: { min: minPrice, max: maxPrice }
+    }))
+  }, [minPrice, maxPrice])
+
+  const applyFilters = (newFilters: typeof filters) => {
+    const filteredHotels = hotels.filter(hotel => {
+      // Price filter - check if any room's price is in the range
+      const minRoomPrice = hotel.rooms && hotel.rooms.length > 0
+        ? Math.min(...hotel.rooms.map(r => Number(r.pricePerNightAdult) || 0))
+        : 0
+      const priceInRange = minRoomPrice >= newFilters.priceRange.min && 
+                          minRoomPrice <= newFilters.priceRange.max
+
+      // Rating filter
+      const ratingMatch = newFilters.ratings.length === 0 || 
+        newFilters.ratings.includes(Math.floor(hotel.rating))
+
+      // Amenities filter - ensure hotel.amenities is an array
+      const hotelAmenities = Array.isArray(hotel.amenities) ? hotel.amenities : [];
+      
+      // Convert amenities to lowercase for case-insensitive comparison
+      const normalizedHotelAmenities = hotelAmenities.map(a => a.toLowerCase());
+      
+      // Check if all selected amenities are included in the hotel's amenities
+      // Using a more flexible matching approach that checks if any hotel amenity contains the selected amenity term
+      const amenitiesMatch = newFilters.amenities.length === 0 ||
+        newFilters.amenities.every(selectedAmenity => {
+          const selectedAmenityLower = selectedAmenity.toLowerCase();
+          return normalizedHotelAmenities.some(hotelAmenity => 
+            hotelAmenity.includes(selectedAmenityLower) || 
+            selectedAmenityLower.includes(hotelAmenity)
+          );
+        });
+
+      // For debugging
+      if (newFilters.amenities.length > 0 && !amenitiesMatch) {
+        console.log("Hotel failed amenities match:", hotel.name);
+        console.log("Hotel amenities:", normalizedHotelAmenities);
+        console.log("Selected amenities:", newFilters.amenities);
+      }
+
+      return priceInRange && ratingMatch && amenitiesMatch
+    })
+
+    onFilterChange(filteredHotels)
+  }
+
   const updateFilters = (key: string, value: any) => {
     const newFilters = { ...filters, [key]: value }
     setFilters(newFilters)
-    onFilterChange(newFilters)
+    applyFilters(newFilters)
   }
 
   const handlePriceChange = (min: number, max: number) => {
@@ -56,12 +148,12 @@ export function HotelFilter({
 
   const clearFilters = () => {
     const resetFilters = {
-      priceRange: { min: 0, max: 1000 },
+      priceRange: { min: minPrice, max: maxPrice },
       ratings: [],
       amenities: [],
     }
     setFilters(resetFilters)
-    onFilterChange(resetFilters)
+    applyFilters(resetFilters)
   }
 
   return (
@@ -99,18 +191,26 @@ export function HotelFilter({
 
         <div className="space-y-6">
           <PriceRangeFilter
-            minPrice={0}
-            maxPrice={1000}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            currentMin={filters.priceRange.min}
+            currentMax={filters.priceRange.max}
             onChange={handlePriceChange}
           />
 
           <Separator />
 
-          <StarRatingFilter onChange={handleRatingChange} />
+          <StarRatingFilter 
+            onChange={handleRatingChange}
+            selectedRatings={filters.ratings}
+          />
 
           <Separator />
 
-          <AmenitiesFilter onChange={handleAmenitiesChange} />
+          <AmenitiesFilter 
+            onChange={handleAmenitiesChange}
+            selectedAmenities={filters.amenities}
+          />
         </div>
       </CardContent>
     </Card>

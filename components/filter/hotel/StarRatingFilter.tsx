@@ -1,22 +1,27 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 
 interface StarRatingProps {
   onChange: (selectedRatings: number[]) => void
+  selectedRatings: number[]
 }
 
-export function StarRatingFilter({ onChange }: StarRatingProps) {
+export function StarRatingFilter({ onChange, selectedRatings: initialSelectedRatings }: StarRatingProps) {
   const ratings = [5, 4, 3, 2, 1]
-  const [selectedRatings, setSelectedRatings] = useState<number[]>([])
+  const [selectedRatings, setSelectedRatings] = useState<number[]>(initialSelectedRatings)
+
+  useEffect(() => {
+    setSelectedRatings(initialSelectedRatings)
+  }, [initialSelectedRatings])
 
   const handleRatingChange = (rating: number, checked: boolean) => {
     let newSelectedRatings: number[]
 
     if (checked) {
-      newSelectedRatings = [...selectedRatings, rating]
+      newSelectedRatings = [...selectedRatings, rating].sort((a, b) => b - a)
     } else {
       newSelectedRatings = selectedRatings.filter((r) => r !== rating)
     }
@@ -41,7 +46,7 @@ export function StarRatingFilter({ onChange }: StarRatingProps) {
             />
             <Label
               htmlFor={`rating-${rating}`}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 cursor-pointer"
             >
               {Array(rating)
                 .fill(0)
@@ -57,6 +62,9 @@ export function StarRatingFilter({ onChange }: StarRatingProps) {
                     ★
                   </span>
                 ))}
+              <span className="ml-1 text-sm text-gray-600">
+                ({rating} {rating === 1 ? "star" : "stars"})
+              </span>
             </Label>
           </div>
         ))}
