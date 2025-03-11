@@ -7,6 +7,7 @@ interface HotelLocationMapProps {
   longitude?: string | number
   height?: string
   readOnly?: boolean
+  enableSearch?: boolean
 }
 
 export default function HotelLocationMap({
@@ -14,6 +15,7 @@ export default function HotelLocationMap({
   longitude,
   height = "400px",
   readOnly = true,
+  enableSearch = false,
 }: HotelLocationMapProps) {
   // Convert string coordinates to numbers or use defaults
   const parsedLatitude = latitude ? Number(latitude) : undefined
@@ -28,7 +30,7 @@ export default function HotelLocationMap({
         initialLatitude={parsedLatitude}
         initialLongitude={parsedLongitude}
         onLocationSelected={handleLocationSelected}
-        enableSearch={false}
+        enableSearch={enableSearch}
         height={height}
         readOnly={readOnly}
       />
