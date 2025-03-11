@@ -67,7 +67,10 @@ export default async function BookingConfirmationPage({
                 details.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/dashboard/bookings" className="btn btn-primary">
+                <Link
+                  href="/user/profile/bookingHistory"
+                  className="btn btn-primary"
+                >
                   View My Bookings
                 </Link>
                 <Link href="/" className="btn btn-outline">

@@ -98,10 +98,10 @@ export default function BookingSuccessPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4 sm:flex-row justify-between">
           <Button asChild variant="outline">
-            <Link href="/dashboard/bookings">View My Bookings</Link>
+            <Link href="/user/profile/bookingHistory">View My Bookings</Link>
           </Button>
           <Button asChild>
-            <Link href="/cars">Browse More Cars</Link>
+            <Link href="/?type=rent">Browse More Cars</Link>
           </Button>
         </CardFooter>
       </Card>

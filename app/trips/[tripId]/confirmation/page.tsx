@@ -14,7 +14,7 @@ export default function TripConfirmationPage() {
         </p>
 
         <div className="flex flex-col space-y-3">
-          <Link href="/dashboard/bookings">
+          <Link href="/user/profile/bookingHistory">
             <Button variant="default" className="w-full">
               View My Bookings
             </Button>

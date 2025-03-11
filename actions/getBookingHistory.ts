@@ -13,7 +13,7 @@ type BookingDisplay = {
   startDate: string
   endDate: string
   status: string
-  totalPrice: string // Decimal in schema, returned as string
+  totalPrice: string
 }
 
 export async function getBookingHistory(
@@ -28,6 +28,14 @@ export async function getBookingHistory(
           name: true,
           startDate: true,
           endDate: true,
+        },
+        with: {
+          images: {
+            columns: {
+              imageUrl: true,
+            },
+            limit: 1,
+          },
         },
       },
     },
@@ -74,7 +82,7 @@ export async function getBookingHistory(
   const tripBookingsDisplay = tripBookingsData.map((booking) => ({
     id: booking.id,
     type: "trip" as const,
-    image: "/default-trip.jpg", // No images in trips table; use default
+    image: booking.trip.images[0]?.imageUrl || "/default-trip.jpg",
     name: booking.trip.name,
     startDate: booking.trip.startDate,
     endDate: booking.trip.endDate,
