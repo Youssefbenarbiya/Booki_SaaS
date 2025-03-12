@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { carBookings, cars } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
+import { generateCarPaymentLink } from "@/services/carPayment"
 
 interface CustomerInfo {
   fullName: string
@@ -56,12 +57,12 @@ export async function bookCar({
       const bookingResults = await db
         .insert(carBookings)
         .values({
-          carId: carId, 
+          carId: carId,
           userId: userId,
           startDate: startDate,
           endDate: endDate,
           totalPrice: totalPrice,
-          status: "confirmed",
+          status: "pending",
           fullName: customerInfo?.fullName || null,
           email: customerInfo?.email || null,
           phone: customerInfo?.phone || null,
@@ -103,13 +104,32 @@ export async function bookCar({
       )
     }
 
+    // Generate payment link
+    const { paymentLink, paymentId } = await generateCarPaymentLink({
+      amount: totalPrice,
+      bookingId: newBooking.id,
+    })
+
+    // Update booking with payment information
+    await db
+      .update(carBookings)
+      .set({
+        paymentId: paymentId,
+        paymentStatus: "processing"
+      })
+      .where(eq(carBookings.id, newBooking.id))
+
     // Revalidate relevant paths
     revalidatePath(`/cars/${carId}`)
     revalidatePath("/dashboard/bookings")
 
     return {
       success: true,
-      booking: newBooking,
+      booking: {
+        ...newBooking,
+        paymentId,
+        paymentLink,
+      },
     }
   } catch (error) {
     console.error("Failed to book car:", error)

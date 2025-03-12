@@ -81,7 +81,7 @@ export default function BookingPage({ params }: BookingPageProps) {
     return parseFloat((totalDays * car.price).toFixed(2))
   }, [car, totalDays])
 
-    const session = useSession()
+  const session = useSession()
   // Initialize form
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -159,11 +159,6 @@ export default function BookingPage({ params }: BookingPageProps) {
           return
         }
 
-        if (!userId) {
-          toast.error("Please log in to book a car")
-          return
-        }
-
         const result = await bookCar({
           carId,
           userId,
@@ -180,33 +175,19 @@ export default function BookingPage({ params }: BookingPageProps) {
           },
         })
 
-        if (result.success && result.booking) {
-          toast.success("Booking confirmed! Redirecting to confirmation...")
-
-          // Construct URL with booking details
-          const params = new URLSearchParams({
-            bookingId: result.booking.id.toString(),
-            carName: `${car.brand} ${car.model}`,
-            totalPrice: totalPrice.toString(),
-            startDate: dateRange.from.toISOString(),
-            endDate: dateRange.to.toISOString(),
-          })
-
-          // Redirect to success page with booking details
-          setTimeout(() => {
-            router.push(`/cars/${carId}/booking/success?${params.toString()}`)
-          }, 1000)
+        if (result.success && result.booking?.paymentLink) {
+          window.location.href = result.booking.paymentLink
         } else {
-          toast.error(result.error || "Failed to book car. Please try again.")
+          toast.error(result.error || "Failed to process payment")
         }
       } catch (err) {
         console.error("Booking error:", err)
-        toast.error("An error occurred while booking the car.")
+        toast.error("An error occurred while processing your request")
       } finally {
         setIsSubmitting(false)
       }
     },
-    [carId, dateRange, totalPrice, car, router]
+    [carId, dateRange, totalPrice, car, router, session]
   )
 
   if (loading) {
