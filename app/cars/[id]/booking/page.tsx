@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useSession } from "@/auth-client"
+import { Loader2 } from "lucide-react"
 
 const bookingFormSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -134,10 +135,19 @@ export default function BookingPage({ params }: BookingPageProps) {
     }
   }, [carId])
 
+  // Inside the component, add a debug effect
+  useEffect(() => {
+    console.log("BookingPage mounted with params:", unwrappedParams)
+    console.log("Current car state:", car)
+    console.log("Date range state:", dateRange)
+    console.log("Booked dates:", bookedDateRanges)
+  }, [unwrappedParams, car, dateRange, bookedDateRanges])
+
   // Handle form submission
   const onSubmit = useCallback(
     async (data: BookingFormValues) => {
       if (!dateRange?.from || !dateRange?.to) {
+        console.warn("[VALIDATION] Missing date range")
         toast.error("Please select pickup and return dates", {
           description: "You must select a date range before booking",
           duration: 5000,
@@ -154,44 +164,29 @@ export default function BookingPage({ params }: BookingPageProps) {
 
       try {
         setIsSubmitting(true)
-
-        // Get userId from session
-        const userId = session.data?.user.id
-
-        if (!userId) {
-          toast.error("Please log in to book a car")
-          return
-        }
-
         const result = await bookCar({
           carId,
-          userId,
+          userId: session.data?.user.id || "",
           startDate: dateRange.from,
           endDate: dateRange.to,
           totalPrice,
-          // Additional customer data
-          customerInfo: {
-            fullName: data.fullName,
-            email: data.email,
-            phone: data.phone,
-            address: data.address,
-            drivingLicense: data.drivingLicense,
-          },
+          customerInfo: data,
         })
 
         if (result.success && result.booking?.paymentLink) {
+          // Direct redirect without popup handling
           window.location.href = result.booking.paymentLink
         } else {
-          toast.error(result.error || "Failed to process payment")
+          toast.error("Failed to generate payment link")
         }
-      } catch (err) {
-        console.error("Booking error:", err)
-        toast.error("An error occurred while processing your request")
+      } catch (error) {
+        console.error("Booking error:", error)
+        toast.error("Payment initiation failed")
       } finally {
         setIsSubmitting(false)
       }
     },
-    [carId, dateRange, totalPrice, car, router, session]
+    [carId, dateRange, totalPrice, session]
   )
 
   if (loading) {
@@ -403,7 +398,14 @@ export default function BookingPage({ params }: BookingPageProps) {
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Processing..." : "Pay with Flouci"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Pay with Flouci"
+                  )}
                 </Button>
               </form>
             </Form>

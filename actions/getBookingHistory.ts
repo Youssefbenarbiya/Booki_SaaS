@@ -65,7 +65,7 @@ export async function getBookingHistory(
 
   // Fetch car bookings
   const carBookingsData = await db.query.carBookings.findMany({
-    where: eq(carBookings.userId, userId),
+    where: eq(carBookings.user_id, userId),
     with: {
       car: {
         columns: {
@@ -108,10 +108,10 @@ export async function getBookingHistory(
     type: "car" as const,
     image: booking.car.images[0] || "/default-car.jpg",
     name: `${booking.car.brand} ${booking.car.model}`,
-    startDate: booking.startDate,
-    endDate: booking.endDate,
+    startDate: booking.start_date.toISOString(),
+    endDate: booking.end_date.toISOString(),
     status: booking.status,
-    totalPrice: booking.totalPrice,
+    totalPrice: booking.total_price,
   }))
 
   // Combine and sort all bookings by start date (most recent first)

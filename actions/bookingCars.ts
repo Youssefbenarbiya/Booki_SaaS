@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { carBookings } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, and, or, between } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { generateCarPaymentLink } from "@/services/carPayment"
 
@@ -37,92 +37,47 @@ export async function bookCar({
   endDate,
   totalPrice,
   customerInfo,
-  paymentMethod,
 }: BookCarParams): Promise<BookingResult> {
   try {
-    // Validate booking data
-    if (!carId || !userId || !startDate || !endDate || !totalPrice) {
-      return { success: false, error: "Missing required booking information" }
+    // Add availability check like in hotel system
+    const isAvailable = await checkCarAvailability(carId, startDate, endDate)
+    if (!isAvailable) {
+      return { success: false, error: "Car not available for selected dates" }
     }
 
-    // Additional validation for customer info
-    if (
-      customerInfo &&
-      (!customerInfo.fullName || !customerInfo.email || !customerInfo.phone)
-    ) {
-      return { success: false, error: "Missing required customer information" }
-    }
-
-    let newBooking
-
-    try {
-      const bookingResults = await db
-        .insert(carBookings)
-        .values({
-          car_id: carId,
-          user_id: userId,
-          start_date: startDate,
-          end_date: endDate,
-          total_price: totalPrice,
-          status: "pending",
-          fullName: customerInfo?.fullName || null,
-          email: customerInfo?.email || null,
-          phone: customerInfo?.phone || null,
-          address: customerInfo?.address || null,
-          drivingLicense: customerInfo?.drivingLicense || null,
-          paymentMethod: paymentMethod || "flouci",
-          createdAt: new Date(),
-        })
-        .returning()
-
-      newBooking = bookingResults[0]
-
-      // Don't set car as unavailable since we're tracking booked dates instead
-      console.log("Booking saved successfully:", newBooking)
-    } catch (dbError) {
-      console.error("Database error:", dbError)
-
-      // Fallback for development/demo if db connection fails
-      const newBookingId = Math.floor(Math.random() * 10000)
-
-      newBooking = {
-        id: newBookingId,
-        carId: carId,
-        userId: userId,
-        startDate: startDate,
-        endDate: endDate,
-        totalPrice: totalPrice,
-        status: "confirmed",
+    // Create booking
+    const bookingResults = await db
+      .insert(carBookings)
+      .values({
+        car_id: carId,
+        user_id: userId,
+        start_date: startDate,
+        end_date: endDate,
+        total_price: totalPrice.toString(),
+        status: "pending",
+        paymentStatus: "confirmed",
         fullName: customerInfo?.fullName || null,
         email: customerInfo?.email || null,
         phone: customerInfo?.phone || null,
         address: customerInfo?.address || null,
         drivingLicense: customerInfo?.drivingLicense || null,
+        paymentMethod: "flouci",
         createdAt: new Date(),
-      }
+      })
+      .returning()
 
-      console.log(
-        "Using mock booking since database operation failed:",
-        newBooking
-      )
-    }
+    const newBooking = bookingResults[0]
 
-    // Generate payment link only for Flouci payments
+    // Generate payment link
     const { paymentLink, paymentId } = await generateCarPaymentLink({
       amount: totalPrice,
       bookingId: newBooking.id,
-      developerTrackingId: `car_${carId}_user_${userId}`,
     })
 
-    // Update booking with payment information
+    // Update booking with payment ID
     await db
       .update(carBookings)
-      .set({
-        paymentId: paymentId,
-        paymentStatus: "processing",
-        paymentMethod: paymentMethod || "flouci",
-        updatedAt: new Date(),
-      })
+      .set({ paymentId })
       .where(eq(carBookings.id, newBooking.id))
 
     // Revalidate relevant paths
@@ -131,17 +86,33 @@ export async function bookCar({
 
     return {
       success: true,
-      booking: {
-        ...newBooking,
-        paymentId,
-        paymentLink,
-      },
+      booking: { ...newBooking, paymentLink },
     }
   } catch (error) {
     console.error("Failed to book car:", error)
-    return {
-      success: false,
-      error: "Failed to book car. Please try again later.",
-    }
+    return { success: false, error: "Payment failed - please try again" }
+  }
+}
+
+// Add availability check function
+async function checkCarAvailability(
+  carId: number,
+  startDate: Date,
+  endDate: Date
+) {
+  try {
+    const existing = await db.query.carBookings.findMany({
+      where: and(
+        eq(carBookings.car_id, carId),
+        or(
+          between(carBookings.start_date, startDate, endDate),
+          between(carBookings.end_date, startDate, endDate)
+        )
+      ),
+    })
+    return existing.length === 0
+  } catch (error) {
+    console.error("Availability check failed:", error)
+    return false
   }
 }
