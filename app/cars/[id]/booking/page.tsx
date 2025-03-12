@@ -9,7 +9,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { getCarById, getCarAvailability } from "@/actions/carActions"
 import { bookCar } from "@/actions/bookingCars"
-import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DateRange } from "react-day-picker"
 import { DatePicker } from "@/components/ui/date-picker"
@@ -59,11 +58,13 @@ export default function BookingPage({ params }: BookingPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [bookedDateRanges, setBookedDateRanges] = useState<Array<{
-    startDate: Date
-    endDate: Date
-    bookingId: number
-  }>>([])
+  const [bookedDateRanges, setBookedDateRanges] = useState<
+    Array<{
+      startDate: Date
+      endDate: Date
+      bookingId: number
+    }>
+  >([])
 
   // Calculate derived state outside of render
   const totalDays = useMemo(() => {
@@ -103,16 +104,19 @@ export default function BookingPage({ params }: BookingPageProps) {
         setLoading(true)
         const [carResult, availabilityResult] = await Promise.all([
           getCarById(carId),
-          getCarAvailability(carId)
-        ]);
-        
+          getCarAvailability(carId),
+        ])
+
         if (isMounted) {
           setCar(carResult.car)
-          
-          if (availabilityResult.success && availabilityResult.bookedDateRanges) {
+
+          if (
+            availabilityResult.success &&
+            availabilityResult.bookedDateRanges
+          ) {
             setBookedDateRanges(availabilityResult.bookedDateRanges)
           }
-          
+
           setLoading(false)
         }
       } catch (err) {
@@ -138,13 +142,13 @@ export default function BookingPage({ params }: BookingPageProps) {
           description: "You must select a date range before booking",
           duration: 5000,
         })
-        
+
         // Scroll to date picker to make it more obvious
-        document.querySelector('.date-picker-container')?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-        
+        document.querySelector(".date-picker-container")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        })
+
         return
       }
 
@@ -153,7 +157,7 @@ export default function BookingPage({ params }: BookingPageProps) {
 
         // Get userId from session
         const userId = session.data?.user.id
-        
+
         if (!userId) {
           toast.error("Please log in to book a car")
           return
@@ -216,10 +220,6 @@ export default function BookingPage({ params }: BookingPageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      
-
-
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Car Summary */}
         <div className="lg:col-span-1">
@@ -246,17 +246,16 @@ export default function BookingPage({ params }: BookingPageProps) {
 
             <div className="mb-4 date-picker-container">
               <h4 className="font-medium text-gray-700 mb-2">Rental Period</h4>
-              <DatePicker 
-                dateRange={dateRange} 
+              <DatePicker
+                dateRange={dateRange}
                 setDateRange={setDateRange}
-                disabledDateRanges={bookedDateRanges} 
+                disabledDateRanges={bookedDateRanges}
               />
               {!dateRange && (
                 <p className="text-sm text-blue-600 mt-2">
                   Please select your rental dates
                 </p>
               )}
-             
             </div>
 
             <Separator className="my-4" />
@@ -268,7 +267,7 @@ export default function BookingPage({ params }: BookingPageProps) {
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Days</span>
-                <span>{dateRange ? `${totalDays} days` : 'Select dates'}</span>
+                <span>{dateRange ? `${totalDays} days` : "Select dates"}</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Insurance</span>
@@ -276,7 +275,7 @@ export default function BookingPage({ params }: BookingPageProps) {
               </div>
               <div className="flex justify-between font-bold text-lg mt-4">
                 <span>Total</span>
-                <span>{dateRange ? `$${totalPrice.toFixed(2)}` : 'TBD'}</span>
+                <span>{dateRange ? `$${totalPrice.toFixed(2)}` : "TBD"}</span>
               </div>
             </div>
           </div>
@@ -390,7 +389,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                           I agree to the terms and conditions of rental
                         </FormLabel>
                         <FormDescription>
-                          By agreeing, you confirm you've read our terms,
+                          By agreeing, you confirm you&apos;ve read our terms,
                           including the cancellation policy.
                         </FormDescription>
                       </div>
@@ -404,7 +403,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Processing..." : "Complete Booking"}
+                  {isSubmitting ? "Processing..." : "Pay with Flouci"}
                 </Button>
               </form>
             </Form>

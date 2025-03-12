@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { carBookings, cars } from "@/db/schema"
+import { carBookings } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { generateCarPaymentLink } from "@/services/carPayment"
@@ -21,6 +21,7 @@ interface BookCarParams {
   endDate: Date
   totalPrice: number
   customerInfo?: CustomerInfo
+  paymentMethod?: "flouci"
 }
 
 interface BookingResult {
@@ -36,6 +37,7 @@ export async function bookCar({
   endDate,
   totalPrice,
   customerInfo,
+  paymentMethod,
 }: BookCarParams): Promise<BookingResult> {
   try {
     // Validate booking data
@@ -57,17 +59,18 @@ export async function bookCar({
       const bookingResults = await db
         .insert(carBookings)
         .values({
-          carId: carId,
-          userId: userId,
-          startDate: startDate,
-          endDate: endDate,
-          totalPrice: totalPrice,
+          car_id: carId,
+          user_id: userId,
+          start_date: startDate,
+          end_date: endDate,
+          total_price: totalPrice,
           status: "pending",
           fullName: customerInfo?.fullName || null,
           email: customerInfo?.email || null,
           phone: customerInfo?.phone || null,
           address: customerInfo?.address || null,
           drivingLicense: customerInfo?.drivingLicense || null,
+          paymentMethod: paymentMethod || "flouci",
           createdAt: new Date(),
         })
         .returning()
@@ -104,10 +107,11 @@ export async function bookCar({
       )
     }
 
-    // Generate payment link
+    // Generate payment link only for Flouci payments
     const { paymentLink, paymentId } = await generateCarPaymentLink({
       amount: totalPrice,
       bookingId: newBooking.id,
+      developerTrackingId: `car_${carId}_user_${userId}`,
     })
 
     // Update booking with payment information
@@ -115,7 +119,9 @@ export async function bookCar({
       .update(carBookings)
       .set({
         paymentId: paymentId,
-        paymentStatus: "processing"
+        paymentStatus: "processing",
+        paymentMethod: paymentMethod || "flouci",
+        updatedAt: new Date(),
       })
       .where(eq(carBookings.id, newBooking.id))
 
