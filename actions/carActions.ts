@@ -1,7 +1,7 @@
 "use server"
 
 import { cars } from "@/db/schema"
-import { and, eq, or, ilike  } from "drizzle-orm"
+import { and, eq, or, ilike } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { CarFormValues } from "../app/admin/dashboard/cars/types"
 import db from "@/db/drizzle"
@@ -105,12 +105,12 @@ export async function searchCars(
   try {
     const availableCars = await db.query.cars.findMany({
       where: (cars, { eq }) => eq(cars.isAvailable, true),
-    });
+    })
 
-    return availableCars;
+    return availableCars
   } catch (error) {
-    console.error("Failed to search cars:", error);
-    return [];
+    console.error("Failed to search cars:", error)
+    return []
   }
 }
 
@@ -121,32 +121,32 @@ export async function searchCars(
 export async function getCarAvailability(carId: number) {
   try {
     if (!carId) {
-      throw new Error("Car ID is required");
+      throw new Error("Car ID is required")
     }
 
     // Get all bookings for this car
     const bookings = await db.query.carBookings.findMany({
-      where: (carBookings, { eq }) => eq(carBookings.carId, carId),
-      orderBy: (carBookings, { asc }) => [asc(carBookings.startDate)],
-    });
+      where: (carBookings, { eq }) => eq(carBookings.car_id, carId),
+      orderBy: (carBookings, { asc }) => [asc(carBookings.start_date)],
+    })
 
     // Format the bookings into date ranges that should be disabled
-    const bookedDateRanges = bookings.map(booking => ({
-      startDate: new Date(booking.startDate),
-      endDate: new Date(booking.endDate),
-      bookingId: booking.id
-    }));
+    const bookedDateRanges = bookings.map((booking) => ({
+      startDate: new Date(booking.start_date),
+      endDate: new Date(booking.end_date),
+      bookingId: booking.id,
+    }))
 
     return {
       success: true,
       bookedDateRanges,
-    };
+    }
   } catch (error) {
-    console.error(`Failed to get availability for car ${carId}:`, error);
+    console.error(`Failed to get availability for car ${carId}:`, error)
     return {
       success: false,
       error: "Failed to get car availability information",
       bookedDateRanges: [],
-    };
+    }
   }
 }

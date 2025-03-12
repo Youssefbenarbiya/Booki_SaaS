@@ -39,6 +39,10 @@ export async function bookCar({
   customerInfo,
 }: BookCarParams): Promise<BookingResult> {
   try {
+    if (!userId) {
+      return { success: false, error: "User ID is required" }
+    }
+
     // Add availability check like in hotel system
     const isAvailable = await checkCarAvailability(carId, startDate, endDate)
     if (!isAvailable) {
@@ -54,7 +58,8 @@ export async function bookCar({
         start_date: startDate,
         end_date: endDate,
         total_price: totalPrice.toString(),
-        status: "pending",
+        paymentDate: new Date(),
+        status: "confirmed",
         paymentStatus: "confirmed",
         fullName: customerInfo?.fullName || null,
         email: customerInfo?.email || null,

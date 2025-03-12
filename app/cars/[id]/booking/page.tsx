@@ -49,7 +49,6 @@ interface BookingPageProps {
 }
 
 export default function BookingPage({ params }: BookingPageProps) {
-  // Unwrap params
   const unwrappedParams = React.use(params)
   const carId = parseInt(unwrappedParams.id)
 
@@ -67,7 +66,6 @@ export default function BookingPage({ params }: BookingPageProps) {
     }>
   >([])
 
-  // Calculate derived state outside of render
   const totalDays = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return 0
     return (
@@ -84,7 +82,6 @@ export default function BookingPage({ params }: BookingPageProps) {
   }, [car, totalDays])
 
   const session = useSession()
-  // Initialize form
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -97,7 +94,6 @@ export default function BookingPage({ params }: BookingPageProps) {
     },
   })
 
-  // Load car data and availability - only once per carId
   useEffect(() => {
     let isMounted = true
     async function loadCarAndAvailability() {
@@ -110,14 +106,12 @@ export default function BookingPage({ params }: BookingPageProps) {
 
         if (isMounted) {
           setCar(carResult.car)
-
           if (
             availabilityResult.success &&
             availabilityResult.bookedDateRanges
           ) {
             setBookedDateRanges(availabilityResult.bookedDateRanges)
           }
-
           setLoading(false)
         }
       } catch (err) {
@@ -135,30 +129,46 @@ export default function BookingPage({ params }: BookingPageProps) {
     }
   }, [carId])
 
-  // Inside the component, add a debug effect
-  useEffect(() => {
-    console.log("BookingPage mounted with params:", unwrappedParams)
-    console.log("Current car state:", car)
-    console.log("Date range state:", dateRange)
-    console.log("Booked dates:", bookedDateRanges)
-  }, [unwrappedParams, car, dateRange, bookedDateRanges])
+  const hasDateOverlap = useCallback(
+    (selectedRange: DateRange) => {
+      if (!selectedRange.from || !selectedRange.to) return false
+      return bookedDateRanges.some((booked) => {
+        const bookedStart = booked.startDate.getTime()
+        const bookedEnd = booked.endDate.getTime()
+        const selectedStart = selectedRange.from!.getTime()
+        const selectedEnd = selectedRange.to!.getTime()
+        return selectedStart <= bookedEnd && selectedEnd >= bookedStart
+      })
+    },
+    [bookedDateRanges]
+  )
 
-  // Handle form submission
   const onSubmit = useCallback(
     async (data: BookingFormValues) => {
-      if (!dateRange?.from || !dateRange?.to) {
-        console.warn("[VALIDATION] Missing date range")
-        toast.error("Please select pickup and return dates", {
-          description: "You must select a date range before booking",
-          duration: 5000,
-        })
+      const userId = session.data?.user?.id
+      if (!userId) {
+        toast.error("Please log in to book a car")
+        return
+      }
 
-        // Scroll to date picker to make it more obvious
+      if (!dateRange?.from || !dateRange?.to) {
+        toast.error("Please select pickup and return dates")
         document.querySelector(".date-picker-container")?.scrollIntoView({
           behavior: "smooth",
           block: "center",
         })
+        return
+      }
 
+      if (hasDateOverlap(dateRange)) {
+        toast.error("Selected dates are not available", {
+          description: "Please choose different dates",
+          duration: 5000,
+        })
+        document.querySelector(".date-picker-container")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        })
         return
       }
 
@@ -166,7 +176,7 @@ export default function BookingPage({ params }: BookingPageProps) {
         setIsSubmitting(true)
         const result = await bookCar({
           carId,
-          userId: session.data?.user.id || "",
+          userId,
           startDate: dateRange.from,
           endDate: dateRange.to,
           totalPrice,
@@ -174,7 +184,6 @@ export default function BookingPage({ params }: BookingPageProps) {
         })
 
         if (result.success && result.booking?.paymentLink) {
-          // Direct redirect without popup handling
           window.location.href = result.booking.paymentLink
         } else {
           toast.error("Failed to generate payment link")
@@ -186,7 +195,7 @@ export default function BookingPage({ params }: BookingPageProps) {
         setIsSubmitting(false)
       }
     },
-    [carId, dateRange, totalPrice, session]
+    [carId, dateRange, totalPrice, session, hasDateOverlap]
   )
 
   if (loading) {
@@ -216,11 +225,9 @@ export default function BookingPage({ params }: BookingPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Car Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-xl font-bold mb-4">Car Details</h2>
-
             <div className="relative h-48 w-full rounded-lg overflow-hidden mb-4">
               <Image
                 src={car.images?.[0] || "/assets/Car.png"}
@@ -229,22 +236,20 @@ export default function BookingPage({ params }: BookingPageProps) {
                 className="object-cover"
               />
             </div>
-
             <h3 className="text-lg font-semibold">
               {car.brand} {car.model}
             </h3>
             <p className="text-gray-500 mb-4">
               {car.year} • {car.color}
             </p>
-
             <Separator className="my-4" />
-
             <div className="mb-4 date-picker-container">
               <h4 className="font-medium text-gray-700 mb-2">Rental Period</h4>
               <DatePicker
                 dateRange={dateRange}
-                setDateRange={setDateRange}
+                setDateRange={setDateRange} // Simplified to match old code
                 disabledDateRanges={bookedDateRanges}
+                className="border-2 border-gray-200"
               />
               {!dateRange && (
                 <p className="text-sm text-blue-600 mt-2">
@@ -252,9 +257,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                 </p>
               )}
             </div>
-
             <Separator className="my-4" />
-
             <div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Price per day</span>
@@ -275,12 +278,9 @@ export default function BookingPage({ params }: BookingPageProps) {
             </div>
           </div>
         </div>
-
-        {/* Booking Form */}
         <div className="lg:col-span-2">
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-xl font-bold mb-6">Personal Information</h2>
-
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -300,7 +300,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="email"
@@ -318,7 +317,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                     )}
                   />
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -333,7 +331,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="drivingLicense"
@@ -348,7 +345,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                     )}
                   />
                 </div>
-
                 <FormField
                   control={form.control}
                   name="address"
@@ -365,9 +361,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                     </FormItem>
                   )}
                 />
-
                 <Separator />
-
                 <FormField
                   control={form.control}
                   name="agreeToTerms"
@@ -392,7 +386,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                     </FormItem>
                   )}
                 />
-
                 <Button
                   type="submit"
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white"
