@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation"
 
-// Flouci API configuration
 const FLOUCI_API_URL = "https://developers.flouci.com/api"
 const APP_TOKEN = "8604b867-9238-4083-8b76-a116f3c6b1a2"
 const APP_SECRET = "bc9ff7c5-31d9-4d2a-83ad-a71ae68aad2f"
@@ -27,7 +26,6 @@ export async function generatePaymentLink({
     // Create the base URL for success and failure redirects
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
-    // Set the appropriate success and fail paths based on booking type
     const successPath = `/hotels/payment/success?bookingId=${bookingId}`
 
     const failPath = `/hotels/payment/failed?bookingId=${bookingId}`
