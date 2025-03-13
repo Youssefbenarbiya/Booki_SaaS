@@ -1,220 +1,154 @@
-"use server"
+import jsPDF from "jspdf"
 
-import fs from "fs/promises"
-import path from "path"
-import db from "@/db/drizzle"
-import { roomBookings } from "@/db/schema"
-import { eq } from "drizzle-orm"
+export interface HotelData {
+  name: string
+  description: string
+  address: string
+  city: string
+  country: string
+  rating: number
+  latitude?: string
+  longitude?: string
+  amenities: string[]
+  images: string[]
+}
 
-export async function generateInvoiceAction(
-  bookingId: number,
-  customerName: string,
-  customerEmail: string
-): Promise<string> {
-  try {
-    // Create uploads/invoice directory if it doesn't exist
-    const invoiceDir = path.join(process.cwd(), "public", "uploads", "invoice")
-    await fs.mkdir(invoiceDir, { recursive: true })
+export interface RoomData {
+  name: string
+  description: string
+  capacity: number
+  pricePerNightAdult: number
+  pricePerNightChild: number
+  roomType: string
+  amenities: string[]
+  images: string[]
+}
 
-    // Get booking details with related room and hotel information
-    const booking = await db.query.roomBookings.findFirst({
-      where: eq(roomBookings.id, bookingId),
-      with: {
-        room: {
-          with: {
-            hotel: true,
-          },
-        },
-      },
-    })
+export interface RoomBookingData {
+  checkIn: string
+  checkOut: string
+  totalPrice: number
+  bookingDate: string
+  paymentStatus?: string
+  paymentMethod?: string
+}
 
-    if (!booking) {
-      throw new Error("Booking not found")
-    }
+export interface UserData {
+  name: string
+  email: string
+  phoneNumber?: string
+}
 
-    // Calculate nights
-    const checkInDate = new Date(booking.checkIn)
-    const checkOutDate = new Date(booking.checkOut)
-    const nights = Math.ceil(
-      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-    )
+export function generateHotelRoomBookingPDF(
+  hotelData: HotelData,
+  roomData: RoomData,
+  bookingData: RoomBookingData,
+  userData: UserData
+) {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
+    format: "letter",
+  })
 
-    // Format dates for display
-    const formatDate = (dateString: string) => {
-      const date = new Date(dateString)
-      return date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    }
+  // Constants for styling
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const margin = 40
+  let currentY = margin
 
-    // Generate invoice HTML
-    const invoiceHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <title>Booking Invoice</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 0;
-          color: #333;
-        }
-        .invoice-box {
-          max-width: 800px;
-          margin: auto;
-          padding: 30px;
-          border: 1px solid #eee;
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
-          font-size: 16px;
-          line-height: 24px;
-        }
-        .invoice-box table {
-          width: 100%;
-          line-height: inherit;
-          text-align: left;
-          border-collapse: collapse;
-        }
-        .invoice-box table td {
-          padding: 5px;
-          vertical-align: top;
-        }
-        .invoice-box table tr.top table td {
-          padding-bottom: 20px;
-        }
-        .invoice-box table tr.top table td.title {
-          font-size: 45px;
-          line-height: 45px;
-          color: #333;
-        }
-        .invoice-box table tr.information table td {
-          padding-bottom: 40px;
-        }
-        .invoice-box table tr.heading td {
-          background: #eee;
-          border-bottom: 1px solid #ddd;
-          font-weight: bold;
-        }
-        .invoice-box table tr.details td {
-          padding-bottom: 20px;
-        }
-        .invoice-box table tr.item td {
-          border-bottom: 1px solid #eee;
-        }
-        .invoice-box table tr.item.last td {
-          border-bottom: none;
-        }
-        .invoice-box table tr.total td:nth-child(2) {
-          border-top: 2px solid #eee;
-          font-weight: bold;
-        }
-        @media only screen and (max-width: 600px) {
-          .invoice-box table tr.top table td {
-            width: 100%;
-            display: block;
-            text-align: center;
-          }
-          .invoice-box table tr.information table td {
-            width: 100%;
-            display: block;
-            text-align: center;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="invoice-box">
-        <table>
-          <tr class="top">
-            <td colspan="2">
-              <table>
-                <tr>
-                  <td class="title">
-                    <h2>Ostelflow</h2>
-                  </td>
-                  <td style="text-align: right;">
-                    Invoice #: ${bookingId}<br />
-                    Created: ${new Date().toLocaleDateString()}<br />
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr class="information">
-            <td colspan="2">
-              <table>
-                <tr>
-                  <td>
-                    ${booking.room.hotel.name}<br />
-                    ${booking.room.hotel.address}<br />
-                    ${booking.room.hotel.city}, ${booking.room.hotel.country}
-                  </td>
-                  <td style="text-align: right;">
-                    ${customerName}<br />
-                    ${customerEmail}
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr class="heading">
-            <td>Payment Method</td>
-            <td>Status</td>
-          </tr>
-          <tr class="details">
-            <td>${booking.paymentMethod || "Online Payment"}</td>
-            <td>${booking.paymentStatus || "Completed"}</td>
-          </tr>
-          <tr class="heading">
-            <td>Item</td>
-            <td style="text-align: right;">Price</td>
-          </tr>
-          <tr class="item">
-            <td>
-              ${booking.room.name} at ${booking.room.hotel.name}<br />
-              <small>Check-in: ${formatDate(
-                booking.checkIn
-              )} - Check-out: ${formatDate(
-      booking.checkOut
-    )} (${nights} nights)</small>
-            </td>
-            <td style="text-align: right;">$${parseFloat(
-              booking.totalPrice
-            ).toFixed(2)}</td>
-          </tr>
-          <tr class="total">
-            <td></td>
-            <td style="text-align: right;">Total: $${parseFloat(
-              booking.totalPrice
-            ).toFixed(2)}</td>
-          </tr>
-        </table>
-        <div style="margin-top: 60px; font-size: 12px; text-align: center; color: #777;">
-          <p>Thank you for your booking! We look forward to hosting you.</p>
-          <p>If you have any questions, please contact us at support@ostelflow.com</p>
-        </div>
-      </div>
-    </body>
-    </html>
-    `
+  // Header
+  doc.setFontSize(22)
+  doc.setTextColor(40)
+  doc.text("Hotel Room Booking Confirmation", pageWidth / 2, currentY, {
+    align: "center",
+  })
+  currentY += 30
 
-    // Generate unique filename with timestamp
-    const timestamp = new Date().getTime()
-    const fileName = `invoice_${bookingId}_${timestamp}.html`
-    const filePath = path.join(invoiceDir, fileName)
+  // Draw separator line
+  doc.setLineWidth(1)
+  doc.line(margin, currentY, pageWidth - margin, currentY)
+  currentY += 20
 
-    // Since Puppeteer is causing issues, let's create an HTML invoice for now
-    // We'll save it directly to the public directory so it can be accessed
-    await fs.writeFile(filePath, invoiceHtml)
-
-    // Return the public path to the HTML file
-    return `/uploads/invoice/${fileName}`
-  } catch (error) {
-    console.error("Error generating invoice:", error)
-    throw error
+  // Helper to draw a section header and reset text color
+  const drawSectionHeader = (title: string) => {
+    doc.setFontSize(16)
+    doc.setTextColor(255, 255, 255) // White text
+    doc.setFillColor(0, 102, 204) // Blue background
+    doc.rect(margin, currentY, pageWidth - margin * 2, 25, "F")
+    doc.text(title, margin + 10, currentY + 17)
+    currentY += 35
+    doc.setTextColor(0) // Reset text color to black
+    doc.setFontSize(12)
   }
+
+  // Section: User Details
+  drawSectionHeader("User Details")
+  doc.text(`Name: ${userData.name}`, margin, currentY)
+  currentY += 18
+  doc.text(`Email: ${userData.email}`, margin, currentY)
+  currentY += 18
+  if (userData.phoneNumber) {
+    doc.text(`Phone: ${userData.phoneNumber}`, margin, currentY)
+    currentY += 18
+  }
+  currentY += 10
+
+  // Section: Hotel Details
+  drawSectionHeader("Hotel Details")
+  doc.text(`Hotel Name: ${hotelData.name}`, margin, currentY)
+  currentY += 18
+  doc.text(`Description: ${hotelData.description}`, margin, currentY)
+  currentY += 18
+  doc.text(`Address: ${hotelData.address}`, margin, currentY)
+  currentY += 18
+  doc.text(`City: ${hotelData.city}`, margin, currentY)
+  currentY += 18
+  doc.text(`Country: ${hotelData.country}`, margin, currentY)
+  currentY += 10
+
+  // Section: Room Details
+  drawSectionHeader("Room Details")
+  doc.text(`Room Name: ${roomData.name}`, margin, currentY)
+  currentY += 18
+  doc.text(`Room Type: ${roomData.roomType}`, margin, currentY)
+  currentY += 18
+  doc.text(`Description: ${roomData.description}`, margin, currentY)
+  currentY += 18
+  doc.text(`Capacity: ${roomData.capacity}`, margin, currentY)
+  currentY += 18
+  doc.text(
+    `Price per Night (Adult): $${roomData.pricePerNightAdult}`,
+    margin,
+    currentY
+  )
+  currentY += 18
+  doc.text(
+    `Price per Night (Child): $${roomData.pricePerNightChild}`,
+    margin,
+    currentY
+  )
+  currentY += 10
+
+  // Section: Booking Details
+  drawSectionHeader("Booking Details")
+  doc.text(`Check-In Date: ${bookingData.checkIn}`, margin, currentY)
+  currentY += 18
+  doc.text(`Check-Out Date: ${bookingData.checkOut}`, margin, currentY)
+  currentY += 18
+  doc.text(`Total Price: $${bookingData.totalPrice}`, margin, currentY)
+  currentY += 18
+  doc.text(`Booking Date: ${bookingData.bookingDate}`, margin, currentY)
+  currentY += 18
+  if (bookingData.paymentStatus) {
+    doc.text(`Payment Status: ${bookingData.paymentStatus}`, margin, currentY)
+    currentY += 18
+  }
+  if (bookingData.paymentMethod) {
+    doc.text(`Payment Method: ${bookingData.paymentMethod}`, margin, currentY)
+    currentY += 18
+  }
+  currentY += 20
+
+  // Save the generated PDF file
+  doc.save("hotel-room-booking-confirmation.pdf")
 }

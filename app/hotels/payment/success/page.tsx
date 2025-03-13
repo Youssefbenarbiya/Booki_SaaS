@@ -1,77 +1,155 @@
-import { updateBookingPaymentStatus } from "@/actions/roomBookingActions"
-import { generateInvoiceAction } from "@/actions/generateInvoiceRoom"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client"
+
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
-import { redirect } from "next/navigation"
-import { headers } from "next/headers"
-import { auth } from "@/auth"
-import InvoiceDownloadButton from "@/components/InvoiceDownloadButton"
+import { generateHotelRoomBookingPDF } from "@/actions/generateInvoiceRoom"
 
-interface PaymentSuccessPageProps {
-  searchParams: { bookingId?: string }
-}
+export default function PaymentSuccessPage() {
+  // Get bookingId from query parameters
+  const searchParams = useSearchParams()
+  const bookingId = searchParams.get("bookingId")
 
-export default async function PaymentSuccessPage({
-  searchParams,
-}: PaymentSuccessPageProps) {
-  // Get bookingId safely from searchParams - ensure we parse it properly
-  const bookingIdStr = searchParams.bookingId || ""
-  const bookingId = bookingIdStr ? parseInt(bookingIdStr, 10) : null
+  const [hotelData, setHotelData] = useState<any>(null)
+  const [roomData, setRoomData] = useState<any>(null)
+  const [bookingData, setBookingData] = useState<any>(null)
+  const [userData, setUserData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
+  useEffect(() => {
+    if (!bookingId) {
+      setError("No booking ID provided.")
+      setLoading(false)
+      return
+    }
 
-  if (!bookingId || !session?.user?.id) {
-    redirect("/")
+    async function fetchBookingData() {
+      try {
+        const res = await fetch(`/api/room-booking?bookingId=${bookingId}`)
+        if (!res.ok) {
+          throw new Error("Failed to fetch booking data.")
+        }
+        const data = await res.json()
+        // Expected API response: { booking: {..., user: {...}}, room: {...}, hotel: {...} }
+        setBookingData(data.booking)
+        setRoomData(data.room)
+        setHotelData(data.hotel)
+        setUserData(data.booking?.user || null)
+        setLoading(false)
+      } catch (err) {
+        console.error(err)
+        setError("Error fetching booking data.")
+        setLoading(false)
+      }
+    }
+
+    fetchBookingData()
+  }, [bookingId])
+
+  const handleDownloadPDF = () => {
+    if (hotelData && roomData && bookingData && userData) {
+      generateHotelRoomBookingPDF(hotelData, roomData, bookingData, userData)
+    } else {
+      alert("Missing data for PDF generation.")
+    }
   }
 
-  // Update booking payment status first - do this early to ensure payment is recorded
-  await updateBookingPaymentStatus(bookingId, "completed", "flouci")
-
-  // Generate invoice path - we'll only generate it once, then provide a link to it
-  let invoicePath: string | null = null
-
-  try {
-    // Generate the invoice HTML
-    invoicePath = await generateInvoiceAction(
-      bookingId,
-      session.user.name || "Guest",
-      session.user.email || ""
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <p>Loading booking details...</p>
+      </div>
     )
-  } catch (error) {
-    console.error("Failed to generate invoice:", error)
-    // Continue without the invoice if generation fails
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <p className="text-red-600">{error}</p>
+      </div>
+    )
   }
 
   return (
-    <div className="container max-w-md mx-auto py-12">
-      <Card className="p-8 text-center">
-        <div className="flex justify-center mb-4">
-          <CheckCircle className="h-16 w-16 text-green-500" />
-        </div>
+    <div className="container mx-auto px-4 py-16 flex flex-col items-center">
+      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg text-center">
+        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
         <p className="text-gray-600 mb-6">
-          Your booking has been confirmed and your payment has been processed
-          successfully.
+          Your payment has been processed successfully. Thank you for your
+          booking!
         </p>
-        <div className="space-y-4">
-          {invoicePath && (
-            <InvoiceDownloadButton
-              invoicePath={invoicePath}
-              bookingId={bookingId}
-            />
+
+        {/* Display Booking Details */}
+        <div className="text-left mb-4">
+          <h2 className="text-xl font-semibold mb-2">Booking Details</h2>
+          {roomData && (
+            <>
+              <p>
+                <strong>Room Name:</strong> {roomData.name}
+              </p>
+              <p>
+                <strong>Room Type:</strong> {roomData.roomType}
+              </p>
+              <p>
+                <strong>Check-In:</strong> {bookingData.checkIn}
+              </p>
+              <p>
+                <strong>Check-Out:</strong> {bookingData.checkOut}
+              </p>
+              <p>
+                <strong>Total Price:</strong> ${bookingData.totalPrice}
+              </p>
+            </>
           )}
-          <Button asChild className="w-full">
-            <Link href={`/user/profile/bookingHistory`}>View My Bookings</Link>
-          </Button>
-          <Button asChild variant="outline" className="w-full">
-            <Link href="/">Return to Home</Link>
-          </Button>
         </div>
-      </Card>
+
+        {/* Display User Details */}
+        <div className="text-left mb-4">
+          <h2 className="text-xl font-semibold mb-2">User Details</h2>
+          {userData ? (
+            <>
+              <p>
+                <strong>Name:</strong> {userData.name}
+              </p>
+              <p>
+                <strong>Email:</strong> {userData.email}
+              </p>
+              {userData.phoneNumber && (
+                <p>
+                  <strong>Phone:</strong> {userData.phoneNumber}
+                </p>
+              )}
+            </>
+          ) : (
+            <p>No user details available.</p>
+          )}
+        </div>
+
+        <div className="flex flex-col space-y-3">
+          <Button
+            variant="default"
+            className="w-full"
+            onClick={handleDownloadPDF}
+          >
+            Download Booking PDF
+          </Button>
+          <Link href="/user/profile/bookingHistory">
+            <Button variant="default" className="w-full">
+              View My Bookings
+            </Button>
+          </Link>
+          <Link href="/hotels">
+            <Button variant="outline" className="w-full">
+              Browse More Hotels
+            </Button>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
