@@ -8,6 +8,7 @@ import {
   serial,
   date,
   decimal,
+  numeric,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
@@ -290,19 +291,23 @@ export const cars = pgTable("cars", {
 // Car Bookings table
 export const carBookings = pgTable("car_bookings", {
   id: serial("id").primaryKey(),
-  carId: integer("car_id").notNull(),
-  userId: text("user_id").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  status: text("status").notNull().default("confirmed"),
+  car_id: integer("car_id").notNull(),
+  user_id: text("user_id").notNull(),
+  start_date: timestamp("start_date").notNull(),
+  end_date: timestamp("end_date").notNull(),
+  total_price: numeric("total_price").notNull(),
+  status: text("status").notNull().default("pending"),
+  paymentId: varchar("payment_id", { length: 255 }),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
+  paymentMethod: varchar("payment_method", { length: 50 }),
+  paymentDate: timestamp("payment_date").defaultNow().notNull(),
   fullName: text("full_name"),
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
   drivingLicense: text("driving_license"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
 export const carsRelations = relations(cars, ({ many }) => ({
@@ -312,7 +317,7 @@ export const carsRelations = relations(cars, ({ many }) => ({
 // Car Bookings Relations
 export const carBookingsRelations = relations(carBookings, ({ one }) => ({
   car: one(cars, {
-    fields: [carBookings.carId],
+    fields: [carBookings.car_id],
     references: [cars.id],
   }),
 }))
@@ -360,4 +365,3 @@ export const blogCategoriesRelations = relations(
     blogs: many(blogs),
   })
 )
-

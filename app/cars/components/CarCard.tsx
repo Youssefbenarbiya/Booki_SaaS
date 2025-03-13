@@ -1,8 +1,11 @@
 "use client"
 
+import type React from "react"
+
 import { Heart } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 export interface Car {
   id: number
@@ -12,18 +15,25 @@ export interface Car {
   plateNumber: string
   color: string
   price: number
+  originalPrice?: number
   isAvailable: boolean
   images: string[]
   createdAt: Date
   updatedAt: Date | null
+  type?: string
+  fuelType?: string
+  transmission?: string
+  capacity?: number
 }
 
 interface CarCardProps {
   car: Car
+  viewMode: "grid" | "list"
 }
 
-export function CarCard({ car }: CarCardProps) {
+export function CarCard({ car, viewMode }: CarCardProps) {
   const router = useRouter()
+  const [isFavorite, setIsFavorite] = useState(false)
 
   const handleCardClick = () => {
     router.push(`/cars/${car.id}/booking`)
@@ -31,51 +41,155 @@ export function CarCard({ car }: CarCardProps) {
 
   const handleHeartClick = (e: React.MouseEvent) => {
     e.stopPropagation() // Prevent triggering the parent click
-    // Add favorite functionality here
+    setIsFavorite(!isFavorite)
+  }
+
+  // Default values if not provided
+  const carType = car.type || "Sport"
+  const fuelType = car.fuelType || "70L"
+  const transmission = car.transmission || "Manual"
+  const capacity = car.capacity || 2
+
+  if (viewMode === "list") {
+    return (
+      <div className="bg-white rounded-lg overflow-hidden flex">
+        {/* Car Image */}
+        <div className="relative h-48 w-72 flex-shrink-0">
+          <Image
+            src={car.images[0] || "/assets/Car.png"}
+            alt={`${car.brand} ${car.model}`}
+            fill
+            className="object-cover"
+          />
+        </div>
+
+        <div className="flex flex-col flex-grow p-4">
+          {/* Car Header */}
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="font-bold text-gray-800">
+                {car.brand} {car.model}
+              </h3>
+              <p className="text-xs text-gray-500">{carType}</p>
+            </div>
+            <button onClick={handleHeartClick} className="focus:outline-none">
+              <Heart className={`h-5 w-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-300"}`} />
+            </button>
+          </div>
+
+          {/* Car Details */}
+          <div className="flex gap-6 text-xs text-gray-600 mb-4">
+            <div className="flex items-center gap-1">
+              <div className="bg-blue-100 p-1 rounded-full">
+                <span className="text-blue-500">⛽</span>
+              </div>
+              <span>{fuelType}</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <div className="bg-blue-100 p-1 rounded-full">
+                <span className="text-blue-500">🔄</span>
+              </div>
+              <span>{transmission}</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <div className="bg-blue-100 p-1 rounded-full">
+                <span className="text-blue-500">👤</span>
+              </div>
+              <span>{capacity} People</span>
+            </div>
+          </div>
+
+          {/* Car Price and Button */}
+          <div className="flex justify-between items-center mt-auto">
+            <div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-lg">${car.price.toFixed(2)}</span>
+                <span className="text-xs text-gray-500">/day</span>
+              </div>
+              {car.originalPrice && <span className="text-xs text-gray-500">${car.originalPrice.toFixed(2)}</span>}
+            </div>
+
+            <button
+              onClick={handleCardClick}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Rent Now
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div
-      className="border rounded-lg overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300"
-      onClick={handleCardClick}
-    >
-      <div className="relative h-48">
+    <div className="bg-white rounded-lg overflow-hidden">
+      {/* Car Header */}
+      <div className="flex justify-between items-center p-3">
+        <div>
+          <h3 className="font-bold text-gray-800">
+            {car.brand} {car.model}
+          </h3>
+          <p className="text-xs text-gray-500">{carType}</p>
+        </div>
+        <button onClick={handleHeartClick} className="focus:outline-none">
+          <Heart className={`h-5 w-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-300"}`} />
+        </button>
+      </div>
+
+      {/* Car Image */}
+      <div className="relative h-32 w-full">
         <Image
           src={car.images[0] || "/assets/Car.png"}
           alt={`${car.brand} ${car.model}`}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          className="object-contain"
         />
-        <button
-          className="absolute top-4 right-4 p-2 rounded-full bg-white hover:bg-gray-100 transition-colors"
-          onClick={handleHeartClick}
-        >
-          <Heart className="h-5 w-5 text-gray-500 hover:text-red-500" />
-        </button>
       </div>
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-semibold">
-            {car.brand} {car.model}
-          </h3>
-          <div className="flex items-center">
-            <span className="text-sm text-gray-600 ml-1">{car.year}</span>
+
+      {/* Car Details */}
+      <div className="p-3 flex justify-between items-center text-xs text-gray-600">
+        <div className="flex items-center gap-1">
+          <div className="bg-blue-100 p-1 rounded-full">
+            <span className="text-blue-500">⛽</span>
           </div>
+          <span>{fuelType}</span>
         </div>
-        <div className="flex gap-4 text-sm text-gray-600 mb-4">
-          <span>🎨 {car.color}</span>
-          <span>🚘 {car.plateNumber}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <div>
-            <span className="font-bold text-lg">${car.price}</span>
-            <span className="text-gray-600">/day</span>
+
+        <div className="flex items-center gap-1">
+          <div className="bg-blue-100 p-1 rounded-full">
+            <span className="text-blue-500">🔄</span>
           </div>
-          <button className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors">
-            Rent Now
-          </button>
+          <span>{transmission}</span>
         </div>
+
+        <div className="flex items-center gap-1">
+          <div className="bg-blue-100 p-1 rounded-full">
+            <span className="text-blue-500">👤</span>
+          </div>
+          <span>{capacity} People</span>
+        </div>
+      </div>
+
+      {/* Car Price and Button */}
+      <div className="p-3 flex justify-between items-center">
+        <div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-bold text-lg">${car.price.toFixed(2)}</span>
+            <span className="text-xs text-gray-500">/day</span>
+          </div>
+          {car.originalPrice && <span className="text-xs text-gray-500">${car.originalPrice.toFixed(2)}</span>}
+        </div>
+
+        <button
+          onClick={handleCardClick}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          Rent Now
+        </button>
       </div>
     </div>
   )
 }
+

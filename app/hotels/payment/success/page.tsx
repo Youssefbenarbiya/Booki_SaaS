@@ -25,7 +25,7 @@ export default async function PaymentSuccessPage({
   })
 
   if (!bookingId || !session?.user?.id) {
-    redirect("/dashboard/bookings")
+    redirect("/")
   }
 
   // Update booking payment status first - do this early to ensure payment is recorded
@@ -65,7 +65,7 @@ export default async function PaymentSuccessPage({
             />
           )}
           <Button asChild className="w-full">
-            <Link href={`/dashboard/bookings`}>View My Bookings</Link>
+            <Link href={`/user/profile/bookingHistory`}>View My Bookings</Link>
           </Button>
           <Button asChild variant="outline" className="w-full">
             <Link href="/">Return to Home</Link>

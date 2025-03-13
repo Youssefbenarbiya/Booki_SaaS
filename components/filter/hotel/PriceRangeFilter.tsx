@@ -1,21 +1,29 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 
 interface PriceRangeFilterProps {
   minPrice: number
   maxPrice: number
+  currentMin: number
+  currentMax: number
   onChange: (min: number, max: number) => void
 }
 
 export function PriceRangeFilter({
   minPrice,
   maxPrice,
+  currentMin,
+  currentMax,
   onChange,
 }: PriceRangeFilterProps) {
-  const [priceRange, setPriceRange] = useState([minPrice, maxPrice])
+  const [priceRange, setPriceRange] = useState([currentMin, currentMax])
+
+  useEffect(() => {
+    setPriceRange([currentMin, currentMax])
+  }, [currentMin, currentMax])
 
   const handleSliderChange = (values: number[]) => {
     setPriceRange(values)
@@ -23,8 +31,8 @@ export function PriceRangeFilter({
   }
 
   const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0
-    if (value <= priceRange[1]) {
+    const value = parseInt(e.target.value) || minPrice
+    if (value <= priceRange[1] && value >= minPrice) {
       const newRange = [value, priceRange[1]]
       setPriceRange(newRange)
       onChange(newRange[0], newRange[1])
@@ -32,8 +40,8 @@ export function PriceRangeFilter({
   }
 
   const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0
-    if (value >= priceRange[0]) {
+    const value = parseInt(e.target.value) || maxPrice
+    if (value >= priceRange[0] && value <= maxPrice) {
       const newRange = [priceRange[0], value]
       setPriceRange(newRange)
       onChange(newRange[0], newRange[1])
@@ -45,7 +53,7 @@ export function PriceRangeFilter({
       <h3 className="font-medium">Price Range (per night)</h3>
 
       <Slider
-        defaultValue={priceRange}
+        value={priceRange}
         min={minPrice}
         max={maxPrice}
         step={10}
@@ -62,6 +70,8 @@ export function PriceRangeFilter({
             type="number"
             value={priceRange[0]}
             onChange={handleMinInputChange}
+            min={minPrice}
+            max={priceRange[1]}
             className="pl-7 pr-2 w-24"
           />
         </div>
@@ -74,6 +84,8 @@ export function PriceRangeFilter({
             type="number"
             value={priceRange[1]}
             onChange={handleMaxInputChange}
+            min={priceRange[0]}
+            max={maxPrice}
             className="pl-7 pr-2 w-24"
           />
         </div>

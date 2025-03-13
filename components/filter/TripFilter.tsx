@@ -11,7 +11,6 @@ import { Separator } from "@/components/ui/separator"
 import {
   Star,
   Calendar,
-  MapPin,
   UtensilsCrossed,
   Wifi,
   Car,

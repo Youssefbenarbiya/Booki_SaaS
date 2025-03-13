@@ -13,7 +13,7 @@ type BookingDisplay = {
   startDate: string
   endDate: string
   status: string
-  totalPrice: string // Decimal in schema, returned as string
+  totalPrice: string
 }
 
 export async function getBookingHistory(
@@ -28,6 +28,14 @@ export async function getBookingHistory(
           name: true,
           startDate: true,
           endDate: true,
+        },
+        with: {
+          images: {
+            columns: {
+              imageUrl: true,
+            },
+            limit: 1,
+          },
         },
       },
     },
@@ -57,7 +65,7 @@ export async function getBookingHistory(
 
   // Fetch car bookings
   const carBookingsData = await db.query.carBookings.findMany({
-    where: eq(carBookings.userId, userId),
+    where: eq(carBookings.user_id, userId),
     with: {
       car: {
         columns: {
@@ -74,7 +82,7 @@ export async function getBookingHistory(
   const tripBookingsDisplay = tripBookingsData.map((booking) => ({
     id: booking.id,
     type: "trip" as const,
-    image: "/default-trip.jpg", // No images in trips table; use default
+    image: booking.trip.images[0]?.imageUrl || "/default-trip.jpg",
     name: booking.trip.name,
     startDate: booking.trip.startDate,
     endDate: booking.trip.endDate,
@@ -100,10 +108,10 @@ export async function getBookingHistory(
     type: "car" as const,
     image: booking.car.images[0] || "/default-car.jpg",
     name: `${booking.car.brand} ${booking.car.model}`,
-    startDate: booking.startDate,
-    endDate: booking.endDate,
+    startDate: booking.start_date.toISOString(),
+    endDate: booking.end_date.toISOString(),
     status: booking.status,
-    totalPrice: booking.totalPrice,
+    totalPrice: booking.total_price,
   }))
 
   // Combine and sort all bookings by start date (most recent first)

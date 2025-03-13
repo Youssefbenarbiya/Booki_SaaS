@@ -27,7 +27,7 @@ export default async function HomePage({
       <div
         className="min-h-[600px] relative bg-cover bg-center flex items-center"
         style={{
-          backgroundImage: "url('hero-bg.jpg')",
+          backgroundImage: "url('/hero-bg.jpg')",
           backgroundBlendMode: "overlay",
           backgroundColor: "rgba(0,0,0,0.3)",
         }}

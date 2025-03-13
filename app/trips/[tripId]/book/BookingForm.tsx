@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Minus, Plus, CheckCircle, Loader2 } from "lucide-react"
+import PaymentSelector from "@/components/payment/PaymentSelector"
 
 interface BookingFormProps {
   tripId: number
@@ -32,6 +33,11 @@ export default function BookingForm({
   const [seats, setSeats] = useState(1)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
+
+  // New state for payment method selection
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    "flouci" | "stripe"
+  >("flouci")
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -135,11 +141,17 @@ export default function BookingForm({
             </Alert>
           )}
 
+          {/* Payment Selector Component */}
+          <PaymentSelector
+            selectedPaymentMethod={selectedPaymentMethod}
+            setSelectedPaymentMethod={setSelectedPaymentMethod}
+          />
+
           <CardFooter className="flex flex-col pt-4 px-0 border-t">
             <div className="text-lg font-semibold mb-4 w-full flex justify-between items-center">
               <span>Total Price:</span>
               <span className="text-primary">
-                {formatPrice((isNaN(seats) ? 1 : seats) * pricePerSeat)}
+                {formatPrice(seats * pricePerSeat)}
               </span>
             </div>
 

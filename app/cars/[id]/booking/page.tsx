@@ -7,9 +7,8 @@ import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { getCarById } from "@/actions/carActions"
+import { getCarById, getCarAvailability } from "@/actions/carActions"
 import { bookCar } from "@/actions/bookingCars"
-import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DateRange } from "react-day-picker"
 import { DatePicker } from "@/components/ui/date-picker"
@@ -28,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useSession } from "@/auth-client"
+import { Loader2 } from "lucide-react"
 
 const bookingFormSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -49,7 +49,6 @@ interface BookingPageProps {
 }
 
 export default function BookingPage({ params }: BookingPageProps) {
-  // Unwrap params
   const unwrappedParams = React.use(params)
   const carId = parseInt(unwrappedParams.id)
 
@@ -57,15 +56,18 @@ export default function BookingPage({ params }: BookingPageProps) {
   const [car, setCar] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: new Date(new Date().setDate(new Date().getDate() + 3)),
-  })
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [bookedDateRanges, setBookedDateRanges] = useState<
+    Array<{
+      startDate: Date
+      endDate: Date
+      bookingId: number
+    }>
+  >([])
 
-  // Calculate derived state outside of render
   const totalDays = useMemo(() => {
-    if (!dateRange?.from || !dateRange?.to) return 3
+    if (!dateRange?.from || !dateRange?.to) return 0
     return (
       Math.ceil(
         (dateRange.to.getTime() - dateRange.from.getTime()) /
@@ -79,8 +81,7 @@ export default function BookingPage({ params }: BookingPageProps) {
     return parseFloat((totalDays * car.price).toFixed(2))
   }, [car, totalDays])
 
-    const session = useSession()
-  // Initialize form
+  const session = useSession()
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -93,19 +94,28 @@ export default function BookingPage({ params }: BookingPageProps) {
     },
   })
 
-  // Load car data - only once per carId
   useEffect(() => {
     let isMounted = true
-    async function loadCar() {
+    async function loadCarAndAvailability() {
       try {
         setLoading(true)
-        const result = await getCarById(carId)
+        const [carResult, availabilityResult] = await Promise.all([
+          getCarById(carId),
+          getCarAvailability(carId),
+        ])
+
         if (isMounted) {
-          setCar(result.car)
+          setCar(carResult.car)
+          if (
+            availabilityResult.success &&
+            availabilityResult.bookedDateRanges
+          ) {
+            setBookedDateRanges(availabilityResult.bookedDateRanges)
+          }
           setLoading(false)
         }
       } catch (err) {
-        console.error("Failed to load car:", err)
+        console.error("Failed to load car or availability:", err)
         if (isMounted) {
           setError("Failed to load car details")
           setLoading(false)
@@ -113,74 +123,119 @@ export default function BookingPage({ params }: BookingPageProps) {
       }
     }
 
-    loadCar()
+    loadCarAndAvailability()
     return () => {
       isMounted = false
     }
   }, [carId])
 
-  // Handle form submission
+  const hasDateOverlap = useCallback(
+    (selectedRange: DateRange) => {
+      if (!selectedRange.from || !selectedRange.to) return false
+      return bookedDateRanges.some((booked) => {
+        const bookedStart = booked.startDate.getTime()
+        const bookedEnd = booked.endDate.getTime()
+        const selectedStart = selectedRange.from!.getTime()
+        const selectedEnd = selectedRange.to!.getTime()
+        return selectedStart <= bookedEnd && selectedEnd >= bookedStart
+      })
+    },
+    [bookedDateRanges]
+  )
+
   const onSubmit = useCallback(
     async (data: BookingFormValues) => {
+      const userId = session.data?.user?.id
+      if (!userId) {
+        toast.error("Please log in to book a car")
+        return
+      }
+
       if (!dateRange?.from || !dateRange?.to) {
-        toast.error("Please select rental dates")
+        toast.error("Please select pickup and return dates")
+        document.querySelector(".date-picker-container")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        })
+        return
+      }
+
+      if (hasDateOverlap(dateRange)) {
+        toast.error("Selected dates are not available", {
+          description: "Please choose different dates",
+          duration: 5000,
+        })
+        document.querySelector(".date-picker-container")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        })
         return
       }
 
       try {
         setIsSubmitting(true)
-
-        // Get userId from session
-        const userId = session.data?.user.id
-        
-        if (!userId) {
-          toast.error("Please log in to book a car")
-          return
-        }
-
         const result = await bookCar({
           carId,
           userId,
           startDate: dateRange.from,
           endDate: dateRange.to,
           totalPrice,
-          // Additional customer data
-          customerInfo: {
-            fullName: data.fullName,
-            email: data.email,
-            phone: data.phone,
-            address: data.address,
-            drivingLicense: data.drivingLicense,
-          },
+          customerInfo: data,
         })
 
-        if (result.success && result.booking) {
-          toast.success("Booking confirmed! Redirecting to confirmation...")
+        if (result.success && result.booking?.paymentLink) {
+          // If we have a payment link from Flouci or similar payment processor
+          if (result.booking.paymentLink.includes("http")) {
+            window.location.href = result.booking.paymentLink
+          } else {
+            // For testing or if payment is handled differently
+            // Build success URL with all necessary booking information
+            const successUrl = new URL(
+              "/cars/payment/success",
+              window.location.origin
+            )
 
-          // Construct URL with booking details
-          const params = new URLSearchParams({
-            bookingId: result.booking.id.toString(),
-            carName: `${car.brand} ${car.model}`,
-            totalPrice: totalPrice.toString(),
-            startDate: dateRange.from.toISOString(),
-            endDate: dateRange.to.toISOString(),
-          })
+            // Add booking and car details
+            successUrl.searchParams.append(
+              "bookingId",
+              result.booking.id.toString()
+            )
+            successUrl.searchParams.append("carBrand", car.brand)
+            successUrl.searchParams.append("carModel", car.model)
+            successUrl.searchParams.append("plateNumber", car.plateNumber)
+            successUrl.searchParams.append(
+              "startDate",
+              dateRange.from.toISOString()
+            )
+            successUrl.searchParams.append(
+              "endDate",
+              dateRange.to.toISOString()
+            )
+            successUrl.searchParams.append("totalPrice", totalPrice.toString())
 
-          // Redirect to success page with booking details
-          setTimeout(() => {
-            router.push(`/cars/${carId}/booking/success?${params.toString()}`)
-          }, 1000)
+            // Add customer information
+            successUrl.searchParams.append("fullName", data.fullName)
+            successUrl.searchParams.append("email", data.email)
+            successUrl.searchParams.append("phone", data.phone)
+            successUrl.searchParams.append("address", data.address)
+            successUrl.searchParams.append(
+              "drivingLicense",
+              data.drivingLicense
+            )
+
+            window.location.href = successUrl.toString()
+          }
         } else {
-          toast.error(result.error || "Failed to book car. Please try again.")
+          toast.error("Failed to generate payment link")
         }
-      } catch (err) {
-        console.error("Booking error:", err)
-        toast.error("An error occurred while booking the car.")
+      } catch (error) {
+        console.error("Booking error:", error)
+        toast.error("Payment initiation failed")
       } finally {
         setIsSubmitting(false)
       }
     },
-    [carId, dateRange, totalPrice, car, router]
+    [carId, dateRange, totalPrice, session, hasDateOverlap, car]
   )
 
   if (loading) {
@@ -209,22 +264,10 @@ export default function BookingPage({ params }: BookingPageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <button
-        onClick={() => router.back()}
-        className="flex items-center text-gray-600 mb-6 hover:text-gray-900"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Car Details
-      </button>
-
-      <h1 className="text-3xl font-bold mb-8">Book Your Car</h1>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Car Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-xl font-bold mb-4">Car Details</h2>
-
             <div className="relative h-48 w-full rounded-lg overflow-hidden mb-4">
               <Image
                 src={car.images?.[0] || "/assets/Car.png"}
@@ -233,23 +276,28 @@ export default function BookingPage({ params }: BookingPageProps) {
                 className="object-cover"
               />
             </div>
-
             <h3 className="text-lg font-semibold">
               {car.brand} {car.model}
             </h3>
             <p className="text-gray-500 mb-4">
               {car.year} • {car.color}
             </p>
-
             <Separator className="my-4" />
-
-            <div className="mb-4">
+            <div className="mb-4 date-picker-container">
               <h4 className="font-medium text-gray-700 mb-2">Rental Period</h4>
-              <DatePicker dateRange={dateRange} setDateRange={setDateRange} />
+              <DatePicker
+                dateRange={dateRange}
+                setDateRange={setDateRange} // Simplified to match old code
+                disabledDateRanges={bookedDateRanges}
+                className="border-2 border-gray-200"
+              />
+              {!dateRange && (
+                <p className="text-sm text-blue-600 mt-2">
+                  Please select your rental dates
+                </p>
+              )}
             </div>
-
             <Separator className="my-4" />
-
             <div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Price per day</span>
@@ -257,7 +305,7 @@ export default function BookingPage({ params }: BookingPageProps) {
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Days</span>
-                <span>{totalDays} days</span>
+                <span>{dateRange ? `${totalDays} days` : "Select dates"}</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Insurance</span>
@@ -265,17 +313,14 @@ export default function BookingPage({ params }: BookingPageProps) {
               </div>
               <div className="flex justify-between font-bold text-lg mt-4">
                 <span>Total</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>{dateRange ? `$${totalPrice.toFixed(2)}` : "TBD"}</span>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Booking Form */}
         <div className="lg:col-span-2">
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-xl font-bold mb-6">Personal Information</h2>
-
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -295,7 +340,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="email"
@@ -313,7 +357,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                     )}
                   />
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -328,7 +371,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="drivingLicense"
@@ -343,7 +385,6 @@ export default function BookingPage({ params }: BookingPageProps) {
                     )}
                   />
                 </div>
-
                 <FormField
                   control={form.control}
                   name="address"
@@ -360,9 +401,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                     </FormItem>
                   )}
                 />
-
                 <Separator />
-
                 <FormField
                   control={form.control}
                   name="agreeToTerms"
@@ -379,7 +418,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                           I agree to the terms and conditions of rental
                         </FormLabel>
                         <FormDescription>
-                          By agreeing, you confirm you've read our terms,
+                          By agreeing, you confirm you&apos;ve read our terms,
                           including the cancellation policy.
                         </FormDescription>
                       </div>
@@ -387,13 +426,19 @@ export default function BookingPage({ params }: BookingPageProps) {
                     </FormItem>
                   )}
                 />
-
                 <Button
                   type="submit"
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Processing..." : "Complete Booking"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Pay with Flouci"
+                  )}
                 </Button>
               </form>
             </Form>

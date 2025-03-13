@@ -1,5 +1,9 @@
-import { MapPin, Star } from "lucide-react"
+"use client"
+
+import { MapPin, Star, Map } from "lucide-react"
 import HotelLocationMap from "../HotelLocationMap"
+import { useState } from "react"
+import MapModal from "./MapModal"
 
 interface HotelInfoProps {
   hotel: {
@@ -16,6 +20,8 @@ interface HotelInfoProps {
 }
 
 export default function HotelInfo({ hotel }: HotelInfoProps) {
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false)
+
   return (
     <div className="mt-6">
       <div className="flex items-center gap-2 mb-2">
@@ -61,12 +67,31 @@ export default function HotelInfo({ hotel }: HotelInfoProps) {
               readOnly={true}
             />
           </div>
-          <p className="mt-2 text-sm text-gray-600 flex items-start">
-            <MapPin className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
-            {hotel.address}, {hotel.city}, {hotel.country}
-          </p>
+          <div className="mt-2 flex items-start justify-between">
+            <p className="text-sm text-gray-600 flex items-start">
+              <MapPin className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
+              {hotel.address}, {hotel.city}, {hotel.country}
+            </p>
+            <button 
+              onClick={() => setIsMapModalOpen(true)}
+              className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+            >
+              <Map className="h-4 w-4 mr-1" />
+              View on Map
+            </button>
+          </div>
         </div>
       </div>
+
+      <MapModal 
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        latitude={hotel.latitude}
+        longitude={hotel.longitude}
+        address={hotel.address}
+        city={hotel.city}
+        country={hotel.country}
+      />
     </div>
   )
 }
