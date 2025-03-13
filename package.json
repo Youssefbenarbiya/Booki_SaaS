@@ -55,6 +55,7 @@
     "drizzle-orm": "^0.39.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.0",
+    "jspdf-autotable": "^5.0.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.474.0",
     "multer": "^1.4.5-lts.1",

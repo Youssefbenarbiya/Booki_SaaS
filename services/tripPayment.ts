@@ -28,8 +28,7 @@ export async function generateTripPaymentLink({
       amount: amountInMillimes,
       accept_card: "true",
       session_timeout_secs: 1200,
-      // Fix: Update success link path to match our route structure
-      success_link: `${baseUrl}/api/trips/payment/success?bookingId=${bookingId}`,
+      success_link: `${baseUrl}/trips/payment/success?bookingId=${bookingId}`,
       fail_link: `${baseUrl}/trips/payment/failed?bookingId=${bookingId}`,
       developer_tracking_id: `trip_booking_${bookingId}`,
     }

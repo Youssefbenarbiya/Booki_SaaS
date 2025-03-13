@@ -1,5 +1,5 @@
 import { updateBookingPaymentStatus } from "@/actions/roomBookingActions"
-import { generateInvoiceAction } from "@/actions/generateInvoiceAction"
+import { generateInvoiceAction } from "@/actions/generateInvoiceRoom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
