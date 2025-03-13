@@ -184,7 +184,47 @@ export default function BookingPage({ params }: BookingPageProps) {
         })
 
         if (result.success && result.booking?.paymentLink) {
-          window.location.href = result.booking.paymentLink
+          // If we have a payment link from Flouci or similar payment processor
+          if (result.booking.paymentLink.includes("http")) {
+            window.location.href = result.booking.paymentLink
+          } else {
+            // For testing or if payment is handled differently
+            // Build success URL with all necessary booking information
+            const successUrl = new URL(
+              "/cars/payment/success",
+              window.location.origin
+            )
+
+            // Add booking and car details
+            successUrl.searchParams.append(
+              "bookingId",
+              result.booking.id.toString()
+            )
+            successUrl.searchParams.append("carBrand", car.brand)
+            successUrl.searchParams.append("carModel", car.model)
+            successUrl.searchParams.append("plateNumber", car.plateNumber)
+            successUrl.searchParams.append(
+              "startDate",
+              dateRange.from.toISOString()
+            )
+            successUrl.searchParams.append(
+              "endDate",
+              dateRange.to.toISOString()
+            )
+            successUrl.searchParams.append("totalPrice", totalPrice.toString())
+
+            // Add customer information
+            successUrl.searchParams.append("fullName", data.fullName)
+            successUrl.searchParams.append("email", data.email)
+            successUrl.searchParams.append("phone", data.phone)
+            successUrl.searchParams.append("address", data.address)
+            successUrl.searchParams.append(
+              "drivingLicense",
+              data.drivingLicense
+            )
+
+            window.location.href = successUrl.toString()
+          }
         } else {
           toast.error("Failed to generate payment link")
         }
@@ -195,7 +235,7 @@ export default function BookingPage({ params }: BookingPageProps) {
         setIsSubmitting(false)
       }
     },
-    [carId, dateRange, totalPrice, session, hasDateOverlap]
+    [carId, dateRange, totalPrice, session, hasDateOverlap, car]
   )
 
   if (loading) {
