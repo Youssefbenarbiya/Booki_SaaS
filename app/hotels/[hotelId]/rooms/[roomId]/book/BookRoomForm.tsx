@@ -24,9 +24,25 @@ import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import PaymentSelector from "@/components/payment/PaymentSelector"
 
-interface BookingWithPayment {
+interface RoomBookingRecord {
+  roomId: string
+  userId: string
+  checkIn: string
+  checkOut: string
+  totalPrice: string
+  status: string
+  bookingDate: Date | null
+  paymentId: string | null
+  paymentStatus: string | null
+  paymentDate: Date | null
+}
+
+export interface RoomBookingWithPayment extends RoomBookingRecord {
+  sessionId?: string
+  url?: string
   paymentLink?: string
 }
+
 
 interface BookRoomFormProps {
   roomId: string
@@ -70,7 +86,9 @@ export default function BookRoomForm({
     Array<{ start: Date; end: Date }>
   >([])
 
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"flouci" | "stripe">("flouci")
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    "flouci" | "stripe"
+  >("flouci")
 
   const formatDate = format
 
@@ -80,7 +98,6 @@ export default function BookRoomForm({
     telephone: userDetails.telephone,
     email: userDetails.email,
   })
-
 
   // Calculate nights from selected dates.
   const nights =
@@ -223,14 +240,10 @@ export default function BookRoomForm({
 
     startTransition(async () => {
       try {
-        if (selectedPaymentMethod === "stripe") {
-          // Redirect to not found page for now
-          window.location.href = "/not-found"
-          return
-        }
+        console.log(`Starting booking with ${selectedPaymentMethod} payment...`)
 
-        // Create booking with Flouci
-        const booking = (await createRoomBooking({
+        // Create booking with selected payment method
+        const booking = await createRoomBooking({
           roomId,
           userId,
           checkIn: dateRange.from!,
@@ -240,12 +253,22 @@ export default function BookRoomForm({
           childCount,
           infantCount,
           initiatePayment: true,
-        })) as BookingWithPayment
+          paymentMethod: selectedPaymentMethod, // Pass selected payment method
+        })
 
-        if (booking.paymentLink) {
+        console.log("Booking response:", booking)
+
+        // Handle different payment methods
+        if (selectedPaymentMethod === "stripe" && booking.sessionId) {
+          // Redirect to Stripe checkout
+          window.location.href = booking.url || ""
+        } else if (selectedPaymentMethod === "flouci" && booking.paymentLink) {
+          // Redirect to Flouci payment page
           window.location.href = booking.paymentLink
         } else {
-          setSubmissionError("Payment link not generated. Please try again.")
+          throw new Error(
+            `Missing payment information for ${selectedPaymentMethod}`
+          )
         }
       } catch (err) {
         console.error("Error booking room:", err)

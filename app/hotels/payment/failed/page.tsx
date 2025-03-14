@@ -8,24 +8,25 @@ import { redirect } from "next/navigation"
 interface PaymentFailedPageProps {
   searchParams: {
     bookingId?: string
+    paymentMethod?: string
   }
 }
 
 export default async function PaymentFailedPage({
   searchParams,
 }: PaymentFailedPageProps) {
-  const { bookingId } = searchParams
+  const { bookingId, paymentMethod = "flouci" } = searchParams
 
   if (!bookingId) {
     redirect("/dashboard/bookings")
   }
 
-  // Update booking payment status
+  // Update booking payment status with the correct payment method
   try {
     await updateBookingPaymentStatus(
       parseInt(bookingId),
       "failed",
-      "flouci"
+      paymentMethod.toUpperCase()
     )
   } catch (error) {
     console.error("Error updating booking payment status:", error)
@@ -39,8 +40,8 @@ export default async function PaymentFailedPage({
         </div>
         <h1 className="text-2xl font-bold mb-2">Payment Failed</h1>
         <p className="text-gray-600 mb-6">
-          We couldn&apos;t process your payment. Please try again or contact customer
-          support if the problem persists.
+          We couldn&apos;t process your payment. Please try again or contact
+          customer support if the problem persists.
         </p>
         <div className="space-y-4">
           <Button asChild className="w-full bg-red-600 hover:bg-red-700">
@@ -53,4 +54,4 @@ export default async function PaymentFailedPage({
       </Card>
     </div>
   )
-} 
+}
