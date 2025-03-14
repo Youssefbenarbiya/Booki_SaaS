@@ -143,7 +143,7 @@ export default function PaymentSuccessPage() {
               View My Bookings
             </Button>
           </Link>
-          <Link href="/hotels">
+          <Link href="/?type=hotels">
             <Button variant="outline" className="w-full">
               Browse More Hotels
             </Button>

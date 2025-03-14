@@ -56,7 +56,6 @@ export default function PaymentSelector({
             height={30}
             className="object-contain"
           />
-          <p className="text-sm text-gray-500">Coming Soon</p>
         </button>
       </div>
 

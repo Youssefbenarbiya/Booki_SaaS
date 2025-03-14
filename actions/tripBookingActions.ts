@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { generateTripPaymentLink } from "@/services/tripPayment"
 import { sql } from "drizzle-orm"
+import { stripe } from "@/lib/stripe"
 
 interface CreateBookingParams {
   tripId: number
@@ -13,6 +14,7 @@ interface CreateBookingParams {
   seatsBooked: number
   totalPrice?: number
   status?: string
+  paymentMethod?: "flouci" | "stripe"
 }
 
 export async function createBooking({
@@ -41,14 +43,13 @@ export async function createBooking({
 
     const totalPrice = seatsBooked * pricePerSeat
 
-    // Create booking using snake_case keys matching your schema
     const [booking] = await db
       .insert(tripBookings)
       .values({
         tripId: tripId,
         userId: userId,
         seatsBooked: seatsBooked,
-        totalPrice: sql`${totalPrice}::decimal`, // Convert to decimal
+        totalPrice: sql`${totalPrice}::decimal`,
         status: "pending",
         bookingDate: new Date(),
       })
@@ -76,8 +77,18 @@ export async function createBookingWithPayment({
   userId,
   seatsBooked,
   pricePerSeat,
+  paymentMethod = "flouci", // Default to flouci if not specified
 }: CreateBookingParams & { pricePerSeat: number }) {
   try {
+    // Get trip to check details
+    const trip = await db.query.trips.findFirst({
+      where: eq(trips.id, tripId),
+    })
+
+    if (!trip) {
+      throw new Error("Trip not found")
+    }
+
     const totalPrice = seatsBooked * pricePerSeat
 
     // Create the initial booking
@@ -92,35 +103,96 @@ export async function createBookingWithPayment({
       throw new Error("Failed to create booking")
     }
 
-    console.log("Created booking:", booking) // Debug log
+    console.log(
+      `Booking created: #${booking.id}, processing payment via ${paymentMethod}`
+    )
 
-    // Generate payment link using the trip payment service
-    const paymentData = await generateTripPaymentLink({
-      amount: totalPrice,
-      bookingId: booking.id,
-    })
+    // Handle payment based on selected method
+    if (paymentMethod === "stripe") {
+      try {
+        // Create Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "usd", // Change to your desired currency
+                product_data: {
+                  name: trip.name,
+                  description: `Trip to ${trip.destination}`,
+                  images: [
+                    trip.image ||
+                      "https://via.placeholder.com/400x300?text=Trip+Image",
+                  ],
+                },
+                unit_amount: Math.round(pricePerSeat * 100), // Stripe uses cents
+              },
+              quantity: seatsBooked,
+            },
+          ],
+          mode: "payment",
+          success_url: `${process.env.NEXT_PUBLIC_APP_URL}/trips/payment/success?bookingId=${booking.id}`,
+          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/trips/payment/failed`,
+          metadata: {
+            bookingId: booking.id.toString(),
+          },
+        })
 
-    console.log("Generated payment data:", paymentData) // Debug log
+        console.log(`Stripe session created: ${session.id}`)
 
-    if (!paymentData || !paymentData.paymentId) {
-      // If payment link generation fails, delete the booking
-      await db.delete(tripBookings).where(eq(tripBookings.id, booking.id))
-      throw new Error("Failed to generate payment link")
-    }
+        // Update booking with Stripe payment ID
+        await db
+          .update(tripBookings)
+          .set({
+            paymentId: session.id,
+            paymentStatus: "completed",
+            paymentMethod: "STRIPE",
+          })
+          .where(eq(tripBookings.id, booking.id))
 
-    // Update booking with the payment ID and mark payment status as pending
-    await db
-      .update(tripBookings)
-      .set({
-        paymentId: paymentData.paymentId,
-        paymentStatus: "pending",
+        return {
+          booking,
+          sessionId: session.id,
+          url: session.url,
+        }
+      } catch (stripeError) {
+        // If Stripe payment creation fails, delete the booking to avoid orphaned records
+        console.error("Stripe payment error:", stripeError)
+        await db.delete(tripBookings).where(eq(tripBookings.id, booking.id))
+        throw new Error(
+          `Stripe payment failed: ${
+            stripeError instanceof Error ? stripeError.message : "Unknown error"
+          }`
+        )
+      }
+    } else {
+      // Existing Flouci payment logic
+      const paymentData = await generateTripPaymentLink({
+        amount: totalPrice,
+        bookingId: booking.id,
       })
-      .where(eq(tripBookings.id, booking.id))
 
-    return {
-      booking,
-      paymentLink: paymentData.paymentLink,
-      paymentId: paymentData.paymentId,
+      if (!paymentData || !paymentData.paymentId) {
+        // If payment link generation fails, delete the booking
+        await db.delete(tripBookings).where(eq(tripBookings.id, booking.id))
+        throw new Error("Failed to generate payment link")
+      }
+
+      // Update booking with the payment ID and mark payment status as pending
+      await db
+        .update(tripBookings)
+        .set({
+          paymentId: paymentData.paymentId,
+          paymentStatus: "pending",
+          paymentMethod: "FLOUCI",
+        })
+        .where(eq(tripBookings.id, booking.id))
+
+      return {
+        booking,
+        paymentLink: paymentData.paymentLink,
+        paymentId: paymentData.paymentId,
+      }
     }
   } catch (error) {
     console.error("Error creating booking with payment:", error)
