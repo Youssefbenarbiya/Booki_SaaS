@@ -4,7 +4,7 @@ import db from "../db/drizzle"
 import { room, roomBookings } from "@/db/schema"
 import { eq, and, or, between, lte, gte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { generatePaymentLink } from "@/services/flouciPayment"
+import { generatePaymentLink } from "@/services/roomFlouciPayment"
 
 interface CreateRoomBookingParams {
   roomId: string

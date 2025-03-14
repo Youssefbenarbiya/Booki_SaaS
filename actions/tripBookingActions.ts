@@ -4,7 +4,7 @@ import db from "../db/drizzle"
 import { tripBookings, trips } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { generateTripPaymentLink } from "@/services/tripPayment"
+import { generateTripPaymentLink } from "@/services/tripPaymentFlouci"
 import { sql } from "drizzle-orm"
 import { stripe } from "@/lib/stripe"
 
@@ -64,7 +64,6 @@ export async function createBooking({
       .where(eq(trips.id, tripId))
 
     revalidatePath(`/trips/${tripId}`)
-    revalidatePath("/dashboard/bookings")
     return booking
   } catch (error) {
     console.error("Error creating booking:", error)
@@ -120,10 +119,6 @@ export async function createBookingWithPayment({
                 product_data: {
                   name: trip.name,
                   description: `Trip to ${trip.destination}`,
-                  images: [
-                    trip.image ||
-                      "https://via.placeholder.com/400x300?text=Trip+Image",
-                  ],
                 },
                 unit_amount: Math.round(pricePerSeat * 100), // Stripe uses cents
               },
@@ -178,12 +173,11 @@ export async function createBookingWithPayment({
         throw new Error("Failed to generate payment link")
       }
 
-      // Update booking with the payment ID and mark payment status as pending
       await db
         .update(tripBookings)
         .set({
           paymentId: paymentData.paymentId,
-          paymentStatus: "pending",
+          paymentStatus: "completed",
           paymentMethod: "FLOUCI",
         })
         .where(eq(tripBookings.id, booking.id))
@@ -220,7 +214,6 @@ export async function updateTripBookingPaymentStatus(
       })
       .where(eq(tripBookings.id, bookingId))
 
-    revalidatePath("/dashboard/bookings")
   } catch (error) {
     console.error("Error updating payment status:", error)
     throw error

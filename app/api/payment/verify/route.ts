@@ -1,5 +1,5 @@
 import { updateBookingPaymentStatus } from "@/actions/roomBookingActions"
-import { verifyPayment } from "@/services/flouciPayment"
+import { verifyPayment } from "@/services/roomFlouciPayment"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
@@ -37,4 +37,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
