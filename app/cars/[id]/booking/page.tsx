@@ -28,6 +28,7 @@ import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useSession } from "@/auth-client"
 import { Loader2 } from "lucide-react"
+import PaymentSelector from "@/components/payment/PaymentSelector"
 
 const bookingFormSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -65,6 +66,9 @@ export default function BookingPage({ params }: BookingPageProps) {
       bookingId: number
     }>
   >([])
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    "flouci" | "stripe"
+  >("flouci")
 
   const totalDays = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return 0
@@ -181,52 +185,24 @@ export default function BookingPage({ params }: BookingPageProps) {
           endDate: dateRange.to,
           totalPrice,
           customerInfo: data,
+          paymentMethod: selectedPaymentMethod, // Add payment method
         })
 
-        if (result.success && result.booking?.paymentLink) {
-          // If we have a payment link from Flouci or similar payment processor
-          if (result.booking.paymentLink.includes("http")) {
+        if (result.success) {
+          if (selectedPaymentMethod === "stripe" && result.booking?.url) {
+            // Redirect to Stripe checkout
+            window.location.href = result.booking.url
+          } else if (
+            selectedPaymentMethod === "flouci" &&
+            result.booking?.paymentLink
+          ) {
+            // Redirect to Flouci payment
             window.location.href = result.booking.paymentLink
           } else {
-            // For testing or if payment is handled differently
-            // Build success URL with all necessary booking information
-            const successUrl = new URL(
-              "/cars/payment/success",
-              window.location.origin
-            )
-
-            // Add booking and car details
-            successUrl.searchParams.append(
-              "bookingId",
-              result.booking.id.toString()
-            )
-            successUrl.searchParams.append("carBrand", car.brand)
-            successUrl.searchParams.append("carModel", car.model)
-            successUrl.searchParams.append("plateNumber", car.plateNumber)
-            successUrl.searchParams.append(
-              "startDate",
-              dateRange.from.toISOString()
-            )
-            successUrl.searchParams.append(
-              "endDate",
-              dateRange.to.toISOString()
-            )
-            successUrl.searchParams.append("totalPrice", totalPrice.toString())
-
-            // Add customer information
-            successUrl.searchParams.append("fullName", data.fullName)
-            successUrl.searchParams.append("email", data.email)
-            successUrl.searchParams.append("phone", data.phone)
-            successUrl.searchParams.append("address", data.address)
-            successUrl.searchParams.append(
-              "drivingLicense",
-              data.drivingLicense
-            )
-
-            window.location.href = successUrl.toString()
+            toast.error("Invalid payment response")
           }
         } else {
-          toast.error("Failed to generate payment link")
+          toast.error(result.error || "Booking failed")
         }
       } catch (error) {
         console.error("Booking error:", error)
@@ -235,7 +211,15 @@ export default function BookingPage({ params }: BookingPageProps) {
         setIsSubmitting(false)
       }
     },
-    [carId, dateRange, totalPrice, session, hasDateOverlap, car]
+    [
+      carId,
+      dateRange,
+      totalPrice,
+      session,
+      hasDateOverlap,
+      car,
+      selectedPaymentMethod,
+    ]
   )
 
   if (loading) {
@@ -426,9 +410,15 @@ export default function BookingPage({ params }: BookingPageProps) {
                     </FormItem>
                   )}
                 />
+                <div className="mt-6">
+                  <PaymentSelector
+                    selectedPaymentMethod={selectedPaymentMethod}
+                    setSelectedPaymentMethod={setSelectedPaymentMethod}
+                  />
+                </div>
                 <Button
                   type="submit"
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white mt-6"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -437,7 +427,11 @@ export default function BookingPage({ params }: BookingPageProps) {
                       Processing...
                     </>
                   ) : (
-                    "Pay with Flouci"
+                    `Pay with ${
+                      selectedPaymentMethod === "stripe"
+                        ? "Credit Card"
+                        : "Flouci"
+                    }`
                   )}
                 </Button>
               </form>

@@ -19,7 +19,7 @@ export default function CarPaymentFailedPage() {
         </div>
         <h1 className="text-3xl font-bold mb-2">Payment Failed</h1>
         <p className="text-xl text-gray-600">
-          We couldn't process your car rental payment.
+          We couldn&apos;t process your car rental payment.
         </p>
       </div>
 
