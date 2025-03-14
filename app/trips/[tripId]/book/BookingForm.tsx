@@ -34,7 +34,7 @@ export default function BookingForm({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
 
-  // New state for payment method selection
+  // Payment method selection
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "flouci" | "stripe"
   >("flouci")
@@ -55,14 +55,23 @@ export default function BookingForm({
           userId,
           seatsBooked: seats,
           pricePerSeat,
+          paymentMethod: selectedPaymentMethod, // Pass the selected payment method
         })
 
-        if (!result.paymentLink) {
-          throw new Error("No payment link received")
+        if (!result.paymentLink && !result.sessionId) {
+          throw new Error("No payment information received")
         }
 
-        // Redirect to Flouci payment page
-        window.location.href = result.paymentLink
+        // Handle different payment methods
+        if (selectedPaymentMethod === "stripe" && result.sessionId) {
+          // Redirect to Stripe checkout
+          window.location.href = result.url || ""
+        } else if (selectedPaymentMethod === "flouci" && result.paymentLink) {
+          // Redirect to Flouci payment page
+          window.location.href = result.paymentLink
+        } else {
+          throw new Error("Invalid payment response")
+        }
       } catch (error) {
         console.error("Error booking trip:", error)
         setError(

@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { carBookings } from "@/db/schema"
 import { eq, and, or, between } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { generateCarPaymentLink } from "@/services/carPayment"
+import { stripe } from "@/lib/stripe"
 
 interface CustomerInfo {
   fullName: string
@@ -21,7 +22,7 @@ interface BookCarParams {
   endDate: Date
   totalPrice: number
   customerInfo?: CustomerInfo
-  paymentMethod?: "flouci"
+  paymentMethod?: "flouci" | "stripe"
 }
 
 interface BookingResult {
@@ -37,13 +38,14 @@ export async function bookCar({
   endDate,
   totalPrice,
   customerInfo,
+  paymentMethod = "flouci", // Default to flouci if not specified
 }: BookCarParams): Promise<BookingResult> {
   try {
     if (!userId) {
       return { success: false, error: "User ID is required" }
     }
 
-    // Add availability check like in hotel system
+    // Check car availability
     const isAvailable = await checkCarAvailability(carId, startDate, endDate)
     if (!isAvailable) {
       return { success: false, error: "Car not available for selected dates" }
@@ -59,47 +61,83 @@ export async function bookCar({
         end_date: endDate,
         total_price: totalPrice.toString(),
         paymentDate: new Date(),
-        status: "confirmed",
-        paymentStatus: "confirmed",
+        status: "pending",
+        paymentStatus: "pending",
         fullName: customerInfo?.fullName || null,
         email: customerInfo?.email || null,
         phone: customerInfo?.phone || null,
         address: customerInfo?.address || null,
         drivingLicense: customerInfo?.drivingLicense || null,
-        paymentMethod: "flouci",
+        paymentMethod: paymentMethod.toUpperCase(),
         createdAt: new Date(),
       })
       .returning()
 
     const newBooking = bookingResults[0]
 
-    // Generate payment link
-    const { paymentLink, paymentId } = await generateCarPaymentLink({
-      amount: totalPrice,
-      bookingId: newBooking.id,
-    })
+    // Handle payment
+    if (paymentMethod === "stripe") {
+      try {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: `Car Rental #${carId}`,
+                  description: `Rental from ${startDate.toDateString()} to ${endDate.toDateString()}`,
+                },
+                unit_amount: Math.round(totalPrice * 100),
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          success_url: `${process.env.NEXT_PUBLIC_APP_URL}/cars/payment/success?bookingId=${newBooking.id}`,
+          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cars/payment/failed`,
+          metadata: {
+            bookingId: newBooking.id.toString(),
+          },
+        })
 
-    // Update booking with payment ID
-    await db
-      .update(carBookings)
-      .set({ paymentId })
-      .where(eq(carBookings.id, newBooking.id))
+        // Update booking with payment ID
+        await db
+          .update(carBookings)
+          .set({ paymentId: session.id, paymentStatus: "pending" })
+          .where(eq(carBookings.id, newBooking.id))
 
-    // Revalidate relevant paths
-    revalidatePath(`/cars/${carId}`)
-    revalidatePath("/dashboard/bookings")
+        return {
+          success: true,
+          booking: { ...newBooking, sessionId: session.id, url: session.url },
+        }
+      } catch (stripeError) {
+        console.error("Stripe payment error:", stripeError)
+        await db.delete(carBookings).where(eq(carBookings.id, newBooking.id))
+        return { success: false, error: "Stripe payment failed" }
+      }
+    } else {
+      const { paymentLink, paymentId } = await generateCarPaymentLink({
+        amount: totalPrice,
+        bookingId: newBooking.id,
+      })
 
-    return {
-      success: true,
-      booking: { ...newBooking, paymentLink },
+      await db
+        .update(carBookings)
+        .set({ paymentId })
+        .where(eq(carBookings.id, newBooking.id))
+
+      return {
+        success: true,
+        booking: { ...newBooking, paymentLink },
+      }
     }
   } catch (error) {
     console.error("Failed to book car:", error)
-    return { success: false, error: "Payment failed - please try again" }
+    return { success: false, error: "Booking failed - please try again" }
   }
 }
 
-// Add availability check function
 async function checkCarAvailability(
   carId: number,
   startDate: Date,
