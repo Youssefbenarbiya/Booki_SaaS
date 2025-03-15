@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { Metadata } from "next"
 import { headers } from "next/headers"
 import { UpdateUserInfo } from "./profile-form"
+import { redirect } from "next/navigation"
 
 export const metadata: Metadata = {
   title: `Personal Information`,
@@ -14,7 +15,7 @@ export default async function PersonalInfoPage() {
   })
 
   if (!session) {
-    // Handle no session case, e.g. redirect or return null
+    redirect(`/user/profile/personal-info`)
     return null
   }
 

@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import type { z } from "zod"
@@ -19,6 +19,10 @@ import FacebookSignIn from "../(Oauth)/facebook"
 
 export default function SignIn() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // Extract callbackUrl from the query parameters; default to "/" if not present
+  const callbackUrl = searchParams.get("callbackUrl") || "/"
+
   const { toast } = useToast()
   const [pendingCredentials, setPendingCredentials] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -63,7 +67,8 @@ export default function SignIn() {
           setPendingCredentials(true)
         },
         onSuccess: async () => {
-          router.push("/")
+          // Redirect to the callback URL after successful sign-in
+          router.push(callbackUrl)
           router.refresh()
         },
         onError: (ctx: ErrorContext) => {
@@ -80,9 +85,9 @@ export default function SignIn() {
   }
 
   return (
-    <div className="flex min-h-screen ml-[200px]  mt-[50px]">
+    <div className="flex min-h-screen ml-[200px] mt-[50px]">
       {/* Left Column */}
-      <div className="w-full md:w-1/ px-8 pb-8 x-col justify-center ">
+      <div className="w-full md:w-1/ px-8 pb-8 x-col justify-center">
         <div className="max-w-[480px] mx-auto w-full">
           <div className="mb-12">
             <Image
@@ -193,7 +198,7 @@ export default function SignIn() {
       </div>
 
       {/* Right Column */}
-      <div className="md:w-1/2  h-[520px]  relative w-[30%] mr-[200px]">
+      <div className="md:w-1/2 h-[520px] relative w-[30%] mr-[200px]">
         <div className="absolute inset-y-0 -left-8 right-8 rounded-xl overflow-hidden">
           <Image
             src={slides[currentSlide] || "/assets/loginImg.jpg"}

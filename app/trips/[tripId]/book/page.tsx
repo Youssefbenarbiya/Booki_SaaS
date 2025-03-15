@@ -5,6 +5,7 @@ import { getTripById } from "@/actions/tripActions"
 import BookingForm from "./BookingForm"
 import { Separator } from "@/components/ui/separator"
 import { formatPrice, formatDateRange } from "@/lib/utils"
+import SignInRedirectMessage from "@/app/(auth)/sign-in/SignInRedirectMessage"
 
 export default async function BookTripPage({
   params,
@@ -12,7 +13,6 @@ export default async function BookTripPage({
   params: { tripId: string }
   searchParams: { travelers?: string; date?: string }
 }) {
-  // Await the params before using its properties
   const { tripId } = await params
 
   const session = await auth.api.getSession({
@@ -20,14 +20,18 @@ export default async function BookTripPage({
   })
 
   if (!session || !session.user) {
-    redirect(`/auth/signin?callbackUrl=/trips/${tripId}/book`)
+    return (
+      <SignInRedirectMessage
+        callbackUrl={`/sign-in?callbackUrl=/trips/${tripId}/book`}
+      />
+    )
   }
 
   const tripIdNum = parseInt(tripId)
   const trip = await getTripById(tripIdNum)
 
   if (!trip) {
-    redirect("/trips")
+    redirect("/?type=trips")
   }
 
   return (

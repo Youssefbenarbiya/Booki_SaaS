@@ -14,7 +14,7 @@ export default function PaymentFailedPage() {
         </p>
 
         <div className="flex flex-col space-y-3">
-          <Link href="/trips">
+          <Link href="/?type=trips">
             <Button variant="default" className="w-full">
               Browse Trips
             </Button>

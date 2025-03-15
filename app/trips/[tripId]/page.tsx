@@ -26,7 +26,6 @@ interface TripPageProps {
 }
 
 export default async function TripDetailsPage({ params }: TripPageProps) {
-  // Await params before using its properties
   const { tripId } = await params
   const trip = await getTripById(parseInt(tripId))
 

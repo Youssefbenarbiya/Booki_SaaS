@@ -34,7 +34,6 @@ export default function BookingForm({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
 
-  // Payment method selection
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "flouci" | "stripe"
   >("flouci")
