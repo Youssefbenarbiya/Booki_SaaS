@@ -26,6 +26,7 @@ interface LocationMapSelectorProps {
   height?: string
   enableSearch?: boolean
   readOnly?: boolean
+  enableNavigation?: boolean
 }
 
 function MapMarker({
@@ -56,6 +57,7 @@ export default function LocationMapSelector({
   height = "400px",
   enableSearch = true,
   readOnly = false,
+  enableNavigation = true,
 }: LocationMapSelectorProps) {
   // Default position if none provided
   const defaultPosition: [number, number] = [51.505, -0.09] // London as default
@@ -179,11 +181,11 @@ export default function LocationMapSelector({
           center={position}
           zoom={13}
           style={{ height: "100%", width: "100%" }}
-          dragging={!readOnly}
-          touchZoom={!readOnly}
-          doubleClickZoom={!readOnly}
-          scrollWheelZoom={!readOnly}
-          zoomControl={!readOnly}
+          dragging={enableNavigation}
+          touchZoom={enableNavigation}
+          doubleClickZoom={enableNavigation}
+          scrollWheelZoom={enableNavigation}
+          zoomControl={enableNavigation}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
