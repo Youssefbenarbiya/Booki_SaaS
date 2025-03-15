@@ -65,6 +65,7 @@ export default function HotelInfo({ hotel }: HotelInfoProps) {
               longitude={hotel.longitude}
               height="200px"
               readOnly={true}
+              enableNavigation={true}
             />
           </div>
           <div className="mt-2 flex items-start justify-between">
@@ -72,13 +73,7 @@ export default function HotelInfo({ hotel }: HotelInfoProps) {
               <MapPin className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
               {hotel.address}, {hotel.city}, {hotel.country}
             </p>
-            <button 
-              onClick={() => setIsMapModalOpen(true)}
-              className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-            >
-              <Map className="h-4 w-4 mr-1" />
-              View on Map
-            </button>
+           
           </div>
         </div>
       </div>

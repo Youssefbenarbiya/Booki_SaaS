@@ -6,8 +6,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Separator } from "@/components/ui/separator"
-import { jsPDF } from "jspdf"
-
+import { generateCarBookingPDF } from "@/actions/generateCarBookingPDF"
 interface BookingDetails {
   booking: {
     id: number
@@ -18,6 +17,8 @@ interface BookingDetails {
     paymentStatus: string
     paymentMethod: string
     drivingLicense: string
+    paymentDate?: string
+    paymentId?: string
   }
   car: {
     brand: string
@@ -25,6 +26,10 @@ interface BookingDetails {
     plateNumber: string
     color: string
     year: number
+    category?: string
+    transmission?: string
+    fuelType?: string
+    features?: string[]
     images?: string[]
   } | null
   user: {
@@ -60,41 +65,47 @@ export default function PaymentSuccessPage() {
     fetchBookingDetails()
   }, [bookingId])
 
-  const generatePDF = () => {
-    if (!booking) return
+  const handleDownloadPDF = () => {
+    if (!booking || !booking.car || !booking.user) return
 
-    const doc = new jsPDF()
+    // Prepare data for PDF generation
+    const carData = {
+      id: booking.booking.id,
+      name: `${booking.car.brand} ${booking.car.model}`,
+      model: booking.car.model,
+      make: booking.car.brand,
+      year: booking.car.year,
+      color: booking.car.color,
+      licensePlate: booking.car.plateNumber,
+      category: booking.car.category,
+      transmission: booking.car.transmission,
+      fuelType: booking.car.fuelType,
+      features: booking.car.features || [],
+      image: booking.car.images?.[0],
+    }
 
-    // Header
-    doc.setFontSize(20)
-    doc.text("Booking Confirmation", 105, 20, { align: "center" })
+    const bookingData = {
+      id: booking.booking.id,
+      startDate: booking.booking.startDate,
+      endDate: booking.booking.endDate,
+      totalPrice: booking.booking.totalPrice,
+      status: booking.booking.status,
+      paymentStatus: booking.booking.paymentStatus,
+      paymentMethod: booking.booking.paymentMethod,
+      paymentDate: booking.booking.paymentDate,
+      paymentId: booking.booking.paymentId,
+    }
 
-    // Booking details
-    doc.setFontSize(12)
-    doc.text(`Booking ID: ${booking.booking.id}`, 20, 40)
-    doc.text(`Vehicle: ${booking.car?.brand} ${booking.car?.model}`, 20, 50)
-    doc.text(`Plate Number: ${booking.car?.plateNumber}`, 20, 60)
-    doc.text(
-      `Rental Period: ${new Date(
-        booking.booking.startDate
-      ).toLocaleDateString()} - ${new Date(
-        booking.booking.endDate
-      ).toLocaleDateString()}`,
-      20,
-      70
-    )
-    doc.text(`Total Amount: $${booking.booking.totalPrice}`, 20, 80)
+    const customerData = {
+      fullName: booking.user.name,
+      email: booking.user.email,
+      phone: booking.user.phoneNumber || undefined,
+      address: booking.user.address || undefined,
+      drivingLicense: booking.booking.drivingLicense,
+    }
 
-    // Customer details
-    doc.text("Customer Information:", 20, 100)
-    doc.text(`Name: ${booking.user?.name}`, 20, 110)
-    doc.text(`Email: ${booking.user?.email}`, 20, 120)
-    doc.text(`Phone: ${booking.user?.phoneNumber || "N/A"}`, 20, 130)
-    doc.text(`License: ${booking.booking.drivingLicense}`, 20, 140)
-    doc.text(`Address: ${booking.user?.address || "N/A"}`, 20, 150)
-
-    // Save the PDF
-    doc.save(`booking-confirmation-${booking.booking.id}.pdf`)
+    // Generate and download the PDF
+    generateCarBookingPDF(carData, bookingData, customerData)
   }
 
   if (!booking) {
@@ -103,9 +114,7 @@ export default function PaymentSuccessPage() {
         <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
-          <p className="text-gray-600 mb-6">
-            Your booking has been confirmed. Thank you for your reservation!
-          </p>
+          <p className="text-gray-600 mb-6">Your booking has been confirmed. Thank you for your reservation!</p>
           <Link href="/cars">
             <Button variant="default" className="w-full">
               Browse More Cars
@@ -122,9 +131,7 @@ export default function PaymentSuccessPage() {
         <div className="text-center mb-8">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
-          <p className="text-gray-600">
-            Your booking has been confirmed. Thank you for your reservation!
-          </p>
+          <p className="text-gray-600">Your booking has been confirmed. Thank you for your reservation!</p>
         </div>
 
         <Separator className="my-6" />
@@ -143,8 +150,7 @@ export default function PaymentSuccessPage() {
                   <div>
                     <p className="text-gray-500">Vehicle</p>
                     <p className="font-medium">
-                      {booking.car.brand} {booking.car.model} (
-                      {booking.car.year})
+                      {booking.car.brand} {booking.car.model} ({booking.car.year})
                     </p>
                   </div>
                   <div>
@@ -163,15 +169,11 @@ export default function PaymentSuccessPage() {
               </div>
               <div>
                 <p className="text-gray-500">Start Date</p>
-                <p className="font-medium">
-                  {new Date(booking.booking.startDate).toLocaleDateString()}
-                </p>
+                <p className="font-medium">{new Date(booking.booking.startDate).toLocaleDateString()}</p>
               </div>
               <div>
                 <p className="text-gray-500">End Date</p>
-                <p className="font-medium">
-                  {new Date(booking.booking.endDate).toLocaleDateString()}
-                </p>
+                <p className="font-medium">{new Date(booking.booking.endDate).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
@@ -193,9 +195,7 @@ export default function PaymentSuccessPage() {
                 </div>
                 <div>
                   <p className="text-gray-500">Phone</p>
-                  <p className="font-medium">
-                    {booking.user.phoneNumber || "N/A"}
-                  </p>
+                  <p className="font-medium">{booking.user.phoneNumber || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Address</p>
@@ -203,9 +203,7 @@ export default function PaymentSuccessPage() {
                 </div>
                 <div>
                   <p className="text-gray-500">Driving License</p>
-                  <p className="font-medium">
-                    {booking.booking.drivingLicense}
-                  </p>
+                  <p className="font-medium">{booking.booking.drivingLicense}</p>
                 </div>
               </div>
             )}
@@ -214,7 +212,7 @@ export default function PaymentSuccessPage() {
 
         <div className="flex flex-col space-y-3 mt-8">
           <Button
-            onClick={generatePDF}
+            onClick={handleDownloadPDF}
             variant="outline"
             className="w-full flex items-center justify-center gap-2"
           >
@@ -238,3 +236,4 @@ export default function PaymentSuccessPage() {
     </div>
   )
 }
+

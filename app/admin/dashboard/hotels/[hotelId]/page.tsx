@@ -113,6 +113,7 @@ export default async function HotelDetailsPage({
                 longitude={hotel.longitude}
                 height="400px"
                 readOnly={true}
+                enableNavigation={true}
               />
             </div>
           ) : (

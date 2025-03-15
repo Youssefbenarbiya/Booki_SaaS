@@ -1,4 +1,3 @@
-// generateTripBookingPDF.ts
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
@@ -27,98 +26,175 @@ export interface UserData {
   phone?: string
 }
 
-export function generateTripBookingPDF(
-  tripData: TripData,
-  bookingData: TripBookingData,
-  userData: UserData
-) {
+export function generateTripBookingPDF(tripData: TripData, bookingData: TripBookingData, userData: UserData) {
+  // Create PDF document
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "pt",
     format: "letter",
   })
 
+  // Add custom font
+  doc.setFont("helvetica")
+
   // Constants for styling
   const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 40
+  const primaryColor = [41, 128, 185] // RGB for a nice blue
+  const secondaryColor = [52, 73, 94] // RGB for a dark slate
+  const accentColor = [26, 188, 156] // RGB for a teal accent
   let currentY = margin
 
-  // Header
-  doc.setFontSize(22)
-  doc.setTextColor(40)
-  doc.text("Trip Booking Confirmation", pageWidth / 2, currentY, {
-    align: "center",
-  })
-  currentY += 30
+  // Add decorative header background
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+  doc.rect(0, 0, pageWidth, 120, "F")
 
-  // Draw separator line
-  doc.setLineWidth(1)
-  doc.line(margin, currentY, pageWidth - margin, currentY)
-  currentY += 20
+  // Add white decorative shape
+  doc.setFillColor(255, 255, 255)
+  doc.setDrawColor(255, 255, 255)
+  doc.circle(pageWidth - 60, 60, 100, "F")
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2], 0.8)
+  doc.circle(pageWidth - 40, 40, 50, "F")
 
-  // Helper to draw a section header and reset text color
-  const drawSectionHeader = (title: string) => {
-    doc.setFontSize(16)
-    doc.setTextColor(255, 255, 255) // White text
-    doc.setFillColor(0, 102, 204) // Blue background
-    doc.rect(margin, currentY, pageWidth - margin * 2, 25, "F")
-    doc.text(title, margin + 10, currentY + 17)
+  // Header text
+  doc.setFontSize(28)
+  doc.setTextColor(255, 255, 255)
+  doc.setFont("helvetica", "bold")
+  doc.text("BOOKING CONFIRMATION", margin, 70)
 
-    currentY += 35
-    doc.setTextColor(0) // Reset text color to black
-  }
-
-  // Section: User Details
-  drawSectionHeader("User Details")
   doc.setFontSize(12)
-  doc.text(`Name: ${userData.name}`, margin, currentY)
-  currentY += 18
-  doc.text(`Email: ${userData.email}`, margin, currentY)
-  currentY += 18
-  if (userData.phone) {
-    doc.text(`Phone: ${userData.phone}`, margin, currentY)
-    currentY += 18
+  doc.setFont("helvetica", "normal")
+  doc.text("Your adventure awaits!", margin, 90)
+
+  currentY = 140
+
+  // Helper to draw a section header with improved styling
+  const drawSectionHeader = (title: string) => {
+    doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2])
+    doc.roundedRect(margin, currentY, pageWidth - margin * 2, 30, 3, 3, "F")
+
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(14)
+    doc.setTextColor(255, 255, 255)
+    doc.text(title, margin + 15, currentY + 20)
+
+    currentY += 40
+    doc.setTextColor(60, 60, 60) // Dark gray text for content
+    doc.setFont("helvetica", "normal")
   }
-  currentY += 10
+
+  // Helper to draw info item with label and value
+  const drawInfoItem = (label: string, value: string, indent = 0) => {
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(11)
+    doc.text(label, margin + indent, currentY)
+
+    doc.setFont("helvetica", "normal")
+    doc.text(value, margin + 150 + indent, currentY)
+
+    currentY += 20
+  }
 
   // Section: Trip Details
   drawSectionHeader("Trip Details")
-  doc.text(`Trip Name: ${tripData.name}`, margin, currentY)
-  currentY += 18
-  doc.text(`Destination: ${tripData.destination}`, margin, currentY)
-  currentY += 18
-  doc.text(`Start Date: ${tripData.startDate}`, margin, currentY)
-  currentY += 18
-  doc.text(`End Date: ${tripData.endDate}`, margin, currentY)
-  currentY += 18
-  doc.text(`Price per Seat: $${tripData.price}`, margin, currentY)
+  drawInfoItem("Trip Name:", tripData.name)
+  drawInfoItem("Destination:", tripData.destination)
+  drawInfoItem("Start Date:", tripData.startDate)
+  drawInfoItem("End Date:", tripData.endDate)
+  drawInfoItem(
+    "Price per Seat:",
+    `$${tripData.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  )
   currentY += 10
 
   // Section: Booking Details
   drawSectionHeader("Booking Details")
-  doc.text(`Seats Booked: ${bookingData.seatsBooked}`, margin, currentY)
-  currentY += 18
-  doc.text(`Total Price: $${bookingData.totalPrice}`, margin, currentY)
-  currentY += 18
-  doc.text(`Booking Date: ${bookingData.bookingDate}`, margin, currentY)
-  currentY += 20
+  drawInfoItem("Seats Booked:", bookingData.seatsBooked.toString())
+  drawInfoItem(
+    "Total Price:",
+    `$${bookingData.totalPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  )
+  drawInfoItem("Booking Date:", bookingData.bookingDate)
+  currentY += 10
+
+  // Section: User Details
+  drawSectionHeader("Traveler Information")
+  drawInfoItem("Name:", userData.name)
+  drawInfoItem("Email:", userData.email)
+  if (userData.phone) {
+    drawInfoItem("Phone:", userData.phone)
+  }
+  currentY += 10
 
   // Section: Trip Activities (if available)
   if (tripData.activities && tripData.activities.length > 0) {
     drawSectionHeader("Trip Activities")
+
+    // Improved table styling
     autoTable(doc, {
       startY: currentY,
-      head: [["Activity", "Scheduled Date", "Description"]],
+      head: [["Activity", "Date", "Description"]],
       body: tripData.activities.map((activity) => [
         activity.activityName,
         activity.scheduledDate,
         activity.description || "",
       ]),
       theme: "grid",
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [0, 102, 204], textColor: [255, 255, 255] },
+      styles: {
+        fontSize: 10,
+        cellPadding: 6,
+        lineColor: [220, 220, 220],
+        lineWidth: 0.5,
+      },
+      headStyles: {
+        fillColor: secondaryColor as [number, number, number],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        halign: "center",
+      },
+      alternateRowStyles: {
+        fillColor: [240, 240, 240],
+      },
+      columnStyles: {
+        0: { fontStyle: "bold" },
+        2: { cellWidth: "auto" },
+      },
     })
+
+    // Update currentY based on the table end position
+    const finalY = (doc as any).lastAutoTable.finalY || currentY
+    currentY = finalY + 20
   }
+
+  // Add a decorative footer
+  const footerY = pageHeight - 80
+  doc.setFillColor(accentColor[0], accentColor[1], accentColor[2])
+  doc.rect(0, footerY, pageWidth, 80, "F")
+
+  // Footer text
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(10)
+  doc.text("Thank you for booking with us!", pageWidth / 2, footerY + 30, { align: "center" })
+  doc.text("For questions or changes, please contact customer service.", pageWidth / 2, footerY + 50, {
+    align: "center",
+  })
+
+  // Add page number
+  doc.setFontSize(9)
+  doc.text(`Page 1 of 1 | Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 20, {
+    align: "center",
+  })
+
+  // Add a QR code placeholder (you can replace this with actual QR code generation)
+  doc.setDrawColor(60, 60, 60)
+  doc.setLineWidth(1)
+  doc.rect(pageWidth - 100, currentY - 100, 70, 70)
+  doc.setFontSize(8)
+  doc.setTextColor(60, 60, 60)
+  doc.text("Booking Reference", pageWidth - 65, currentY - 110, { align: "center" })
+  doc.text("Scan to view details", pageWidth - 65, currentY - 20, { align: "center" })
 
   doc.save("trip-booking-confirmation.pdf")
 }
+
