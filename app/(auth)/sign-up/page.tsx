@@ -48,7 +48,7 @@ export default function SignUp() {
       password: values.password,
       name: values.name,
       phoneNumber: values.phoneNumber,
-      role: values.isAgency ? "agency" : "user",
+      role: values.isAgency ? "agency owner" : "customer",
     }
 
     console.log("Data sent to authClient:", data)

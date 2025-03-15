@@ -7,7 +7,7 @@ import { openAPI } from "better-auth/plugins"
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
-  
+
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
@@ -15,7 +15,7 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      role: { type: "string", required: true },
+      role: { type: "string", required: true, defaultValue: "customer" },
       phoneNumber: { type: "string", required: true },
       address: { type: "string", required: false },
       image: { type: "string", required: false },
@@ -47,9 +47,7 @@ export const auth = betterAuth({
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
     },
   },
-  plugins: [
-    openAPI()
-  ],
+  plugins: [openAPI()],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
