@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import db from "@/db/drizzle"
-import { user, account, tripBookings, roomBookings, session } from "@/db/schema"
+import { user, account, tripBookings, roomBookings, session, carBookings, blogs } from "@/db/schema"
 import { eq } from "drizzle-orm"
 
 export async function banUser(userId: string) {
@@ -17,20 +17,27 @@ export async function banUser(userId: string) {
   }
 
   try {
-    await db.transaction(async (tx) => {
-      // First revoke all sessions
-      await tx.delete(session).where(eq(session.userId, userId))
+    // Revoke all sessions
+    await db.delete(session).where(eq(session.userId, userId))
 
-      // Then ban the user
-      await tx
-        .update(user)
-        .set({
-          banned: true,
-          banReason: "Banned by admin",
-          updatedAt: new Date(),
-        })
-        .where(eq(user.id, userId))
-    })
+    // Update status of car bookings to 'banned'
+    await db
+      .update(carBookings)
+      .set({
+        status: "canceled",
+        updatedAt: new Date(),
+      })
+      .where(eq(carBookings.user_id, userId))
+
+    // Ban the user
+    await db
+      .update(user)
+      .set({
+        banned: true,
+        banReason: "Banned by admin",
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, userId))
 
     revalidatePath("/admin/dashboard/users")
   } catch (error) {
@@ -100,16 +107,31 @@ export async function deleteUser(userId: string) {
   }
 
   try {
-    await db.transaction(async (tx) => {
-      // Delete all related records first
-      await tx.delete(tripBookings).where(eq(tripBookings.userId, userId))
-      await tx.delete(roomBookings).where(eq(roomBookings.userId, userId))
-      await tx.delete(session).where(eq(session.userId, userId))
-      await tx.delete(account).where(eq(account.userId, userId))
-
-      // Finally delete the user
-      await tx.delete(user).where(eq(user.id, userId))
-    })
+    // Delete all trip bookings related to the user
+    await db.delete(tripBookings).where(eq(tripBookings.userId, userId))
+    
+    // Delete all room bookings related to the user
+    await db.delete(roomBookings).where(eq(roomBookings.userId, userId))
+    
+    // Delete all car bookings related to the user
+    await db.delete(carBookings).where(eq(carBookings.user_id, userId))
+    
+    // Set blog authorId to null rather than deleting them
+    await db
+      .update(blogs)
+      .set({
+        authorId: null,
+      })
+      .where(eq(blogs.authorId, userId))
+    
+    // Delete sessions
+    await db.delete(session).where(eq(session.userId, userId))
+    
+    // Delete accounts
+    await db.delete(account).where(eq(account.userId, userId))
+    
+    // Finally delete the user
+    await db.delete(user).where(eq(user.id, userId))
 
     revalidatePath("/admin/dashboard/users")
   } catch (error) {
