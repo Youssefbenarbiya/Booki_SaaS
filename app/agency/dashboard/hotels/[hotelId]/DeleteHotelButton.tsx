@@ -1,6 +1,6 @@
 "use client"
 
-import { deleteHotel } from "@/actions/hotelActions"
+import { deleteHotel } from "@/actions/hotels&rooms/hotelActions"
 import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 

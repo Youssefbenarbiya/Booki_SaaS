@@ -2,7 +2,7 @@
 
 import db from "@/db/drizzle"
 import { trips } from "@/db/schema"
-import { and, gte, sql, like } from "drizzle-orm"
+import { and, gte, sql } from "drizzle-orm"
 
 export async function searchTrips(destination: string, startDate: string) {
   try {

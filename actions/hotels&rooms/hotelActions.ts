@@ -1,6 +1,6 @@
 "use server"
 
-import db from "../db/drizzle"
+import db from "../../db/drizzle"
 import { hotel, room, roomAvailability } from "@/db/schema"
 import { hotelSchema, type HotelInput } from "@/lib/validations/hotelSchema"
 import { eq } from "drizzle-orm"

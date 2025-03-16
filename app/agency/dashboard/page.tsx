@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Overview } from "../../../components/dashboard/agency/Overview"
 import { RecentSales } from "../../../components/dashboard/agency/RecentSales"
-import { getDashboardStats } from "@/actions/dashboardActions"
+import { getDashboardStats } from "@/actions/agency/dashboardActions"
 import { formatPrice } from "@/lib/utils"
 
 export default async function DashboardPage() {

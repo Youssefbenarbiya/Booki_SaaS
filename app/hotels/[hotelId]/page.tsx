@@ -4,7 +4,7 @@ import HotelGallery from "@/components/hotel-details/HotelGallery"
 import HotelInfo from "@/components/hotel-details/HotelInfo"
 import db from "@/db/drizzle"
 import RoomsList from "@/components/hotel-details/RoomsList"
-import { getHotelById } from "@/actions/getHotelById"
+import { getHotelById } from "@/actions/hotels&rooms/getHotelById"
 
 export async function generateStaticParams() {
   const hotels = await db.query.hotel.findMany()

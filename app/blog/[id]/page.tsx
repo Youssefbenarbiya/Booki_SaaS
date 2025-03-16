@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { getBlogById, getBlogs } from "@/actions/blogActions"
+import { getBlogById, getBlogs } from "@/actions/blogs/blogActions"
 import { notFound } from "next/navigation"
 
 // Generate static params for blogs

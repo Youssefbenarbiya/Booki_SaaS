@@ -1,4 +1,4 @@
-import { getBlogCategories } from "../../../../../actions/blogActions"
+import { getBlogCategories } from "../../../../../actions/blogs/blogActions"
 import { BlogForm } from "./blog-form"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"

@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation"
-import { getCarById } from "../../../../../actions/carActions"
+import { getCarById } from "../../../../../actions/cars/carActions"
 import { CarForm } from "../new/car-form"
 
 interface CarEditPageProps {
-  params: Promise<{ id: string }> 
+  params: Promise<{ id: string }>
 }
 
 export default async function CarEditPage({ params }: CarEditPageProps) {

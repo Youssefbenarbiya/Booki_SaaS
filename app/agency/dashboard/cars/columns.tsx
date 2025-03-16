@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatPrice } from "@/lib/utils"
 import { CarType } from "./types"
 import { useRouter } from "next/navigation"
-import { deleteCar } from "@/actions/carActions"
+import { deleteCar } from "@/actions/cars/carActions"
 import { useState } from "react"
 import { toast } from "sonner"
 import {

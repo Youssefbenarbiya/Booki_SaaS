@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
-import { generateHotelRoomBookingPDF } from "@/actions/generateInvoiceRoom"
+import { generateHotelRoomBookingPDF } from "@/actions/hotels&rooms/generateInvoiceRoom"
 
 export default function PaymentSuccessPage() {
   // Get bookingId from query parameters

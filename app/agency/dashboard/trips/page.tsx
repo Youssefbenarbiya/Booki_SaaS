@@ -1,8 +1,8 @@
-import { getTrips } from "@/actions/tripActions"
 import Link from "next/link"
 import Image from "next/image"
 import { formatPrice } from "@/lib/utils"
 import DeleteTripButton from "./[tripId]/DeleteTripButton"
+import { getTrips } from "@/actions/trips/tripActions"
 
 export default async function TripsPage() {
   const trips = await getTrips()

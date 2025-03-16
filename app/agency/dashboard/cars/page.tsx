@@ -3,7 +3,7 @@ import { CarsTable } from "./cars-table"
 import { columns } from "./columns"
 import Link from "next/link"
 import { Plus } from "lucide-react"
-import { getCars } from "../../../../actions/carActions"
+import { getCars } from "../../../../actions/cars/carActions"
 
 export default async function CarsPage() {
   const { cars } = await getCars()

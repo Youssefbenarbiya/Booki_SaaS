@@ -9,8 +9,8 @@ import { toast } from "sonner"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import { getCarById, getCarAvailability } from "@/actions/carActions"
-import { bookCar } from "@/actions/bookingCars"
+import { getCarById, getCarAvailability } from "@/actions/cars/carActions"
+import { bookCar } from "@/actions/cars/bookingCars"
 import { DatePicker } from "@/components/ui/date-picker"
 import PaymentSelector from "@/components/payment/PaymentSelector"
 import {
@@ -43,7 +43,7 @@ export type BookingFormValues = z.infer<typeof bookingFormSchema>
 
 interface BookCarFormProps {
   carId: string
-  session: any 
+  session: any
 }
 
 const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {

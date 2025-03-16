@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getTripById } from "@/actions/tripActions"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import {
@@ -18,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatPrice, getDurationInDays, formatDateRange } from "@/lib/utils"
 import Link from "next/link"
+import { getTripById } from "@/actions/trips/tripActions"
 
 interface TripPageProps {
   params: {

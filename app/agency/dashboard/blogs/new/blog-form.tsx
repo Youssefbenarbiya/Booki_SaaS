@@ -26,7 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { createBlog, updateBlog } from "../../../../../actions/blogActions"
+import {
+  createBlog,
+  updateBlog,
+} from "../../../../../actions/blogs/blogActions"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"

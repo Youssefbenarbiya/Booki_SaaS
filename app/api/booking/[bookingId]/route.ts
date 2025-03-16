@@ -1,6 +1,6 @@
 // app/api/booking/[bookingId]/route.ts
 import { NextResponse } from "next/server"
-import { getCarBookingDetails } from "@/actions/get-car-booking"
+import { getCarBookingDetails } from "@/actions/cars/get-car-booking"
 
 export async function GET(
   request: Request,

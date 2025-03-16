@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { getTripById } from "@/actions/tripActions"
+import { getTripById } from "@/actions/trips/tripActions"
 import BookingForm from "./BookingForm"
 import { Separator } from "@/components/ui/separator"
 import { formatPrice, formatDateRange } from "@/lib/utils"

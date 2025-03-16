@@ -1,4 +1,4 @@
-import { getHotelById } from "@/actions/hotelActions"
+import { getHotelById } from "@/actions/hotels&rooms/hotelActions"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"

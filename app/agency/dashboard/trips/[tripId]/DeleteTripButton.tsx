@@ -1,6 +1,6 @@
 "use client"
 
-import { deleteTrip } from "@/actions/tripActions"
+import { deleteTrip } from "@/actions/trips/tripActions"
 import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 

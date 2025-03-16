@@ -19,7 +19,7 @@ import {
   createRoomBooking,
   checkRoomAvailability,
   getBookedDatesForRoom,
-} from "@/actions/roomBookingActions"
+} from "@/actions/hotels&rooms/roomBookingActions"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import PaymentSelector from "@/components/payment/PaymentSelector"
@@ -42,7 +42,6 @@ export interface RoomBookingWithPayment extends RoomBookingRecord {
   url?: string
   paymentLink?: string
 }
-
 
 interface BookRoomFormProps {
   roomId: string

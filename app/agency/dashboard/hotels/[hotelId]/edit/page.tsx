@@ -1,6 +1,6 @@
 // app/agency/dashboard/hotels/[hotelId]/edit/page.tsx
 
-import { getHotelById } from "@/actions/hotelActions"
+import { getHotelById } from "@/actions/hotels&rooms/hotelActions"
 import EditHotelForm from "./EditHotelForm"
 import { notFound } from "next/navigation"
 

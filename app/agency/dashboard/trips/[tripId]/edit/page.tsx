@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getTripById } from "@/actions/tripActions"
+import { getTripById } from "@/actions/trips/tripActions"
 import { notFound } from "next/navigation"
 import EditTripForm from "./EditTripForm"
 

@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CarType } from "../types"
-import { createCar, updateCar } from "../../../../../actions/carActions"
+import { createCar, updateCar } from "../../../../../actions/cars/carActions"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"

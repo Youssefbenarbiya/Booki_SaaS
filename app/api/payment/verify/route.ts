@@ -1,4 +1,4 @@
-import { updateBookingPaymentStatus } from "@/actions/roomBookingActions"
+import { updateBookingPaymentStatus } from "@/actions/hotels&rooms/roomBookingActions"
 import { verifyPayment } from "@/services/roomFlouciPayment"
 import { NextRequest, NextResponse } from "next/server"
 

@@ -3,7 +3,7 @@ import { BlogsTable } from "./blogs-table"
 import { columns } from "./columns"
 import Link from "next/link"
 import { Plus } from "lucide-react"
-import { getBlogs } from "../../../../actions/blogActions"
+import { getBlogs } from "../../../../actions/blogs/blogActions"
 
 export default async function BlogsPage() {
   const { blogs } = await getBlogs()

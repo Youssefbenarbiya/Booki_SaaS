@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { Metadata } from "next"
 import { headers } from "next/headers"
-import { getBookingHistory } from "@/actions/getBookingHistory"
+import { getBookingHistory } from "@/actions/users/getBookingHistory"
 import BookingHistoryClient from "./BookingHistory"
 
 export const metadata: Metadata = {

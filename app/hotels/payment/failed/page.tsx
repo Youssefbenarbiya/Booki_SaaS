@@ -1,4 +1,4 @@
-import { updateBookingPaymentStatus } from "@/actions/roomBookingActions"
+import { updateBookingPaymentStatus } from "@/actions/hotels&rooms/roomBookingActions"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"

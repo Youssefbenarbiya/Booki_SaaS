@@ -1,12 +1,12 @@
 "use server"
 
-import db from "../db/drizzle"
 import { tripBookings, trips } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { generateTripPaymentLink } from "@/services/tripPaymentFlouci"
 import { sql } from "drizzle-orm"
 import { stripe } from "@/lib/stripe"
+import db from "@/db/drizzle"
 
 interface CreateBookingParams {
   tripId: number

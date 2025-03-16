@@ -1,9 +1,9 @@
 "use server"
 
 import { cars } from "@/db/schema"
-import { and, eq, or, ilike } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { CarFormValues } from "../app/agency/dashboard/cars/types"
+import { CarFormValues } from "../../app/agency/dashboard/cars/types"
 import db from "@/db/drizzle"
 
 export async function getCars() {

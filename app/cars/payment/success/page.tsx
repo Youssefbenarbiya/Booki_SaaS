@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Separator } from "@/components/ui/separator"
-import { generateCarBookingPDF } from "@/actions/generateCarBookingPDF"
+import { generateCarBookingPDF } from "@/actions/cars/generateCarBookingPDF"
 interface BookingDetails {
   booking: {
     id: number

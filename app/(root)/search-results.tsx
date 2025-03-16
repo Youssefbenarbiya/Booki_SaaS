@@ -2,9 +2,9 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { searchTrips } from "@/actions/searchTrips"
-import { searchHotels } from "@/actions/searchHotels"
-import { searchCars } from "@/actions/carActions"
+import { searchTrips } from "@/actions/trips/searchTrips"
+import { searchHotels } from "@/actions/hotels&rooms/searchHotels"
+import { searchCars } from "@/actions/cars/carActions"
 import HotelList from "@/components/cards/HotelList"
 import { HotelFilter } from "@/components/filter/hotel/HotelFilter"
 import { TripFilter, TripFilterOptions } from "@/components/filter/TripFilter"
@@ -126,13 +126,13 @@ export function SearchResults({
             searchParams.checkOut || ""
           )
           console.log("Hotels search results:", hotels)
-          
+
           // Ensure amenities is an array
-          const processedHotels = hotels.map(hotel => ({
+          const processedHotels = hotels.map((hotel) => ({
             ...hotel,
-            amenities: hotel.amenities || []
+            amenities: hotel.amenities || [],
           }))
-          
+
           setHotelsData(processedHotels)
           setFilteredHotels(processedHotels)
         } else if (searchParams.type === "rent") {
@@ -163,36 +163,31 @@ export function SearchResults({
     fetchData()
   }, [searchParams])
 
-  const handleHotelFilterChange = useCallback(
-    (filteredResults: Hotel[]) => {
-      setFilteredHotels(filteredResults)
-    },
-    []
-  )
+  const handleHotelFilterChange = useCallback((filteredResults: Hotel[]) => {
+    setFilteredHotels(filteredResults)
+  }, [])
 
   const handleTripFilterChange = useCallback(
     (filters: TripFilterOptions) => {
       // Apply filters to trips data
-      const filtered = tripsData.filter(trip => {
-        const price = Number(trip.price) || 0;
-        const priceMatch = price >= filters.priceRange.min && price <= filters.priceRange.max;
-        
+      const filtered = tripsData.filter((trip) => {
+        const price = Number(trip.price) || 0
+        const priceMatch =
+          price >= filters.priceRange.min && price <= filters.priceRange.max
+
         // Add more filtering logic as needed
-        
-        return priceMatch;
-      });
-      
-      setFilteredTrips(filtered);
+
+        return priceMatch
+      })
+
+      setFilteredTrips(filtered)
     },
     [tripsData]
-  );
-
-  const handleCarFilterChange = useCallback(
-    (filteredCars: Car[]) => {
-      setFilteredCars(filteredCars)
-    },
-    []
   )
+
+  const handleCarFilterChange = useCallback((filteredCars: Car[]) => {
+    setFilteredCars(filteredCars)
+  }, [])
 
   // Render a no results message
   const renderNoResults = () => {
@@ -352,7 +347,7 @@ export function SearchResults({
                   searchParams={{
                     pickupLocation: searchParams.pickupLocation || "",
                     pickupDate: searchParams.pickupDate || "",
-                    returnDate: searchParams.returnDate || ""
+                    returnDate: searchParams.returnDate || "",
                   }}
                 />
               </div>
@@ -396,7 +391,7 @@ export function SearchResults({
                       searchParams={{
                         pickupLocation: searchParams.pickupLocation || "",
                         pickupDate: searchParams.pickupDate || "",
-                        returnDate: searchParams.returnDate || ""
+                        returnDate: searchParams.returnDate || "",
                       }}
                     />
                   )}

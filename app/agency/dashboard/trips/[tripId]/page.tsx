@@ -1,9 +1,9 @@
-import { getTripById } from "@/actions/tripActions"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { formatPrice } from "@/lib/utils"
 import DeleteTripButton from "./DeleteTripButton"
+import { getTripById } from "@/actions/trips/tripActions"
 
 export default async function TripDetailsPage({
   params,

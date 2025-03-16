@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { getBlogs } from "@/actions/blogActions"
+import { getBlogs } from "@/actions/blogs/blogActions"
 
 export default async function BlogPage() {
   const { blogs = [] } = await getBlogs()

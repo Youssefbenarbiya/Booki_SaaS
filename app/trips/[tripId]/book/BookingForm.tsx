@@ -1,6 +1,5 @@
 "use client"
 
-import { createBookingWithPayment } from "@/actions/tripBookingActions"
 import { formatPrice } from "@/lib/utils"
 import { useState, useTransition } from "react"
 import {
@@ -16,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Minus, Plus, CheckCircle, Loader2 } from "lucide-react"
 import PaymentSelector from "@/components/payment/PaymentSelector"
+import { createBookingWithPayment } from "@/actions/trips/tripBookingActions"
 
 interface BookingFormProps {
   tripId: number

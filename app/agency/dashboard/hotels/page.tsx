@@ -1,4 +1,4 @@
-import { getHotels } from "@/actions/hotelActions"
+import { getHotels } from "@/actions/hotels&rooms/hotelActions"
 import Link from "next/link"
 import Image from "next/image"
 import DeleteHotelButton from "./[hotelId]/DeleteHotelButton"

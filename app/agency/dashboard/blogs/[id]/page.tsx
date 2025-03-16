@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import {
   getBlogById,
   getBlogCategories,
-} from "../../../../../actions/blogActions"
+} from "../../../../../actions/blogs/blogActions"
 import { BlogForm } from "../new/blog-form"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"

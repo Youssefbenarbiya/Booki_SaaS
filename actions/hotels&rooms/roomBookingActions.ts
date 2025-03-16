@@ -1,6 +1,6 @@
 "use server"
 
-import db from "../db/drizzle"
+import db from "../../db/drizzle"
 import { room, roomBookings } from "@/db/schema"
 import { eq, and, or, between, lte, gte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
