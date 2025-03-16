@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
 
@@ -111,52 +112,58 @@ export default function BookingHistoryClient({
       {viewType === "list" ? (
         <div className="space-y-4">
           {filteredBookings.map((booking, index) => (
-            <div
+            <Link
               key={`${booking.id}-${index}`}
-              className="bg-white rounded-lg border p-4 flex items-center gap-4"
+              href={`/user/profile/bookingHistory/${booking.type}/${booking.id}`}
+              className="block"
             >
-              <Image
-                src={booking.image}
-                alt={booking.name}
-                width={80}
-                height={80}
-                className="rounded-md"
-              />
-              <div className="flex-1">
-                <h3 className="font-semibold">{booking.name}</h3>
-                <p>
-                  {booking.startDate} - {booking.endDate}
-                </p>
-                <p>Status: {booking.status}</p>
-                <p>Total: {booking.totalPrice}</p>
+              <div className="bg-white rounded-lg border p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow">
+                <Image
+                  src={booking.image}
+                  alt={booking.name}
+                  width={80}
+                  height={80}
+                  className="rounded-md"
+                />
+                <div className="flex-1">
+                  <h3 className="font-semibold">{booking.name}</h3>
+                  <p>
+                    {booking.startDate} - {booking.endDate}
+                  </p>
+                  <p>Status: {booking.status}</p>
+                  <p>Total: {booking.totalPrice}</p>
+                </div>
+                <ChevronRight className="h-5 w-5" />
               </div>
-              <ChevronRight className="h-5 w-5" />
-            </div>
+            </Link>
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBookings.map((booking, index) => (
-            <div
+            <Link
               key={`${booking.id}-${index}`}
-              className="bg-white rounded-lg border p-4 flex flex-col gap-4"
+              href={`/user/profile/bookingHistory/${booking.type}/${booking.id}`}
+              className="block"
             >
-              <Image
-                src={booking.image}
-                alt={booking.name}
-                width={200}
-                height={150}
-                className="rounded-md"
-              />
-              <div>
-                <h3 className="font-semibold">{booking.name}</h3>
-                <p>
-                  {booking.startDate} - {booking.endDate}
-                </p>
-                <p>Status: {booking.status}</p>
-                <p>Total: {booking.totalPrice}</p>
+              <div className="bg-white rounded-lg border p-4 flex flex-col gap-4 cursor-pointer hover:shadow-md transition-shadow">
+                <Image
+                  src={booking.image}
+                  alt={booking.name}
+                  width={200}
+                  height={150}
+                  className="rounded-md"
+                />
+                <div>
+                  <h3 className="font-semibold">{booking.name}</h3>
+                  <p>
+                    {booking.startDate} - {booking.endDate}
+                  </p>
+                  <p>Status: {booking.status}</p>
+                  <p>Total: {booking.totalPrice}</p>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
