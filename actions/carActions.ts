@@ -3,7 +3,7 @@
 import { cars } from "@/db/schema"
 import { and, eq, or, ilike } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { CarFormValues } from "../app/admin/dashboard/cars/types"
+import { CarFormValues } from "../app/agency/dashboard/cars/types"
 import db from "@/db/drizzle"
 
 export async function getCars() {
@@ -52,7 +52,7 @@ export async function createCar(data: CarFormValues) {
       })
       .returning()
 
-    revalidatePath("/admin/dashboard/cars")
+    revalidatePath("/agency/dashboard/cars")
     return { car: newCar[0] }
   } catch (error) {
     console.error("Failed to create car:", error)
@@ -78,7 +78,7 @@ export async function updateCar(id: number, data: CarFormValues) {
       .where(eq(cars.id, id))
       .returning()
 
-    revalidatePath("/admin/dashboard/cars")
+    revalidatePath("/agency/dashboard/cars")
     return { car: updatedCar[0] }
   } catch (error) {
     console.error(`Failed to update car with ID ${id}:`, error)
@@ -89,7 +89,7 @@ export async function updateCar(id: number, data: CarFormValues) {
 export async function deleteCar(id: number) {
   try {
     await db.delete(cars).where(eq(cars.id, id))
-    revalidatePath("/admin/dashboard/cars")
+    revalidatePath("/agency/dashboard/cars")
     return { success: true }
   } catch (error) {
     console.error(`Failed to delete car with ID ${id}:`, error)

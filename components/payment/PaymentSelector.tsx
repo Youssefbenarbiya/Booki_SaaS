@@ -13,29 +13,29 @@ export default function PaymentSelector({
   setSelectedPaymentMethod,
 }: PaymentSelectorProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 p-4 rounded-lg bg-gray-50 shadow-xl max-w-xs">
       <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#FF8A00] text-white font-bold">
+        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs font-bold">
           3
         </div>
-        <h2 className="text-[#FF8A00] font-medium">Payment Method</h2>
+        <h2 className="text-orange-500 font-bold text-sm">Payment Method</h2>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => setSelectedPaymentMethod("flouci")}
-          className={`p-4 border rounded-lg flex flex-col items-center gap-2 ${
+          className={`p-3 border rounded-lg flex flex-col items-center gap-1 transition-transform transform hover:scale-105 hover:shadow-lg ${
             selectedPaymentMethod === "flouci"
-              ? "border-[#FF8A00] bg-[#FFF8EE]"
+              ? "border-orange-500 bg-white"
               : "border-gray-200"
           }`}
         >
           <Image
             src="/assets/payment/flouci-logo.png"
             alt="Flouci"
-            width={80}
-            height={30}
+            width={70}
+            height={25}
             className="object-contain"
           />
         </button>
@@ -43,17 +43,17 @@ export default function PaymentSelector({
         <button
           type="button"
           onClick={() => setSelectedPaymentMethod("stripe")}
-          className={`p-4 border rounded-lg flex flex-col items-center gap-2 ${
+          className={`p-3 border rounded-lg flex flex-col items-center gap-1 transition-transform transform hover:scale-105 hover:shadow-lg ${
             selectedPaymentMethod === "stripe"
-              ? "border-[#FF8A00] bg-[#FFF8EE]"
+              ? "border-orange-500 bg-white"
               : "border-gray-200"
           }`}
         >
           <Image
             src="/assets/payment/Stripe-logo.png"
             alt="Stripe"
-            width={80}
-            height={30}
+            width={70}
+            height={25}
             className="object-contain"
           />
         </button>

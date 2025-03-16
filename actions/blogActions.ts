@@ -121,7 +121,7 @@ export async function createBlog(formData: FormData, authorId: string) {
       })
       .returning()
 
-    revalidatePath("/admin/dashboard/blogs")
+    revalidatePath("/agency/dashboard/blogs")
     return { success: true }
   } catch (error) {
     console.error("Blog creation error:", error)
@@ -206,7 +206,7 @@ export async function updateBlog(id: number, formData: FormData) {
       })
       .where(eq(blogs.id, id))
 
-    revalidatePath("/admin/dashboard/blogs")
+    revalidatePath("/agency/dashboard/blogs")
     return { success: true }
   } catch (error) {
     console.error("Blog update error:", error)
@@ -217,7 +217,7 @@ export async function updateBlog(id: number, formData: FormData) {
 export async function deleteBlog(id: number) {
   try {
     await db.delete(blogs).where(eq(blogs.id, id))
-    revalidatePath("/admin/dashboard/blogs")
+    revalidatePath("/agency/dashboard/blogs")
   } catch (error) {
     console.error("Blog deletion error:", error)
     throw new Error("Failed to delete blog")

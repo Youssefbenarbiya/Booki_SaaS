@@ -23,5 +23,5 @@ export default async function BookingPage({ params }: BookingPageProps) {
     )
   }
 
-  return <BookCarForm carId={carId} />
+  return <BookCarForm carId={carId} session={session} />
 }
