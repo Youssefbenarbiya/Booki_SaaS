@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server"
 
 import { eq } from "drizzle-orm"
@@ -66,16 +67,15 @@ export async function getBookingDetail(
           endDate: booking.trip.endDate,
           status: booking.status,
           totalPrice: booking.totalPrice,
-          description: booking.trip.description,
-          location: booking.trip.destination, // Corrected: destination is a string field
+          description: booking.trip.description ?? undefined,
+          location: booking.trip.destination,
           additionalInfo: {
             bookingDate: booking.bookingDate,
-            participants: booking.seatsBooked, // Corrected: using seatsBooked
+            participants: booking.seatsBooked,
             capacity: booking.trip.capacity,
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
             activities: activities.length > 0 ? activities : undefined,
-            specialRequests: booking.specialRequests,
           },
         }
       }
@@ -132,7 +132,6 @@ export async function getBookingDetail(
           location: hotelLocation,
           additionalInfo: {
             bookingDate: booking.bookingDate,
-            guests: booking.guests,
             roomType: booking.room.roomType,
             roomCapacity: booking.room.capacity,
             hotelRating: booking.room.hotel.rating,
@@ -142,7 +141,6 @@ export async function getBookingDetail(
             pricePerNightChild: booking.room.pricePerNightChild,
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
-            specialRequests: booking.specialRequests,
           },
         }
       }
@@ -191,7 +189,6 @@ export async function getBookingDetail(
             plateNumber: booking.car.plateNumber,
             dropoffLocation: dropoffLocation,
             dailyRate: booking.car.price,
-            insurance: booking.insurance_option,
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
           },

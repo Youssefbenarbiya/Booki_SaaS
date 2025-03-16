@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Plane, Building, Car } from "lucide-react"
 
 type BookingDisplay = {
   id: number
@@ -46,23 +46,57 @@ export default function BookingHistoryClient({
           }
         })
 
+  // Get icon based on booking type
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "trip":
+        return <Plane className="h-4 w-4 text-blue-500" />
+      case "stay":
+        return <Building className="h-4 w-4 text-green-500" />
+      case "car":
+        return <Car className="h-4 w-4 text-orange-500" />
+      default:
+        return null
+    }
+  }
+
+  // Get status color based on status
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "confirmed":
+        return "text-green-600 bg-green-50 border-green-200"
+      case "pending":
+        return "text-yellow-600 bg-yellow-50 border-yellow-200"
+      case "cancelled":
+        return "text-red-600 bg-red-50 border-red-200"
+      case "completed":
+        return "text-blue-600 bg-blue-50 border-blue-200"
+      default:
+        return "text-gray-600 bg-gray-50 border-gray-200"
+    }
+  }
+
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold">Reservations</h1>
         <div className="flex gap-4 items-center">
-          <div className="flex border rounded-lg">
+          <div className="flex border rounded-lg shadow-sm">
             <button
-              className={`px-4 py-2 ${
-                viewType === "list" ? "bg-gray-200" : "bg-white"
+              className={`px-4 py-2 rounded-l-lg transition-colors ${
+                viewType === "list"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background hover:bg-muted"
               }`}
               onClick={() => setViewType("list")}
             >
               List
             </button>
             <button
-              className={`px-4 py-2 ${
-                viewType === "grid" ? "bg-gray-200" : "bg-white"
+              className={`px-4 py-2 rounded-r-lg transition-colors ${
+                viewType === "grid"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background hover:bg-muted"
               }`}
               onClick={() => setViewType("grid")}
             >
@@ -70,7 +104,7 @@ export default function BookingHistoryClient({
             </button>
           </div>
           <select
-            className="border rounded-lg px-4 py-2"
+            className="border rounded-lg px-4 py-2 shadow-sm bg-background"
             value={filter}
             onChange={(e) => setFilter(e.target.value as typeof filter)}
           >
@@ -82,34 +116,54 @@ export default function BookingHistoryClient({
         </div>
       </div>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         <button
-          className={`px-4 py-2 rounded-lg ${
-            filter === "trips" ? "bg-gray-200" : "bg-gray-100"
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            filter === "all"
+              ? "bg-primary text-primary-foreground"
+              : "bg-card hover:bg-muted"
+          }`}
+          onClick={() => setFilter("all")}
+        >
+          All
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            filter === "trips"
+              ? "bg-primary text-primary-foreground"
+              : "bg-card hover:bg-muted"
           }`}
           onClick={() => setFilter("trips")}
         >
-          Trips
+          <Plane className="h-4 w-4" /> Trips
         </button>
         <button
-          className={`px-4 py-2 rounded-lg ${
-            filter === "stays" ? "bg-gray-200" : "bg-gray-100"
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            filter === "stays"
+              ? "bg-primary text-primary-foreground"
+              : "bg-card hover:bg-muted"
           }`}
           onClick={() => setFilter("stays")}
         >
-          Stays
+          <Building className="h-4 w-4" /> Stays
         </button>
         <button
-          className={`px-4 py-2 rounded-lg ${
-            filter === "cars" ? "bg-gray-200" : "bg-gray-100"
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            filter === "cars"
+              ? "bg-primary text-primary-foreground"
+              : "bg-card hover:bg-muted"
           }`}
           onClick={() => setFilter("cars")}
         >
-          Rent
+          <Car className="h-4 w-4" /> Rent
         </button>
       </div>
 
-      {viewType === "list" ? (
+      {filteredBookings.length === 0 ? (
+        <div className="text-center py-12 bg-card rounded-lg border">
+          <p className="text-muted-foreground">No reservations found</p>
+        </div>
+      ) : viewType === "list" ? (
         <div className="space-y-4">
           {filteredBookings.map((booking, index) => (
             <Link
@@ -117,23 +171,35 @@ export default function BookingHistoryClient({
               href={`/user/profile/bookingHistory/${booking.type}/${booking.id}`}
               className="block"
             >
-              <div className="bg-white rounded-lg border p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow">
-                <Image
-                  src={booking.image}
-                  alt={booking.name}
-                  width={80}
-                  height={80}
-                  className="rounded-md"
-                />
-                <div className="flex-1">
-                  <h3 className="font-semibold">{booking.name}</h3>
-                  <p>
+              <div className="bg-card rounded-lg border shadow-sm p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:border-primary">
+                <div className="relative min-w-[80px] h-[80px]">
+                  <Image
+                    src={booking.image || "/placeholder.svg"}
+                    alt={booking.name}
+                    fill
+                    className="rounded-md object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    {getTypeIcon(booking.type)}
+                    <h3 className="font-semibold truncate">{booking.name}</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
                     {booking.startDate} - {booking.endDate}
                   </p>
-                  <p>Status: {booking.status}</p>
-                  <p>Total: {booking.totalPrice}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span
+                      className={`text-sm px-2 py-0.5 rounded-full border ${getStatusColor(
+                        booking.status
+                      )}`}
+                    >
+                      {booking.status}
+                    </span>
+                    <p className="font-medium">{booking.totalPrice}</p>
+                  </div>
                 </div>
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </Link>
           ))}
@@ -144,23 +210,40 @@ export default function BookingHistoryClient({
             <Link
               key={`${booking.id}-${index}`}
               href={`/user/profile/bookingHistory/${booking.type}/${booking.id}`}
-              className="block"
+              className="block h-full"
             >
-              <div className="bg-white rounded-lg border p-4 flex flex-col gap-4 cursor-pointer hover:shadow-md transition-shadow">
-                <Image
-                  src={booking.image}
-                  alt={booking.name}
-                  width={200}
-                  height={150}
-                  className="rounded-md"
-                />
-                <div>
-                  <h3 className="font-semibold">{booking.name}</h3>
-                  <p>
+              <div className="bg-card rounded-lg border shadow-sm h-full flex flex-col cursor-pointer hover:shadow-md transition-all hover:border-primary">
+                <div className="relative w-full h-[160px]">
+                  <Image
+                    src={booking.image || "/placeholder.svg"}
+                    alt={booking.name}
+                    fill
+                    className="rounded-t-lg object-cover"
+                  />
+                  <div className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+                    {getTypeIcon(booking.type)}
+                    <span className="text-xs font-medium capitalize">
+                      {booking.type}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 flex-1 flex flex-col">
+                  <h3 className="font-semibold text-lg line-clamp-1">
+                    {booking.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-2">
                     {booking.startDate} - {booking.endDate}
                   </p>
-                  <p>Status: {booking.status}</p>
-                  <p>Total: {booking.totalPrice}</p>
+                  <div className="mt-auto flex items-center justify-between">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full border ${getStatusColor(
+                        booking.status
+                      )}`}
+                    >
+                      {booking.status}
+                    </span>
+                    <p className="font-medium">{booking.totalPrice}</p>
+                  </div>
                 </div>
               </div>
             </Link>

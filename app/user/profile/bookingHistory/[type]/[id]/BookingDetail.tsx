@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import Image from "next/image"
@@ -19,7 +20,7 @@ export default function BookingDetailClient({
         month: "long",
         day: "numeric",
       }).format(date)
-    } catch (e) {
+    } catch {
       return dateStr // Fall back to original string if parsing fails
     }
   }
@@ -153,7 +154,7 @@ export default function BookingDetailClient({
 
               {booking.additionalInfo &&
                 Object.entries(booking.additionalInfo)
-                  .filter(([_, value]) => value !== undefined && value !== null)
+                  .filter(([value]) => value !== undefined && value !== null)
                   .map(([key, value]) => {
                     // Skip certain technical fields or empty values
                     if (key === "specialRequests" && !value) return null
