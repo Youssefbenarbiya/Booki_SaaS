@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   User,
   Heart,
-  PlusCircle,
   Clock,
   LogOut,
   Phone,
@@ -51,12 +50,7 @@ export function Sidebar({ user }: SidebarProps) {
       href: "/user/profile/favorites",
       icon: Heart,
     },
-    {
-      id: "services",
-      label: "Ajouter mon service",
-      href: "/user/profile/services",
-      icon: PlusCircle,
-    },
+ 
     {
       id: "history",
       label: "History ",

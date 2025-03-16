@@ -1,12 +1,13 @@
 import { auth } from "@/auth"
 import { headers } from "next/headers"
-import { notFound, redirect } from "next/navigation"
+import { notFound } from "next/navigation"
 import BookRoomForm from "./BookRoomForm"
 import { getRoomById } from "@/actions/hotelActions"
 import { formatPrice } from "@/lib/utils"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import Image from "next/image"
+import SignInRedirectMessage from "@/app/(auth)/sign-in/SignInRedirectMessage"
 export default async function BookRoomPage({
   params,
 }: {
@@ -18,8 +19,12 @@ export default async function BookRoomPage({
     headers: await headers(),
   })
 
-  if (!session) {
-    redirect("/auth/signin")
+  if (!session || !session.user) {
+    return (
+      <SignInRedirectMessage
+        callbackUrl={`/sign-in?callbackUrl=/hotels/${hotelId}/rooms/${roomId}/book`}
+      />
+    )
   }
 
   const room = await getRoomById(roomId)

@@ -92,14 +92,21 @@ export default async function Header() {
                       </p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/user/profile" className="w-full">
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  {session.user.role == "admin" && (
-                    <DropdownMenuItem>
-                      <Link href="/admin/dashboard" className="w-full">
+                  {session.user.role !== "customer" && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={
+                          session.user.role === "admin"
+                            ? "/admin/dashboard"
+                            : "/agency/dashboard"
+                        }
+                        className="w-full"
+                      >
                         Dashboard
                       </Link>
                     </DropdownMenuItem>

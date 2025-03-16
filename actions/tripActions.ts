@@ -70,7 +70,7 @@ export async function createTrip(data: TripInput) {
       )
     }
 
-    revalidatePath("/admin/dashboard/trips")
+    revalidatePath("/agency/dashboard/trips")
     revalidatePath("/")
     return trip
   } catch (error) {
@@ -156,7 +156,7 @@ export async function updateTrip(id: number, data: TripInput) {
       )
     }
 
-    revalidatePath("/admin/dashboard/trips")
+    revalidatePath("/agency/dashboard/trips")
     revalidatePath("/")
     return trip
   } catch (error) {
@@ -172,7 +172,7 @@ export async function deleteTrip(id: number) {
       .where(eq(trips.id, id))
       .returning()
 
-    revalidatePath("/admin/dashboard/trips")
+    revalidatePath("/agency/dashboard/trips")
     revalidatePath("/")
     return deletedTrip
   } catch (error) {

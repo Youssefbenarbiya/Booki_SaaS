@@ -61,8 +61,9 @@ export default function MapModal({
             latitude={latitude}
             longitude={longitude}
             height="100%"
-            readOnly={false}
-            enableSearch={true}
+            readOnly={true}
+            enableSearch={false}
+            enableNavigation={true}
           />
         </div>
       </div>

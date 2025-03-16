@@ -212,7 +212,7 @@ export function UpdateUserInfo({ session }: { session: Session }) {
                 src={
                   imagePreview ||
                   user.image ||
-                  "/assets/icons/logo-blank.png.jpg?height=128&width=128"
+                  "/assets/icons/logo-blank.png?height=128&width=128"
                 }
                 alt="Profile"
                 fill
