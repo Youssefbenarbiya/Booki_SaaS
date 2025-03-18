@@ -1,17 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Image from "next/image"
 import Link from "next/link"
-import { Trip } from "@/db/schema"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, MapPin, Star, Users } from "lucide-react"
+import { Calendar, Clock, Heart, MapPin, Star, Users } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
+import { useFavorite } from "@/lib/hooks/useFavorite"
 
 interface TripCardProps {
   trip: any // Using any here to match with your existing schema
 }
 
 export default function TripCard({ trip }: TripCardProps) {
+  const { isFavorite, toggleFavorite, isLoading } = useFavorite(trip.id, "trip")
+
   // Format dates
   const startDate = trip.startDate
     ? new Date(trip.startDate).toLocaleDateString("en-US", {
@@ -58,6 +61,22 @@ export default function TripCard({ trip }: TripCardProps) {
           className="object-cover transition-transform duration-500 group-hover:scale-110"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
+
+        {/* Favorite button */}
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            toggleFavorite()
+          }}
+          disabled={isLoading}
+          className="absolute top-3 left-3 z-20 bg-black/30 p-2 rounded-full hover:bg-black/50 transition-colors"
+        >
+          <Heart
+            className={`h-5 w-5 ${
+              isFavorite ? "fill-red-500 text-red-500" : "text-white"
+            }`}
+          />
+        </button>
 
         {/* Price badge */}
         <div className="absolute top-3 right-3 z-20">

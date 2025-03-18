@@ -5,6 +5,8 @@ import Link from "next/link"
 import { formatPrice } from "@/lib/utils"
 import type { InferSelectModel } from "drizzle-orm"
 import { hotel, room } from "@/db/schema"
+import { Heart } from "lucide-react"
+import { useFavorite } from "@/lib/hooks/useFavorite"
 
 type Hotel = InferSelectModel<typeof hotel> & {
   rooms: Array<InferSelectModel<typeof room>>
@@ -15,13 +17,31 @@ interface HotelCardProps {
 }
 
 export function HotelCard({ hotel }: HotelCardProps) {
-  // Add console log to debug
-  console.log("Hotel data:", hotel.id)
+  const { isFavorite, toggleFavorite, isLoading } = useFavorite(
+    hotel.id,
+    "hotel"
+  )
 
   return (
     <div className="card bg-white shadow-xl rounded-lg overflow-hidden">
       {hotel.images?.[0] && (
         <figure className="relative h-48">
+          {/* Add favorite button */}
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              toggleFavorite()
+            }}
+            disabled={isLoading}
+            className="absolute top-3 left-3 z-10 bg-black/30 p-2 rounded-full hover:bg-black/50 transition-colors"
+          >
+            <Heart
+              className={`h-5 w-5 ${
+                isFavorite ? "fill-red-500 text-red-500" : "text-white"
+              }`}
+            />
+          </button>
+
           <Image
             src={hotel.images[0]}
             alt={hotel.name}

@@ -46,14 +46,13 @@ export function Sidebar({ user }: SidebarProps) {
     },
     {
       id: "favorites",
-      label: "Mes favoris",
+      label: "Favorites",
       href: "/user/profile/favorites",
       icon: Heart,
     },
- 
     {
       id: "history",
-      label: "History ",
+      label: "History",
       href: "/user/profile/bookingHistory",
       icon: Clock,
     },
@@ -66,6 +65,10 @@ export function Sidebar({ user }: SidebarProps) {
   ]
 
   const pathname = usePathname()
+  // If pathname doesn't match any menu item, default to dashboard.
+  const activePath = menuItems.some((item) => item.href === pathname)
+    ? pathname
+    : "/user/profile/dashboard"
 
   return (
     <aside className="w-[280px] bg-white p-4 border-r border-gray-100 overflow-y-auto">
@@ -103,7 +106,7 @@ export function Sidebar({ user }: SidebarProps) {
         <nav>
           <ul className="space-y-1">
             {menuItems.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = activePath === item.href
               return (
                 <li key={item.id}>
                   <Link
