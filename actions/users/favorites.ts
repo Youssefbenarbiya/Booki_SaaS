@@ -1,16 +1,45 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server"
 
 import { headers } from "next/headers"
 import { auth } from "@/auth"
-import { favorites, trips, hotel, cars } from "@/db/schema"
+import { favorites, trips, hotel, cars, room } from "@/db/schema"
 import { and, eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import db from "@/db/drizzle"
+import type { InferSelectModel } from "drizzle-orm"
+
+// Define return types for better type safety
+type ToggleFavoriteResult = {
+  success: boolean
+  isFavorite?: boolean
+  error?: string
+}
+
+type CheckFavoriteResult = {
+  isFavorite: boolean
+}
+
+type UserFavoritesResult = {
+  trips: Array<
+    InferSelectModel<typeof trips> & {
+      images?: Array<{ imageUrl: string } | string>
+      activities?: Array<any>
+    }
+  >
+  hotels: Array<
+    InferSelectModel<typeof hotel> & {
+      rooms: Array<InferSelectModel<typeof room>>
+    }
+  >
+  cars: Array<InferSelectModel<typeof cars>>
+  error?: string
+}
 
 export async function toggleFavorite(
   itemId: string | number,
   itemType: string
-) {
+): Promise<ToggleFavoriteResult> {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -61,7 +90,7 @@ export async function toggleFavorite(
 export async function checkFavoriteStatus(
   itemId: string | number,
   itemType: string
-) {
+): Promise<CheckFavoriteResult> {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -86,7 +115,7 @@ export async function checkFavoriteStatus(
   }
 }
 
-export async function getUserFavorites() {
+export async function getUserFavorites(): Promise<UserFavoritesResult> {
   const session = await auth.api.getSession({
     headers: await headers(),
   })

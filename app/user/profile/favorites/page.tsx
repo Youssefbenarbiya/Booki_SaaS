@@ -6,14 +6,27 @@ import TripCard from "@/components/cards/TripCard"
 import { HotelCard } from "@/components/cards/HotelCard"
 import { CarCard } from "@/app/cars/components/CarCard"
 import { Loader2 } from "lucide-react"
-import { getUserFavorites } from "@/app/actions/favorites"
 import { useSession } from "@/auth-client"
+import { getUserFavorites } from "@/actions/users/favorites"
+import type { InferSelectModel } from "drizzle-orm"
+import { hotel, room, trips } from "@/db/schema"
+import type { Car } from "@/app/cars/components/CarCard"
+
+// Define types for state variables
+type Trip = InferSelectModel<typeof trips> & {
+  images?: Array<{ imageUrl: string } | string>
+  activities?: Array<{ id: number; activityName: string }>
+}
+
+type Hotel = InferSelectModel<typeof hotel> & {
+  rooms: Array<InferSelectModel<typeof room>>
+}
 
 export default function FavoritesPage() {
   const [isLoading, setIsLoading] = useState(true)
-  const [favoriteTrips, setFavoriteTrips] = useState([])
-  const [favoriteHotels, setFavoriteHotels] = useState([])
-  const [favoriteCars, setFavoriteCars] = useState([])
+  const [favoriteTrips, setFavoriteTrips] = useState<Trip[]>([])
+  const [favoriteHotels, setFavoriteHotels] = useState<Hotel[]>([])
+  const [favoriteCars, setFavoriteCars] = useState<Car[]>([])
   const session = useSession()
 
   useEffect(() => {
@@ -26,9 +39,10 @@ export default function FavoritesPage() {
       try {
         const data = await getUserFavorites()
 
-        setFavoriteTrips(data.trips || [])
-        setFavoriteHotels(data.hotels || [])
-        setFavoriteCars(data.cars || [])
+        // Use type assertions to help TypeScript understand the data structure
+        setFavoriteTrips((data.trips || []) as Trip[])
+        setFavoriteHotels((data.hotels || []) as Hotel[])
+        setFavoriteCars((data.cars || []) as Car[])
       } catch (error) {
         console.error("Error fetching favorites:", error)
       } finally {
@@ -85,7 +99,7 @@ export default function FavoritesPage() {
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-12">
-              You haven't added any trips to your favorites yet.
+              You haven&apos;t added any trips to your favorites yet.
             </p>
           )}
         </TabsContent>
@@ -99,7 +113,7 @@ export default function FavoritesPage() {
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-12">
-              You haven't added any hotels to your favorites yet.
+              You haven&apos;t added any hotels to your favorites yet.
             </p>
           )}
         </TabsContent>
@@ -113,7 +127,7 @@ export default function FavoritesPage() {
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-12">
-              You haven't added any cars to your favorites yet.
+              You haven&apos;t added any cars to your favorites yet.
             </p>
           )}
         </TabsContent>

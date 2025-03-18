@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { useSession } from "@/auth-client"
-import { checkFavoriteStatus, toggleFavorite } from "@/app/actions/favorites"
+import { checkFavoriteStatus, toggleFavorite } from "@/actions/users/favorites"
 
 type ItemType = "car" | "hotel" | "trip"
 
@@ -45,7 +45,7 @@ export function useFavorite(itemId: string | number, itemType: ItemType) {
       const result = await toggleFavorite(itemId, itemType)
 
       if (result.success) {
-        const newStatus = result.isFavorite
+        const newStatus = result.isFavorite ?? false
         setIsFavorite(newStatus)
 
         if (newStatus) {

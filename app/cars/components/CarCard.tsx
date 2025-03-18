@@ -40,11 +40,10 @@ export function CarCard({ car, viewMode }: CarCardProps) {
   }
 
   const handleHeartClick = (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent triggering the parent click
+    e.stopPropagation() 
     toggleFavorite()
   }
 
-  // Default values if not provided
   const carType = car.type || "Sport"
   const fuelType = car.fuelType || "70L"
   const transmission = car.transmission || "Manual"
