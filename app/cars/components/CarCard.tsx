@@ -5,7 +5,7 @@ import type React from "react"
 import { Heart } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useFavorite } from "@/lib/hooks/useFavorite"
 
 export interface Car {
   id: number
@@ -33,7 +33,7 @@ interface CarCardProps {
 
 export function CarCard({ car, viewMode }: CarCardProps) {
   const router = useRouter()
-  const [isFavorite, setIsFavorite] = useState(false)
+  const { isFavorite, toggleFavorite, isLoading } = useFavorite(car.id, "car")
 
   const handleCardClick = () => {
     router.push(`/cars/${car.id}/booking`)
@@ -41,7 +41,7 @@ export function CarCard({ car, viewMode }: CarCardProps) {
 
   const handleHeartClick = (e: React.MouseEvent) => {
     e.stopPropagation() // Prevent triggering the parent click
-    setIsFavorite(!isFavorite)
+    toggleFavorite()
   }
 
   // Default values if not provided
@@ -72,8 +72,16 @@ export function CarCard({ car, viewMode }: CarCardProps) {
               </h3>
               <p className="text-xs text-gray-500">{carType}</p>
             </div>
-            <button onClick={handleHeartClick} className="focus:outline-none">
-              <Heart className={`h-5 w-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-300"}`} />
+            <button
+              onClick={handleHeartClick}
+              className="focus:outline-none"
+              disabled={isLoading}
+            >
+              <Heart
+                className={`h-5 w-5 ${
+                  isFavorite ? "fill-red-500 text-red-500" : "text-gray-300"
+                }`}
+              />
             </button>
           </div>
 
@@ -105,10 +113,16 @@ export function CarCard({ car, viewMode }: CarCardProps) {
           <div className="flex justify-between items-center mt-auto">
             <div>
               <div className="flex items-baseline gap-1">
-                <span className="font-bold text-lg">${car.price.toFixed(2)}</span>
+                <span className="font-bold text-lg">
+                  ${car.price.toFixed(2)}
+                </span>
                 <span className="text-xs text-gray-500">/day</span>
               </div>
-              {car.originalPrice && <span className="text-xs text-gray-500">${car.originalPrice.toFixed(2)}</span>}
+              {car.originalPrice && (
+                <span className="text-xs text-gray-500">
+                  ${car.originalPrice.toFixed(2)}
+                </span>
+              )}
             </div>
 
             <button
@@ -133,8 +147,16 @@ export function CarCard({ car, viewMode }: CarCardProps) {
           </h3>
           <p className="text-xs text-gray-500">{carType}</p>
         </div>
-        <button onClick={handleHeartClick} className="focus:outline-none">
-          <Heart className={`h-5 w-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-300"}`} />
+        <button
+          onClick={handleHeartClick}
+          className="focus:outline-none"
+          disabled={isLoading}
+        >
+          <Heart
+            className={`h-5 w-5 ${
+              isFavorite ? "fill-red-500 text-red-500" : "text-gray-300"
+            }`}
+          />
         </button>
       </div>
 
@@ -179,7 +201,11 @@ export function CarCard({ car, viewMode }: CarCardProps) {
             <span className="font-bold text-lg">${car.price.toFixed(2)}</span>
             <span className="text-xs text-gray-500">/day</span>
           </div>
-          {car.originalPrice && <span className="text-xs text-gray-500">${car.originalPrice.toFixed(2)}</span>}
+          {car.originalPrice && (
+            <span className="text-xs text-gray-500">
+              ${car.originalPrice.toFixed(2)}
+            </span>
+          )}
         </div>
 
         <button
@@ -192,4 +218,3 @@ export function CarCard({ car, viewMode }: CarCardProps) {
     </div>
   )
 }
-

@@ -365,3 +365,35 @@ export const blogCategoriesRelations = relations(
     blogs: many(blogs),
   })
 )
+
+// User Favorites table
+export const favorites = pgTable("favorites", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  itemType: varchar("item_type", { length: 50 }).notNull(), // "trip", "hotel", "car"
+  itemId: varchar("item_id", { length: 100 }).notNull(), // The ID of the favorited item
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+// Add unique constraint to prevent duplicate favorites
+export const favoritesConstraint = pgTable("favorites_constraint", {
+  id: serial("id").primaryKey(),
+  userId_itemType_itemId: varchar("user_id_item_type_item_id").unique(),
+})
+
+// Favorites Relations
+export const favoritesRelations = relations(favorites, ({ one }) => ({
+  user: one(user, {
+    fields: [favorites.userId],
+    references: [user.id],
+  }),
+}))
+
+export const userRelations = relations(user, ({ many }) => ({
+  favorites: many(favorites),
+  sessions: many(session),
+  accounts: many(account),
+  // ...other existing relations...
+}))
