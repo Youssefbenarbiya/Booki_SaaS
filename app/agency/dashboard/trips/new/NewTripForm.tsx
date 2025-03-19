@@ -3,7 +3,7 @@
 import { useTransition, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
-import { createTrip, type TripInput } from "@/actions/tripActions"
+import { createTrip, type TripInput } from "@/actions/trips/tripActions"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"

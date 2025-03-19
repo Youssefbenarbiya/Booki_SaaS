@@ -169,9 +169,10 @@ export function BlogForm({
         })
       }
 
-      // For updating, include current images
-      if (isEditing && initialData?.images) {
-        formData.append("currentImages", JSON.stringify(initialData.images))
+      // For updating, include remaining images (those that weren't deleted)
+      if (isEditing) {
+        // Send previewUrls as the remaining images since this array is updated when images are deleted
+        formData.append("remainingImages", JSON.stringify(previewUrls))
       }
 
       if (isEditing && initialData) {

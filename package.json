@@ -49,6 +49,7 @@
     "better-auth": "1.2",
     "checkbox": "^0.0.1",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "^2.6.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
