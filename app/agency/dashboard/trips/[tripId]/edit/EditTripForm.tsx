@@ -3,10 +3,10 @@ import Image from "next/image"
 import { useTransition, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { useRouter } from "next/navigation"
-import { updateTrip, type TripInput } from "@/actions/tripActions"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
+import { TripInput, updateTrip } from "@/actions/trips/tripActions"
 
 interface EditTripFormProps {
   trip: {

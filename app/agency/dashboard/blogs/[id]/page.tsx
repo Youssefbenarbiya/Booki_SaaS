@@ -9,15 +9,15 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 
 interface BlogEditPageProps {
-  params: Promise<{ id: string }>
+  params: { id: string } // Updated to not be a Promise
 }
 
 export default async function BlogEditPage({ params }: BlogEditPageProps) {
-  // Await the params to resolve
-  const resolvedParams = await params
+  // No need to await params as it's not a Promise
+  const { id: blogId } = params
 
   // Ensure params is correctly typed
-  if (!resolvedParams || !resolvedParams.id) {
+  if (!blogId) {
     notFound()
   }
 
@@ -32,7 +32,7 @@ export default async function BlogEditPage({ params }: BlogEditPageProps) {
   }
 
   // Parse the blog ID safely
-  const id = Number(resolvedParams.id)
+  const id = Number(blogId)
   if (isNaN(id)) {
     notFound()
   }
