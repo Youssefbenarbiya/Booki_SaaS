@@ -102,7 +102,7 @@ export default async function Header() {
                       <Link
                         href={
                           session.user.role === "admin"
-                            ? "/admin/dashboard"
+                            ? "/admin"
                             : "/agency/dashboard"
                         }
                         className="w-full"

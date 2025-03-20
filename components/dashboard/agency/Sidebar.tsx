@@ -3,51 +3,86 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Home, Plane, Hotel, Users, BookOpen, LogOut, Car } from "lucide-react"
+import {
+  Building2,
+  Car,
+  Globe,
+  LayoutDashboard,
+  PlaneTakeoff,
+  BookOpen,
+} from "lucide-react"
 
-const navItems = [
-  { name: "Home", href: "/agency/dashboard", icon: Home },
-  { name: "Trips", href: "/agency/dashboard/trips", icon: Plane },
-  { name: "Hotels", href: "/agency/dashboard/hotels", icon: Hotel },
-  { name: "Users", href: "/agency/dashboard/users", icon: Users },
-  { name: "Blogs", href: "/agency/dashboard/blogs", icon: BookOpen },
-  { name: "cars", href: "/agency/dashboard/cars", icon: Car },
+const navigation = [
+  {
+    name: "Dashboard",
+    href: "/agency/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    name: "Trips",
+    href: "/agency/dashboard/trips",
+    icon: PlaneTakeoff,
+  },
+  {
+    name: "Hotels",
+    href: "/agency/dashboard/hotels",
+    icon: Building2,
+  },
+  {
+    name: "Cars",
+    href: "/agency/dashboard/cars",
+    icon: Car,
+  },
+  {
+    name: "Blogs",
+    href: "/agency/dashboard/blogs",
+    icon: BookOpen,
+  },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden lg:flex lg:flex-col w-64 bg-background border-r border-border">
-      <div className="px-4 py-6">
-        <h2 className="text-2xl font-bold text-primary">Admin Dashboard</h2>
-      </div>
-      <ScrollArea className="flex-1 px-4">
-        <nav className="space-y-2">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start text-foreground hover:bg-muted",
-                  pathname === item.href && "bg-accent text-accent-foreground"
-                )}
-              >
-                <item.icon className="mr-2 h-4 w-4" />
-                {item.name}
-              </Button>
-            </Link>
-          ))}
+    <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+      <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4">
+        <div className="flex h-16 shrink-0 items-center">
+          <Link href="/" className="flex items-center space-x-2">
+            <Globe className="h-6 w-6 text-white" />
+            <span className="text-xl font-bold text-white">Travel Agency</span>
+          </Link>
+        </div>
+        <nav className="flex flex-1 flex-col">
+          <ul role="list" className="flex flex-1 flex-col gap-y-7">
+            <li>
+              <ul role="list" className="-mx-2 space-y-1">
+                {navigation.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          isActive
+                            ? "bg-gray-800 text-white"
+                            : "text-gray-400 hover:text-white hover:bg-gray-800",
+                          "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+                        )}
+                      >
+                        <item.icon
+                          className="h-6 w-6 shrink-0"
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </li>
+          </ul>
         </nav>
-      </ScrollArea>
-      <div className="p-4 mt-auto">
-        <Button variant="outline" className="w-full">
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
-        </Button>
       </div>
-    </aside>
+    </div>
   )
 }

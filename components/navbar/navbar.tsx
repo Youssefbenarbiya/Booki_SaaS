@@ -3,6 +3,7 @@ import AuthButtons from "@/components/navbar/auth-buttons"
 import { ModeToggle } from "./mode-toggle"
 import { Mail, Phone } from "lucide-react"
 import { FaFacebook, FaInstagram } from "react-icons/fa"
+import LanguageSelector from "@/components/language-selector"
 
 export default async function Navbar() {
   return (
@@ -24,6 +25,7 @@ export default async function Navbar() {
         <p>booki@gmail.com</p>
       </div>
       <div className="flex items-center gap-4">
+        <LanguageSelector />
         <AuthButtons />
         <ModeToggle />
       </div>
