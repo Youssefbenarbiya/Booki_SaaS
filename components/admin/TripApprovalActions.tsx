@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, XIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { sendTripStatusNotification } from "@/actions/admin/notificationActions"
 import { toast } from "@/hooks/use-toast"
 
 interface TripApprovalActionsProps {
@@ -12,101 +10,97 @@ interface TripApprovalActionsProps {
 }
 
 export function TripApprovalActions({ tripId }: TripApprovalActionsProps) {
-  const [isApproving, setIsApproving] = useState(false)
-  const [isRejecting, setIsRejecting] = useState(false)
-  const router = useRouter()
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const handleApprove = async () => {
+  const handleStatusChange = async (status: "approved" | "rejected") => {
+    setIsLoading(true)
     try {
-      setIsApproving(true)
-      const response = await fetch(`/api/admin/trips/${tripId}/approve`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      // First update the trip status in the database
+      const updateResponse = await fetch(
+        `/api/admin/trips/${tripId}/update-status`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        }
+      )
 
-      const data = await response.json()
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json()
+        throw new Error(errorData.message || "Failed to update trip status")
+      }
 
-      if (response.ok) {
+      const updateData = await updateResponse.json()
+      console.log("Trip status updated:", updateData)
+
+      // Send notification to agency
+      const result = await sendTripStatusNotification(tripId, status)
+
+      if (!result.success) {
+        console.warn("Notification could not be sent:", result.message)
+        // Continue anyway since the primary action (status update) succeeded
+      }
+
+      // Success message
+      if (typeof toast === "function") {
         toast({
-          title: "Success",
-          description: "Trip has been approved",
+          title: `Trip ${
+            status === "approved" ? "approved" : "rejected"
+          } successfully`,
+          description: result.success
+            ? "Notification sent to agency."
+            : "Trip status updated but notification couldn't be sent.",
+          variant: "default",
         })
-        router.refresh()
       } else {
+        alert(`Trip ${status} successfully!`)
+      }
+
+      // Refresh the page to show updated status
+      window.location.reload()
+    } catch (error) {
+      console.error(
+        `Error ${status === "approved" ? "approving" : "rejecting"} trip:`,
+        error
+      )
+
+      if (typeof toast === "function") {
         toast({
           title: "Error",
-          description: data.message || "Failed to approve trip",
+          description: `Failed to ${status} trip. Please try again.`,
           variant: "destructive",
         })
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong",
-        variant: "destructive",
-      })
-    } finally {
-      setIsApproving(false)
-    }
-  }
-
-  const handleReject = async () => {
-    try {
-      setIsRejecting(true)
-      const response = await fetch(`/api/admin/trips/${tripId}/reject`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Trip has been rejected",
-        })
-        router.refresh()
       } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to reject trip",
-          variant: "destructive",
-        })
+        alert(
+          `Error ${
+            status === "approved" ? "approving" : "rejecting"
+          } trip. Please try again.`
+        )
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong",
-        variant: "destructive",
-      })
     } finally {
-      setIsRejecting(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="space-x-2">
+    <div className="flex space-x-2">
       <Button
+        onClick={() => handleStatusChange("approved")}
+        className="bg-green-600 hover:bg-green-700"
+        disabled={isLoading}
         size="sm"
-        className="bg-green-500 hover:bg-green-600"
-        onClick={handleApprove}
-        disabled={isApproving || isRejecting}
       >
-        <CheckIcon className="h-4 w-4 mr-1" />
-        {isApproving ? "Processing..." : "Approve"}
+        Approve
       </Button>
       <Button
-        size="sm"
+        onClick={() => handleStatusChange("rejected")}
         variant="destructive"
-        onClick={handleReject}
-        disabled={isApproving || isRejecting}
+        disabled={isLoading}
+        size="sm"
       >
-        <XIcon className="h-4 w-4 mr-1" />
-        {isRejecting ? "Processing..." : "Reject"}
+        Reject
       </Button>
     </div>
   )

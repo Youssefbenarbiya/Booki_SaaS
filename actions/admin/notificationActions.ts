@@ -9,18 +9,31 @@ export async function sendTripStatusNotification(
   status: "approved" | "rejected"
 ) {
   try {
-    // Get trip details with agency user ID
+    console.log(
+      `Sending notification for trip ID: ${tripId} with status: ${status}`
+    )
+
+    // Get trip details
     const trip = await db.query.trips.findFirst({
       where: eq(trips.id, tripId),
-      with: {
-        agency: true,
-      },
     })
 
-    if (!trip || !trip.agency) {
-      console.error("Trip not found or no agency associated with trip")
-      return { success: false, message: "Trip or agency not found" }
+    if (!trip) {
+      console.error(`Trip not found with ID: ${tripId}`)
+      return { success: false, message: "Trip not found" }
     }
+
+    // Find the agency ID directly from the trip record
+    const agencyId = trip.agencyId
+
+    if (!agencyId) {
+      console.error(
+        `Trip found but no agency ID associated with trip ID: ${tripId}`
+      )
+      return { success: false, message: "No agency associated with trip" }
+    }
+
+    console.log(`Found trip: ${trip.name}, Agency ID: ${agencyId}`)
 
     const title = status === "approved" ? "Trip Approved" : "Trip Rejected"
 
@@ -29,16 +42,18 @@ export async function sendTripStatusNotification(
         ? `Your trip "${trip.name}" has been approved and is now available for booking.`
         : `Your trip "${trip.name}" has been rejected. Please review and update your trip or contact support for more information.`
 
-    // Insert notification
+    // Insert notification using the agencyId directly
     await db.insert(notifications).values({
-      userId: trip.agency.userId,
+      userId: agencyId,
       title,
       message,
       type: status === "approved" ? "success" : "warning",
       relatedItemType: "trip",
       relatedItemId: tripId,
+      createdAt: new Date(),
     })
 
+    console.log("Notification created successfully")
     return { success: true }
   } catch (error) {
     console.error("Error sending notification:", error)

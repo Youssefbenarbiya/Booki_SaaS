@@ -44,8 +44,11 @@ export default async function DashboardLayout({
 
         {/* Main Content */}
         <div className="flex-1 lg:pl-72">
-          <header className="bg-white shadow z-10">
+          <header className="bg-white shadow z-30 relative">
             <div className="flex items-center justify-between p-4">
+              <div className="flex items-center">
+                {/* Left side content if needed */}
+              </div>
               <div className="flex items-center">
                 <NotificationCenter
                   initialNotifications={typedNotifications}

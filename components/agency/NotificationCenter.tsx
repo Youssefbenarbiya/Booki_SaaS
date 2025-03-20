@@ -1,79 +1,90 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Bell } from "lucide-react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
-import { useSession } from "@/auth-client"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
-type Notification = {
+type NotificationType = {
   id: number
   title: string
   message: string
-  type: "info" | "success" | "warning" | "error"
   read: boolean
-  createdAt: Date
+  createdAt: Date | string
+  type: "error" | "info" | "success" | "warning"
   relatedItemType?: string | null
   relatedItemId?: number | null
 }
 
 interface NotificationCenterProps {
-  initialNotifications: Notification[]
+  initialNotifications: NotificationType[]
   unreadCount: number
 }
 
 export function NotificationCenter({
   initialNotifications,
-  unreadCount,
+  unreadCount: initialUnreadCount,
 }: NotificationCenterProps) {
-  const session = useSession()
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState(initialNotifications)
-  const [badgeCount, setBadgeCount] = useState(unreadCount)
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Don't render if no session
-  if (!session.data) {
-    return null
-  }
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false)
+      }
+    }
 
-  const handleMarkAsRead = async (notificationId: number) => {
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  const markAsRead = async (notificationId: number) => {
     try {
       const response = await fetch(
         `/api/agency/notifications/${notificationId}/read`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       )
 
       if (response.ok) {
-        setNotifications(
-          notifications.map((notification) =>
-            notification.id === notificationId
-              ? { ...notification, read: true }
-              : notification
-          )
+        // Update the local state
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
         )
-        setBadgeCount((prev) => Math.max(0, prev - 1))
+        setUnreadCount((prev) => Math.max(0, prev - 1))
       }
     } catch (error) {
       console.error("Error marking notification as read:", error)
     }
   }
 
-  const handleMarkAllAsRead = async () => {
+  const markAllAsRead = async () => {
     try {
-      const response = await fetch("/api/agency/notifications/read-all", {
+      const response = await fetch(`/api/agency/notifications/read-all`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
 
       if (response.ok) {
-        setNotifications(
-          notifications.map((notification) => ({
-            ...notification,
-            read: true,
-          }))
-        )
-        setBadgeCount(0)
+        // Update the local state
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+        setUnreadCount(0)
       }
     } catch (error) {
       console.error("Error marking all notifications as read:", error)
@@ -94,100 +105,101 @@ export function NotificationCenter({
   }
 
   return (
-    <div className="relative">
-      <button
-        className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+    <div className="relative" ref={dropdownRef}>
+      <Button
+        variant="ghost"
+        className="relative p-2"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Notifications"
       >
-        <Bell className="h-6 w-6 text-gray-600" />
-        {badgeCount > 0 && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-            {badgeCount > 9 ? "9+" : badgeCount}
-          </span>
+        <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <Badge
+            variant="destructive"
+            className="absolute -top-1 -right-1 min-w-[1.2rem] h-5 flex items-center justify-center"
+          >
+            {unreadCount}
+          </Badge>
         )}
-      </button>
+      </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg overflow-hidden z-10 border border-gray-200">
-          <div className="p-3 bg-gray-50 flex justify-between items-center border-b border-gray-200">
-            <h3 className="font-medium text-gray-700">Notifications</h3>
-            {badgeCount > 0 && (
-              <button
-                onClick={handleMarkAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-800"
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-50 overflow-hidden border border-gray-200">
+          <div className="p-2 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="font-medium">Notifications</h3>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={markAllAsRead}
               >
                 Mark all as read
-              </button>
+              </Button>
             )}
           </div>
-          <div className="max-h-80 overflow-y-auto">
+
+          <div className="max-h-[70vh] overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="p-4 text-center text-gray-500">
-                No notifications yet
-              </p>
+              <div className="p-4 text-center text-gray-500">
+                No notifications
+              </div>
             ) : (
-              <ul>
-                {notifications.map((notification) => (
-                  <li
+              <div>
+                {notifications.slice(0, 5).map((notification) => (
+                  <div
                     key={notification.id}
-                    className={`border-b border-gray-100 last:border-b-0 ${
+                    className={`p-3 border-b border-gray-100 ${
                       !notification.read ? "bg-blue-50" : ""
                     }`}
                   >
-                    <div className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <span
-                          className={`inline-block px-2 py-1 text-xs rounded-full ${getTypeColor(
-                            notification.type
-                          )}`}
-                        >
-                          {notification.type.charAt(0).toUpperCase() +
-                            notification.type.slice(1)}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(
-                            new Date(notification.createdAt),
-                            {
-                              addSuffix: true,
-                            }
-                          )}
-                        </span>
-                      </div>
-                      <h4 className="font-medium mt-1">{notification.title}</h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {notification.message}
-                      </p>
-                      {notification.relatedItemType === "trip" &&
-                        notification.relatedItemId && (
-                          <Link
-                            href={`/agency/dashboard/trips/${notification.relatedItemId}`}
-                            className="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block"
-                          >
-                            View Trip
-                          </Link>
-                        )}
-                      {!notification.read && (
-                        <button
-                          onClick={() => handleMarkAsRead(notification.id)}
-                          className="text-xs text-blue-600 hover:text-blue-800 mt-2 ml-3 inline-block"
-                        >
-                          Mark as read
-                        </button>
-                      )}
+                    <div className="flex justify-between items-start">
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded-full ${getTypeColor(
+                          notification.type
+                        )}`}
+                      >
+                        {notification.type.charAt(0).toUpperCase() +
+                          notification.type.slice(1)}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {formatDistanceToNow(new Date(notification.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </span>
                     </div>
-                  </li>
+                    <h4 className="font-medium mt-1 text-sm">
+                      {notification.title}
+                    </h4>
+                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    {!notification.read && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs mt-2"
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        Mark as read
+                      </Button>
+                    )}
+                  </div>
                 ))}
-              </ul>
+
+                {notifications.length > 5 && (
+                  <div className="p-2 text-center">
+                    <Link
+                      href="/agency/dashboard/notifications"
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      View all notifications
+                    </Link>
+                  </div>
+                )}
+              </div>
             )}
-          </div>
-          <div className="p-2 bg-gray-50 border-t border-gray-200">
-            <Link
-              href="/agency/dashboard/notifications"
-              className="block text-center text-sm text-blue-600 hover:text-blue-800"
-              onClick={() => setIsOpen(false)}
-            >
-              View all notifications
-            </Link>
           </div>
         </div>
       )}
