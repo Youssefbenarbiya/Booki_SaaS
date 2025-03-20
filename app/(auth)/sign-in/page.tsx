@@ -16,12 +16,15 @@ import LoadingButton from "@/components/loading-button"
 import type { ErrorContext } from "@better-fetch/fetch"
 import GoogleSignIn from "../(Oauth)/google"
 import FacebookSignIn from "../(Oauth)/facebook"
+import { translateContent } from "@/app/actions"
+import LanguageSelector from "@/components/language-selector"
 
 export default function SignIn() {
   const router = useRouter()
   const searchParams = useSearchParams()
   // Extract callbackUrl from the query parameters; default to "/" if not present
   const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const lang = searchParams.get("lang") || "en"
 
   const { toast } = useToast()
   const [pendingCredentials, setPendingCredentials] = useState(false)
@@ -34,6 +37,19 @@ export default function SignIn() {
     // Add more slide images here
   ]
 
+  const [translations, setTranslations] = useState({
+    title: "Login",
+    subtitle: "Login to access your Ostelflow account",
+    emailPlaceholder: "john.doe@gmail.com",
+    passwordPlaceholder: "••••••••••••",
+    rememberMe: "Remember me",
+    forgotPassword: "Forgot Password?",
+    loginButton: "Login",
+    noAccount: "Don't have an account?",
+    register: "Register",
+    orLoginWith: "Or login with",
+  })
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
@@ -41,6 +57,18 @@ export default function SignIn() {
 
     return () => clearInterval(interval)
   }, [slides.length])
+
+  useEffect(() => {
+    const loadTranslations = async () => {
+      if (lang !== "en") {
+        const translated = await translateContent(translations, lang)
+        if (typeof translated === "object") {
+          setTranslations(translated)
+        }
+      }
+    }
+    loadTranslations()
+  }, [lang])
 
   const {
     register,
@@ -89,19 +117,22 @@ export default function SignIn() {
       {/* Left Column */}
       <div className="w-full md:w-1/ px-8 pb-8 x-col justify-center">
         <div className="max-w-[480px] mx-auto w-full">
-          <div className="mb-12">
-            <Image
-              src="/assets/icons/logo.png"
-              alt="Logo"
-              width={64}
-              height={64}
-              className="rounded-lg"
-              priority
-            />
-            <h1 className="text-[1.75rem] font-serif mb-1">Login</h1>
-            <p className="text-gray-600 text-sm">
-              Login to access your Ostelflow account
-            </p>
+          <div className="flex justify-between items-center mb-12">
+            <div>
+              <Image
+                src="/assets/icons/logo.png"
+                alt="Logo"
+                width={64}
+                height={64}
+                className="rounded-lg"
+                priority
+              />
+              <h1 className="text-[1.75rem] font-serif mb-1">
+                {translations.title}
+              </h1>
+              <p className="text-gray-600 text-sm">{translations.subtitle}</p>
+            </div>
+            <LanguageSelector />
           </div>
 
           <form
@@ -112,7 +143,7 @@ export default function SignIn() {
             <div className="space-y-1">
               <Input
                 type="email"
-                placeholder="john.doe@gmail.com"
+                placeholder={translations.emailPlaceholder}
                 className="h-12 border-gray-300"
                 {...register("email")}
               />
@@ -125,7 +156,7 @@ export default function SignIn() {
             <div className="space-y-1 relative">
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••••••"
+                placeholder={translations.passwordPlaceholder}
                 className="h-12 border-gray-300"
                 {...register("password")}
               />
@@ -155,24 +186,26 @@ export default function SignIn() {
                   htmlFor="remember"
                   className="text-sm text-gray-600 leading-none"
                 >
-                  Remember me
+                  {translations.rememberMe}
                 </label>
               </div>
               <Link
                 href="/forgot-password"
                 className="text-[#FF5C00] text-sm hover:underline"
               >
-                Forgot Password?
+                {translations.forgotPassword}
               </Link>
             </div>
 
             {/* Login Button */}
-            <LoadingButton pending={pendingCredentials}>Login</LoadingButton>
+            <LoadingButton pending={pendingCredentials}>
+              {translations.loginButton}
+            </LoadingButton>
 
             <div className="text-center text-sm">
-              Don&apos;t have an account?{" "}
+              {translations.noAccount}{" "}
               <Link href="/sign-up" className="text-[#FF5C00] hover:underline">
-                Register
+                {translations.register}
               </Link>
             </div>
 
@@ -183,7 +216,7 @@ export default function SignIn() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-white px-4 text-gray-500">
-                  Or login with
+                  {translations.orLoginWith}
                 </span>
               </div>
             </div>
