@@ -82,6 +82,8 @@ export const trips = pgTable("trips", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  agencyId: text("agency_id").references(() => user.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 })
@@ -128,10 +130,14 @@ export const tripBookings = pgTable("trip_bookings", {
 })
 
 // Trip Relations
-export const tripsRelations = relations(trips, ({ many }) => ({
+export const tripsRelations = relations(trips, ({ many, one }) => ({
   images: many(tripImages),
   activities: many(tripActivities),
   bookings: many(tripBookings),
+  agency: one(user, {
+    fields: [trips.agencyId],
+    references: [user.id],
+  }),
 }))
 
 export const tripImagesRelations = relations(tripImages, ({ one }) => ({
@@ -391,9 +397,33 @@ export const favoritesRelations = relations(favorites, ({ one }) => ({
   }),
 }))
 
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'info', 'success', 'warning', 'error'
+  read: boolean("read").default(false).notNull(),
+  relatedItemType: varchar("related_item_type", { length: 50 }), // 'trip', 'booking', etc.
+  relatedItemId: integer("related_item_id"), // ID of the related item
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+// Notification Relations
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(user, {
+    fields: [notifications.userId],
+    references: [user.id],
+  }),
+}))
+
 export const userRelations = relations(user, ({ many }) => ({
   favorites: many(favorites),
   sessions: many(session),
   accounts: many(account),
+  notifications: many(notifications),
   // ...other existing relations...
 }))
