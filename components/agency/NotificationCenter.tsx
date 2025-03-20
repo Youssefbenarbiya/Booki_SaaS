@@ -30,7 +30,54 @@ export function NotificationCenter({
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState(initialNotifications)
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
+  const [hasNewNotifications, setHasNewNotifications] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Fetch notifications periodically
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch("/api/agency/notifications/latest", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          cache: "no-store", // Important: Prevent caching
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+
+          // Check if there are new notifications
+          if (data.unreadCount > unreadCount) {
+            // If dropdown is closed, show indicator
+            if (!isOpen) {
+              setHasNewNotifications(true)
+            }
+
+            // Update notifications and count
+            setNotifications(data.notifications)
+            setUnreadCount(data.unreadCount)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error)
+      }
+    }
+
+    // Set up polling interval (every 30 seconds)
+    const intervalId = setInterval(fetchNotifications, 1000)
+
+    // Clean up on component unmount
+    return () => clearInterval(intervalId)
+  }, [unreadCount, isOpen])
+
+  // Reset new notification indicator when opening dropdown
+  useEffect(() => {
+    if (isOpen) {
+      setHasNewNotifications(false)
+    }
+  }, [isOpen])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -85,6 +132,7 @@ export function NotificationCenter({
         // Update the local state
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
         setUnreadCount(0)
+        setHasNewNotifications(false)
       }
     } catch (error) {
       console.error("Error marking all notifications as read:", error)
@@ -108,11 +156,13 @@ export function NotificationCenter({
     <div className="relative" ref={dropdownRef}>
       <Button
         variant="ghost"
-        className="relative p-2"
+        className={`relative p-2 ${hasNewNotifications ? "animate-pulse" : ""}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
       >
-        <Bell className="h-5 w-5" />
+        <Bell
+          className={`h-5 w-5 ${hasNewNotifications ? "text-blue-500" : ""}`}
+        />
         {unreadCount > 0 && (
           <Badge
             variant="destructive"

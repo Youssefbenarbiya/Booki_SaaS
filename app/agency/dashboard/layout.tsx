@@ -28,6 +28,7 @@ export default async function DashboardLayout({
     return <NotAllowed />
   }
 
+  // Get initial notifications
   const { notifications, unreadCount } = await getAgencyNotifications(5)
   const typedNotifications = notifications.map((notification) => ({
     ...notification,
