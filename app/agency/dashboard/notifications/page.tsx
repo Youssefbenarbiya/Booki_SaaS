@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
 export default async function NotificationsPage() {
-  const { notifications } = await getAgencyNotifications(50) // Get more notifications for the full page
+  const { notifications } = await getAgencyNotifications(100) // Increase limit to ensure we get all notifications
+  console.log(`Retrieved ${notifications.length} notifications for display`)
 
   // Group notifications by date (today, this week, earlier)
   const today = new Date()
@@ -120,7 +121,9 @@ export default async function NotificationsPage() {
 
       {notifications.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-6 text-center">
-          <p className="text-gray-500">You don&apos;t have any notifications yet.</p>
+          <p className="text-gray-500">
+            You don&apos;t have any notifications yet.
+          </p>
         </div>
       ) : (
         <>

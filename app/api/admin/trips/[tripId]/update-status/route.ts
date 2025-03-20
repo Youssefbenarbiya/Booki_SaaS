@@ -57,12 +57,21 @@ export async function POST(
     }
 
     // Update trip status
-    await db.update(trips).set({ status }).where(eq(trips.id, parsedTripId))
+    try {
+      await db.update(trips).set({ status }).where(eq(trips.id, parsedTripId))
+      console.log(`Trip ${parsedTripId} status updated to ${status}`)
 
-    return NextResponse.json(
-      { success: true, message: `Trip ${status} successfully` },
-      { status: 200 }
-    )
+      return NextResponse.json(
+        { success: true, message: `Trip ${status} successfully` },
+        { status: 200 }
+      )
+    } catch (updateError) {
+      console.error("Error updating trip status:", updateError)
+      return NextResponse.json(
+        { success: false, message: "Database error while updating trip" },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     console.error("Error updating trip status:", error)
     return NextResponse.json(

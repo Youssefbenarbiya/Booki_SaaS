@@ -15,6 +15,8 @@ export function TripApprovalActions({ tripId }: TripApprovalActionsProps) {
   const handleStatusChange = async (status: "approved" | "rejected") => {
     setIsLoading(true)
     try {
+      console.log(`Starting status change to ${status} for trip ${tripId}`)
+
       // First update the trip status in the database
       const updateResponse = await fetch(
         `/api/admin/trips/${tripId}/update-status`,
@@ -27,35 +29,54 @@ export function TripApprovalActions({ tripId }: TripApprovalActionsProps) {
         }
       )
 
+      const updateData = await updateResponse.json()
+      console.log("Update response:", updateData)
+
       if (!updateResponse.ok) {
-        const errorData = await updateResponse.json()
-        throw new Error(errorData.message || "Failed to update trip status")
+        throw new Error(updateData.message || "Failed to update trip status")
       }
 
-      const updateData = await updateResponse.json()
-      console.log("Trip status updated:", updateData)
+      // Wait a moment to ensure DB transaction completes
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       // Send notification to agency
-      const result = await sendTripStatusNotification(tripId, status)
+      console.log(`Sending notification for trip ${tripId}`)
+      const notificationResult = await sendTripStatusNotification(
+        tripId,
+        status
+      )
+      console.log(`Notification result:`, notificationResult)
 
-      if (!result.success) {
-        console.warn("Notification could not be sent:", result.message)
-        // Continue anyway since the primary action (status update) succeeded
-      }
-
-      // Success message
-      if (typeof toast === "function") {
-        toast({
-          title: `Trip ${
-            status === "approved" ? "approved" : "rejected"
-          } successfully`,
-          description: result.success
-            ? "Notification sent to agency."
-            : "Trip status updated but notification couldn't be sent.",
-          variant: "default",
-        })
+      if (notificationResult.success) {
+        console.log("Notification sent successfully")
+        if (typeof toast === "function") {
+          toast({
+            title: `Trip ${
+              status === "approved" ? "approved" : "rejected"
+            } successfully`,
+            description: "Notification sent to agency.",
+            variant: "default",
+          })
+        } else {
+          alert(`Trip ${status} successfully! Notification sent.`)
+        }
       } else {
-        alert(`Trip ${status} successfully!`)
+        console.warn(
+          "Notification could not be sent:",
+          notificationResult.message
+        )
+        if (typeof toast === "function") {
+          toast({
+            title: `Trip ${
+              status === "approved" ? "approved" : "rejected"
+            } successfully`,
+            description:
+              "Trip status updated but notification couldn't be sent.",
+            variant: "default",
+          })
+        } else {
+          alert(`Trip ${status} successfully! (Notification failed)`)
+        }
       }
 
       // Refresh the page to show updated status
@@ -65,7 +86,6 @@ export function TripApprovalActions({ tripId }: TripApprovalActionsProps) {
         `Error ${status === "approved" ? "approving" : "rejecting"} trip:`,
         error
       )
-
       if (typeof toast === "function") {
         toast({
           title: "Error",

@@ -5,6 +5,8 @@ import { trips, tripImages, tripActivities } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { auth } from "@/auth"
+import { headers } from "next/headers"
 
 const tripSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -33,7 +35,18 @@ export async function createTrip(data: TripInput) {
   try {
     const validatedData = tripSchema.parse(data)
 
-    // Create trip
+    // Get the current user's session to set as agencyId
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session?.user) {
+      throw new Error("Unauthorized: You must be logged in to create a trip")
+    }
+
+    console.log(`Creating trip with agency ID: ${session.user.id}`)
+
+    // Create trip with agencyId set to the current user's ID
     const [trip] = await db
       .insert(trips)
       .values({
@@ -45,6 +58,7 @@ export async function createTrip(data: TripInput) {
         price: validatedData.price.toString(),
         capacity: validatedData.capacity,
         isAvailable: validatedData.isAvailable,
+        agencyId: session.user.id, // Set the agencyId to the current user's ID
       })
       .returning()
 

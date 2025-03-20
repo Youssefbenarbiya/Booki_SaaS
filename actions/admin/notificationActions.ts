@@ -14,49 +14,60 @@ export async function sendTripStatusNotification(
     )
 
     // Get trip details
-    const trip = await db.query.trips.findFirst({
+    const tripRecord = await db.query.trips.findFirst({
       where: eq(trips.id, tripId),
     })
 
-    if (!trip) {
+    console.log("Trip record:", JSON.stringify(tripRecord, null, 2))
+
+    if (!tripRecord) {
       console.error(`Trip not found with ID: ${tripId}`)
       return { success: false, message: "Trip not found" }
     }
 
-    // Find the agency ID directly from the trip record
-    const agencyId = trip.agencyId
+    // Get the agency user ID directly from the trip
+    const agencyId = tripRecord.agencyId
 
     if (!agencyId) {
       console.error(
-        `Trip found but no agency ID associated with trip ID: ${tripId}`
+        `No agency ID found for trip ID: ${tripId}. This trip may have been created without an agency association.`
       )
-      return { success: false, message: "No agency associated with trip" }
+      return {
+        success: false,
+        message: "No agency associated with trip. Unable to send notification.",
+      }
     }
 
-    console.log(`Found trip: ${trip.name}, Agency ID: ${agencyId}`)
+    console.log(`Using agency ID: ${agencyId} for notification`)
 
     const title = status === "approved" ? "Trip Approved" : "Trip Rejected"
 
     const message =
       status === "approved"
-        ? `Your trip "${trip.name}" has been approved and is now available for booking.`
-        : `Your trip "${trip.name}" has been rejected. Please review and update your trip or contact support for more information.`
+        ? `Your trip "${tripRecord.name}" has been approved and is now available for booking.`
+        : `Your trip "${tripRecord.name}" has been rejected. Please review and update your trip or contact support for more information.`
 
-    // Insert notification using the agencyId directly
-    await db.insert(notifications).values({
-      userId: agencyId,
-      title,
-      message,
-      type: status === "approved" ? "success" : "warning",
-      relatedItemType: "trip",
-      relatedItemId: tripId,
-      createdAt: new Date(),
-    })
+    // Create notification with explicit values for all required fields
+    try {
+      const insertResult = await db.insert(notifications).values({
+        userId: agencyId,
+        title,
+        message,
+        type: status === "approved" ? "success" : "warning",
+        relatedItemType: "trip",
+        relatedItemId: tripId,
+        createdAt: new Date(),
+        read: false,
+      })
 
-    console.log("Notification created successfully")
-    return { success: true }
+      console.log("Notification insert result:", insertResult)
+      return { success: true }
+    } catch (insertError) {
+      console.error("Failed to insert notification:", insertError)
+      throw insertError // Re-throw to be caught by outer catch block
+    }
   } catch (error) {
-    console.error("Error sending notification:", error)
+    console.error("Error in sendTripStatusNotification:", error)
     return { success: false, message: "Failed to send notification" }
   }
 }
