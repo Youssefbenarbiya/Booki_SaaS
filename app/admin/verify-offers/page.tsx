@@ -1,60 +1,21 @@
-import Link from "next/link"
 import { trips } from "@/db/schema"
 import { eq } from "drizzle-orm"
-import { Card } from "@/components/ui/card"
 import db from "@/db/drizzle"
-import { TripApprovalActions } from "@/components/admin/TripApprovalActions"
+import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalActions"
 
-export default async function DashboardPage() {
-  // Fetch counts for dashboard overview
+export default async function VerifyOffersPage() {
   const pendingTrips = await db.query.trips.findMany({
     where: eq(trips.status, "pending"),
   })
 
   const pendingCount = pendingTrips.length
 
-  // You could add more stats here
-  const allTrips = await db.query.trips.findMany()
-  const totalTrips = allTrips.length
-
-  const allUsers = await db.query.user.findMany()
-  const totalUsers = allUsers.length
-
-  const allBookings = await db.query.tripBookings.findMany()
-  const totalBookings = allBookings.length
-
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-4 shadow-md">
-          <h3 className="font-semibold text-lg">Pending Trips</h3>
-          <p className="text-3xl font-bold">{pendingCount}</p>
-          <Link href="#pending-trips" className="text-blue-500 text-sm">
-            View all
-          </Link>
-        </Card>
-
-        <Card className="p-4 shadow-md">
-          <h3 className="font-semibold text-lg">Total Trips</h3>
-          <p className="text-3xl font-bold">{totalTrips}</p>
-        </Card>
-
-        <Card className="p-4 shadow-md">
-          <h3 className="font-semibold text-lg">Users</h3>
-          <p className="text-3xl font-bold">{totalUsers}</p>
-        </Card>
-
-        <Card className="p-4 shadow-md">
-          <h3 className="font-semibold text-lg">Bookings</h3>
-          <p className="text-3xl font-bold">{totalBookings}</p>
-        </Card>
-      </div>
+      <h1 className="text-3xl font-bold text-gray-900">Verify Offers</h1>
 
       {pendingCount > 0 && (
-        <div id="pending-trips" className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Trips Pending Approval</h2>
+        <div id="pending-trips">
           <div className="bg-white rounded-md shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -108,6 +69,12 @@ export default async function DashboardPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {pendingCount === 0 && (
+        <div className="text-center py-12 bg-white rounded-md shadow">
+          <p className="text-gray-500">No pending offers to verify</p>
         </div>
       )}
     </div>

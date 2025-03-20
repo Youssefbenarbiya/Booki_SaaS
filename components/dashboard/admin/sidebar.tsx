@@ -18,35 +18,29 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
 
+  const isActive = (path: string) => {
+    return pathname === path ? "bg-gray-900 text-white" : "text-gray-300 hover:bg-gray-700"
+  }
+
   return (
-    <aside className="hidden lg:flex lg:flex-col w-64 bg-background border-r border-border">
-      <div className="px-4 py-6">
-        <h2 className="text-2xl font-bold text-primary">Admin Dashboard</h2>
+    <div className="flex flex-col w-64 bg-gray-800">
+      <div className="flex items-center justify-center h-16 px-4 bg-gray-900">
+        <span className="text-xl font-bold text-white">Admin Panel</span>
       </div>
-      <ScrollArea className="flex-1 px-4">
-        <nav className="space-y-2">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start text-foreground hover:bg-muted",
-                  pathname === item.href && "bg-accent text-accent-foreground"
-                )}
-              >
-                <item.icon className="mr-2 h-4 w-4" />
-                {item.name}
-              </Button>
-            </Link>
-          ))}
-        </nav>
-      </ScrollArea>
-      <div className="p-4 mt-auto">
-        <Button variant="outline" className="w-full">
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
-        </Button>
-      </div>
-    </aside>
+      <nav className="flex-1 px-2 py-4 space-y-1">
+        <Link
+          href="/admin"
+          className={`flex items-center px-4 py-2 rounded-md ${isActive('/admin')}`}
+        >
+          <span>Dashboard</span>
+        </Link>
+        <Link
+          href="/admin/verify-offers"
+          className={`flex items-center px-4 py-2 rounded-md ${isActive('/admin/verify-offers')}`}
+        >
+          <span>Verify Offers</span>
+        </Link>
+      </nav>
+    </div>
   )
 }

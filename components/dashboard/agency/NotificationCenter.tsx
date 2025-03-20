@@ -65,8 +65,8 @@ export function NotificationCenter({
       }
     }
 
-    // Set up polling interval (every 30 seconds)
-    const intervalId = setInterval(fetchNotifications, 1000)
+    // Set up polling interval (every 1seconds)
+    const intervalId = setInterval(fetchNotifications, 11000)
 
     // Clean up on component unmount
     return () => clearInterval(intervalId)

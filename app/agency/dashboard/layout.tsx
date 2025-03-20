@@ -5,7 +5,7 @@ import { auth } from "@/auth"
 import { Sidebar } from "../../../components/dashboard/agency/Sidebar"
 import NotAllowed from "@/components/not-allowed"
 import { ReactNode } from "react"
-import { NotificationCenter } from "@/components/agency/NotificationCenter"
+import { NotificationCenter } from "@/components/dashboard/agency/NotificationCenter"
 import { getAgencyNotifications } from "@/actions/agency/notificationActions"
 
 interface DashboardLayoutProps {
