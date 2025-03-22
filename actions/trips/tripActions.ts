@@ -134,7 +134,7 @@ export async function updateTrip(id: number, data: TripInput) {
   try {
     const validatedData = tripSchema.parse(data)
 
-    // Update trip
+    // Update trip with explicit null values for discount fields when they're undefined
     const [trip] = await db
       .update(trips)
       .set({

@@ -6,21 +6,7 @@ import { useRouter } from "next/navigation"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
-import { type TripInput, updateTrip } from "@/actions/trips/tripActions"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Percent, DollarSign, Info } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
-interface ExtendedTripInput extends TripInput {
-  discountPercentage?: number
-}
+import { TripInput, updateTrip } from "@/actions/trips/tripActions"
 
 interface EditTripFormProps {
   trip: {
@@ -62,19 +48,9 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
   const [images, setImages] = useState<File[]>([])
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([])
   const [uploadError, setUploadError] = useState<string>("")
-  const [existingImages, setExistingImages] = useState<Array<{ id: number; imageUrl: string }>>(trip.images)
-
-  // Determine if trip has a discount
-  const hasExistingDiscount = !!trip.discountPercentage && !!trip.priceAfterDiscount
-
-  // Discount states
-  const [hasDiscount, setHasDiscount] = useState<boolean>(hasExistingDiscount)
-  const [discountPercentage, setDiscountPercentage] = useState<number>(trip.discountPercentage || 0)
-  const [originalPrice, setOriginalPrice] = useState<number>(trip.originalPrice)
-  const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(trip.priceAfterDiscount || trip.originalPrice)
-  const [customPercentage, setCustomPercentage] = useState<boolean>(
-    !!trip.discountPercentage && ![10, 20, 30].includes(trip.discountPercentage),
-  )
+  const [existingImages, setExistingImages] = useState<
+    Array<{ id: number; imageUrl: string }>
+  >(trip.images)
 
   const {
     register,
@@ -210,22 +186,10 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
         }
       }
 
-      // Calculate price after discount if applicable
-      let finalPriceAfterDiscount = undefined
-      if (hasDiscount && data.discountPercentage) {
-        finalPriceAfterDiscount = calculatePriceAfterDiscount(Number(data.originalPrice), data.discountPercentage)
-      }
-
-      // Update trip with all image URLs and discount info
+      // Update trip with all image URLs
       const formattedData = {
         ...data,
-        originalPrice: Number(data.originalPrice),
-        discountPercentage: hasDiscount ? data.discountPercentage : undefined,
-        priceAfterDiscount: hasDiscount ? finalPriceAfterDiscount : undefined,
         images: imageUrls,
-        // Ensure dates are always Date objects
-        startDate: data.startDate instanceof Date ? data.startDate : new Date(data.startDate),
-        endDate: data.endDate instanceof Date ? data.endDate : new Date(data.endDate),
       }
 
       await updateTrip(trip.id, formattedData)
@@ -238,253 +202,147 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
 
   return (
     <div className="max-w-3xl mx-auto my-8 px-4">
-      <Card>
-        <CardHeader className="bg-indigo-600 text-white">
-          <CardTitle>Edit Trip</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit((data) => startTransition(() => onSubmit(data)))} className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">Trip Name</Label>
-                <Input id="name" {...register("name")} />
-                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-              </div>
+      <form
+        onSubmit={handleSubmit((data) => startTransition(() => onSubmit(data)))}
+        className="bg-white p-6 rounded-lg shadow-md space-y-6"
+      >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Trip Name
+            </label>
+            <input
+              type="text"
+              {...register("name")}
+              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+            />
+            {errors.name && (
+              <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
+            )}
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="destination">Destination</Label>
-                <Input id="destination" {...register("destination")} />
-                {errors.destination && <p className="text-xs text-destructive">{errors.destination.message}</p>}
-              </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Destination
+            </label>
+            <input
+              type="text"
+              {...register("destination")}
+              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+            />
+            {errors.destination && (
+              <p className="mt-1 text-xs text-red-500">
+                {errors.destination.message}
+              </p>
+            )}
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
-                <Controller
-                  name="startDate"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={formatDateForInput(new Date(field.value))}
-                      onChange={(e) => field.onChange(new Date(e.target.value))}
-                    />
-                  )}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Start Date
+            </label>
+            <Controller
+              name="startDate"
+              control={control}
+              render={({ field }) => (
+                <input
+                  type="date"
+                  value={formatDateForInput(new Date(field.value))}
+                  onChange={(e) => field.onChange(new Date(e.target.value))}
+                  className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                 />
-                {errors.startDate && <p className="text-xs text-destructive">{errors.startDate.message}</p>}
-              </div>
+              )}
+            />
+            {errors.startDate && (
+              <p className="mt-1 text-xs text-red-500">
+                {errors.startDate.message}
+              </p>
+            )}
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Controller
-                  name="endDate"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formatDateForInput(new Date(field.value))}
-                      onChange={(e) => field.onChange(new Date(e.target.value))}
-                    />
-                  )}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              End Date
+            </label>
+            <Controller
+              name="endDate"
+              control={control}
+              render={({ field }) => (
+                <input
+                  type="date"
+                  value={formatDateForInput(new Date(field.value))}
+                  onChange={(e) => field.onChange(new Date(e.target.value))}
+                  className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                 />
-                {errors.endDate && <p className="text-xs text-destructive">{errors.endDate.message}</p>}
-              </div>
+              )}
+            />
+            {errors.endDate && (
+              <p className="mt-1 text-xs text-red-500">
+                {errors.endDate.message}
+              </p>
+            )}
+          </div>
 
-              {/* Pricing Section */}
-              <div className="md:col-span-2">
-                <Card className="border-2 border-muted">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center">
-                      <DollarSign className="h-5 w-5 mr-1" />
-                      Pricing Information
-                      {hasExistingDiscount && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <Percent className="h-3 w-3 mr-1" />
-                                Discount Applied
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>This trip has a {trip.discountPercentage}% discount applied</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <Label htmlFor="originalPrice">Original Price</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 ml-1 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>The base price before any discounts</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="originalPrice"
-                          type="number"
-                          step="0.01"
-                          className="pl-9"
-                          {...register("originalPrice", {
-                            required: "Original price is required",
-                            onChange: (e) => {
-                              const price = Number(e.target.value)
-                              setOriginalPrice(price)
-                              if (hasDiscount && discountPercentage) {
-                                calculatePriceAfterDiscount(price, discountPercentage)
-                              }
-                            },
-                          })}
-                        />
-                      </div>
-                      {errors.originalPrice && (
-                        <p className="text-xs text-destructive">{errors.originalPrice.message}</p>
-                      )}
-                    </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Price
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              {...register("price")}
+              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+            />
+            {errors.price && (
+              <p className="mt-1 text-xs text-red-500">
+                {errors.price.message}
+              </p>
+            )}
+          </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="hasDiscount"
-                        checked={hasDiscount}
-                        onCheckedChange={(checked) => {
-                          setHasDiscount(!!checked)
-                          if (!checked) {
-                            setDiscountPercentage(0)
-                            setValue("discountPercentage", undefined)
-                            setValue("priceAfterDiscount", undefined)
-                            setPriceAfterDiscount(originalPrice)
-                            setCustomPercentage(false)
-                          } else if (hasExistingDiscount) {
-                            // Restore original discount values if they exist
-                            setDiscountPercentage(trip.discountPercentage || 0)
-                            setValue("discountPercentage", trip.discountPercentage)
-                            setPriceAfterDiscount(trip.priceAfterDiscount || originalPrice)
-                            setValue("priceAfterDiscount", trip.priceAfterDiscount)
-                            setCustomPercentage(![10, 20, 30].includes(trip.discountPercentage || 0))
-                          }
-                        }}
-                      />
-                      <Label htmlFor="hasDiscount" className="font-medium">
-                        Apply Discount
-                      </Label>
-                      {hasExistingDiscount && !hasDiscount && (
-                        <span className="text-xs text-amber-600">
-                          Warning: Unchecking will remove the existing discount
-                        </span>
-                      )}
-                    </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Capacity
+            </label>
+            <input
+              type="number"
+              {...register("capacity")}
+              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+            />
+            {errors.capacity && (
+              <p className="mt-1 text-xs text-red-500">
+                {errors.capacity.message}
+              </p>
+            )}
+          </div>
 
-                    {hasDiscount && (
-                      <div className="space-y-4 pl-6 border-l-2 border-muted">
-                        <div className="space-y-3">
-                          <Label>Discount Percentage</Label>
-                          <RadioGroup
-                            value={customPercentage ? "custom" : discountPercentage.toString()}
-                            onValueChange={(value) => {
-                              if (value === "custom") {
-                                setCustomPercentage(true)
-                                return
-                              }
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              {...register("description")}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+              rows={3}
+            />
+            {errors.description && (
+              <p className="mt-1 text-xs text-red-500">
+                {errors.description.message}
+              </p>
+            )}
+          </div>
 
-                              setCustomPercentage(false)
-                              const percentage = Number.parseInt(value, 10)
-                              applyPercentageDiscount(percentage)
-                            }}
-                            className="flex flex-wrap gap-2"
-                          >
-                            <div className="flex items-center space-x-2 border rounded-md p-2">
-                              <RadioGroupItem value="10" id="r10" />
-                              <Label htmlFor="r10">10%</Label>
-                            </div>
-                            <div className="flex items-center space-x-2 border rounded-md p-2">
-                              <RadioGroupItem value="20" id="r20" />
-                              <Label htmlFor="r20">20%</Label>
-                            </div>
-                            <div className="flex items-center space-x-2 border rounded-md p-2">
-                              <RadioGroupItem value="30" id="r30" />
-                              <Label htmlFor="r30">30%</Label>
-                            </div>
-                            <div className="flex items-center space-x-2 border rounded-md p-2">
-                              <RadioGroupItem value="custom" id="rcustom" />
-                              <Label htmlFor="rcustom">Custom</Label>
-                            </div>
-                          </RadioGroup>
-
-                          {customPercentage && (
-                            <div className="flex items-center space-x-2 mt-2">
-                              <Input
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={discountPercentage || ""}
-                                onChange={(e) => {
-                                  const value = Number.parseInt(e.target.value, 10)
-                                  if (!isNaN(value) && value >= 0 && value <= 100) {
-                                    applyPercentageDiscount(value)
-                                  }
-                                }}
-                                className="w-24"
-                              />
-                              <Percent className="h-4 w-4" />
-                            </div>
-                          )}
-                        </div>
-
-                        {discountPercentage > 0 && originalPrice > 0 && (
-                          <div className="bg-muted p-4 rounded-md space-y-2">
-                            <div className="flex justify-between">
-                              <span>Original Price:</span>
-                              <span>${originalPrice.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Discount ({discountPercentage}%):</span>
-                              <span className="text-red-500">
-                                -${((originalPrice * discountPercentage) / 100).toFixed(2)}
-                              </span>
-                            </div>
-                            <Separator className="my-2" />
-                            <div className="flex justify-between font-bold">
-                              <span>Price After Discount:</span>
-                              <span className="text-green-600">${priceAfterDiscount.toFixed(2)}</span>
-                            </div>
-                            <input type="hidden" {...register("priceAfterDiscount")} value={priceAfterDiscount} />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="capacity">Capacity</Label>
-                <Input id="capacity" type="number" {...register("capacity")} />
-                {errors.capacity && <p className="text-xs text-destructive">{errors.capacity.message}</p>}
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" {...register("description")} rows={3} />
-                {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
-              </div>
-
-              <div className="md:col-span-2 flex items-center space-x-2">
-                <Checkbox id="isAvailable" {...register("isAvailable")} />
-                <Label htmlFor="isAvailable">Available for Booking</Label>
-              </div>
-            </div>
+          <div className="md:col-span-2">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <input
+                type="checkbox"
+                {...register("isAvailable")}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Available for Booking</span>
+            </label>
+          </div>
+        </div>
 
             {/* Trip Images */}
             <div className="space-y-4">
@@ -547,17 +405,23 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Updating..." : "Update Trip"}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 transition-colors disabled:opacity-50"
+            disabled={isPending}
+          >
+            {isPending ? "Updating..." : "Update Trip"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
