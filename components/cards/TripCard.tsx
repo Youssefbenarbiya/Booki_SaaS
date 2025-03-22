@@ -5,11 +5,10 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, Heart, MapPin, Star, Users } from "lucide-react"
-import { formatPrice } from "@/lib/utils"
 import { useFavorite } from "@/lib/hooks/useFavorite"
 
 interface TripCardProps {
-  trip: any // Using any here to match with your existing schema
+  trip: any 
 }
 
 export default function TripCard({ trip }: TripCardProps) {
@@ -47,6 +46,13 @@ export default function TripCard({ trip }: TripCardProps) {
       ? trip.images[0].imageUrl || trip.images[0]
       : "/placeholder-trip.jpg"
 
+  // Handle price display logic
+  const hasDiscount = trip.discountPercentage !== null
+  const originalPrice = parseFloat(trip.originalPrice.toString()).toFixed(2)
+  const discountedPrice = hasDiscount
+    ? parseFloat(trip.priceAfterDiscount!.toString()).toFixed(2)
+    : null
+
   return (
     <Card className="overflow-hidden group transition-all duration-300 hover:shadow-lg h-full flex flex-col">
       <div className="relative aspect-video overflow-hidden">
@@ -80,8 +86,20 @@ export default function TripCard({ trip }: TripCardProps) {
 
         {/* Price badge */}
         <div className="absolute top-3 right-3 z-20">
-          <Badge className="bg-white text-black font-semibold px-3 py-1">
-            {formatPrice(trip.price)}
+          <Badge className="bg-white text-black font-semibold px-3 py-1 flex flex-col items-end">
+            {/* Display price with or without discount */}
+            {hasDiscount ? (
+              <>
+                <span className="line-through text-gray-500 text-xs">
+                  ${originalPrice}
+                </span>
+                <span className="text-green-600 text-sm">
+                  ${discountedPrice}
+                </span>
+              </>
+            ) : (
+              <span className="text-sm">${originalPrice}</span>
+            )}
           </Badge>
         </div>
 
@@ -163,7 +181,10 @@ export default function TripCard({ trip }: TripCardProps) {
 
       <CardFooter className="p-4 pt-0 mt-auto">
         <Link href={`/trips/${trip.id}`} className="w-full">
-          <Button className="w-full" variant="default">
+          <Button
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded transition-all duration-300"
+            variant="default"
+          >
             View Details
           </Button>
         </Link>

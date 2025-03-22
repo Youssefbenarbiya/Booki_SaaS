@@ -1,12 +1,29 @@
 "use client"
 
-import { useTransition, useState } from "react"
+import { useTransition, useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { createTrip, type TripInput } from "@/actions/trips/tripActions"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
-import { fileToFormData } from "@/lib/utils"
+import { fileToFormData, cn } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { CalendarIcon, Percent, DollarSign } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Separator } from "@/components/ui/separator"
+
+// Extended TripInput type to include discount
+interface ExtendedTripInput extends TripInput {
+  discountPercentage?: number
+}
 
 export default function NewTripForm() {
   const router = useRouter()
@@ -17,18 +34,66 @@ export default function NewTripForm() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [uploadError, setUploadError] = useState<string>("")
 
+  // Discount states
+  const [hasDiscount, setHasDiscount] = useState(false)
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0)
+  const [originalPrice, setOriginalPrice] = useState<number>(0)
+  const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(0)
+  const [customPercentage, setCustomPercentage] = useState<boolean>(false)
+
+  // Date states
+  const [startDate, setStartDate] = useState<Date>()
+  const [endDate, setEndDate] = useState<Date>()
+
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
-  } = useForm<TripInput>({
+  } = useForm<ExtendedTripInput>({
     defaultValues: {
       isAvailable: true,
       activities: [],
     },
   })
 
-  async function onSubmit(data: TripInput) {
+  // Watch original price to update discount calculations
+  const watchedOriginalPrice = watch("originalPrice")
+
+  // Update original price when price changes
+  useEffect(() => {
+    if (watchedOriginalPrice) {
+      const price = Number(watchedOriginalPrice)
+      setOriginalPrice(price)
+      calculatePriceAfterDiscount(price, discountPercentage)
+    }
+  }, [watchedOriginalPrice, discountPercentage])
+
+  // Calculate price after discount
+  const calculatePriceAfterDiscount = (price: number, percentage: number) => {
+    if (!price || !percentage) {
+      setPriceAfterDiscount(price || 0)
+      return price || 0
+    }
+
+    const calculatedPrice = price - price * (percentage / 100)
+    const roundedPrice = Math.round(calculatedPrice * 100) / 100 // Round to 2 decimal places
+    setPriceAfterDiscount(roundedPrice)
+    setValue("priceAfterDiscount", roundedPrice)
+    return roundedPrice
+  }
+
+  // Apply percentage discount
+  const applyPercentageDiscount = (percentage: number) => {
+    setDiscountPercentage(percentage)
+    setValue("discountPercentage", percentage)
+
+    const price = Number(watchedOriginalPrice) || 0
+    calculatePriceAfterDiscount(price, percentage)
+  }
+
+  async function onSubmit(data: ExtendedTripInput) {
     try {
       // Upload images first
       let imageUrls: string[] = []
@@ -38,7 +103,7 @@ export default function NewTripForm() {
             images.map(async (file) => {
               const formData = await fileToFormData(file)
               return uploadImages(formData)
-            })
+            }),
           )
         } catch (error) {
           console.error("Error uploading images:", error)
@@ -47,10 +112,22 @@ export default function NewTripForm() {
         }
       }
 
-      // Create trip with image URLs
+      // Calculate price after discount if applicable
+      let finalPriceAfterDiscount = null
+      if (hasDiscount && data.discountPercentage) {
+        finalPriceAfterDiscount = calculatePriceAfterDiscount(Number(data.originalPrice), data.discountPercentage)
+      }
+
+      // Create trip with image URLs and discount info
       const formattedData = {
         ...data,
+        originalPrice: Number(data.originalPrice),
+        discountPercentage: hasDiscount ? data.discountPercentage : undefined,
+        priceAfterDiscount: hasDiscount ? finalPriceAfterDiscount : undefined,
         images: imageUrls,
+        // Ensure dates are always Date objects
+        startDate: startDate || new Date(data.startDate),
+        endDate: endDate || new Date(data.endDate),
       }
 
       await createTrip(formattedData)
@@ -63,162 +140,269 @@ export default function NewTripForm() {
 
   return (
     <div className="max-w-3xl mx-auto my-8 px-4">
-      <form
-        onSubmit={handleSubmit((data) => startTransition(() => onSubmit(data)))}
-        className="bg-white p-6 rounded-lg shadow-md space-y-6"
-      >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Trip Name
-            </label>
-            <input
-              type="text"
-              {...register("name")}
-              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-            />
-            {errors.name && (
-              <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
-            )}
-          </div>
+      <Card>
+        <CardHeader className="bg-indigo-600 text-white">
+          <CardTitle>Create New Trip</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit((data) => startTransition(() => onSubmit(data)))} className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Trip Name</Label>
+                <Input id="name" {...register("name")} />
+                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Destination
-            </label>
-            <input
-              type="text"
-              {...register("destination")}
-              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-            />
-            {errors.destination && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.destination.message}
-              </p>
-            )}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="destination">Destination</Label>
+                <Input id="destination" {...register("destination")} />
+                {errors.destination && <p className="text-xs text-destructive">{errors.destination.message}</p>}
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Start Date
-            </label>
-            <input
-              type="date"
-              {...register("startDate")}
-              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-            />
-            {errors.startDate && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.startDate.message}
-              </p>
-            )}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={(date) => {
+                        setStartDate(date)
+                        if (date) {
+                          setValue("startDate", date)
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {errors.startDate && <p className="text-xs text-destructive">{errors.startDate.message}</p>}
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              End Date
-            </label>
-            <input
-              type="date"
-              {...register("endDate")}
-              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-            />
-            {errors.endDate && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.endDate.message}
-              </p>
-            )}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="endDate">End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={(date) => {
+                        setEndDate(date)
+                        if (date) {
+                          setValue("endDate", date)
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {errors.endDate && <p className="text-xs text-destructive">{errors.endDate.message}</p>}
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Price
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              {...register("price")}
-              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-            />
-            {errors.price && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.price.message}
-              </p>
-            )}
-          </div>
+              {/* Pricing Section */}
+              <div className="md:col-span-2">
+                <Card className="border-2 border-muted">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center">
+                      <DollarSign className="h-5 w-5 mr-1" />
+                      Pricing Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="originalPrice">Original Price</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="originalPrice"
+                          type="number"
+                          step="0.01"
+                          className="pl-9"
+                          {...register("originalPrice", {
+                            required: "Original price is required",
+                            onChange: (e) => {
+                              const price = Number(e.target.value)
+                              setOriginalPrice(price)
+                              if (hasDiscount && discountPercentage) {
+                                calculatePriceAfterDiscount(price, discountPercentage)
+                              }
+                            },
+                          })}
+                        />
+                      </div>
+                      {errors.originalPrice && (
+                        <p className="text-xs text-destructive">{errors.originalPrice.message}</p>
+                      )}
+                    </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Capacity
-            </label>
-            <input
-              type="number"
-              {...register("capacity")}
-              className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-            />
-            {errors.capacity && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.capacity.message}
-              </p>
-            )}
-          </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="hasDiscount"
+                        checked={hasDiscount}
+                        onCheckedChange={(checked) => {
+                          setHasDiscount(!!checked)
+                          if (!checked) {
+                            setDiscountPercentage(0)
+                            setValue("discountPercentage", undefined)
+                            setValue("priceAfterDiscount", undefined)
+                            setPriceAfterDiscount(0)
+                            setCustomPercentage(false)
+                          }
+                        }}
+                      />
+                      <Label htmlFor="hasDiscount" className="font-medium">
+                        Apply Discount
+                      </Label>
+                    </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              {...register("description")}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-              rows={3}
-            />
-            {errors.description && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
+                    {hasDiscount && (
+                      <div className="space-y-4 pl-6 border-l-2 border-muted">
+                        <div className="space-y-3">
+                          <Label>Discount Percentage</Label>
+                          <RadioGroup
+                            value={customPercentage ? "custom" : discountPercentage.toString()}
+                            onValueChange={(value) => {
+                              if (value === "custom") {
+                                setCustomPercentage(true)
+                                return
+                              }
 
-          <div className="md:col-span-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <input
-                type="checkbox"
-                {...register("isAvailable")}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Available for Booking</span>
-            </label>
-          </div>
-        </div>
+                              setCustomPercentage(false)
+                              const percentage = Number.parseInt(value, 10)
+                              applyPercentageDiscount(percentage)
+                            }}
+                            className="flex flex-wrap gap-2"
+                          >
+                            <div className="flex items-center space-x-2 border rounded-md p-2">
+                              <RadioGroupItem value="10" id="r10" />
+                              <Label htmlFor="r10">10%</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 border rounded-md p-2">
+                              <RadioGroupItem value="20" id="r20" />
+                              <Label htmlFor="r20">20%</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 border rounded-md p-2">
+                              <RadioGroupItem value="30" id="r30" />
+                              <Label htmlFor="r30">30%</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 border rounded-md p-2">
+                              <RadioGroupItem value="custom" id="rcustom" />
+                              <Label htmlFor="rcustom">Custom</Label>
+                            </div>
+                          </RadioGroup>
 
-        {/* Trip Images */}
-        <ImageUploadSection
-          label="Trip Images"
-          images={images}
-          setImages={setImages}
-          previewUrls={imagePreviews}
-          setPreviewUrls={setImagePreviews}
-          uploadError={uploadError}
-          setUploadError={setUploadError}
-        />
+                          {customPercentage && (
+                            <div className="flex items-center space-x-2 mt-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={discountPercentage || ""}
+                                onChange={(e) => {
+                                  const value = Number.parseInt(e.target.value, 10)
+                                  if (!isNaN(value) && value >= 0 && value <= 100) {
+                                    applyPercentageDiscount(value)
+                                  }
+                                }}
+                                className="w-24"
+                              />
+                              <Percent className="h-4 w-4" />
+                            </div>
+                          )}
+                        </div>
 
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 transition-colors disabled:opacity-50"
-            disabled={isPending}
-          >
-            {isPending ? "Creating..." : "Create Trip"}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow hover:bg-gray-100 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+                        {discountPercentage > 0 && originalPrice > 0 && (
+                          <div className="bg-muted p-4 rounded-md space-y-2">
+                            <div className="flex justify-between">
+                              <span>Original Price:</span>
+                              <span>${originalPrice.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Discount ({discountPercentage}%):</span>
+                              <span className="text-red-500">
+                                -${((originalPrice * discountPercentage) / 100).toFixed(2)}
+                              </span>
+                            </div>
+                            <Separator className="my-2" />
+                            <div className="flex justify-between font-bold">
+                              <span>Price After Discount:</span>
+                              <span className="text-green-600">${priceAfterDiscount.toFixed(2)}</span>
+                            </div>
+                            <input type="hidden" {...register("priceAfterDiscount")} value={priceAfterDiscount} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Capacity</Label>
+                <Input id="capacity" type="number" {...register("capacity")} />
+                {errors.capacity && <p className="text-xs text-destructive">{errors.capacity.message}</p>}
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea id="description" {...register("description")} rows={3} />
+                {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
+              </div>
+
+              <div className="md:col-span-2 flex items-center space-x-2">
+                <Checkbox id="isAvailable" {...register("isAvailable")} />
+                <Label htmlFor="isAvailable">Available for Booking</Label>
+              </div>
+            </div>
+
+            {/* Trip Images */}
+            <div className="space-y-2">
+              <Label>Trip Images</Label>
+              <div className="border border-dashed rounded-md p-4">
+                <ImageUploadSection
+                  label="Upload Images"
+                  images={images}
+                  setImages={setImages}
+                  previewUrls={imagePreviews}
+                  setPreviewUrls={setImagePreviews}
+                  uploadError={uploadError}
+                  setUploadError={setUploadError}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Creating..." : "Create Trip"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.back()}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

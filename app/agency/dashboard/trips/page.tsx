@@ -43,9 +43,27 @@ export default async function TripsPage() {
                   {trip.name}
                 </h2>
                 <p className="text-sm text-gray-500">{trip.destination}</p>
-                <p className="mt-2 font-medium text-lg text-green-600">
-                  {formatPrice(trip.price)}
-                </p>
+                <div className="mt-2 space-y-1">
+                  {trip.discountPercentage ? (
+                    <>
+                      <p className="text-sm text-gray-500 line-through">
+                        Original: {formatPrice(trip.originalPrice)}
+                      </p>
+                      <p className="font-medium text-lg text-green-600 flex items-center gap-2">
+                        {formatPrice(
+                          trip.priceAfterDiscount || trip.originalPrice
+                        )}
+                        <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                          {trip.discountPercentage}% OFF
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-medium text-lg text-gray-900">
+                      {formatPrice(trip.originalPrice)}
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span
