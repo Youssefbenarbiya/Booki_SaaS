@@ -4,6 +4,7 @@ import db from "@/db/drizzle"
 import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalActions"
 
 export default async function VerifyOffersPage() {
+  // Fetch pending trips
   const pendingTrips = await db.query.trips.findMany({
     where: eq(trips.status, "pending"),
   })
@@ -38,34 +39,57 @@ export default async function VerifyOffersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {pendingTrips.map((trip) => (
-                  <tr key={trip.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {trip.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {trip.destination}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {new Date(trip.startDate).toLocaleDateString()} -{" "}
-                        {new Date(trip.endDate).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        ${parseFloat(trip.price.toString()).toFixed(2)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <TripApprovalActions tripId={trip.id} />
-                    </td>
-                  </tr>
-                ))}
+                {pendingTrips.map((trip) => {
+                  // Determine if the trip has a discount
+                  const hasDiscount = trip.discountPercentage !== null
+                  const originalPrice = parseFloat(
+                    trip.originalPrice.toString()
+                  ).toFixed(2)
+                  const discountedPrice = hasDiscount
+                    ? parseFloat(trip.priceAfterDiscount!.toString()).toFixed(2)
+                    : null
+
+                  return (
+                    <tr key={trip.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {trip.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {trip.destination}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {new Date(trip.startDate).toLocaleDateString()} -{" "}
+                          {new Date(trip.endDate).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {/* Display price with or without discount */}
+                          {hasDiscount ? (
+                            <>
+                              <span className="line-through text-gray-400">
+                                ${originalPrice}
+                              </span>{" "}
+                              <span className="text-green-600">
+                                ${discountedPrice}
+                              </span>
+                            </>
+                          ) : (
+                            <span>${originalPrice}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <TripApprovalActions tripId={trip.id} />
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
