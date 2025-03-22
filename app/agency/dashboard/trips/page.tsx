@@ -44,7 +44,7 @@ export default async function TripsPage() {
                 </h2>
                 <p className="text-sm text-gray-500">{trip.destination}</p>
                 <p className="mt-2 font-medium text-lg text-green-600">
-                  {formatPrice(trip.price)}
+                  {formatPrice(trip.priceAfterDiscount)}
                 </p>
               </div>
               <div className="flex items-center justify-between">

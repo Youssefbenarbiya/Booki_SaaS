@@ -90,7 +90,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-const MAX_FILE_SIZE = 6 * 1024 * 1024 // 6MB limit (adjust if needed)
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 6MB limit (adjust if needed)
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
 async function uploadImage(file: File): Promise<string> {

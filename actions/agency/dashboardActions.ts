@@ -36,7 +36,7 @@ export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
     // Calculate revenue from trip bookings
     const tripBookingsRevenueResult = await db
       .select({
-        revenue: sql<number>`SUM(${tripBookings.seatsBooked} * ${trips.price})`,
+        revenue: sql<number>`SUM(${tripBookings.seatsBooked} * ${trips.priceAfterDiscount})`,
       })
       .from(tripBookings)
       .innerJoin(trips, eq(tripBookings.tripId, trips.id))
@@ -98,7 +98,7 @@ export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
         id: user.id,
         name: user.name,
         email: user.email,
-        amount: sql<number>`(${tripBookings.seatsBooked} * ${trips.price})`,
+        amount: sql<number>`(${tripBookings.seatsBooked} * ${trips.priceAfterDiscount})`,
         date: tripBookings.bookingDate,
         avatar: user.image,
       })

@@ -72,6 +72,22 @@ export const verification = pgTable("verification", {
 // --------------
 
 // Trips table
+// export const trips = pgTable("trips", {
+//   id: serial("id").primaryKey(),
+//   name: varchar("name", { length: 255 }).notNull(),
+//   description: text("description"),
+//   destination: varchar("destination", { length: 255 }).notNull(),
+//   startDate: date("start_date").notNull(),
+//   endDate: date("end_date").notNull(),
+//   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+//   capacity: integer("capacity").notNull(),
+//   isAvailable: boolean("is_available").default(true),
+//   status: varchar("status", { length: 50 }).notNull().default("pending"),
+//   agencyId: text("agency_id").references(() => user.id),
+//   createdAt: timestamp("created_at").defaultNow(),
+//   updatedAt: timestamp("updated_at").defaultNow(),
+// })
+
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -79,14 +95,16 @@ export const trips = pgTable("trips", {
   destination: varchar("destination", { length: 255 }).notNull(),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  originalPrice: decimal("original_price", { precision: 10, scale: 2 }).notNull(),
+  discountPercentage: integer("discount_percentage"),
+  priceAfterDiscount: decimal("priceAfterDiscount", { precision: 10, scale: 2 }),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   agencyId: text("agency_id").references(() => user.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-})
+});
 
 // Trip Images table
 export const tripImages = pgTable("trip_images", {

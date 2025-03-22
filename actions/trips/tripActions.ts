@@ -14,7 +14,9 @@ const tripSchema = z.object({
   destination: z.string().min(1, "Destination is required"),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  price: z.coerce.number().positive("Price must be positive"),
+  originalPrice: z.coerce.number().positive("Original price must be positive"),
+  discountPercentage: z.coerce.number().min(0).max(100).optional().nullable(),
+  priceAfterDiscount: z.coerce.number().positive("Price after discount must be positive").optional().nullable(),
   capacity: z.coerce.number().int().positive("Capacity must be positive"),
   isAvailable: z.boolean().default(true),
   images: z.array(z.string()),
@@ -24,7 +26,7 @@ const tripSchema = z.object({
         activityName: z.string(),
         description: z.string().optional(),
         scheduledDate: z.coerce.date().optional(),
-      })
+      }),
     )
     .optional(),
 })
@@ -55,7 +57,9 @@ export async function createTrip(data: TripInput) {
         destination: validatedData.destination,
         startDate: validatedData.startDate.toISOString(),
         endDate: validatedData.endDate.toISOString(),
-        price: validatedData.price.toString(),
+        originalPrice: validatedData.originalPrice.toString(),
+        discountPercentage: validatedData.discountPercentage || undefined,
+        priceAfterDiscount: validatedData.priceAfterDiscount?.toString() || undefined,
         capacity: validatedData.capacity,
         isAvailable: validatedData.isAvailable,
         agencyId: session.user.id, // Set the agencyId to the current user's ID
@@ -68,7 +72,7 @@ export async function createTrip(data: TripInput) {
         validatedData.images.map((url) => ({
           tripId: trip.id,
           imageUrl: url,
-        }))
+        })),
       )
     }
 
@@ -80,7 +84,7 @@ export async function createTrip(data: TripInput) {
           activityName: activity.activityName,
           description: activity.description,
           scheduledDate: activity.scheduledDate?.toISOString(),
-        }))
+        })),
       )
     }
 
@@ -139,7 +143,9 @@ export async function updateTrip(id: number, data: TripInput) {
         destination: validatedData.destination,
         startDate: validatedData.startDate.toISOString(),
         endDate: validatedData.endDate.toISOString(),
-        price: validatedData.price.toString(),
+        originalPrice: validatedData.originalPrice.toString(),
+        discountPercentage: validatedData.discountPercentage || undefined,
+        priceAfterDiscount: validatedData.priceAfterDiscount?.toString() || undefined,
         capacity: validatedData.capacity,
         isAvailable: validatedData.isAvailable,
       })
@@ -153,7 +159,7 @@ export async function updateTrip(id: number, data: TripInput) {
         validatedData.images.map((url) => ({
           tripId: trip.id,
           imageUrl: url,
-        }))
+        })),
       )
     }
 
@@ -166,7 +172,7 @@ export async function updateTrip(id: number, data: TripInput) {
           activityName: activity.activityName,
           description: activity.description,
           scheduledDate: activity.scheduledDate?.toISOString(),
-        }))
+        })),
       )
     }
 
@@ -181,10 +187,7 @@ export async function updateTrip(id: number, data: TripInput) {
 
 export async function deleteTrip(id: number) {
   try {
-    const [deletedTrip] = await db
-      .delete(trips)
-      .where(eq(trips.id, id))
-      .returning()
+    const [deletedTrip] = await db.delete(trips).where(eq(trips.id, id)).returning()
 
     revalidatePath("/agency/dashboard/trips")
     revalidatePath("/")

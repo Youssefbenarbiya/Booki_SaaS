@@ -2,6 +2,7 @@
 import { getTripById } from "@/actions/trips/tripActions"
 import { notFound } from "next/navigation"
 import EditTripForm from "./EditTripForm"
+import { type TripInput } from "@/actions/trips/tripActions"
 
 export default async function EditTripPage({
   params,
@@ -14,6 +15,8 @@ export default async function EditTripPage({
   if (!trip) {
     notFound()
   }
+
+  // Transform the trip data to match the form's expected types
   const transformedTrip = {
     id: trip.id,
     name: trip.name,
@@ -21,7 +24,9 @@ export default async function EditTripPage({
     destination: trip.destination,
     startDate: new Date(trip.startDate),
     endDate: new Date(trip.endDate),
-    price: Number(trip.price),
+    originalPrice: Number(trip.originalPrice),
+    discountPercentage: trip.discountPercentage ?? undefined,
+    priceAfterDiscount: trip.priceAfterDiscount ? Number(trip.priceAfterDiscount) : undefined,
     capacity: trip.capacity,
     isAvailable: trip.isAvailable ?? false,
     images: trip.images.map((img: any) => ({
