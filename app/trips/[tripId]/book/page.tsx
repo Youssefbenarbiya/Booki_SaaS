@@ -34,6 +34,13 @@ export default async function BookTripPage({
     redirect("/?type=trips")
   }
 
+  // Calculate effective price (discounted or original)
+  const hasDiscount = trip.discountPercentage && trip.discountPercentage > 0
+  const effectivePrice =
+    hasDiscount && trip.priceAfterDiscount
+      ? Number(trip.priceAfterDiscount)
+      : Number(trip.originalPrice)
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -61,7 +68,21 @@ export default async function BookTripPage({
                   <div className="flex justify-between text-sm">
                     <span>Price per person</span>
                     <span className="font-medium">
-                      {formatPrice(trip.price)}
+                      {hasDiscount ? (
+                        <div className="text-right">
+                          <div>{formatPrice(effectivePrice)}</div>
+                          <div className="flex items-center justify-end space-x-2">
+                            <span className="text-xs line-through text-gray-500">
+                              {formatPrice(Number(trip.originalPrice))}
+                            </span>
+                            <span className="text-xs font-medium text-green-600">
+                              {trip.discountPercentage}% off
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        formatPrice(effectivePrice)
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -77,7 +98,7 @@ export default async function BookTripPage({
             <BookingForm
               tripId={trip.id}
               maxSeats={trip.capacity}
-              pricePerSeat={Number(trip.price)}
+              pricePerSeat={effectivePrice}
               userId={session.user.id}
             />
           </div>

@@ -88,6 +88,7 @@ export async function createBookingWithPayment({
       throw new Error("Trip not found")
     }
 
+    // Calculate total price and ensure it's properly formatted
     const totalPrice = seatsBooked * pricePerSeat
 
     // Create the initial booking
@@ -161,9 +162,16 @@ export async function createBookingWithPayment({
         )
       }
     } else {
-      // Existing Flouci payment logic
+      // Flouci payment logic - fix the amount format
+      // Convert to string and ensure it's properly formatted for Flouci API
+      // Some payment APIs require specific decimal formats
+
+      // Format the amount to ensure it's accepted by the payment API
+      // Convert to a fixed number of decimal places (2) and ensure it's a valid number
+      const formattedAmount = parseFloat(totalPrice.toFixed(2))
+
       const paymentData = await generateTripPaymentLink({
-        amount: totalPrice,
+        amount: formattedAmount,
         bookingId: booking.id,
       })
 
@@ -213,7 +221,6 @@ export async function updateTripBookingPaymentStatus(
         status: status === "completed" ? "confirmed" : "failed",
       })
       .where(eq(tripBookings.id, bookingId))
-
   } catch (error) {
     console.error("Error updating payment status:", error)
     throw error

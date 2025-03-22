@@ -48,6 +48,13 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
     activitiesByDay[date].push(activity)
   })
 
+  // Calculate effective price (discounted or original)
+  const hasDiscount = trip.discountPercentage && trip.discountPercentage > 0
+  const effectivePrice =
+    hasDiscount && trip.priceAfterDiscount
+      ? Number(trip.priceAfterDiscount)
+      : Number(trip.originalPrice)
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
       {/* Hero Section */}
@@ -98,8 +105,26 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-lg border border-gray-100 p-6 sticky top-24">
             <div className="flex justify-between items-center mb-4">
-              <div className="text-2xl font-bold text-primary">
-                {formatPrice(trip.price)}
+              <div>
+                {hasDiscount ? (
+                  <>
+                    <div className="text-2xl font-bold text-primary">
+                      {formatPrice(effectivePrice)}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm line-through text-gray-500">
+                        {formatPrice(Number(trip.originalPrice))}
+                      </span>
+                      <span className="text-sm font-medium text-green-600">
+                        {trip.discountPercentage}% off
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-2xl font-bold text-primary">
+                    {formatPrice(effectivePrice)}
+                  </div>
+                )}
               </div>
               <div className="text-sm text-gray-500">per person</div>
             </div>
