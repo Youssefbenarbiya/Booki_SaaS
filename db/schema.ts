@@ -326,6 +326,7 @@ export const cars = pgTable("cars", {
   price: integer("price").notNull(),
   images: text("images").array().default([]).notNull(),
   isAvailable: boolean("is_available").default(true),
+  agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 })
@@ -352,8 +353,12 @@ export const carBookings = pgTable("car_bookings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
-export const carsRelations = relations(cars, ({ many }) => ({
+export const carsRelations = relations(cars, ({ many, one }) => ({
   bookings: many(carBookings),
+  agency: one(agencies, {
+    fields: [cars.agencyId],
+    references: [agencies.userId],
+  }),
 }))
 
 // Car Bookings Relations

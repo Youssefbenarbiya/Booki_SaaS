@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -50,6 +51,7 @@ type CarFormProps = {
 export function CarForm({ initialData, isEditing = false }: CarFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   // Image upload state variables
   const [images, setImages] = useState<File[]>([])
@@ -87,9 +89,11 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
   })
 
   async function onSubmit(values: z.infer<typeof carFormSchema>) {
-    try {
-      setIsLoading(true)
+    // Clear any previous errors
+    setServerError(null)
+    setIsLoading(true)
 
+    try {
       // Upload new images (files) and get their URLs
       let newImageUrls: string[] = []
       if (images.length > 0) {
@@ -103,13 +107,12 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
         } catch (error) {
           console.error("Error uploading images:", error)
           setUploadError("Failed to upload images")
+          setIsLoading(false)
           return
         }
       }
 
       // Preserve existing images.
-      // Instead of checking for "http", we now assume any preview that doesn't start with "blob:"
-      // is an existing image URL saved in the database.
       const existingImageUrls = imagePreviews.filter(
         (url) => !url.startsWith("blob:")
       )
@@ -118,18 +121,30 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
       const formattedValues = { ...values, images: finalImageUrls }
 
       if (isEditing && initialData) {
-        await updateCar(initialData.id, formattedValues)
+        const result = await updateCar(initialData.id, formattedValues)
         toast.success("Car updated successfully")
+        router.push("/agency/dashboard/cars")
+        router.refresh()
       } else {
-        await createCar(formattedValues)
+        const result = await createCar(formattedValues)
         toast.success("Car created successfully")
+        router.push("/agency/dashboard/cars")
+        router.refresh()
       }
-
-      router.push("/agency/dashboard/cars")
-      router.refresh()
     } catch (error) {
-      console.error(error)
-      toast.error(isEditing ? "Failed to update car" : "Failed to create car")
+      console.error("Form submission error:", error)
+      // Display the error in the UI
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      setServerError(errorMessage)
+
+      // Also show in toast
+      toast.error(errorMessage)
+
+      // If it's a plate number error, set focus on the field
+      if (errorMessage.toLowerCase().includes("plate number")) {
+        form.setFocus("plateNumber")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -141,6 +156,12 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
         <CardTitle>{isEditing ? "Edit Car" : "Add New Car"}</CardTitle>
       </CardHeader>
       <CardContent>
+        {serverError && (
+          <div className="bg-red-50 text-red-500 p-3 rounded-md mb-4 border border-red-200">
+            {serverError}
+          </div>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -193,8 +214,20 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                   <FormItem>
                     <FormLabel>Plate Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="ABC-1234" {...field} />
+                      <Input
+                        placeholder="ABC-1234"
+                        {...field}
+                        className={
+                          serverError &&
+                          serverError.toLowerCase().includes("plate number")
+                            ? "border-red-500"
+                            : ""
+                        }
+                      />
                     </FormControl>
+                    <FormDescription className="text-xs text-muted-foreground">
+                      Must be unique. Example: ABC-1234
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
