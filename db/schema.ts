@@ -107,7 +107,8 @@ export const trips = pgTable("trips", {
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
-  agencyId: text("agency_id").references(() => user.id),
+  agencyId: text("agency_id").references(() => agencies.userId), // Changed to reference agencies.userId (which is text type)
+  createdBy: text("created_by").references(() => user.id), // Added new field to track creator
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 })
@@ -158,8 +159,13 @@ export const tripsRelations = relations(trips, ({ many, one }) => ({
   images: many(tripImages),
   activities: many(tripActivities),
   bookings: many(tripBookings),
-  agency: one(user, {
+  agency: one(agencies, {
+    // Updated to reference agencies table
     fields: [trips.agencyId],
+    references: [agencies.userId], // Reference the text-type userId field instead of id
+  }),
+  creator: one(user, {
+    fields: [trips.createdBy],
     references: [user.id],
   }),
 }))
