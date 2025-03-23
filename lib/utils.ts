@@ -48,3 +48,18 @@ export function formatDateRange(startDate: string, endDate: string): string {
 
   return `${startFormatted} - ${endFormatted}`
 }
+
+/**
+ * Generates a unique agency ID with format AGN-XXXXXX
+ */
+export function generateAgencyId(): string {
+  // Generate a random 6-character alphanumeric string
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  let result = "AGN-"
+
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length))
+  }
+
+  return result
+}

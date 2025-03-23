@@ -31,10 +31,27 @@ export const signUpSchema = object({
   confirmPassword: getPasswordSchema("confirmPassword"),
   isAgency: z.boolean().optional(),
   phoneNumber: getPhoneNumberSchema(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  agencyName: z
+    .string()
+    .min(3, { message: "Agency name must be at least 3 characters" })
+    .optional(),
 })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  })
+  .refine(
+    (data) => {
+      if (data.isAgency && (!data.agencyName || data.agencyName.length < 3)) {
+        return false
+      }
+      return true
+    },
+    {
+      message: "Agency name is required and must be at least 3 characters",
+      path: ["agencyName"],
+    }
+  )
 
 export const signInSchema = object({
   email: getEmailSchema(),
@@ -52,31 +69,6 @@ export const resetPasswordSchema = object({
   message: "Passwords don't match",
   path: ["confirmPassword"],
 })
-//export const updateUserInfoSchema = z.object({
-//   name: z
-//     .string()
-//     .min(2, "Name must be at least 2 characters")
-//     .max(20, "Name must be at most 20 characters")
-//     .optional(),
-//   email: getEmailSchema().optional(),
-//   image: z.string().optional(),
-//   password: z
-//     .string()
-//     .min(8, "Password must be at least 8 characters")
-//     .optional(),
-//   newPassword: z
-//     .string()
-//     .min(8, "Password must be at least 8 characters")
-//     .optional(),
-//   currentPassword: z.string().optional(),
-//   phoneNumber: getPhoneNumberSchema().optional(),
-//   address: z
-//     .string()
-//     .min(5, "Address must be at least 5 characters")
-//     .max(100, "Address must be at most 100 characters")
-//     .optional(),
-// })
-//
 
 export const updateUserInfoSchema = z.object({
   name: z
