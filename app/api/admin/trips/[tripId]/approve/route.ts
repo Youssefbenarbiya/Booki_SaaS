@@ -15,7 +15,7 @@ export async function POST(
     }
 
     const result = await approveTrip(tripId)
-    
+
     if (result.success) {
       return NextResponse.json(
         { success: true, message: "Trip approved successfully" },

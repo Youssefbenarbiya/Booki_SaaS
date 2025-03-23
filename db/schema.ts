@@ -212,7 +212,8 @@ export const hotel = pgTable("hotel", {
   longitude: text("longitude"),
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
-  agencyId: text("agency_id").references(() => agencies.userId), // Added agency relationship
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
@@ -334,6 +335,7 @@ export const cars = pgTable("cars", {
   }),
   images: text("images").array().default([]).notNull(),
   isAvailable: boolean("is_available").default(true),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

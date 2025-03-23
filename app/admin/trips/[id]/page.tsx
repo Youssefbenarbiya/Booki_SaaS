@@ -1,9 +1,9 @@
 import { trips, tripImages, tripActivities } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
-import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalActions"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalActions"
 
 export default async function TripDetailsPage({
   params,
