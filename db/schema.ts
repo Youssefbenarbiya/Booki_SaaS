@@ -212,6 +212,7 @@ export const hotel = pgTable("hotel", {
   longitude: text("longitude"),
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
+  agencyId: text("agency_id").references(() => agencies.userId), // Added agency relationship
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
@@ -277,8 +278,13 @@ export const roomBookings = pgTable("room_bookings", {
 })
 
 // Hotel & Room Relations
-export const hotelRelations = relations(hotel, ({ many }) => ({
+export const hotelRelations = relations(hotel, ({ many, one }) => ({
   rooms: many(room),
+  agency: one(agencies, {
+    // Added relation to agency
+    fields: [hotel.agencyId],
+    references: [agencies.userId],
+  }),
 }))
 
 export const roomRelations = relations(room, ({ one, many }) => ({
@@ -480,9 +486,10 @@ export const userRelations = relations(user, ({ many, one }) => ({
   // ...other existing relations...
 }))
 
-export const agenciesRelations = relations(agencies, ({ one }) => ({
+export const agenciesRelations = relations(agencies, ({ one, many }) => ({
   user: one(user, {
     fields: [agencies.userId],
     references: [user.id],
   }),
+  hotels: many(hotel), // Added hotels relation
 }))
