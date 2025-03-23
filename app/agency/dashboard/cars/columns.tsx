@@ -1,5 +1,4 @@
 "use client"
-
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal, Pencil, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,6 +26,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import Image from "next/image"
+
 export const columns: ColumnDef<CarType>[] = [
   {
     accessorKey: "images",
@@ -63,11 +63,32 @@ export const columns: ColumnDef<CarType>[] = [
   { accessorKey: "plateNumber", header: "Plate Number" },
   { accessorKey: "color", header: "Color" },
   {
-    accessorKey: "price",
-    header: "Price",
+    accessorKey: "originalPrice",
+    header: "Original Price",
     cell: ({ row }) => {
-      const price = parseFloat(row.getValue("price"))
+      const price = parseFloat(row.getValue("originalPrice"))
       return <div>{formatPrice(price)}</div>
+    },
+  },
+  {
+    accessorKey: "discountPercentage",
+    header: "Discount (%)",
+    cell: ({ row }) => {
+      const discount = row.original.discountPercentage
+      return discount !== undefined && discount !== null
+        ? `${discount}%`
+        : "N/A"
+    },
+  },
+  {
+    accessorKey: "priceAfterDiscount",
+    header: "Final Price",
+    cell: ({ row }) => {
+      // Use priceAfterDiscount if exists, otherwise fallback to originalPrice.
+      const finalPrice = row.original.priceAfterDiscount
+        ? row.original.priceAfterDiscount
+        : row.original.originalPrice
+      return <div>{formatPrice(finalPrice)}</div>
     },
   },
   {
@@ -96,7 +117,6 @@ export const columns: ColumnDef<CarType>[] = [
           await deleteCar(car.id)
           toast.success("Car deleted successfully")
           setAlertOpen(false)
-          // Refresh the page after deletion to clear any overlays
           router.refresh()
         } catch (error) {
           toast.error("Failed to delete car")
@@ -106,15 +126,12 @@ export const columns: ColumnDef<CarType>[] = [
         }
       }
 
-      // Delay opening the dialog to let the dropdown close first
       function handleOpenAlert() {
         setTimeout(() => {
           setAlertOpen(true)
         }, 100)
       }
 
-      // When the AlertDialog is closed (e.g. via backdrop click or Cancel),
-      // force a refresh to ensure no overlay remains.
       function handleAlertOpenChange(open: boolean) {
         if (!open) {
           router.refresh()
@@ -149,7 +166,6 @@ export const columns: ColumnDef<CarType>[] = [
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Render AlertDialog outside the DropdownMenuContent */}
           <AlertDialog open={alertOpen} onOpenChange={handleAlertOpenChange}>
             <AlertDialogContent>
               <AlertDialogHeader>
