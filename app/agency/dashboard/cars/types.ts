@@ -5,7 +5,9 @@ export interface CarType {
   year: number
   plateNumber: string
   color: string
-  price: number
+  originalPrice: number
+  discountPercentage?: number | null
+  priceAfterDiscount?: number | null
   images?: string[]
   isAvailable: boolean | null
   createdAt: Date | null
@@ -18,7 +20,9 @@ export type CarFormValues = {
   year: number
   plateNumber: string
   color: string
-  price: number
+  originalPrice: number
+  discountPercentage?: number | null
+  priceAfterDiscount?: number | null
   isAvailable: boolean
   images?: string[]
 }

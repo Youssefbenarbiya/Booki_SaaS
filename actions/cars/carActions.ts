@@ -76,13 +76,22 @@ export async function getCarById(id: number) {
     throw new Error("Failed to fetch car")
   }
 }
-
 export async function createCar(data: CarFormValues) {
   try {
     // Get session and agency for current user
     const agencyId = await getAgencyId()
 
-    // Create car with more explicit values rather than spreading data object
+    // Process discount fields: if discountPercentage exists and priceAfterDiscount is not provided, calculate it.
+    const discountPercentage = data.discountPercentage;
+    let priceAfterDiscount = data.priceAfterDiscount;
+    if (discountPercentage !== undefined && discountPercentage !== null) {
+      if (priceAfterDiscount === undefined || priceAfterDiscount === null) {
+        priceAfterDiscount =
+          data.originalPrice - (data.originalPrice * discountPercentage) / 100
+      }
+    }
+
+    // Create car with discount fields included
     const newCar = await db
       .insert(cars)
       .values({
@@ -91,29 +100,32 @@ export async function createCar(data: CarFormValues) {
         year: data.year,
         plateNumber: data.plateNumber,
         color: data.color,
-        price: data.price,
+        originalPrice: data.originalPrice.toString(),
+        discountPercentage: discountPercentage ?? undefined,
+        priceAfterDiscount:
+          priceAfterDiscount !== undefined && priceAfterDiscount !== null
+            ? priceAfterDiscount.toString()
+            : undefined,
         isAvailable: data.isAvailable ?? true,
         images: data.images || [],
         agencyId: agencyId,
       })
       .returning()
 
+
     revalidatePath("/agency/dashboard/cars")
     return { car: newCar[0] }
   } catch (error) {
     console.error("Failed to create car - detailed error:", error)
 
-    // More robust error detection for PostgreSQL unique constraint violation
+    // Duplicate plate number error handling
     const errorMessage = error instanceof Error ? error.message : String(error)
-
     if (
       (errorMessage.toLowerCase().includes("duplicate") &&
         errorMessage.toLowerCase().includes("plate_number")) ||
       (errorMessage.toLowerCase().includes("unique") &&
         errorMessage.toLowerCase().includes("plate_number"))
     ) {
-      // Throw a client-friendly error
-      console.log("Detected duplicate plate number error")
       throw new Error(
         "Plate Number must be unique. This plate number is already registered."
       )
@@ -123,10 +135,21 @@ export async function createCar(data: CarFormValues) {
   }
 }
 
+
 export async function updateCar(id: number, data: CarFormValues) {
   try {
     // Ensure the user is authenticated before updating
     await getSession()
+
+    // Process discount fields: calculate discounted price if needed.
+    const discountPercentage = data.discountPercentage
+    let priceAfterDiscount = data.priceAfterDiscount
+    if (discountPercentage !== undefined && discountPercentage !== null) {
+      if (priceAfterDiscount === undefined || priceAfterDiscount === null) {
+        priceAfterDiscount =
+          data.originalPrice - (data.originalPrice * discountPercentage) / 100
+      }
+    }
 
     const updatedCar = await db
       .update(cars)
@@ -136,7 +159,12 @@ export async function updateCar(id: number, data: CarFormValues) {
         year: data.year,
         plateNumber: data.plateNumber,
         color: data.color,
-        price: data.price,
+        originalPrice: data.originalPrice.toString(),
+        discountPercentage: discountPercentage ?? null,
+        priceAfterDiscount:
+          priceAfterDiscount !== undefined && priceAfterDiscount !== null
+            ? priceAfterDiscount.toString()
+            : null,
         isAvailable: data.isAvailable,
         images: data.images, // Ensure this matches your DB column type
         updatedAt: new Date(),
@@ -149,7 +177,7 @@ export async function updateCar(id: number, data: CarFormValues) {
   } catch (error) {
     console.error(`Failed to update car with ID ${id}:`, error)
 
-    // Also handle duplicate plate number in update
+    // Duplicate plate number error handling
     const errorMessage = error instanceof Error ? error.message : String(error)
     if (
       errorMessage.toLowerCase().includes("duplicate") &&

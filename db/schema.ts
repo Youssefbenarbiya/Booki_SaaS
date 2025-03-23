@@ -323,7 +323,15 @@ export const cars = pgTable("cars", {
   year: integer("year").notNull(),
   plateNumber: varchar("plate_number", { length: 20 }).notNull().unique(),
   color: varchar("color", { length: 50 }).notNull(),
-  price: integer("price").notNull(),
+  originalPrice: decimal("original_price", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
+  discountPercentage: integer("discount_percentage"),
+  priceAfterDiscount: decimal("priceAfterDiscount", {
+    precision: 10,
+    scale: 2,
+  }),
   images: text("images").array().default([]).notNull(),
   isAvailable: boolean("is_available").default(true),
   agencyId: text("agency_id").references(() => agencies.userId),
