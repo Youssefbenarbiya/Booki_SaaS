@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache"
 import db from "@/db/drizzle"
 import { trips, cars, hotel } from "@/db/schema"
 import { eq } from "drizzle-orm"
-import { sendTripStatusNotification } from "./notificationActions"
+import {
+  sendTripStatusNotification,
+  sendCarStatusNotification,
+  sendHotelStatusNotification,
+} from "./notificationActions"
 
 export async function approveTrip(tripId: number) {
   try {
@@ -59,6 +63,9 @@ export async function approveCar(carId: number) {
       })
       .where(eq(cars.id, carId))
 
+    // Send notification to agency
+    await sendCarStatusNotification(carId, "approved")
+
     revalidatePath("/admin/dashboard")
     return { success: true, message: "Car approved successfully" }
   } catch (error) {
@@ -78,6 +85,9 @@ export async function rejectCar(carId: number) {
       })
       .where(eq(cars.id, carId))
 
+    // Send notification to agency
+    await sendCarStatusNotification(carId, "rejected")
+
     revalidatePath("/admin/dashboard")
     return { success: true, message: "Car rejected successfully" }
   } catch (error) {
@@ -96,6 +106,9 @@ export async function approveHotel(hotelId: number) {
       })
       .where(eq(hotel.id, String(hotelId)))
 
+    // Send notification to agency
+    await sendHotelStatusNotification(hotelId, "approved")
+
     revalidatePath("/admin/dashboard")
     return { success: true, message: "Hotel approved successfully" }
   } catch (error) {
@@ -113,6 +126,9 @@ export async function rejectHotel(hotelId: number) {
         updatedAt: new Date(),
       })
       .where(eq(hotel.id, String(hotelId)))
+
+    // Send notification to agency
+    await sendHotelStatusNotification(hotelId, "rejected")
 
     revalidatePath("/admin/dashboard")
     return { success: true, message: "Hotel rejected successfully" }
