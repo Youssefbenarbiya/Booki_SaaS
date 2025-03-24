@@ -147,7 +147,7 @@ export async function sendCarStatusNotification(
 }
 
 export async function sendHotelStatusNotification(
-  hotelId: number,
+  hotelId: number | string, // Accept either number or string
   status: "approved" | "rejected"
 ) {
   try {
@@ -155,9 +155,9 @@ export async function sendHotelStatusNotification(
       `[START] Sending notification for hotel ID: ${hotelId} with status: ${status}`
     )
 
-    // Get hotel details
+    // Get hotel details - handle the ID properly based on its type in the schema
     const hotelRecord = await db.query.hotel.findFirst({
-      where: eq(hotel.id, String(hotelId)),
+      where: eq(hotel.id, String(hotelId)), // Converting to string is correct since hotel.id is varchar
     })
 
     console.log("Hotel record found:", !!hotelRecord)
@@ -203,7 +203,9 @@ export async function sendHotelStatusNotification(
         message,
         type: status === "approved" ? "success" : "warning",
         relatedItemType: "hotel",
-        relatedItemId: hotelId,
+        // Convert hotelId to number for the notification - relatedItemId is integer in schema
+        relatedItemId:
+          typeof hotelId === "string" ? parseInt(hotelId, 10) : hotelId,
         createdAt: new Date(),
         read: false,
       })
