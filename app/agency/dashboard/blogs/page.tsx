@@ -4,9 +4,20 @@ import { columns } from "./columns"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { getBlogs } from "../../../../actions/blogs/blogActions"
+import { headers } from "next/headers"
+import { auth } from "@/auth"
+
 
 export default async function BlogsPage() {
-  const { blogs } = await getBlogs()
+  // Get the current session using the provided method
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+  const userId = session?.user?.id
+
+  // Get blogs specific to this user's agency
+  // Note: In createBlog function, blogs.agencyId is set to agency.userId
+  const { blogs } = await getBlogs(userId)
 
   return (
     <div className="space-y-4">

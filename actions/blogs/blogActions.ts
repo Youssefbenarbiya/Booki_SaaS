@@ -1,7 +1,7 @@
 "use server"
 
 import db from "@/db/drizzle"
-import { blogs } from "@/db/schema"
+import { blogs, agencies } from "@/db/schema"
 import { revalidatePath } from "next/cache"
 import { eq } from "drizzle-orm"
 import { uploadImages } from "@/actions/uploadActions"
@@ -40,22 +40,40 @@ function getPublicIdFromUrl(url: string): string | null {
   }
 }
 
-export async function getBlogs() {
+export async function getBlogs(agencyId?: string) {
   try {
-    const allBlogs = await db.query.blogs.findMany({
-      with: {
-        category: true,
-        author: {
-          columns: {
-            id: true,
-            name: true,
-            image: true,
+    // If agencyId is provided, filter blogs for that specific agency
+    // Otherwise, return all blogs for public consumption
+    const query = agencyId
+      ? db.query.blogs.findMany({
+          where: eq(blogs.agencyId, agencyId),
+          with: {
+            category: true,
+            author: {
+              columns: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
           },
-        },
-      },
-      orderBy: (blogs, { desc }) => [desc(blogs.createdAt)],
-    })
+          orderBy: (blogs, { desc }) => [desc(blogs.createdAt)],
+        })
+      : db.query.blogs.findMany({
+          with: {
+            category: true,
+            author: {
+              columns: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: (blogs, { desc }) => [desc(blogs.createdAt)],
+        })
 
+    const allBlogs = await query
     return { blogs: allBlogs }
   } catch (error) {
     console.error("Failed to fetch blogs:", error)
@@ -124,6 +142,14 @@ export async function createBlog(formData: FormData, authorId: string) {
       return { error: "Missing required blog information" }
     }
 
+    // Get the agency ID of the author
+    const agency = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, authorId),
+      columns: {
+        userId: true,
+      },
+    })
+
     // Upload featured image if provided
     if (featuredImageFile && featuredImageFile.size > 0) {
       featuredImage = await uploadFileToCloudinary(featuredImageFile)
@@ -146,6 +172,7 @@ export async function createBlog(formData: FormData, authorId: string) {
         excerpt,
         categoryId,
         authorId,
+        agencyId: agency?.userId || null, // Set the agency ID if available
         published,
         publishedAt: published ? new Date() : null,
         readTime,
