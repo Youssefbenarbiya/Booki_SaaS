@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { approveBlog, rejectBlog } from "@/actions/admin/tripApprovalActions"
+import { approveBlog, rejectBlog } from "@/actions/admin/ApprovalActions"
 
 type BlogApprovalActionsProps = {
   blogId?: number

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
-import { approveTrip, rejectTrip } from "@/actions/admin/tripApprovalActions"
+import { approveTrip, rejectTrip } from "@/actions/admin/ApprovalActions"
 import { toast } from "sonner"
 
 export function TripApprovalActions({ offerId }: { offerId: number }) {

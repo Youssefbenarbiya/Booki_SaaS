@@ -71,7 +71,7 @@ export default async function TripDetailsPage({
             <span className="uppercase font-semibold">{trip.status}</span>
           </span>
           {trip.status === "pending" && (
-            <TripApprovalActions tripId={trip.id} />
+            <TripApprovalActions offerId={trip.id} />
           )}
         </div>
       </div>
