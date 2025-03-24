@@ -148,9 +148,25 @@ export function SearchResults({
             searchParams.returnDate || ""
           )
           console.log("Cars search results:", cars)
-          // Cast to Car[] to fix type issues
-          setCarsData(cars as Car[])
-          setFilteredCars(cars as Car[])
+          // Ensure cars array is properly formatted with required properties
+          const formattedCars = cars.map((car: any) => ({
+            id: car.id,
+            brand: car.brand || "Unknown",
+            model: car.model || "Unknown",
+            year: car.year || "",
+            originalPrice: car.originalPrice || 0,
+            isAvailable: car.isAvailable ?? true,
+            images: car.images || [],
+            transmission: car.transmission || "Manual",
+            fuelType: car.fuelType || "Gasoline",
+            seats: car.seats || 4,
+            plateNumber: car.plateNumber || "",
+            color: car.color || "",
+            createdAt: car.createdAt || new Date(),
+            updatedAt: car.updatedAt || new Date(),
+          })) as Car[]
+          setCarsData(formattedCars)
+          setFilteredCars(formattedCars)
         }
       } catch (err) {
         console.error("Search error:", err)

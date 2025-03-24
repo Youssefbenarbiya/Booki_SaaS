@@ -21,10 +21,17 @@ export default async function CarEditPage({ params }: CarEditPageProps) {
     notFound()
   }
 
+  // Convert string prices to numbers to match CarType
+  const carWithNumberPrices = {
+    ...car,
+    originalPrice: Number(car.originalPrice),
+    priceAfterDiscount: car.priceAfterDiscount ? Number(car.priceAfterDiscount) : null
+  }
+
   return (
     <div className="space-y-4">
       <h2 className="text-3xl font-bold tracking-tight">Edit Car</h2>
-      <CarForm initialData={car} isEditing />
+      <CarForm initialData={carWithNumberPrices} isEditing />
     </div>
   )
 }

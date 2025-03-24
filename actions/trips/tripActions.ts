@@ -1,7 +1,7 @@
 "use server"
 
 import db from "@/db/drizzle"
-import { trips, tripImages, tripActivities } from "@/db/schema"
+import { trips, tripImages, tripActivities, user } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
@@ -41,7 +41,7 @@ export async function createTrip(data: TripInput) {
   try {
     const validatedData = tripSchema.parse(data)
 
-    // Get the current user's session to set as agencyId
+    // Get the current user's session
     const session = await auth.api.getSession({
       headers: await headers(),
     })
@@ -50,9 +50,21 @@ export async function createTrip(data: TripInput) {
       throw new Error("Unauthorized: You must be logged in to create a trip")
     }
 
-    console.log(`Creating trip with agency ID: ${session.user.id}`)
+    // Get the user's agency
+    const userWithAgency = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      with: {
+        agency: true,
+      },
+    })
 
-    // Create trip with agencyId set to the current user's ID
+    if (!userWithAgency?.agency) {
+      throw new Error("No agency found for this user")
+    }
+
+    console.log(`Creating trip with agency ID: ${userWithAgency.agency.userId}`)
+
+    // Create trip with proper agency ID and createdBy
     const [trip] = await db
       .insert(trips)
       .values({
@@ -67,7 +79,8 @@ export async function createTrip(data: TripInput) {
           validatedData.priceAfterDiscount?.toString() || undefined,
         capacity: validatedData.capacity,
         isAvailable: validatedData.isAvailable,
-        agencyId: session.user.id, // Set the agencyId to the current user's ID
+        agencyId: userWithAgency.agency.userId, // Using userId (text type) instead of id (integer type)
+        createdBy: session.user.id, // Track who created it
       })
       .returning()
 
@@ -104,14 +117,40 @@ export async function createTrip(data: TripInput) {
 
 export async function getTrips() {
   try {
-    const trips = await db.query.trips.findMany({
+    // Get the current user's session
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session?.user) {
+      console.log("No authenticated user found when getting trips")
+      return []
+    }
+
+    // Get the user with their agency
+    const userWithAgency = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      with: {
+        agency: true,
+      },
+    })
+
+    if (!userWithAgency?.agency) {
+      console.log("No agency found for this user")
+      return []
+    }
+
+    // Get trips belonging to the user's agency (using userId instead of id)
+    const tripResults = await db.query.trips.findMany({
+      where: eq(trips.agencyId, userWithAgency.agency.userId),
       with: {
         images: true,
         activities: true,
         bookings: true,
       },
     })
-    return trips
+
+    return tripResults
   } catch (error) {
     console.error("Error getting trips:", error)
     throw error

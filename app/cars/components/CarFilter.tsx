@@ -18,14 +18,39 @@ interface CarFilterProps {
   searchParams?: Record<string, string>
 }
 
+// Helper function to calculate display price
+function getDisplayPrice(car: Car): number {
+  const originalPrice =
+    typeof car.originalPrice === "string"
+      ? parseFloat(car.originalPrice)
+      : car.originalPrice
+  const priceAfterDiscount =
+    car.priceAfterDiscount !== undefined
+      ? typeof car.priceAfterDiscount === "string"
+        ? parseFloat(car.priceAfterDiscount)
+        : car.priceAfterDiscount
+      : undefined
+  return priceAfterDiscount ?? originalPrice
+}
+
 export function CarFilter({
   carsData,
   setFilteredCars,
   onFilterChange,
   className = "",
-  searchParams,
 }: CarFilterProps) {
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
+  // Extract unique brands from car data
+  const carBrands = Array.from(new Set(carsData.map((car) => car.brand)))
+
+  // Compute min and max display price
+  const prices = carsData.map((car) => getDisplayPrice(car))
+  const minPrice = prices.length ? Math.min(...prices) : 0
+  const maxPrice = prices.length ? Math.max(...prices) : 1000
+
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    minPrice,
+    maxPrice,
+  ])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [availableOnly, setAvailableOnly] = useState(true)
   const [fromLocation, setFromLocation] = useState("")
@@ -36,13 +61,6 @@ export function CarFilter({
     category: false,
     capacity: false,
   })
-
-  // Extract unique brands from car data
-  const carBrands = Array.from(new Set(carsData.map((car) => car.brand)))
-
-  // Find min and max price in the data
-  const minPrice = Math.min(...carsData.map((car) => car.price), 0)
-  const maxPrice = Math.max(...carsData.map((car) => car.price), 1000)
 
   useEffect(() => {
     setPriceRange([minPrice, maxPrice])
@@ -57,8 +75,11 @@ export function CarFilter({
       filtered = filtered.filter((car) => car.isAvailable)
     }
 
-    // Filter by price range
-    filtered = filtered.filter((car) => car.price >= priceRange[0] && car.price <= priceRange[1])
+    // Filter by price range using display price
+    filtered = filtered.filter((car) => {
+      const price = getDisplayPrice(car)
+      return price >= priceRange[0] && price <= priceRange[1]
+    })
 
     // Filter by selected brands
     if (selectedBrands.length > 0) {
@@ -71,14 +92,27 @@ export function CarFilter({
     if (onFilterChange) {
       onFilterChange(filtered)
     }
-  }, [carsData, priceRange, selectedBrands, availableOnly, setFilteredCars, onFilterChange])
+  }, [
+    carsData,
+    priceRange,
+    selectedBrands,
+    availableOnly,
+    setFilteredCars,
+    onFilterChange,
+  ])
 
   const toggleBrand = (brand: string) => {
-    setSelectedBrands((prev) => (prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]))
+    setSelectedBrands((prev) =>
+      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+    )
   }
 
   const toggleStarRating = (rating: number) => {
-    setStarRating((prev) => (prev.includes(rating) ? prev.filter((r) => r !== rating) : [...prev, rating]))
+    setStarRating((prev) =>
+      prev.includes(rating)
+        ? prev.filter((r) => r !== rating)
+        : [...prev, rating]
+    )
   }
 
   const toggleSection = (section: "type" | "category" | "capacity") => {
@@ -119,7 +153,10 @@ export function CarFilter({
             className="border border-gray-300"
           />
         </div>
-        <Button className="w-full bg-[#e0e10a] hover:bg-[#c5c609] text-black font-semibold" onClick={handleSearch}>
+        <Button
+          className="w-full bg-[#e0e10a] hover:bg-[#c5c609] text-black font-semibold"
+          onClick={handleSearch}
+        >
           SEARCH
         </Button>
       </div>
@@ -149,10 +186,16 @@ export function CarFilter({
                   <Star
                     key={i}
                     size={16}
-                    className={`${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                    className={`${
+                      i < rating
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-gray-300"
+                    }`}
                   />
                 ))}
-                <span className="ml-2 text-sm text-gray-600">{rating} Star</span>
+                <span className="ml-2 text-sm text-gray-600">
+                  {rating} Star
+                </span>
               </Label>
             </div>
           ))}
@@ -179,9 +222,16 @@ export function CarFilter({
 
       {/* Type Section */}
       <div className="px-4 mb-4">
-        <div className="flex justify-between items-center cursor-pointer mb-3" onClick={() => toggleSection("type")}>
+        <div
+          className="flex justify-between items-center cursor-pointer mb-3"
+          onClick={() => toggleSection("type")}
+        >
           <h3 className="font-semibold">Type</h3>
-          {expandedSections.type ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          {expandedSections.type ? (
+            <ChevronUp size={18} />
+          ) : (
+            <ChevronDown size={18} />
+          )}
         </div>
 
         {expandedSections.type && (
@@ -209,7 +259,11 @@ export function CarFilter({
           onClick={() => toggleSection("category")}
         >
           <h3 className="font-semibold">Category</h3>
-          {expandedSections.category ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          {expandedSections.category ? (
+            <ChevronUp size={18} />
+          ) : (
+            <ChevronDown size={18} />
+          )}
         </div>
 
         {expandedSections.category && (
@@ -243,7 +297,11 @@ export function CarFilter({
           onClick={() => toggleSection("capacity")}
         >
           <h3 className="font-semibold">Capacity</h3>
-          {expandedSections.capacity ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          {expandedSections.capacity ? (
+            <ChevronUp size={18} />
+          ) : (
+            <ChevronDown size={18} />
+          )}
         </div>
 
         {expandedSections.capacity && (
@@ -271,11 +329,14 @@ export function CarFilter({
       {/* Availability (kept from original but hidden) */}
       <div className="hidden">
         <div className="flex items-center gap-2">
-          <Checkbox id="available" checked={availableOnly} onCheckedChange={() => setAvailableOnly(!availableOnly)} />
+          <Checkbox
+            id="available"
+            checked={availableOnly}
+            onCheckedChange={() => setAvailableOnly(!availableOnly)}
+          />
           <Label htmlFor="available">Show only available cars</Label>
         </div>
       </div>
     </div>
   )
 }
-

@@ -8,6 +8,15 @@ import { getCars } from "../../../../actions/cars/carActions"
 export default async function CarsPage() {
   const { cars } = await getCars()
 
+  // Transform the cars data so that price fields are numbers
+  const formattedCars = cars.map((car) => ({
+    ...car,
+    originalPrice: Number(car.originalPrice),
+    priceAfterDiscount: car.priceAfterDiscount
+      ? Number(car.priceAfterDiscount)
+      : undefined,
+  }))
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -20,7 +29,7 @@ export default async function CarsPage() {
         </Button>
       </div>
 
-      <CarsTable columns={columns} data={cars} />
+      <CarsTable columns={columns} data={formattedCars} />
     </div>
   )
 }

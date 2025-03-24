@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { generateTripBookingPDF } from "@/actions/trips/generateTripBookingPDF"
+import { formatPrice } from "@/lib/utils"
 
 export default function PaymentSuccessPage() {
   // Get bookingId from query parameters
@@ -57,6 +58,16 @@ export default function PaymentSuccessPage() {
     }
   }
 
+  // Helper function to determine the effective price
+  const getEffectivePrice = (trip: any) => {
+    if (!trip) return null
+
+    const hasDiscount = trip.discountPercentage && trip.discountPercentage > 0
+    return hasDiscount && trip.priceAfterDiscount
+      ? Number(trip.priceAfterDiscount)
+      : Number(trip.originalPrice || trip.price || 0)
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -72,6 +83,10 @@ export default function PaymentSuccessPage() {
       </div>
     )
   }
+
+  const effectivePrice = getEffectivePrice(tripData)
+  const hasDiscount =
+    tripData?.discountPercentage && tripData?.discountPercentage > 0
 
   return (
     <div className="container mx-auto px-4 py-16 flex flex-col items-center">
@@ -101,7 +116,18 @@ export default function PaymentSuccessPage() {
                 <strong>End Date:</strong> {tripData.endDate}
               </p>
               <p>
-                <strong>Price per Seat:</strong> {tripData.price}
+                <strong>Price per Seat:</strong>{" "}
+                {effectivePrice && formatPrice(effectivePrice)}
+                {hasDiscount && (
+                  <span className="ml-2 text-sm">
+                    <span className="line-through text-gray-500">
+                      {formatPrice(Number(tripData.originalPrice))}
+                    </span>
+                    <span className="text-green-600 ml-1">
+                      ({tripData.discountPercentage}% off)
+                    </span>
+                  </span>
+                )}
               </p>
             </>
           ) : (

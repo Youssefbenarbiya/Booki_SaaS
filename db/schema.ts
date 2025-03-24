@@ -95,16 +95,23 @@ export const trips = pgTable("trips", {
   destination: varchar("destination", { length: 255 }).notNull(),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
-  originalPrice: decimal("original_price", { precision: 10, scale: 2 }).notNull(),
+  originalPrice: decimal("original_price", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
   discountPercentage: integer("discount_percentage"),
-  priceAfterDiscount: decimal("priceAfterDiscount", { precision: 10, scale: 2 }),
+  priceAfterDiscount: decimal("priceAfterDiscount", {
+    precision: 10,
+    scale: 2,
+  }),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
-  agencyId: text("agency_id").references(() => user.id),
+  agencyId: text("agency_id").references(() => agencies.userId), // Changed to reference agencies.userId (which is text type)
+  createdBy: text("created_by").references(() => user.id), // Added new field to track creator
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+})
 
 // Trip Images table
 export const tripImages = pgTable("trip_images", {
@@ -152,8 +159,13 @@ export const tripsRelations = relations(trips, ({ many, one }) => ({
   images: many(tripImages),
   activities: many(tripActivities),
   bookings: many(tripBookings),
-  agency: one(user, {
+  agency: one(agencies, {
+    // Updated to reference agencies table
     fields: [trips.agencyId],
+    references: [agencies.userId], // Reference the text-type userId field instead of id
+  }),
+  creator: one(user, {
+    fields: [trips.createdBy],
     references: [user.id],
   }),
 }))
@@ -200,6 +212,8 @@ export const hotel = pgTable("hotel", {
   longitude: text("longitude"),
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
@@ -265,8 +279,13 @@ export const roomBookings = pgTable("room_bookings", {
 })
 
 // Hotel & Room Relations
-export const hotelRelations = relations(hotel, ({ many }) => ({
+export const hotelRelations = relations(hotel, ({ many, one }) => ({
   rooms: many(room),
+  agency: one(agencies, {
+    // Added relation to agency
+    fields: [hotel.agencyId],
+    references: [agencies.userId],
+  }),
 }))
 
 export const roomRelations = relations(room, ({ one, many }) => ({
@@ -305,9 +324,19 @@ export const cars = pgTable("cars", {
   year: integer("year").notNull(),
   plateNumber: varchar("plate_number", { length: 20 }).notNull().unique(),
   color: varchar("color", { length: 50 }).notNull(),
-  price: integer("price").notNull(),
+  originalPrice: decimal("original_price", {
+    precision: 10,
+    scale: 2,
+  }).notNull(),
+  discountPercentage: integer("discount_percentage"),
+  priceAfterDiscount: decimal("priceAfterDiscount", {
+    precision: 10,
+    scale: 2,
+  }),
   images: text("images").array().default([]).notNull(),
   isAvailable: boolean("is_available").default(true),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 })
@@ -334,8 +363,12 @@ export const carBookings = pgTable("car_bookings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
-export const carsRelations = relations(cars, ({ many }) => ({
+export const carsRelations = relations(cars, ({ many, one }) => ({
   bookings: many(carBookings),
+  agency: one(agencies, {
+    fields: [cars.agencyId],
+    references: [agencies.userId],
+  }),
 }))
 
 // Car Bookings Relations
@@ -366,6 +399,8 @@ export const blogs = pgTable("blogs", {
   publishedAt: timestamp("published_at"),
   categoryId: integer("category_id").references(() => blogCategories.id),
   authorId: text("author_id").references(() => user.id),
+  agencyId: text("agency_id").references(() => agencies.userId),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
   views: integer("views").default(0),
   readTime: integer("read_time"),
   tags: text("tags").array().default([]),
@@ -438,10 +473,40 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }))
 
-export const userRelations = relations(user, ({ many }) => ({
+// Agencies table
+export const agencies = pgTable("agencies", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" })
+    .unique(),
+  agencyUniqueId: varchar("agency_unique_id", { length: 20 })
+    .notNull()
+    .unique(),
+  agencyName: varchar("agency_name", { length: 255 }).notNull().unique(),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+  address: text("address"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const userRelations = relations(user, ({ many, one }) => ({
   favorites: many(favorites),
   sessions: many(session),
   accounts: many(account),
   notifications: many(notifications),
+  agency: one(agencies, {
+    fields: [user.id],
+    references: [agencies.userId],
+  }),
   // ...other existing relations...
+}))
+
+export const agenciesRelations = relations(agencies, ({ one, many }) => ({
+  user: one(user, {
+    fields: [agencies.userId],
+    references: [user.id],
+  }),
+  hotels: many(hotel), // Added hotels relation
 }))

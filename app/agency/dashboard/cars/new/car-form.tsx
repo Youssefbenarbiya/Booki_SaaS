@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -21,6 +23,9 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Percent } from "lucide-react"
 
 // --- Image upload imports ---
 import { ImageUploadSection } from "@/components/ImageUploadSection"
@@ -28,6 +33,7 @@ import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
 // ----------------------------------
 
+// Extend the schema to include discount fields.
 const carFormSchema = z.object({
   brand: z.string().min(1, "Brand is required"),
   model: z.string().min(1, "Model is required"),
@@ -38,7 +44,9 @@ const carFormSchema = z.object({
     .max(new Date().getFullYear() + 1, "Year cannot be in the distant future"),
   plateNumber: z.string().min(1, "License plate number is required"),
   color: z.string().min(1, "Color is required"),
-  price: z.coerce.number().positive("Price must be positive"),
+  originalPrice: z.coerce.number().positive("Price must be positive"),
+  discountPercentage: z.coerce.number().optional(),
+  priceAfterDiscount: z.coerce.number().optional(),
   isAvailable: z.boolean().default(true),
 })
 
@@ -50,6 +58,7 @@ type CarFormProps = {
 export function CarForm({ initialData, isEditing = false }: CarFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   // Image upload state variables
   const [images, setImages] = useState<File[]>([])
@@ -63,6 +72,13 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
     }
   }, [initialData])
 
+  // Discount state variables
+  const [hasDiscount, setHasDiscount] = useState(false)
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0)
+  const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(0)
+  const [customPercentage, setCustomPercentage] = useState(false)
+
+  // Setup form with default values (convert null to undefined for discount fields)
   const form = useForm<z.infer<typeof carFormSchema>>({
     resolver: zodResolver(carFormSchema),
     defaultValues: initialData
@@ -72,8 +88,10 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
           year: initialData.year,
           plateNumber: initialData.plateNumber,
           color: initialData.color,
-          price: initialData.price,
+          originalPrice: initialData.originalPrice,
           isAvailable: Boolean(initialData.isAvailable),
+          discountPercentage: initialData.discountPercentage ?? undefined,
+          priceAfterDiscount: initialData.priceAfterDiscount ?? undefined,
         }
       : {
           brand: "",
@@ -81,16 +99,70 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
           year: new Date().getFullYear(),
           plateNumber: "",
           color: "",
-          price: 0,
+          originalPrice: 0,
           isAvailable: true,
+          discountPercentage: undefined,
+          priceAfterDiscount: undefined,
         },
   })
 
-  async function onSubmit(values: z.infer<typeof carFormSchema>) {
-    try {
-      setIsLoading(true)
+  // Watch the originalPrice field for changes
+  const watchedPrice = form.watch("originalPrice")
 
-      // Upload new images (files) and get their URLs
+  // Calculate the price after discount based on originalPrice and discount percentage
+  const calculatePriceAfterDiscount = (price: number, percentage: number) => {
+    if (!price || !percentage) {
+      setPriceAfterDiscount(price || 0)
+      form.setValue("priceAfterDiscount", price || 0)
+      return price || 0
+    }
+    const calculated = price - price * (percentage / 100)
+    const rounded = Math.round(calculated * 100) / 100
+    setPriceAfterDiscount(rounded)
+    form.setValue("priceAfterDiscount", rounded)
+    return rounded
+  }
+
+  // When originalPrice changes and discount is applied, recalc
+  useEffect(() => {
+    if (hasDiscount && discountPercentage) {
+      calculatePriceAfterDiscount(Number(watchedPrice), discountPercentage)
+    }
+  }, [watchedPrice, discountPercentage, hasDiscount])
+
+  // When editing, if initial discount exists then prefill discount state
+  useEffect(() => {
+    if (initialData?.discountPercentage !== undefined) {
+      setHasDiscount(true)
+      setDiscountPercentage(initialData.discountPercentage ?? 0)
+
+      // Set customPercentage based on whether it matches standard percentages
+      const std = [10, 20, 30]
+      setCustomPercentage(!std.includes(initialData.discountPercentage ?? 0))
+
+      if (initialData.priceAfterDiscount !== undefined) {
+        setPriceAfterDiscount(initialData.priceAfterDiscount ?? 0)
+      } else {
+        calculatePriceAfterDiscount(
+          initialData.originalPrice,
+          initialData.discountPercentage ?? 0
+        )
+      }
+    }
+  }, [initialData])
+
+  // Function to update discount percentage and recalc price
+  const applyPercentageDiscount = (percentage: number) => {
+    setDiscountPercentage(percentage)
+    form.setValue("discountPercentage", percentage)
+    calculatePriceAfterDiscount(Number(watchedPrice), percentage)
+  }
+
+  async function onSubmit(values: z.infer<typeof carFormSchema>) {
+    setServerError(null)
+    setIsLoading(true)
+    try {
+      // Upload new images and get URLs
       let newImageUrls: string[] = []
       if (images.length > 0) {
         try {
@@ -103,19 +175,25 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
         } catch (error) {
           console.error("Error uploading images:", error)
           setUploadError("Failed to upload images")
+          setIsLoading(false)
           return
         }
       }
 
-      // Preserve existing images.
-      // Instead of checking for "http", we now assume any preview that doesn't start with "blob:"
-      // is an existing image URL saved in the database.
+      // Preserve existing images (if editing)
       const existingImageUrls = imagePreviews.filter(
         (url) => !url.startsWith("blob:")
       )
       const finalImageUrls = [...existingImageUrls, ...newImageUrls]
 
-      const formattedValues = { ...values, images: finalImageUrls }
+      const formattedValues = {
+        ...values,
+        originalPrice: Number(values.originalPrice),
+        // Only send discount fields if discount is applied
+        discountPercentage: hasDiscount ? discountPercentage : undefined,
+        priceAfterDiscount: hasDiscount ? priceAfterDiscount : undefined,
+        images: finalImageUrls,
+      }
 
       if (isEditing && initialData) {
         await updateCar(initialData.id, formattedValues)
@@ -124,12 +202,17 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
         await createCar(formattedValues)
         toast.success("Car created successfully")
       }
-
       router.push("/agency/dashboard/cars")
       router.refresh()
     } catch (error) {
-      console.error(error)
-      toast.error(isEditing ? "Failed to update car" : "Failed to create car")
+      console.error("Form submission error:", error)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      setServerError(errorMessage)
+      toast.error(errorMessage)
+      if (errorMessage.toLowerCase().includes("plate number")) {
+        form.setFocus("plateNumber")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -141,6 +224,12 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
         <CardTitle>{isEditing ? "Edit Car" : "Add New Car"}</CardTitle>
       </CardHeader>
       <CardContent>
+        {serverError && (
+          <div className="bg-red-50 text-red-500 p-3 rounded-md mb-4 border border-red-200">
+            {serverError}
+          </div>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -193,8 +282,20 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                   <FormItem>
                     <FormLabel>Plate Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="ABC-1234" {...field} />
+                      <Input
+                        placeholder="ABC-1234"
+                        {...field}
+                        className={
+                          serverError &&
+                          serverError.toLowerCase().includes("plate number")
+                            ? "border-red-500"
+                            : ""
+                        }
+                      />
                     </FormControl>
+                    <FormDescription className="text-xs text-muted-foreground">
+                      Must be unique. Example: ABC-1234
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -216,18 +317,132 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
 
               <FormField
                 control={form.control}
-                name="price"
+                name="originalPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price (per day)</FormLabel>
+                    <FormLabel>Original Price (per day)</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
-                    <FormDescription>Price per day in dollars</FormDescription>
+                    <FormDescription>
+                      Enter the daily price in dollars
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Discount Section */}
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  checked={hasDiscount}
+                  onCheckedChange={(checked) => {
+                    const enabled = !!checked
+                    setHasDiscount(enabled)
+                    if (!enabled) {
+                      setDiscountPercentage(0)
+                      form.setValue("discountPercentage", undefined)
+                      form.setValue("priceAfterDiscount", undefined)
+                      setPriceAfterDiscount(Number(watchedPrice) || 0)
+                    }
+                  }}
+                />
+                <Label htmlFor="hasDiscount" className="font-medium">
+                  Apply Discount
+                </Label>
+              </div>
+
+              {hasDiscount && (
+                <div className="space-y-4 pl-6 border-l-2 border-muted">
+                  <div className="space-y-3">
+                    <Label>Discount Percentage</Label>
+                    <RadioGroup
+                      value={
+                        customPercentage
+                          ? "custom"
+                          : discountPercentage.toString()
+                      }
+                      onValueChange={(value) => {
+                        if (value === "custom") {
+                          setCustomPercentage(true)
+                          return
+                        }
+
+                        setCustomPercentage(false)
+                        const percentage = Number.parseInt(value, 10)
+                        applyPercentageDiscount(percentage)
+                      }}
+                      className="flex flex-wrap gap-2"
+                    >
+                      <div className="flex items-center space-x-2 border rounded-md p-2">
+                        <RadioGroupItem value="10" id="r10" />
+                        <Label htmlFor="r10">10%</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 border rounded-md p-2">
+                        <RadioGroupItem value="20" id="r20" />
+                        <Label htmlFor="r20">20%</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 border rounded-md p-2">
+                        <RadioGroupItem value="30" id="r30" />
+                        <Label htmlFor="r30">30%</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 border rounded-md p-2">
+                        <RadioGroupItem value="custom" id="rcustom" />
+                        <Label htmlFor="rcustom">Custom</Label>
+                      </div>
+                    </RadioGroup>
+
+                    {customPercentage && (
+                      <div className="flex items-center space-x-2 mt-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={discountPercentage || ""}
+                          onChange={(e) => {
+                            const value = Number.parseInt(e.target.value, 10)
+                            if (!isNaN(value) && value >= 0 && value <= 100) {
+                              applyPercentageDiscount(value)
+                            }
+                          }}
+                          className="w-24"
+                        />
+                        <Percent className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+
+                  {Number(watchedPrice) > 0 && discountPercentage > 0 && (
+                    <div className="bg-muted p-4 rounded-md space-y-2">
+                      <div className="flex justify-between">
+                        <span>Original Price:</span>
+                        <span>${Number(watchedPrice).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Discount ({discountPercentage}%):</span>
+                        <span className="text-red-500">
+                          -$
+                          {(
+                            (Number(watchedPrice) * discountPercentage) /
+                            100
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-bold">
+                        <span>Price After Discount:</span>
+                        <span className="text-green-600">
+                          $
+                          {typeof priceAfterDiscount === "number"
+                            ? priceAfterDiscount.toFixed(2)
+                            : "0.00"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <FormField

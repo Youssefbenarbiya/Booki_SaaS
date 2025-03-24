@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { approveTrip } from "@/actions/admin/tripApprovalActions"
+import { approveTrip } from "@/actions/admin/ApprovalActions"
 
 export async function POST(
   request: Request,
@@ -15,7 +15,7 @@ export async function POST(
     }
 
     const result = await approveTrip(tripId)
-    
+
     if (result.success) {
       return NextResponse.json(
         { success: true, message: "Trip approved successfully" },

@@ -86,10 +86,34 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
     )
   }, [dateRange?.from, dateRange?.to])
 
+  const effectivePrice = useMemo(() => {
+    if (!car || !car.originalPrice) return 0
+
+    // Use priceAfterDiscount if provided
+    if (
+      car.priceAfterDiscount !== undefined &&
+      car.priceAfterDiscount !== null
+    ) {
+      return parseFloat(car.priceAfterDiscount)
+    }
+
+    // If discountPercentage is provided and greater than 0, calculate the discounted price.
+    if (car.discountPercentage && car.discountPercentage > 0) {
+      const originalPriceNum = parseFloat(car.originalPrice)
+      if (isNaN(originalPriceNum)) return 0
+      const discount = originalPriceNum * (car.discountPercentage / 100)
+      return parseFloat((originalPriceNum - discount).toFixed(2))
+    }
+
+    // Fallback to originalPrice.
+    return parseFloat(car.originalPrice)
+  }, [car])
+
   const totalPrice = useMemo(() => {
-    if (!car || !car.price) return 0
-    return parseFloat((totalDays * car.price).toFixed(2))
-  }, [car, totalDays])
+    const days = totalDays
+    if (!car || isNaN(days) || !effectivePrice) return 0
+    return parseFloat((days * effectivePrice).toFixed(2))
+  }, [effectivePrice, totalDays])
 
   useEffect(() => {
     let isMounted = true
@@ -281,7 +305,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600">Price per day</span>
-              <span>${car.price.toFixed(2)}</span>
+              <span>${effectivePrice.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Days</span>

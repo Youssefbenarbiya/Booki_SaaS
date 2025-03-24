@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { rejectTrip } from "@/actions/admin/tripApprovalActions"
+import { rejectTrip } from "@/actions/admin/ApprovalActions"
 
 export async function POST(
   request: Request,

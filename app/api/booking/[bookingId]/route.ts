@@ -4,15 +4,16 @@ import { getCarBookingDetails } from "@/actions/cars/get-car-booking"
 
 export async function GET(
   request: Request,
-  { params }: { params: { bookingId: string } }
+  { params }: { params: Promise<{ bookingId: string }> }
 ) {
-  const bookingId = parseInt(params.bookingId, 10)
-  const result = await getCarBookingDetails(bookingId)
+  // Await the params promise before destructuring
+  const { bookingId } = await params
+  const bookingIdNum = parseInt(bookingId, 10)
+  const result = await getCarBookingDetails(bookingIdNum)
 
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 404 })
   }
 
-  // Return the data directly
   return NextResponse.json(result.data)
 }
