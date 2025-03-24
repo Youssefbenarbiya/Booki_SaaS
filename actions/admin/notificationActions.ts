@@ -1,7 +1,7 @@
 "use server"
 
 import db from "@/db/drizzle"
-import { notifications, trips, cars, hotel } from "@/db/schema"
+import { notifications, trips, cars, hotel, blogs } from "@/db/schema"
 import { eq } from "drizzle-orm"
 
 export async function sendTripStatusNotification(
@@ -220,5 +220,81 @@ export async function sendHotelStatusNotification(
   } catch (error) {
     console.error("Error in sendHotelStatusNotification:", error)
     return { success: false, message: "Failed to send hotel notification" }
+  }
+}
+
+export async function sendBlogStatusNotification(
+  blogId: number,
+  status: "approved" | "rejected"
+) {
+  try {
+    console.log(
+      `[START] Sending notification for blog ID: ${blogId} with status: ${status}`
+    )
+
+    // Get blog details
+    const blogRecord = await db.query.blogs.findFirst({
+      where: eq(blogs.id, blogId),
+    })
+
+    console.log("Blog record found:", !!blogRecord)
+    if (blogRecord) {
+      console.log("Blog agency ID:", blogRecord.agencyId)
+    }
+
+    if (!blogRecord) {
+      console.error(`Blog not found with ID: ${blogId}`)
+      return { success: false, message: "Blog not found" }
+    }
+
+    // Get the agency user ID directly from the blog
+    const agencyId = blogRecord.agencyId
+
+    if (!agencyId) {
+      console.error(
+        `No agency ID found for blog ID: ${blogId}. This blog may have been created without an agency association.`
+      )
+      return {
+        success: false,
+        message: "No agency associated with blog. Unable to send notification.",
+      }
+    }
+
+    console.log(`Using agency ID: ${agencyId} for blog notification`)
+
+    const title = status === "approved" ? "Blog Approved" : "Blog Rejected"
+
+    const message =
+      status === "approved"
+        ? `Your blog post "${blogRecord.title}" has been approved and is now ${
+            blogRecord.published ? "published" : "ready to be published"
+          }.`
+        : `Your blog post "${blogRecord.title}" has been rejected. Please review and update your content or contact support for more information.`
+
+    console.log(`Preparing to insert blog notification with title: "${title}"`)
+
+    // Create notification with explicit values for all required fields
+    try {
+      const insertResult = await db.insert(notifications).values({
+        userId: agencyId,
+        title,
+        message,
+        type: status === "approved" ? "success" : "warning",
+        relatedItemType: "blog",
+        relatedItemId: blogId,
+        createdAt: new Date(),
+        read: false,
+      })
+
+      console.log("Blog notification insert result:", insertResult)
+      console.log(`[SUCCESS] Blog notification sent for blog ID: ${blogId}`)
+      return { success: true }
+    } catch (insertError) {
+      console.error("Failed to insert blog notification:", insertError)
+      throw insertError // Re-throw to be caught by outer catch block
+    }
+  } catch (error) {
+    console.error("Error in sendBlogStatusNotification:", error)
+    return { success: false, message: "Failed to send blog notification" }
   }
 }

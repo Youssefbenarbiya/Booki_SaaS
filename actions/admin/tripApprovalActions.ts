@@ -2,12 +2,13 @@
 
 import { revalidatePath } from "next/cache"
 import db from "@/db/drizzle"
-import { trips, cars, hotel } from "@/db/schema"
+import { trips, cars, hotel, blogs } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import {
   sendTripStatusNotification,
   sendCarStatusNotification,
   sendHotelStatusNotification,
+  sendBlogStatusNotification,
 } from "./notificationActions"
 
 export async function approveTrip(tripId: number) {
@@ -135,5 +136,63 @@ export async function rejectHotel(hotelId: number) {
   } catch (error) {
     console.error("Error rejecting hotel:", error)
     return { success: false, message: "Failed to reject hotel" }
+  }
+}
+
+export async function approveBlog(blogId: number) {
+  try {
+    // Get blog details to check if it was marked for publishing
+    const blog = await db.query.blogs.findFirst({
+      where: eq(blogs.id, blogId),
+      columns: {
+        published: true,
+      },
+    })
+
+    await db
+      .update(blogs)
+      .set({
+        status: "approved",
+        // Only set published to true if admin approves AND agency wanted it published
+        published: blog?.published ?? false,
+        publishedAt: blog?.published ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(blogs.id, blogId))
+
+    // Send notification to agency
+    await sendBlogStatusNotification(blogId, "approved")
+
+    revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/verify-blogs")
+    revalidatePath("/blogs")
+    return { success: true, message: "Blog approved successfully" }
+  } catch (error) {
+    console.error("Error approving blog:", error)
+    return { success: false, message: "Failed to approve blog" }
+  }
+}
+
+export async function rejectBlog(blogId: number) {
+  try {
+    await db
+      .update(blogs)
+      .set({
+        status: "rejected",
+        published: false,
+        publishedAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(blogs.id, blogId))
+
+    // Send notification to agency
+    await sendBlogStatusNotification(blogId, "rejected")
+
+    revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/verify-blogs")
+    return { success: true, message: "Blog rejected successfully" }
+  } catch (error) {
+    console.error("Error rejecting blog:", error)
+    return { success: false, message: "Failed to reject blog" }
   }
 }

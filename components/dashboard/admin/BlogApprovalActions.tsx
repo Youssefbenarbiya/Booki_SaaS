@@ -1,0 +1,73 @@
+"use client"
+
+import { Button } from "@/components/ui/button"
+import { approveBlog, rejectBlog } from "@/actions/admin/ApprovalActions"
+import { useState } from "react"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+
+export function BlogApprovalActions({ blogId }: { blogId: number }) {
+  const [isApproving, setIsApproving] = useState(false)
+  const [isRejecting, setIsRejecting] = useState(false)
+  const router = useRouter()
+
+  const handleApprove = async () => {
+    try {
+      setIsApproving(true)
+      const response = await approveBlog(blogId)
+
+      if (response.success) {
+        toast.success(response.message)
+        router.refresh()
+      } else {
+        toast.error(response.message || "Failed to approve blog")
+      }
+    } catch (error) {
+      console.error("Error approving blog:", error)
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsApproving(false)
+    }
+  }
+
+  const handleReject = async () => {
+    try {
+      setIsRejecting(true)
+      const response = await rejectBlog(blogId)
+
+      if (response.success) {
+        toast.success(response.message)
+        router.refresh()
+      } else {
+        toast.error(response.message || "Failed to reject blog")
+      }
+    } catch (error) {
+      console.error("Error rejecting blog:", error)
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsRejecting(false)
+    }
+  }
+
+  return (
+    <div className="flex space-x-2">
+      <Button
+        variant="default"
+        size="sm"
+        onClick={handleApprove}
+        disabled={isApproving || isRejecting}
+      >
+        {isApproving ? "Approving..." : "Approve"}
+      </Button>
+
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={handleReject}
+        disabled={isApproving || isRejecting}
+      >
+        {isRejecting ? "Rejecting..." : "Reject"}
+      </Button>
+    </div>
+  )
+}

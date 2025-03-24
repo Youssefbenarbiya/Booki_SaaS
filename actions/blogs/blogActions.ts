@@ -163,7 +163,7 @@ export async function createBlog(formData: FormData, authorId: string) {
       uploadedImages = uploads
     }
 
-    // Create blog in database
+    // Create blog in database - now with status: "pending"
     await db
       .insert(blogs)
       .values({
@@ -173,17 +173,18 @@ export async function createBlog(formData: FormData, authorId: string) {
         categoryId,
         authorId,
         agencyId: agency?.userId || null, // Set the agency ID if available
-        published,
-        publishedAt: published ? new Date() : null,
+        published: false, // Set to false initially regardless of user input
+        publishedAt: null, // Will be set when approved
         readTime,
         tags,
         featuredImage,
         images: uploadedImages,
+        status: "pending", // Set initial status to pending
       })
       .returning()
 
     revalidatePath("/agency/dashboard/blogs")
-    return { success: true }
+    return { success: true, message: "Blog submitted for approval" }
   } catch (error) {
     console.error("Blog creation error:", error)
     return { error: "Failed to create blog" }
@@ -219,6 +220,7 @@ export async function updateBlog(id: number, formData: FormData) {
         publishedAt: true,
         images: true,
         featuredImage: true,
+        status: true,
       },
     })
     if (!currentBlog) {
@@ -305,6 +307,17 @@ export async function updateBlog(id: number, formData: FormData) {
         : currentBlog.publishedAt
     }
 
+    // If blog was already published and approved, allow updates without changing status
+    // Otherwise, any updates to a pending/rejected blog will put it back into pending status
+    let status = currentBlog.status
+    let actualPublished = published
+
+    // If blog wasn't already approved and published, updates require re-approval
+    if (currentBlog.status !== "approved" || !currentBlog.published) {
+      status = "pending"
+      actualPublished = false // Can't be published until approved
+    }
+
     // Update the blog in the database
     await db
       .update(blogs)
@@ -313,12 +326,13 @@ export async function updateBlog(id: number, formData: FormData) {
         content,
         excerpt,
         categoryId,
-        published,
+        published: actualPublished,
         publishedAt,
         readTime,
         tags,
         featuredImage,
         images: updatedImages, // Only the remaining (and new) images remain in the DB
+        status: status, // Set status based on our logic above
         updatedAt: new Date(),
       })
       .where(eq(blogs.id, id))

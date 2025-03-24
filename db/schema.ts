@@ -400,6 +400,7 @@ export const blogs = pgTable("blogs", {
   categoryId: integer("category_id").references(() => blogCategories.id),
   authorId: text("author_id").references(() => user.id),
   agencyId: text("agency_id").references(() => agencies.userId),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
   views: integer("views").default(0),
   readTime: integer("read_time"),
   tags: text("tags").array().default([]),
