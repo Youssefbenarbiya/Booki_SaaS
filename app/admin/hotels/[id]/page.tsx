@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
+import HotelLocationMap from "@/components/HotelLocationMap"
 
 export default async function HotelDetailsPage({
   params,
@@ -236,6 +237,19 @@ export default async function HotelDetailsPage({
                   </div>
                 )}
               </div>
+
+              {/* Add the map component */}
+              {hotelDetails.latitude && hotelDetails.longitude && (
+                <div className="mt-4 h-64 rounded-md overflow-hidden border border-gray-200">
+                  <HotelLocationMap
+                    latitude={hotelDetails.latitude}
+                    longitude={hotelDetails.longitude}
+                    height="400px"
+                    readOnly={true}
+                    enableNavigation={true}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="bg-gray-50 p-4 rounded-md">

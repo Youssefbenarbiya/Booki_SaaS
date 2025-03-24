@@ -60,7 +60,7 @@ export default async function VerifyOffersPage({
     pendingBlogs.length
 
   // Generic component to display offers of any type
-  const   OfferTable = ({
+  const OfferTable = ({
     offers,
     type,
     ApprovalComponent,
@@ -79,9 +79,11 @@ export default async function VerifyOffersPage({
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Details
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              {type === "blog" ? "Category" : "Price"}
-            </th>
+            {type !== "hotel" && (
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {type === "blog" ? "Category" : "Price"}
+              </th>
+            )}
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               View
             </th>
@@ -128,39 +130,41 @@ export default async function VerifyOffersPage({
                   )}
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">
-                  {type === "blog" ? (
-                    <span>{offer.category?.name || "Uncategorized"}</span>
-                  ) : offer.discountPercentage &&
-                    offer.discountPercentage > 0 ? (
-                    <>
-                      <span className="line-through text-gray-400 mr-2">
+              {type !== "hotel" && (
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">
+                    {type === "blog" ? (
+                      <span>{offer.category?.name || "Uncategorized"}</span>
+                    ) : offer.discountPercentage &&
+                      offer.discountPercentage > 0 ? (
+                      <>
+                        <span className="line-through text-gray-400 mr-2">
+                          $
+                          {parseFloat(
+                            offer.originalPrice?.toString() || "0"
+                          ).toFixed(2)}
+                        </span>
+                        <span>
+                          $
+                          {parseFloat(
+                            offer.priceAfterDiscount?.toString() || "0"
+                          ).toFixed(2)}
+                          <span className="text-xs text-green-600 ml-1">
+                            ({offer.discountPercentage}% off)
+                          </span>
+                        </span>
+                      </>
+                    ) : (
+                      <span>
                         $
                         {parseFloat(
                           offer.originalPrice?.toString() || "0"
                         ).toFixed(2)}
                       </span>
-                      <span>
-                        $
-                        {parseFloat(
-                          offer.priceAfterDiscount?.toString() || "0"
-                        ).toFixed(2)}
-                        <span className="text-xs text-green-600 ml-1">
-                          ({offer.discountPercentage}% off)
-                        </span>
-                      </span>
-                    </>
-                  ) : (
-                    <span>
-                      $
-                      {parseFloat(
-                        offer.originalPrice?.toString() || "0"
-                      ).toFixed(2)}
-                    </span>
-                  )}
-                </div>
-              </td>
+                    )}
+                  </div>
+                </td>
+              )}
               <td className="px-6 py-4 whitespace-nowrap">
                 <Link
                   href={`/admin/${type}s/${offer.id}`}
