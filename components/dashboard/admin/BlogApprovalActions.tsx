@@ -1,10 +1,10 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { approveBlog, rejectBlog } from "@/actions/admin/ApprovalActions"
 import { useState } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { approveBlog, rejectBlog } from "@/actions/admin/tripApprovalActions"
 
 type BlogApprovalActionsProps = {
   blogId?: number
