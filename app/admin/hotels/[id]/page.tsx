@@ -34,7 +34,7 @@ export default async function HotelDetailsPage({
     }[hotelDetails.status] || "bg-gray-100 text-gray-800"
 
   return (
-    <div className="container py-6 max-w-4xl">
+    <div className="container py-6 max-w-7xl">
       <div className="mb-6">
         <Link
           href="/admin/verify-offers?tab=hotel"
