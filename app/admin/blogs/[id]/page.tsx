@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
 
 export default async function AdminBlogDetailPage({
   params,
@@ -73,9 +74,11 @@ export default async function AdminBlogDetailPage({
         <CardContent className="space-y-4">
           {blog.featuredImage && (
             <div className="mb-6">
-              <img
+              <Image
                 src={blog.featuredImage}
                 alt={blog.title}
+                width={1200}
+                height={400}
                 className="w-full max-h-[400px] object-cover rounded-md"
               />
             </div>

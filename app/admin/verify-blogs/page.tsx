@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm"
 import { BlogApprovalActions } from "@/components/dashboard/admin/BlogApprovalActions"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
+import Image from "next/image"
 
 export default async function VerifyBlogsPage() {
   // Get all pending blogs
@@ -67,7 +68,7 @@ export default async function VerifyBlogsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {blog.author?.image && (
-                        <img 
+                        <Image 
                           src={blog.author.image} 
                           alt={blog.author?.name || "Author"} 
                           className="h-8 w-8 rounded-full mr-2"

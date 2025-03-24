@@ -6,15 +6,33 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
-export function BlogApprovalActions({ blogId }: { blogId: number }) {
+type BlogApprovalActionsProps = {
+  blogId?: number
+  offerId?: number
+}
+
+export function BlogApprovalActions({
+  blogId,
+  offerId,
+}: BlogApprovalActionsProps) {
+  // Use either blogId or offerId, with blogId taking precedence if both are provided
+  const id = blogId ?? offerId
+
   const [isApproving, setIsApproving] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
   const router = useRouter()
 
+  if (!id) {
+    console.error(
+      "BlogApprovalActions: No ID provided (neither blogId nor offerId)"
+    )
+    return null
+  }
+
   const handleApprove = async () => {
     try {
       setIsApproving(true)
-      const response = await approveBlog(blogId)
+      const response = await approveBlog(id)
 
       if (response.success) {
         toast.success(response.message)
@@ -33,7 +51,7 @@ export function BlogApprovalActions({ blogId }: { blogId: number }) {
   const handleReject = async () => {
     try {
       setIsRejecting(true)
-      const response = await rejectBlog(blogId)
+      const response = await rejectBlog(id)
 
       if (response.success) {
         toast.success(response.message)

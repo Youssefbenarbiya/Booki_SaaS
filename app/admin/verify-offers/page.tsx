@@ -60,7 +60,7 @@ export default async function VerifyOffersPage({
     pendingBlogs.length
 
   // Generic component to display offers of any type
-  const OfferTable = ({
+  const   OfferTable = ({
     offers,
     type,
     ApprovalComponent,
