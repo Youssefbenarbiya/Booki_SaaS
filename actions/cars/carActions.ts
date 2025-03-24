@@ -82,8 +82,8 @@ export async function createCar(data: CarFormValues) {
     const agencyId = await getAgencyId()
 
     // Process discount fields: if discountPercentage exists and priceAfterDiscount is not provided, calculate it.
-    const discountPercentage = data.discountPercentage;
-    let priceAfterDiscount = data.priceAfterDiscount;
+    const discountPercentage = data.discountPercentage
+    let priceAfterDiscount = data.priceAfterDiscount
     if (discountPercentage !== undefined && discountPercentage !== null) {
       if (priceAfterDiscount === undefined || priceAfterDiscount === null) {
         priceAfterDiscount =
@@ -112,7 +112,6 @@ export async function createCar(data: CarFormValues) {
       })
       .returning()
 
-
     revalidatePath("/agency/dashboard/cars")
     return { car: newCar[0] }
   } catch (error) {
@@ -134,7 +133,6 @@ export async function createCar(data: CarFormValues) {
     throw new Error("Failed to create car")
   }
 }
-
 
 export async function updateCar(id: number, data: CarFormValues) {
   try {
@@ -214,7 +212,8 @@ export async function searchCars(
   try {
     // No authentication required if searching public data
     const availableCars = await db.query.cars.findMany({
-      where: (cars, { eq }) => eq(cars.isAvailable, true),
+      where: (cars, { and, eq }) =>
+        and(eq(cars.isAvailable, true), eq(cars.status, "approved")),
     })
 
     return availableCars

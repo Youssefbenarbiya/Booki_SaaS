@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { Heart } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -14,16 +13,13 @@ export interface Car {
   year: number
   plateNumber: string
   color: string
-  price: number
-  originalPrice?: number
-  isAvailable: boolean
+  originalPrice: number
+  discountPercentage?: number
+  priceAfterDiscount?: number
   images: string[]
+  isAvailable: boolean
   createdAt: Date
   updatedAt: Date | null
-  type?: string
-  fuelType?: string
-  transmission?: string
-  capacity?: number
 }
 
 interface CarCardProps {
@@ -40,14 +36,44 @@ export function CarCard({ car, viewMode }: CarCardProps) {
   }
 
   const handleHeartClick = (e: React.MouseEvent) => {
-    e.stopPropagation() 
+    e.stopPropagation()
     toggleFavorite()
   }
 
-  const carType = car.type || "Sport"
-  const fuelType = car.fuelType || "70L"
-  const transmission = car.transmission || "Manual"
-  const capacity = car.capacity || 2
+  // Price calculations
+  const originalPrice = Number(car.originalPrice) || 0
+  const discountPercentage = Number(car.discountPercentage) || 0
+  const priceAfterDiscount = Number(car.priceAfterDiscount) || originalPrice
+  const hasDiscount =
+    discountPercentage > 0 && priceAfterDiscount < originalPrice
+
+  const formatPrice = (price: number) => {
+    return typeof price === "number" ? price.toFixed(2) : "0.00"
+  }
+
+  // Replace the PriceDisplay component with:
+  const PriceDisplay = () => (
+    <div>
+      {hasDiscount ? (
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500 line-through">
+            ${formatPrice(originalPrice)}
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-lg">
+              ${formatPrice(priceAfterDiscount)}
+            </span>
+            <span className="text-xs text-green-600">
+              -{discountPercentage}%
+            </span>
+          </div>
+        </div>
+      ) : (
+        <span className="font-bold text-lg">${formatPrice(originalPrice)}</span>
+      )}
+      <span className="text-xs text-gray-500">/day</span>
+    </div>
+  )
 
   if (viewMode === "list") {
     return (
@@ -69,7 +95,9 @@ export function CarCard({ car, viewMode }: CarCardProps) {
               <h3 className="font-bold text-gray-800">
                 {car.brand} {car.model}
               </h3>
-              <p className="text-xs text-gray-500">{carType}</p>
+              <p className="text-xs text-gray-500">Year: {car.year}</p>
+              <p className="text-xs text-gray-500">Plate: {car.plateNumber}</p>
+              <p className="text-xs text-gray-500">Color: {car.color}</p>
             </div>
             <button
               onClick={handleHeartClick}
@@ -84,46 +112,9 @@ export function CarCard({ car, viewMode }: CarCardProps) {
             </button>
           </div>
 
-          {/* Car Details */}
-          <div className="flex gap-6 text-xs text-gray-600 mb-4">
-            <div className="flex items-center gap-1">
-              <div className="bg-blue-100 p-1 rounded-full">
-                <span className="text-blue-500">⛽</span>
-              </div>
-              <span>{fuelType}</span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <div className="bg-blue-100 p-1 rounded-full">
-                <span className="text-blue-500">🔄</span>
-              </div>
-              <span>{transmission}</span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <div className="bg-blue-100 p-1 rounded-full">
-                <span className="text-blue-500">👤</span>
-              </div>
-              <span>{capacity} People</span>
-            </div>
-          </div>
-
           {/* Car Price and Button */}
           <div className="flex justify-between items-center mt-auto">
-            <div>
-              <div className="flex items-baseline gap-1">
-                <span className="font-bold text-lg">
-                  ${car.price.toFixed(2)}
-                </span>
-                <span className="text-xs text-gray-500">/day</span>
-              </div>
-              {car.originalPrice && (
-                <span className="text-xs text-gray-500">
-                  ${car.originalPrice.toFixed(2)}
-                </span>
-              )}
-            </div>
-
+            <PriceDisplay />
             <button
               onClick={handleCardClick}
               className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -144,7 +135,9 @@ export function CarCard({ car, viewMode }: CarCardProps) {
           <h3 className="font-bold text-gray-800">
             {car.brand} {car.model}
           </h3>
-          <p className="text-xs text-gray-500">{carType}</p>
+          <p className="text-xs text-gray-500">Year: {car.year}</p>
+          <p className="text-xs text-gray-500">Plate: {car.plateNumber}</p>
+          <p className="text-xs text-gray-500">Color: {car.color}</p>
         </div>
         <button
           onClick={handleHeartClick}
@@ -169,44 +162,9 @@ export function CarCard({ car, viewMode }: CarCardProps) {
         />
       </div>
 
-      {/* Car Details */}
-      <div className="p-3 flex justify-between items-center text-xs text-gray-600">
-        <div className="flex items-center gap-1">
-          <div className="bg-blue-100 p-1 rounded-full">
-            <span className="text-blue-500">⛽</span>
-          </div>
-          <span>{fuelType}</span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <div className="bg-blue-100 p-1 rounded-full">
-            <span className="text-blue-500">🔄</span>
-          </div>
-          <span>{transmission}</span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <div className="bg-blue-100 p-1 rounded-full">
-            <span className="text-blue-500">👤</span>
-          </div>
-          <span>{capacity} People</span>
-        </div>
-      </div>
-
       {/* Car Price and Button */}
       <div className="p-3 flex justify-between items-center">
-        <div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-bold text-lg">${car.price.toFixed(2)}</span>
-            <span className="text-xs text-gray-500">/day</span>
-          </div>
-          {car.originalPrice && (
-            <span className="text-xs text-gray-500">
-              ${car.originalPrice.toFixed(2)}
-            </span>
-          )}
-        </div>
-
+        <PriceDisplay />
         <button
           onClick={handleCardClick}
           className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-md text-sm font-medium transition-colors"
