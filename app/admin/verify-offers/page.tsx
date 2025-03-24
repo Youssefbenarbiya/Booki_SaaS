@@ -4,11 +4,29 @@ import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalActions"
 import Link from "next/link"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
 import { CarApprovalActions } from "@/components/dashboard/admin/CarApprovalActions"
 import { HotelApprovalActions } from "@/components/dashboard/admin/HotelApprovalActions"
+import { TabSwitcher } from "@/components/dashboard/admin/TabSwitcher"
 
-export default async function VerifyOffersPage() {
+export default async function VerifyOffersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  // Await the searchParams before using its properties
+  const params = await searchParams
+  const tabParam = params?.tab
+
+  // Get current tab from URL parameters or default to "trips"
+  // Handle string[] case by taking first value or defaulting to "trips"
+  const currentTab =
+    typeof tabParam === "string"
+      ? tabParam
+      : Array.isArray(tabParam) && tabParam.length > 0
+      ? tabParam[0]
+      : "trips"
+
   const pendingTrips = await db.query.trips.findMany({
     where: eq(trips.status, "pending"),
   })
@@ -146,15 +164,17 @@ export default async function VerifyOffersPage() {
       )}
 
       {totalPending > 0 && (
-        <Tabs defaultValue="trips">
+        <Tabs defaultValue={currentTab}>
           <TabsList className="mb-4">
-            <TabsTrigger value="trips">
+            <TabSwitcher value="trips" currentTab={currentTab}>
               Trips ({pendingTrips.length})
-            </TabsTrigger>
-            <TabsTrigger value="cars">Cars ({pendingCars.length})</TabsTrigger>
-            <TabsTrigger value="hotel">
+            </TabSwitcher>
+            <TabSwitcher value="cars" currentTab={currentTab}>
+              Cars ({pendingCars.length})
+            </TabSwitcher>
+            <TabSwitcher value="hotel" currentTab={currentTab}>
               Hotels ({pendingHotels.length})
-            </TabsTrigger>
+            </TabSwitcher>
           </TabsList>
 
           <TabsContent value="trips">
