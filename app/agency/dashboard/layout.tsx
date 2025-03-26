@@ -24,9 +24,12 @@ export default async function DashboardLayout({
     headers: await headers(),
   })
 
-  if (!session || session.user.role !== "agency owner") {
-    return <NotAllowed />
-  }
+if (
+  !session ||
+  (session.user.role !== "agency owner" && session.user.role !== "employee")
+) {
+  return <NotAllowed />
+}
 
   // Get initial notifications
   const { notifications, unreadCount } = await getAgencyNotifications(5)

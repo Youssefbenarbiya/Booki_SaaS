@@ -1,16 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server"
 
-import { user, account, agencyEmployees, agencies } from "@/db/schema"
-import { nanoid } from "nanoid"
+import { agencyEmployees, agencies, user } from "@/db/schema"
 import { sendEmail } from "@/actions/users/email"
 import { z } from "zod"
-import bcrypt from "bcrypt"
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
-import jwt from "jsonwebtoken"
+import { authClient } from "@/auth-client" // Add this import for authClient
 
 // Schema for validation
 const employeeSchema = z.object({
@@ -22,7 +21,7 @@ const employeeSchema = z.object({
 
 type EmployeeFormData = z.infer<typeof employeeSchema>
 
-// Generate a secure random password
+// Function to generate a secure random password
 function generateRandomPassword(length = 12) {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+"
@@ -31,47 +30,6 @@ function generateRandomPassword(length = 12) {
     password += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return password
-}
-
-// Function to generate a unique ID
-function generateUniqueId() {
-  return nanoid(21)
-}
-
-// Function to generate a mock access token (similar to OAuth tokens)
-function generateAccessToken() {
-  const prefix = "ya29.a0"
-  const randomChars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-  let token = prefix
-
-  // Generate a random token similar to Google's OAuth tokens
-  for (let i = 0; i < 180; i++) {
-    token += randomChars.charAt(Math.floor(Math.random() * randomChars.length))
-  }
-
-  return token
-}
-
-// Function to generate an ID token (JWT format)
-function generateIdToken(userId: string, name: string, email: string) {
-  // Create a simple JWT token with necessary fields
-  const payload = {
-    iss: "https://auth.booki.app", // Issuer
-    aud: "booki-app", // Audience
-    sub: userId,
-    email: email,
-    email_verified: true,
-    name: name,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 days
-  }
-
-  // Use a secret key for signing the token
-  const secret = process.env.JWT_SECRET || "your-secret-key-for-jwt-signing"
-
-  // Sign the token
-  return jwt.sign(payload, secret)
 }
 
 export async function addEmployee(formData: EmployeeFormData) {
@@ -106,96 +64,61 @@ export async function addEmployee(formData: EmployeeFormData) {
       }
     }
 
-    // Check if user with email already exists
-    const existingUser = await db.query.user.findFirst({
-      where: eq(user.email, validatedData.email.toLowerCase()),
-    })
-
-    if (existingUser) {
-      return { error: "User with this email already exists" }
-    }
-
     // Generate a random password
     const password = generateRandomPassword()
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    // Create new user with role "employee"
-    const userId = generateUniqueId()
-    const now = new Date()
-
-    // Generate authentication tokens
-    const accessToken = generateAccessToken()
-    const idToken = generateIdToken(
-      userId,
-      validatedData.name,
-      validatedData.email.toLowerCase()
-    )
-
-    console.log("Creating new employee:", {
-      id: userId,
-      name: validatedData.name,
+    // Create user data for auth client
+    const userData = {
       email: validatedData.email.toLowerCase(),
-      role: "employee",
-    })
-
-    try {
-      // Instead of a transaction, let's do each step separately to see where it fails
-      // Step 1: Insert user
-      console.log("Inserting user")
-      await db.insert(user).values({
-        id: userId,
-        name: validatedData.name,
-        email: validatedData.email.toLowerCase(),
-        role: "employee",
-        phoneNumber: validatedData.phone || null,
-        address: validatedData.address || null,
-        emailVerified: true,
-        banned: false,
-        createdAt: now,
-        updatedAt: now,
-      })
-
-      // Step 2: Insert account with tokens
-      console.log("Inserting account with authentication tokens")
-      await db.insert(account).values({
-        id: generateUniqueId(),
-        userId: userId,
-        providerId: "credentials",
-        accountId: userId,
-        password: hashedPassword,
-        accessToken: accessToken, // Add the access token
-        idToken: idToken, // Add the ID token
-        createdAt: now,
-        updatedAt: now,
-      })
-
-      // Step 3: Insert agency employee link
-      console.log("Inserting agency employee link")
-      await db.insert(agencyEmployees).values({
-        employeeId: userId,
-        agencyId: agencyResult.userId,
-        createdAt: now,
-      })
-
-      console.log("Database operations completed successfully")
-    } catch (dbError) {
-      console.error("Database error:", dbError)
-      return {
-        error:
-          "Database error: " +
-          (dbError instanceof Error ? dbError.message : String(dbError)),
-      }
+      password: password,
+      name: validatedData.name,
+      phoneNumber: validatedData.phone || null,
+      role: "employee", // Specify role
+      address: validatedData.address || null,
     }
 
-    // Send email to employee with credentials
-    try {
-      console.log("Sending email")
-      await sendEmail({
-        to: validatedData.email,
-        subject: `Welcome to ${agencyResult.agencyName} Team!`,
-        text: `
+    // Use authClient to create user account (like in sign-up page)
+    return await new Promise((resolve) => {
+      authClient.signUp.email(userData as any, {
+        onSuccess: async (authResult) => {
+          console.log(
+            "Employee created successfully with auth client:",
+            authResult
+          )
+
+          try {
+            // Since the auth result structure varies, let's find the user by email
+            // Wait a moment to ensure the user is in the database
+            console.log("Waiting for user creation to propagate...")
+            await new Promise((r) => setTimeout(r, 2000))
+
+            // Find the newly created employee by email
+            const createdUser = await db.query.user.findFirst({
+              where: eq(user.email, validatedData.email.toLowerCase()),
+            })
+
+            if (!createdUser || !createdUser.id) {
+              console.error("Could not find created user in database")
+              throw new Error(
+                "Failed to find employee in database after creation"
+              )
+            }
+
+            console.log("Found created employee:", createdUser)
+
+            // Link employee to the agency
+            const now = new Date()
+            await db.insert(agencyEmployees).values({
+              employeeId: createdUser.id,
+              agencyId: agencyResult.userId,
+              createdAt: now,
+            })
+
+            // Send email to employee with credentials
+            await sendEmail({
+              to: validatedData.email,
+              subject: `Welcome to ${agencyResult.agencyName} Team!`,
+              text: `
 Hello ${validatedData.name},
 
 You've been added as an employee to ${agencyResult.agencyName}.
@@ -208,20 +131,33 @@ Please log in at our platform and change your password as soon as possible.
 
 Thank you,
 ${agencyResult.agencyName} Team
-        `,
+              `,
+            })
+
+            console.log("Email sent successfully")
+
+            // Revalidate path
+            revalidatePath("/agency/dashboard/employees")
+
+            resolve({ success: true })
+          } catch (error) {
+            console.error("Error linking employee to agency:", error)
+            resolve({
+              error:
+                error instanceof Error
+                  ? `Employee created but linking failed: ${error.message}`
+                  : "Employee created but linking failed",
+            })
+          }
+        },
+        onError: (error: any) => {
+          console.error("Employee creation error:", error)
+          resolve({
+            error: error?.message || "Failed to create employee account",
+          })
+        },
       })
-      console.log("Email sent successfully")
-    } catch (emailError) {
-      console.error("Email error:", emailError)
-      // Continue even if email fails - employee is still created
-    }
-
-    // Ensure we're revalidating the path correctly
-    console.log("Revalidating path")
-    revalidatePath("/agency/dashboard/employees")
-
-    console.log("Employee creation completed successfully")
-    return { success: true }
+    })
   } catch (error) {
     console.error("Error adding employee:", error)
     // More detailed error logging
