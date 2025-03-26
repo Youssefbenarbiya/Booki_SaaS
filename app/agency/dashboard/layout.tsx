@@ -5,8 +5,8 @@ import { auth } from "@/auth"
 import { Sidebar } from "../../../components/dashboard/agency/Sidebar"
 import NotAllowed from "@/components/not-allowed"
 import { ReactNode } from "react"
-import { NotificationCenter } from "@/components/dashboard/agency/NotificationCenter"
 import { getAgencyNotifications } from "@/actions/agency/notificationActions"
+import NotificationCenter from "@/components/dashboard/agency/NotificationCenter"
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -38,6 +38,7 @@ if (
     type: (["error", "info", "success", "warning"].includes(notification.type)
       ? notification.type
       : "info") as "error" | "info" | "success" | "warning",
+    userId: typeof notification.userId === 'string' ? Number(notification.userId) : notification.userId,
   }))
 
   return (

@@ -1,18 +1,56 @@
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
+// Make sure you're importing the correct function
 import { getAgencyNotifications } from "@/actions/agency/notificationActions"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { headers } from "next/headers"
+import { auth } from "@/auth"
+import db from "@/db/drizzle"
+// Make sure the table name matches your schema exactly
+import { user } from "@/db/schema"
+import { eq } from "drizzle-orm"
 
+// Make sure to export the page component properly
 export default async function NotificationsPage() {
-  const { notifications } = await getAgencyNotifications(100) // Increase limit to ensure we get all notifications
-  console.log(`Retrieved ${notifications.length} notifications for display`)
+  // Get the current user's session using Better-Auth
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
 
-  // Group notifications by date (today, this week, earlier)
+  const userId = session?.user?.id
+  let userRole = "AGENCY_OWNER"
+
+  if (userId) {
+    const currentUser = await db.query.user.findFirst({
+      where: eq(user.id, userId),
+    })
+
+    if (currentUser) {
+      userRole = currentUser.role
+    }
+  }
+
+  // Check if user has permission to see this page (agency owner or employee)
+  if (userRole !== "AGENCY_OWNER" && userRole !== "AGENCY_EMPLOYEE") {
+    return (
+      <div className="py-8 text-center">
+        <h1 className="text-2xl font-bold">Unauthorized</h1>
+        <p className="mt-2">
+          You don&apos;t have permission to view this page.
+        </p>
+      </div>
+    )
+  }
+
+  // Fetch notifications
+  const { notifications = [] } = await getAgencyNotifications(100) // Get more notifications for the full page
+
+  // Group notifications by date
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const oneWeekAgo = new Date()
+  const oneWeekAgo = new Date(today)
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
 
   const todayNotifications = notifications.filter(

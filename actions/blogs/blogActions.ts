@@ -2,7 +2,7 @@
 "use server"
 
 import db from "@/db/drizzle"
-import { blogs, agencies } from "@/db/schema"
+import { blogs, agencies, agencyEmployees } from "@/db/schema"
 import { revalidatePath } from "next/cache"
 import { eq } from "drizzle-orm"
 import { uploadImages } from "@/actions/uploadActions"
@@ -41,9 +41,39 @@ function getPublicIdFromUrl(url: string): string | null {
   }
 }
 
-export async function getBlogs(agencyId?: string) {
+// Helper function to get agency ID for a user
+async function getAgencyIdForUser(userId: string) {
+  // Check if user is an agency owner
+  const agency = await db.query.agencies.findFirst({
+    where: eq(agencies.userId, userId),
+  })
+
+  if (agency) {
+    return agency.userId
+  }
+
+  // Check if user is an employee
+  const employeeRecord = await db.query.agencyEmployees.findFirst({
+    where: eq(agencyEmployees.employeeId, userId),
+  })
+
+  if (employeeRecord) {
+    return employeeRecord.agencyId
+  }
+
+  return null
+}
+
+export async function getBlogs(userId?: string) {
   try {
-    // If agencyId is provided, filter blogs for that specific agency
+    // If userId is provided, get blogs for that user's agency (owner or employee)
+    let agencyId = null
+
+    if (userId) {
+      agencyId = await getAgencyIdForUser(userId)
+    }
+
+    // If agencyId is found, filter blogs for that specific agency
     // Otherwise, return all blogs for public consumption
     const query = agencyId
       ? db.query.blogs.findMany({
@@ -143,13 +173,12 @@ export async function createBlog(formData: FormData, authorId: string) {
       return { error: "Missing required blog information" }
     }
 
-    // Get the agency ID of the author
-    const agency = await db.query.agencies.findFirst({
-      where: eq(agencies.userId, authorId),
-      columns: {
-        userId: true,
-      },
-    })
+    // Get the agency ID of the author - works for both owners and employees
+    const agencyId = await getAgencyIdForUser(authorId)
+
+    if (!agencyId) {
+      return { error: "No agency found for this user" }
+    }
 
     // Upload featured image if provided
     if (featuredImageFile && featuredImageFile.size > 0) {
@@ -164,7 +193,7 @@ export async function createBlog(formData: FormData, authorId: string) {
       uploadedImages = uploads
     }
 
-    // Create blog in database - now with status: "pending"
+    // Create blog in database - now with the correct agencyId
     await db
       .insert(blogs)
       .values({
@@ -173,7 +202,7 @@ export async function createBlog(formData: FormData, authorId: string) {
         excerpt,
         categoryId,
         authorId,
-        agencyId: agency?.userId || null, // Set the agency ID if available
+        agencyId: agencyId, // Use the retrieved agencyId
         published: false, // Set to false initially regardless of user input
         publishedAt: null, // Will be set when approved
         readTime,

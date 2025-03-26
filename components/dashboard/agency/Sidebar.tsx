@@ -12,6 +12,7 @@ import {
   BookOpen,
   Users,
 } from "lucide-react"
+import { useSession } from "@/auth-client" 
 
 const navigation = [
   {
@@ -48,6 +49,14 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const session = useSession()
+  const userRole = session.data?.user?.role
+
+  // If the user is an employee, filter out the Employees tab
+  const filteredNavigation =
+    userRole === "employee"
+      ? navigation.filter((item) => item.name !== "Employees")
+      : navigation
 
   return (
     <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
@@ -62,7 +71,7 @@ export function Sidebar() {
           <ul role="list" className="flex flex-1 flex-col gap-y-7">
             <li>
               <ul role="list" className="-mx-2 space-y-1">
-                {navigation.map((item) => {
+                {filteredNavigation.map((item) => {
                   const isActive = pathname === item.href
                   return (
                     <li key={item.name}>

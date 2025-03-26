@@ -8,6 +8,7 @@ import {
   user,
   trips,
   room,
+  agencyEmployees,
 } from "@/db/schema"
 import { eq, and, gt, sql } from "drizzle-orm"
 import { cache } from "react"
@@ -44,7 +45,18 @@ export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
       throw new Error("Unauthorized: User not authenticated")
     }
 
-    // Get the user's agency
+    // Get the user
+    const currentUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+    })
+
+    if (!currentUser) {
+      throw new Error("User not found")
+    }
+
+    let agencyId: string
+
+    // Check if the user is an agency owner
     const userWithAgency = await db.query.user.findFirst({
       where: eq(user.id, session.user.id),
       with: {
@@ -52,11 +64,25 @@ export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
       },
     })
 
-    if (!userWithAgency?.agency) {
-      throw new Error("No agency found for this user")
+    if (userWithAgency?.agency) {
+      // User is an agency owner
+      agencyId = userWithAgency.agency.userId
+    } else {
+      // User might be an employee, check agencyEmployees table
+      const employeeRecord = await db.query.agencyEmployees.findFirst({
+        where: eq(agencyEmployees.employeeId, session.user.id),
+      })
+
+      if (!employeeRecord) {
+        throw new Error(
+          "No agency found for this user - not an owner or employee"
+        )
+      }
+
+      agencyId = employeeRecord.agencyId
     }
 
-    const agencyId = userWithAgency.agency.userId
+    console.log("Using agency ID:", agencyId)
 
     // Calculate revenue from trip bookings - filtered by agency
     const tripBookingsRevenueResult = await db

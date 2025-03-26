@@ -1,11 +1,43 @@
 "use server"
 
 import db from "../../db/drizzle"
-import { hotel, room, roomAvailability, user } from "@/db/schema"
+import {
+  hotel,
+  room,
+  roomAvailability,
+  user,
+  agencyEmployees,
+} from "@/db/schema"
 import { hotelSchema, type HotelInput } from "@/lib/validations/hotelSchema"
 import { eq } from "drizzle-orm"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
+
+// Helper function to get agency ID
+async function getAgencyId(userId: string) {
+  // Check if user is an agency owner
+  const userWithAgency = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    with: {
+      agency: true,
+    },
+  })
+
+  if (userWithAgency?.agency) {
+    return userWithAgency.agency.userId
+  }
+
+  // Check if user is an employee
+  const employeeRecord = await db.query.agencyEmployees.findFirst({
+    where: eq(agencyEmployees.employeeId, userId),
+  })
+
+  if (employeeRecord) {
+    return employeeRecord.agencyId
+  }
+
+  throw new Error("No agency found for this user - not an owner or employee")
+}
 
 export async function createHotel(data: HotelInput) {
   try {
@@ -21,17 +53,8 @@ export async function createHotel(data: HotelInput) {
       throw new Error("Unauthorized: You must be logged in to create a hotel")
     }
 
-    // Get the user's agency
-    const userWithAgency = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      with: {
-        agency: true,
-      },
-    })
-
-    if (!userWithAgency?.agency) {
-      throw new Error("No agency found for this user")
-    }
+    // Get the user's agency ID (works for both owners and employees)
+    const agencyId = await getAgencyId(session.user.id)
 
     const [newHotel] = await db
       .insert(hotel)
@@ -47,7 +70,7 @@ export async function createHotel(data: HotelInput) {
         rating: validatedData.rating,
         amenities: validatedData.amenities,
         images: validatedData.images || [],
-        agencyId: userWithAgency.agency.userId, // Set agency ID
+        agencyId: agencyId, // Use the agencyId from our helper
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -199,22 +222,12 @@ export async function getHotels() {
       return []
     }
 
-    // Get the user's agency
-    const userWithAgency = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      with: {
-        agency: true,
-      },
-    })
-
-    if (!userWithAgency?.agency) {
-      console.log("No agency found for this user")
-      return []
-    }
+    // Get the user's agency ID (works for both owners and employees)
+    const agencyId = await getAgencyId(session.user.id)
 
     // Get hotels belonging to the user's agency
     return await db.query.hotel.findMany({
-      where: eq(hotel.agencyId, userWithAgency.agency.userId),
+      where: eq(hotel.agencyId, agencyId),
       with: {
         rooms: true,
       },

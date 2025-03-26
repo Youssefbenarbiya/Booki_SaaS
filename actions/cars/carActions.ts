@@ -1,6 +1,6 @@
 "use server"
 
-import { cars, agencies } from "@/db/schema"
+import { cars, agencies, agencyEmployees } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import type { CarFormValues } from "../../app/agency/dashboard/cars/types"
@@ -24,17 +24,26 @@ async function getAgencyId() {
   try {
     const session = await getSession()
 
-    // Get the agency directly - more reliable than going through the user relation
+    // First check if the user is an agency owner
     const agency = await db.query.agencies.findFirst({
       where: eq(agencies.userId, session.user.id),
     })
 
-    if (!agency) {
-      console.error("No agency found for user ID:", session.user.id)
-      throw new Error("No agency found for this user")
+    if (agency) {
+      return session.user.id // Using the user ID as agencyId as per your schema
     }
 
-    return session.user.id // Using the user ID as agencyId as per your schema
+    // If not an owner, check if they're an employee
+    const employeeRecord = await db.query.agencyEmployees.findFirst({
+      where: eq(agencyEmployees.employeeId, session.user.id),
+    })
+
+    if (employeeRecord) {
+      return employeeRecord.agencyId
+    }
+
+    console.error("No agency found for user ID:", session.user.id)
+    throw new Error("No agency found for this user - not an owner or employee")
   } catch (error) {
     console.error("Error getting agency ID:", error)
     throw error
