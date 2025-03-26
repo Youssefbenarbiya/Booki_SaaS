@@ -10,6 +10,7 @@ import { headers } from "next/headers"
 import { auth } from "@/auth"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
+import jwt from "jsonwebtoken"
 
 // Schema for validation
 const employeeSchema = z.object({
@@ -35,6 +36,42 @@ function generateRandomPassword(length = 12) {
 // Function to generate a unique ID
 function generateUniqueId() {
   return nanoid(21)
+}
+
+// Function to generate a mock access token (similar to OAuth tokens)
+function generateAccessToken() {
+  const prefix = "ya29.a0"
+  const randomChars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+  let token = prefix
+
+  // Generate a random token similar to Google's OAuth tokens
+  for (let i = 0; i < 180; i++) {
+    token += randomChars.charAt(Math.floor(Math.random() * randomChars.length))
+  }
+
+  return token
+}
+
+// Function to generate an ID token (JWT format)
+function generateIdToken(userId: string, name: string, email: string) {
+  // Create a simple JWT token with necessary fields
+  const payload = {
+    iss: "https://auth.booki.app", // Issuer
+    aud: "booki-app", // Audience
+    sub: userId,
+    email: email,
+    email_verified: true,
+    name: name,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 days
+  }
+
+  // Use a secret key for signing the token
+  const secret = process.env.JWT_SECRET || "your-secret-key-for-jwt-signing"
+
+  // Sign the token
+  return jwt.sign(payload, secret)
 }
 
 export async function addEmployee(formData: EmployeeFormData) {
@@ -88,6 +125,14 @@ export async function addEmployee(formData: EmployeeFormData) {
     const userId = generateUniqueId()
     const now = new Date()
 
+    // Generate authentication tokens
+    const accessToken = generateAccessToken()
+    const idToken = generateIdToken(
+      userId,
+      validatedData.name,
+      validatedData.email.toLowerCase()
+    )
+
     console.log("Creating new employee:", {
       id: userId,
       name: validatedData.name,
@@ -112,14 +157,16 @@ export async function addEmployee(formData: EmployeeFormData) {
         updatedAt: now,
       })
 
-      // Step 2: Insert account
-      console.log("Inserting account")
+      // Step 2: Insert account with tokens
+      console.log("Inserting account with authentication tokens")
       await db.insert(account).values({
         id: generateUniqueId(),
         userId: userId,
         providerId: "credentials",
         accountId: userId,
         password: hashedPassword,
+        accessToken: accessToken, // Add the access token
+        idToken: idToken, // Add the ID token
         createdAt: now,
         updatedAt: now,
       })
