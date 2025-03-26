@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   PlaneTakeoff,
   BookOpen,
+  Users,
 } from "lucide-react"
 
 const navigation = [
@@ -37,6 +38,11 @@ const navigation = [
     name: "Blogs",
     href: "/agency/dashboard/blogs",
     icon: BookOpen,
+  },
+  {
+    name: "Employees",
+    href: "/agency/dashboard/employees",
+    icon: Users,
   },
 ]
 

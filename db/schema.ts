@@ -510,3 +510,14 @@ export const agenciesRelations = relations(agencies, ({ one, many }) => ({
   }),
   hotels: many(hotel), // Added hotels relation
 }))
+
+export const agencyEmployees = pgTable("agency_employees", {
+  id: serial("id").primaryKey(),
+  employeeId: text("employee_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  agencyId: text("agency_id")
+    .notNull()
+    .references(() => agencies.userId, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+})
