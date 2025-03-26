@@ -38,9 +38,8 @@ export async function GET() {
     // Variable to store the ID whose notifications we'll be showing
     let notificationsUserId = userId
 
-    // If user is an employee, get their agency owner's ID
-    // Make sure this matches your actual role name in the database
-    if (currentUser.role === "AGENCY_EMPLOYEE") {
+    // Fix: Check for "employee" role (lowercase) instead of "AGENCY_EMPLOYEE"
+    if (currentUser.role === "employee") {
       console.log("API route - User is an employee, looking for agency mapping")
 
       const agencyMapping = await db.query.agencyEmployees.findFirst({
@@ -54,6 +53,9 @@ export async function GET() {
         )
       } else {
         console.log("API route - Agency mapping not found for employee")
+        // For debugging, show all agency employee mappings
+        const allMappings = await db.query.agencyEmployees.findMany({})
+        console.log(`All mappings in database: ${JSON.stringify(allMappings)}`)
       }
     }
 

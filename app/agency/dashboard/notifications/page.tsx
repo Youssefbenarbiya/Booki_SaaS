@@ -32,7 +32,8 @@ export default async function NotificationsPage() {
   }
 
   // Check if user has permission to see this page (agency owner or employee)
-  if (userRole !== "AGENCY_OWNER" && userRole !== "AGENCY_EMPLOYEE") {
+  // Fix: Use lowercase "agency_owner" and "employee" roles
+  if (userRole !== "agency_owner" && userRole !== "employee") {
     return (
       <div className="py-8 text-center">
         <h1 className="text-2xl font-bold">Unauthorized</h1>

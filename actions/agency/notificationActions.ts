@@ -1,13 +1,11 @@
 "use server"
 
 import db from "@/db/drizzle"
-// Make sure the table names match your schema exactly
 import { notifications, user, agencyEmployees } from "@/db/schema"
 import { eq, desc, and, count } from "drizzle-orm"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
 
-// Ensure this function is properly exported
 export async function getAgencyNotifications(limit: number = 10) {
   try {
     // Get the current user's session using Better-Auth
@@ -16,6 +14,7 @@ export async function getAgencyNotifications(limit: number = 10) {
     })
 
     const userId = session?.user?.id
+    console.log(`Server action - User ID: ${userId}`)
 
     if (!userId) {
       console.error("No authenticated user found")
@@ -32,13 +31,18 @@ export async function getAgencyNotifications(limit: number = 10) {
       return { notifications: [], unreadCount: 0 }
     }
 
+    console.log(`Server action - User role: ${currentUser.role}`)
     const { role } = currentUser
 
     // Variable to store the ID whose notifications we'll be showing
     let notificationsUserId = userId
 
-    // If user is an employee, get their agency owner's ID
-    if (role === "AGENCY_EMPLOYEE") {
+    // Fix: Check for "employee" role (lowercase) instead of "AGENCY_EMPLOYEE"
+    if (role === "employee") {
+      console.log(
+        "Server action - User is an employee, looking for agency mapping"
+      )
+
       const agencyMapping = await db.query.agencyEmployees.findFirst({
         where: eq(agencyEmployees.employeeId, userId),
       })
@@ -46,10 +50,13 @@ export async function getAgencyNotifications(limit: number = 10) {
       if (agencyMapping) {
         notificationsUserId = agencyMapping.agencyId
         console.log(
-          `Employee belongs to agency owner ID: ${notificationsUserId}`
+          `Server action - Employee belongs to agency owner ID: ${notificationsUserId}`
         )
       } else {
-        console.log("Agency mapping not found for employee")
+        console.log("Server action - Agency mapping not found for employee")
+        // For debugging, show all agency employee mappings
+        const allMappings = await db.query.agencyEmployees.findMany({})
+        console.log(`All mappings in database: ${JSON.stringify(allMappings)}`)
       }
     }
 
