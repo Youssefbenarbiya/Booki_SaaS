@@ -178,7 +178,7 @@ export default function EmployeesPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number (Optional)</FormLabel>
+                      <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                         <Input placeholder="+1 234 567 8900" {...field} />
                       </FormControl>
