@@ -91,6 +91,7 @@ export async function getBlogs(userId?: string) {
           orderBy: (blogs, { desc }) => [desc(blogs.createdAt)],
         })
       : db.query.blogs.findMany({
+          where: eq(blogs.status, "approved"), // Only show approved blogs for public
           with: {
             category: true,
             author: {

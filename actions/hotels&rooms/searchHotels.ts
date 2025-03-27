@@ -2,7 +2,7 @@
 
 import db from "@/db/drizzle"
 import { hotel } from "@/db/schema"
-import { and, sql } from "drizzle-orm"
+import { and, sql, eq } from "drizzle-orm"
 
 export async function searchHotels(
   city: string,
@@ -26,7 +26,8 @@ export async function searchHotels(
     const searchResults = await db.query.hotel.findMany({
       where: and(
         // Use SQL LOWER function to convert database value to lowercase before comparison
-        sql`LOWER(${hotel.city}) LIKE ${`%${lowercaseCity}%`}`
+        sql`LOWER(${hotel.city}) LIKE ${`%${lowercaseCity}%`}`,
+        eq(hotel.status, "approved") // Only show approved hotels
       ),
       with: {
         rooms: {
