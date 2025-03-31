@@ -40,7 +40,7 @@ export async function GET() {
 
     // Fix: Check for "employee" role (lowercase) instead of "AGENCY_EMPLOYEE"
     if (currentUser.role === "employee") {
-      console.log("API route - User is an employee, looking for agency mapping")
+     // console.log("API route - User is an employee, looking for agency mapping")
 
       const agencyMapping = await db.query.agencyEmployees.findFirst({
         where: eq(agencyEmployees.employeeId, userId),
