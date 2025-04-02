@@ -206,6 +206,20 @@ export function EmployeesList() {
       .substring(0, 2)
   }
 
+  const handleEditOpenChange = (open: boolean) => {
+    if (!open) {
+      window.location.reload();
+    }
+    setEditDialogOpen(open);
+  };
+
+  const handleDeleteOpenChange = (open: boolean) => {
+    if (!open) {
+      window.location.reload();
+    }
+    setDeleteDialogOpen(open);
+  };
+
   if (loading) {
     return <div className="flex justify-center p-8">Loading employees...</div>
   }
@@ -282,14 +296,14 @@ export function EmployeesList() {
       </Table>
 
       {/* Edit Employee Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Employee</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={editDialogOpen} onOpenChange={handleEditOpenChange}>
+        <AlertDialogContent className="sm:max-w-[500px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Employee</AlertDialogTitle>
+            <AlertDialogDescription>
               Update employee information
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -356,21 +370,24 @@ export function EmployeesList() {
                 )}
               />
 
-              <DialogFooter>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Save Changes
-                </Button>
-              </DialogFooter>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Save Changes
+                  </Button>
+                </AlertDialogAction>
+              </AlertDialogFooter>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={handleDeleteOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Employee</AlertDialogTitle>

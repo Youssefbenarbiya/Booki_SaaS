@@ -26,14 +26,15 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -42,6 +43,7 @@ import { useSession } from "@/auth-client"
 // Define the expected response type from addEmployee
 interface AddEmployeeResponse {
   error?: string;
+  success?: boolean;
 }
 
 // Validation schema
@@ -59,6 +61,13 @@ export default function EmployeesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const session = useSession()
   const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      window.location.reload();
+    }
+    setOpen(open);
+  };
 
   // Initialize form
   const form = useForm<EmployeeFormValues>({
@@ -89,11 +98,7 @@ export default function EmployeesPage() {
           )
           form.reset()
           setOpen(false)
-
-          // Force refresh the employee list
-          setTimeout(() => {
-            setRefreshKey((prev) => prev + 1)
-          }, 500)
+          window.location.reload();
         }
       } catch (error) {
         console.error("Error in onSubmit:", error)
@@ -125,24 +130,20 @@ export default function EmployeesPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Employees Management</h1>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>Add New Employee</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Employee</DialogTitle>
-              <DialogDescription>
+        <Button onClick={() => setOpen(true)}>Add New Employee</Button>
+
+        <AlertDialog open={open} onOpenChange={handleOpenChange}>
+          <AlertDialogContent className="sm:max-w-[500px]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Add New Employee</AlertDialogTitle>
+              <AlertDialogDescription>
                 Create an employee account. The employee will receive their
                 login credentials via email.
-              </DialogDescription>
-            </DialogHeader>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4 py-4"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -209,18 +210,21 @@ export default function EmployeesPage() {
                   )}
                 />
 
-                <DialogFooter>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Add Employee
-                  </Button>
-                </DialogFooter>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction asChild>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Add Employee
+                    </Button>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
               </form>
             </Form>
-          </DialogContent>
-        </Dialog>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <Card>
