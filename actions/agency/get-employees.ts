@@ -1,47 +1,54 @@
 // filepath: d:\booki\actions\agency\get-employees.ts
 "use server"
 
-import db from "@/db/drizzle"
-import { user, agencies, agencyEmployees } from "@/db/schema"
-import { eq } from "drizzle-orm"
 import { headers } from "next/headers"
+import db from "@/db/drizzle"
+import { agencyEmployees, user } from "@/db/schema"
+import { eq } from "drizzle-orm"
 import { auth } from "@/auth"
+
 export async function getEmployeesList() {
   try {
-const session = await auth.api.getSession({
-  headers: await headers(),
-})
+    // Get current session to identify the agency owner
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
     if (!session || !session.user) {
       return { error: "Unauthorized access" }
     }
 
-    // Find agency information for the current user
-    const agencyResult = await db.query.agencies.findFirst({
-      where: eq(agencies.userId, session.user.id),
+    // Find all employees linked to this agency
+    const employees = await db.query.agencyEmployees.findMany({
+      where: eq(agencyEmployees.agencyId, session.user.id),
+      with: {
+        employee: true,
+      },
     })
 
-    if (!agencyResult) {
-      return { error: "Agency not found" }
+    if (!employees || employees.length === 0) {
+      return { employees: [] }
     }
 
-    // Get all employees for this agency
-    const employees = await db
-      .select({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        image: user.image,
-        createdAt: agencyEmployees.createdAt,
-      })
-      .from(agencyEmployees)
-      .innerJoin(user, eq(agencyEmployees.employeeId, user.id))
-      .where(eq(agencyEmployees.agencyId, agencyResult.userId))
-      .orderBy(agencyEmployees.createdAt)
+    // Format the employees data
+    const formattedEmployees = employees.map((record) => ({
+      id: record.employee.id,
+      name: record.employee.name,
+      email: record.employee.email,
+      phoneNumber: record.employee.phoneNumber,
+      address: record.employee.address,
+      image: record.employee.image,
+      createdAt: record.createdAt,
+    }))
 
-    return { employees }
+    return { employees: formattedEmployees }
   } catch (error) {
     console.error("Error fetching employees:", error)
-    return { error: "Failed to fetch employees" }
+    
+    return { 
+      error: error instanceof Error 
+        ? `Failed to fetch employees: ${error.message}` 
+        : "Failed to fetch employees" 
+    }
   }
 }

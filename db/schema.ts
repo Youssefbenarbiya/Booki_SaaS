@@ -521,3 +521,15 @@ export const agencyEmployees = pgTable("agency_employees", {
     .references(() => agencies.userId, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
 })
+
+// Add relations for agencyEmployees
+export const agencyEmployeesRelations = relations(agencyEmployees, ({ one }) => ({
+  employee: one(user, {
+    fields: [agencyEmployees.employeeId],
+    references: [user.id],
+  }),
+  agency: one(agencies, {
+    fields: [agencyEmployees.agencyId],
+    references: [agencies.userId],
+  }),
+}))

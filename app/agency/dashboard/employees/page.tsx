@@ -39,6 +39,11 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useSession } from "@/auth-client"
 
+// Define the expected response type from addEmployee
+interface AddEmployeeResponse {
+  error?: string;
+}
+
 // Validation schema
 const employeeFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -73,10 +78,10 @@ export default function EmployeesPage() {
       console.log("Submitting form with data:", data)
 
       try {
-        const result = await addEmployee(data)
+        const result = await addEmployee(data) as AddEmployeeResponse
         console.log("Add employee result:", result)
 
-        if (result.error) {
+        if (result?.error) {
           toast.error(result.error)
         } else {
           toast.success(
