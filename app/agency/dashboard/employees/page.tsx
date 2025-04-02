@@ -110,21 +110,6 @@ export default function EmployeesPage() {
     [form]
   )
 
-  if (!session.data?.user) {
-    return (
-      <div className="container mx-auto py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You must be logged in as an agency owner to manage employees.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-6">
