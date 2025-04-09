@@ -97,45 +97,67 @@ export async function rejectCar(carId: number) {
   }
 }
 
-export async function approveHotel(hotelId: number) {
+export async function approveHotel(hotelId: string | number) {
   try {
+    // Convert the hotelId to string if it's a number
+    const hotelIdString = typeof hotelId === 'number' ? String(hotelId) : hotelId;
+    
+    console.log(`Approving hotel with ID: ${hotelIdString}`);
+    
     await db
       .update(hotel)
       .set({
         status: "approved",
         updatedAt: new Date(),
       })
-      .where(eq(hotel.id, String(hotelId)))
+      .where(eq(hotel.id, hotelIdString));
 
     // Send notification to agency
-    await sendHotelStatusNotification(hotelId, "approved")
+    await sendHotelStatusNotification(hotelId, "approved");
 
-    revalidatePath("/admin/dashboard")
-    return { success: true, message: "Hotel approved successfully" }
+    // Revalidate all relevant paths
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/verify-offers");
+    revalidatePath(`/admin/hotels/${hotelIdString}`);
+    revalidatePath("/");
+    
+    console.log(`Successfully approved hotel with ID: ${hotelIdString}`);
+    return { success: true, message: "Hotel approved successfully" };
   } catch (error) {
-    console.error("Error approving hotel:", error)
-    return { success: false, message: "Failed to approve hotel" }
+    console.error("Error approving hotel:", error);
+    return { success: false, message: "Failed to approve hotel" };
   }
 }
 
-export async function rejectHotel(hotelId: number) {
+export async function rejectHotel(hotelId: string | number) {
   try {
+    // Convert the hotelId to string if it's a number
+    const hotelIdString = typeof hotelId === 'number' ? String(hotelId) : hotelId;
+    
+    console.log(`Rejecting hotel with ID: ${hotelIdString}`);
+    
     await db
       .update(hotel)
       .set({
         status: "rejected",
         updatedAt: new Date(),
       })
-      .where(eq(hotel.id, String(hotelId)))
+      .where(eq(hotel.id, hotelIdString));
 
     // Send notification to agency
-    await sendHotelStatusNotification(hotelId, "rejected")
+    await sendHotelStatusNotification(hotelId, "rejected");
 
-    revalidatePath("/admin/dashboard")
-    return { success: true, message: "Hotel rejected successfully" }
+    // Revalidate all relevant paths
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/verify-offers");
+    revalidatePath(`/admin/hotels/${hotelIdString}`);
+    revalidatePath("/");
+    
+    console.log(`Successfully rejected hotel with ID: ${hotelIdString}`);
+    return { success: true, message: "Hotel rejected successfully" };
   } catch (error) {
-    console.error("Error rejecting hotel:", error)
-    return { success: false, message: "Failed to reject hotel" }
+    console.error("Error rejecting hotel:", error);
+    return { success: false, message: "Failed to reject hotel" };
   }
 }
 
