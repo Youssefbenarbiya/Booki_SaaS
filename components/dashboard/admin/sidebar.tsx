@@ -36,6 +36,14 @@ export function Sidebar() {
         >
           <span>Verify Offers</span>
         </Link>
+        <Link
+          href="/admin/agencies"
+          className={`flex items-center px-4 py-2 rounded-md ${isActive(
+            "/admin/agencies"
+          )}`}
+        >
+          <span>Agencies</span>
+        </Link>
       </nav>
     </div>
   )

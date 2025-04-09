@@ -1,4 +1,3 @@
-// app/agency/dashboard/layout.tsx
 import type { Metadata } from "next"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
