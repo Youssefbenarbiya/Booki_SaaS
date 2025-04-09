@@ -57,7 +57,7 @@ export function SearchForm({ type }: SearchFormProps) {
       type === "trips"
         ? { destination: "", startDate: "" }
         : type === "hotels"
-        ? { city: "", checkIn: "", checkOut: "", guests: "" }
+        ? { city: "", checkIn: "", checkOut: "", guests: "2 adults" }
         : {
             pickupLocation: "",
             pickupDate: "",
@@ -236,12 +236,16 @@ export function SearchForm({ type }: SearchFormProps) {
                     <Users className="h-5 w-5 text-gray-400 mr-2" />
                     <div>
                       <FormLabel className="text-xs text-gray-500">
-                        1 room, 2 adults
+                        Guests
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Select Transportation"
-                          {...field}
+                          placeholder="2 adults"
+                          value={field.value || "2 adults"}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                           className="border-0 p-0 bg-transparent focus:ring-0 text-sm placeholder:text-gray-400"
                         />
                       </FormControl>
