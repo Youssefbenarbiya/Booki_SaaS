@@ -11,6 +11,7 @@ import {
   PlaneTakeoff,
   BookOpen,
   Users,
+  CalendarCheck,
 } from "lucide-react"
 import { useSession } from "@/auth-client" 
 
@@ -45,6 +46,13 @@ const navigation = [
     href: "/agency/dashboard/employees",
     icon: Users,
   },
+
+  {
+    name: "Bookings",
+    href: "/agency/dashboard/bookings",
+    icon: CalendarCheck,
+  },
+
 ]
 
 export function Sidebar() {
