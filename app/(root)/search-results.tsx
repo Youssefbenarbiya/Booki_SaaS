@@ -155,6 +155,8 @@ export function SearchResults({
             model: car.model || "Unknown",
             year: car.year || "",
             originalPrice: car.originalPrice || 0,
+            discountPercentage: car.discountPercentage || 0,
+            priceAfterDiscount: car.priceAfterDiscount || null,
             isAvailable: car.isAvailable ?? true,
             images: car.images || [],
             transmission: car.transmission || "Manual",

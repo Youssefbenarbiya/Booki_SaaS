@@ -21,7 +21,6 @@ const LocationMapSelector = dynamic(
 
 // Available amenities for hotels and rooms
 const HOTEL_AMENITIES = [
-  "Free WiFi",
   "Free Parking",
   "Free Breakfast",
   "Swimming Pool",
@@ -33,7 +32,6 @@ const HOTEL_AMENITIES = [
 ]
 
 const ROOM_AMENITIES = [
-  "Free WiFi",
   "Air Conditioning",
   "TV",
   "Fridge",
