@@ -14,6 +14,11 @@ import {
   FormLabel,
 } from "@/components/ui/form"
 import { Search, MapPin, Calendar, Users } from "lucide-react"
+import { format, startOfDay } from "date-fns"
+import { Calendar as UiCalendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 const tripSearchSchema = z.object({
   destination: z.string().min(1, "Destination is required"),
@@ -59,6 +64,12 @@ export function SearchForm({ type }: SearchFormProps) {
             returnDate: "",
           },
   })
+
+  const [startDate, setStartDate] = useState<Date | undefined>()
+  const [checkInDate, setCheckInDate] = useState<Date | undefined>()
+  const [checkOutDate, setCheckOutDate] = useState<Date | undefined>()
+  const [pickupDate, setPickupDate] = useState<Date | undefined>()
+  const [returnDate, setReturnDate] = useState<Date | undefined>()
 
   function onSubmit(data: z.infer<typeof schema>) {
     // Log the search data for debugging
@@ -138,11 +149,31 @@ export function SearchForm({ type }: SearchFormProps) {
                         Check in
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          className="border-0 p-0 bg-transparent focus:ring-0 text-sm"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className={cn(
+                                "pl-0 text-left font-normal border-0 p-0 bg-transparent focus:ring-0 text-sm",
+                                !checkInDate && "text-gray-400"
+                              )}
+                            >
+                              {checkInDate ? format(checkInDate, "PPP") : "Select date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <UiCalendar
+                              mode="single"
+                              selected={checkInDate}
+                              onSelect={(date) => {
+                                setCheckInDate(date)
+                                field.onChange(date ? date.toISOString().split('T')[0] : '')
+                              }}
+                              disabled={{ before: startOfDay(new Date()) }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </FormControl>
                     </div>
                   </div>
@@ -162,11 +193,33 @@ export function SearchForm({ type }: SearchFormProps) {
                         Check out
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          className="border-0 p-0 bg-transparent focus:ring-0 text-sm"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className={cn(
+                                "pl-0 text-left font-normal border-0 p-0 bg-transparent focus:ring-0 text-sm",
+                                !checkOutDate && "text-gray-400"
+                              )}
+                            >
+                              {checkOutDate ? format(checkOutDate, "PPP") : "Select date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <UiCalendar
+                              mode="single"
+                              selected={checkOutDate}
+                              onSelect={(date) => {
+                                setCheckOutDate(date)
+                                field.onChange(date ? date.toISOString().split('T')[0] : '')
+                              }}
+                              disabled={{ 
+                                before: checkInDate ? checkInDate : startOfDay(new Date()) 
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </FormControl>
                     </div>
                   </div>
@@ -253,11 +306,31 @@ export function SearchForm({ type }: SearchFormProps) {
                         Date of pick-up
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          className="border-0 p-0 bg-transparent focus:ring-0 text-sm"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className={cn(
+                                "pl-0 text-left font-normal border-0 p-0 bg-transparent focus:ring-0 text-sm",
+                                !pickupDate && "text-gray-400"
+                              )}
+                            >
+                              {pickupDate ? format(pickupDate, "PPP") : "Select date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <UiCalendar
+                              mode="single"
+                              selected={pickupDate}
+                              onSelect={(date) => {
+                                setPickupDate(date)
+                                field.onChange(date ? date.toISOString().split('T')[0] : '')
+                              }}
+                              disabled={{ before: startOfDay(new Date()) }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </FormControl>
                     </div>
                   </div>
@@ -276,11 +349,33 @@ export function SearchForm({ type }: SearchFormProps) {
                         Return date
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          className="border-0 p-0 bg-transparent focus:ring-0 text-sm"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className={cn(
+                                "pl-0 text-left font-normal border-0 p-0 bg-transparent focus:ring-0 text-sm",
+                                !returnDate && "text-gray-400"
+                              )}
+                            >
+                              {returnDate ? format(returnDate, "PPP") : "Select date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <UiCalendar
+                              mode="single"
+                              selected={returnDate}
+                              onSelect={(date) => {
+                                setReturnDate(date)
+                                field.onChange(date ? date.toISOString().split('T')[0] : '')
+                              }}
+                              disabled={{ 
+                                before: pickupDate ? pickupDate : startOfDay(new Date()) 
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </FormControl>
                     </div>
                   </div>
@@ -341,11 +436,31 @@ export function SearchForm({ type }: SearchFormProps) {
                       Start Date
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        className="border-0 p-0 bg-transparent focus:ring-0 text-sm"
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className={cn(
+                              "pl-0 text-left font-normal border-0 p-0 bg-transparent focus:ring-0 text-sm",
+                              !startDate && "text-gray-400"
+                            )}
+                          >
+                            {startDate ? format(startDate, "PPP") : "Select date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <UiCalendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={(date) => {
+                              setStartDate(date)
+                              field.onChange(date ? date.toISOString().split('T')[0] : '')
+                            }}
+                            disabled={{ before: startOfDay(new Date()) }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </FormControl>
                   </div>
                 </div>

@@ -15,7 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
+import { format, startOfDay } from "date-fns"
+
 import { CalendarIcon, Percent, DollarSign } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
@@ -184,6 +185,7 @@ export default function NewTripForm() {
                           setValue("startDate", date)
                         }
                       }}
+                      disabled={{ before: startOfDay(new Date()) }}
                       initialFocus
                     />
                   </PopoverContent>
@@ -212,6 +214,9 @@ export default function NewTripForm() {
                         if (date) {
                           setValue("endDate", date)
                         }
+                      }}
+                      disabled={{ 
+                        before: startDate ? startDate : startOfDay(new Date()) 
                       }}
                       initialFocus
                     />
