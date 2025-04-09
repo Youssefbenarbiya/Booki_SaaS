@@ -266,16 +266,7 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-semibold mb-4">Destination</h3>
-            <div className="rounded-lg overflow-hidden h-40 relative mb-4">
-              <Image
-                src={`https://source.unsplash.com/800x600/?${encodeURIComponent(
-                  trip.destination
-                )}`}
-                alt={trip.destination}
-                fill
-                className="object-cover"
-              />
-            </div>
+            
             <h4 className="font-medium text-gray-900 flex items-center mb-2">
               <MapPin className="h-4 w-4 mr-1 text-primary" />
               {trip.destination}

@@ -1,7 +1,13 @@
 "use server"
 
 import db from "@/db/drizzle"
-import { trips, tripImages, tripActivities, user } from "@/db/schema"
+import {
+  trips,
+  tripImages,
+  tripActivities,
+  user,
+  agencyEmployees,
+} from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
@@ -37,6 +43,32 @@ const tripSchema = z.object({
 
 export type TripInput = z.infer<typeof tripSchema>
 
+// Helper function to get agency ID - works for both owners and employees
+async function getAgencyId(userId: string) {
+  // Check if user is an agency owner
+  const userWithAgency = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    with: {
+      agency: true,
+    },
+  })
+
+  if (userWithAgency?.agency) {
+    return userWithAgency.agency.userId
+  }
+
+  // Check if user is an employee
+  const employeeRecord = await db.query.agencyEmployees.findFirst({
+    where: eq(agencyEmployees.employeeId, userId),
+  })
+
+  if (employeeRecord) {
+    return employeeRecord.agencyId
+  }
+
+  throw new Error("No agency found for this user - not an owner or employee")
+}
+
 export async function createTrip(data: TripInput) {
   try {
     const validatedData = tripSchema.parse(data)
@@ -50,19 +82,10 @@ export async function createTrip(data: TripInput) {
       throw new Error("Unauthorized: You must be logged in to create a trip")
     }
 
-    // Get the user's agency
-    const userWithAgency = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      with: {
-        agency: true,
-      },
-    })
+    // Get the agency ID - works for both owners and employees
+    const agencyId = await getAgencyId(session.user.id)
 
-    if (!userWithAgency?.agency) {
-      throw new Error("No agency found for this user")
-    }
-
-    console.log(`Creating trip with agency ID: ${userWithAgency.agency.userId}`)
+    console.log(`Creating trip with agency ID: ${agencyId}`)
 
     // Create trip with proper agency ID and createdBy
     const [trip] = await db
@@ -79,7 +102,7 @@ export async function createTrip(data: TripInput) {
           validatedData.priceAfterDiscount?.toString() || undefined,
         capacity: validatedData.capacity,
         isAvailable: validatedData.isAvailable,
-        agencyId: userWithAgency.agency.userId, // Using userId (text type) instead of id (integer type)
+        agencyId: agencyId, // Use the agencyId from our helper
         createdBy: session.user.id, // Track who created it
       })
       .returning()
@@ -127,22 +150,12 @@ export async function getTrips() {
       return []
     }
 
-    // Get the user with their agency
-    const userWithAgency = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      with: {
-        agency: true,
-      },
-    })
+    // Get the agency ID - works for both owners and employees
+    const agencyId = await getAgencyId(session.user.id)
 
-    if (!userWithAgency?.agency) {
-      console.log("No agency found for this user")
-      return []
-    }
-
-    // Get trips belonging to the user's agency (using userId instead of id)
+    // Get trips belonging to the user's agency
     const tripResults = await db.query.trips.findMany({
-      where: eq(trips.agencyId, userWithAgency.agency.userId),
+      where: eq(trips.agencyId, agencyId),
       with: {
         images: true,
         activities: true,

@@ -1,124 +1,322 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/agency/dashboard/page.tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Overview } from "../../../components/dashboard/agency/Overview"
-import { RecentSales } from "../../../components/dashboard/agency/RecentSales"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { getDashboardStats } from "@/actions/agency/dashboardActions"
 import { formatPrice } from "@/lib/utils"
+import { getAgencyNotifications } from "@/actions/agency/notificationActions"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
 
+  CreditCard,
+  DollarSign,
+  HotelIcon,
+  Plane,
+  TrendingUp,
+  UserCheck,
+  Users,
+  Car,
+  Bell,
+  BookOpenCheck,
+} from "lucide-react"
+import { Progress } from "@/components/ui/progress"
 export default async function DashboardPage() {
   const stats = await getDashboardStats()
+  const { notifications, unreadCount } = await getAgencyNotifications(5)
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="py-1.5 px-4">
+            <Bell className="h-3.5 w-3.5 mr-1.5" />
+            {unreadCount} unread notifications
+          </Badge>
+          <Badge variant="outline" className="py-1.5 px-4">
+            <Users className="h-3.5 w-3.5 mr-1.5" />
+            {stats.employeeCount} employees
+          </Badge>
+        </div>
+      </div>
+
+      {/* Top row of metric cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-orange-600"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
+            <div className="rounded-full p-2 bg-blue-50">
+              <DollarSign className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatPrice(stats.totalRevenue)}
             </div>
-            <p className="text-xs text-gray-500">+20.1% from last month</p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-gray-500">+20.1% from last month</p>
+              <TrendingUp className="h-3 w-3 text-green-500" />
+            </div>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bookings</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-orange-600"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <CardTitle className="text-sm font-medium">
+              Total Bookings
+            </CardTitle>
+            <div className="rounded-full p-2 bg-purple-50">
+              <BookOpenCheck className="h-4 w-4 text-purple-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{stats.totalBookings}</div>
-            <p className="text-xs text-gray-500">+180.1% from last month</p>
+            <div className="text-2xl font-bold">{stats.totalBookings}</div>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">
+                    Trips: {stats.bookingBreakdown.trips}
+                  </span>
+                  <span className="text-gray-500">
+                    Rooms: {stats.bookingBreakdown.rooms}
+                  </span>
+                </div>
+                <Progress
+                  value={
+                    (stats.bookingBreakdown.trips / stats.totalBookings) * 100
+                  }
+                  className="h-1 mt-1"
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-orange-600"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
+            <div className="rounded-full p-2 bg-green-50">
+              <UserCheck className="h-4 w-4 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{stats.activeUsers}</div>
-            <p className="text-xs text-gray-500">+201 since last hour</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Hotels</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-orange-600"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{stats.newHotels}</div>
-            <p className="text-xs text-gray-500">+3 since last week</p>
+            <div className="text-2xl font-bold">{stats.activeUsers}</div>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-gray-500">+201 since last week</p>
+              <TrendingUp className="h-3 w-3 text-green-500" />
+            </div>
           </CardContent>
         </Card>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <Overview data={stats.monthlySales} />
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Recent Sales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RecentSales sales={stats.recentSales} />
-          </CardContent>
-        </Card>
-      </div>
+
+      {/* Revenue breakdown and sales overview */}
+      <Tabs defaultValue="revenue" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="revenue" className="gap-2">
+            <CreditCard className="h-4 w-4" />
+            Revenue
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="revenue" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">
+                  Revenue by Category
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-full p-2 bg-amber-50">
+                      <HotelIcon className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <p className="text-sm font-medium">Rooms</p>
+                        <p className="text-sm font-medium">
+                          {formatPrice(stats.revenueBreakdown.rooms)}
+                        </p>
+                      </div>
+                      <Progress
+                        value={
+                          (stats.revenueBreakdown.rooms / stats.totalRevenue) *
+                            100 || 0
+                        }
+                        className="h-2 mt-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-full p-2 bg-blue-50">
+                      <Plane className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <p className="text-sm font-medium">Trips</p>
+                        <p className="text-sm font-medium">
+                          {formatPrice(stats.revenueBreakdown.trips)}
+                        </p>
+                      </div>
+                      <Progress
+                        value={
+                          (stats.revenueBreakdown.trips / stats.totalRevenue) *
+                            100 || 0
+                        }
+                        className="h-2 mt-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-full p-2 bg-green-50">
+                      <Car className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <p className="text-sm font-medium">Cars</p>
+                        <p className="text-sm font-medium">
+                          {formatPrice(stats.revenueBreakdown.cars)}
+                        </p>
+                      </div>
+                      <Progress
+                        value={
+                          (stats.revenueBreakdown.cars / stats.totalRevenue) *
+                            100 || 0
+                        }
+                        className="h-2 mt-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">
+                  Booking Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold">
+                        {stats.bookingBreakdown.rooms}
+                      </div>
+                      <p className="text-xs text-gray-500">Rooms</p>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold">
+                        {stats.bookingBreakdown.trips}
+                      </div>
+                      <p className="text-xs text-gray-500">Trips</p>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold">
+                        {stats.bookingBreakdown.cars}
+                      </div>
+                      <p className="text-xs text-gray-500">Cars</p>
+                    </div>
+                  </div>
+
+                  <div className="h-2 bg-gray-100 rounded-full flex overflow-hidden">
+                    <div
+                      className="bg-amber-500"
+                      style={{
+                        width: `${
+                          (stats.bookingBreakdown.rooms / stats.totalBookings) *
+                          100
+                        }%`,
+                      }}
+                    />
+                    <div
+                      className="bg-blue-500"
+                      style={{
+                        width: `${
+                          (stats.bookingBreakdown.trips / stats.totalBookings) *
+                          100
+                        }%`,
+                      }}
+                    />
+                    <div
+                      className="bg-green-500"
+                      style={{
+                        width: `${
+                          (stats.bookingBreakdown.cars / stats.totalBookings) *
+                          100
+                        }%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-amber-500 rounded-full" />
+                      <span>Rooms</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                      <span>Trips</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span>Cars</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">
+                  Recent Revenue
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {formatPrice(stats.totalRevenue)}
+                      </p>
+                      <p className="text-xs text-gray-500">Total Revenue</p>
+                    </div>
+                    <Badge className="px-3 py-1.5">+18.2% YoY</Badge>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Last 7 days</span>
+                      <span className="font-medium">
+                        {formatPrice(stats.totalRevenue * 0.21)}
+                      </span>
+                    </div>
+                    <Progress value={21} className="h-2" />
+
+                    <div className="flex justify-between text-sm">
+                      <span>Last 30 days</span>
+                      <span className="font-medium">
+                        {formatPrice(stats.totalRevenue * 0.68)}
+                      </span>
+                    </div>
+                    <Progress value={68} className="h-2" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

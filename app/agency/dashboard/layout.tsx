@@ -5,8 +5,8 @@ import { auth } from "@/auth"
 import { Sidebar } from "../../../components/dashboard/agency/Sidebar"
 import NotAllowed from "@/components/not-allowed"
 import { ReactNode } from "react"
-import { NotificationCenter } from "@/components/dashboard/agency/NotificationCenter"
 import { getAgencyNotifications } from "@/actions/agency/notificationActions"
+import NotificationCenter from "@/components/dashboard/agency/NotificationCenter"
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -24,9 +24,12 @@ export default async function DashboardLayout({
     headers: await headers(),
   })
 
-  if (!session || session.user.role !== "agency owner") {
-    return <NotAllowed />
-  }
+if (
+  !session ||
+  (session.user.role !== "agency owner" && session.user.role !== "employee")
+) {
+  return <NotAllowed />
+}
 
   // Get initial notifications
   const { notifications, unreadCount } = await getAgencyNotifications(5)
@@ -35,6 +38,7 @@ export default async function DashboardLayout({
     type: (["error", "info", "success", "warning"].includes(notification.type)
       ? notification.type
       : "info") as "error" | "info" | "success" | "warning",
+    userId: typeof notification.userId === 'string' ? Number(notification.userId) : notification.userId,
   }))
 
   return (

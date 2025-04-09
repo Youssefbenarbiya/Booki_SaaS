@@ -82,10 +82,10 @@ export async function getBookingHistory(
   const tripBookingsDisplay = tripBookingsData.map((booking) => ({
     id: booking.id,
     type: "trip" as const,
-    image: booking.trip.images[0]?.imageUrl || "/default-trip.jpg",
-    name: booking.trip.name,
-    startDate: booking.trip.startDate,
-    endDate: booking.trip.endDate,
+    image: booking.trip?.images?.[0]?.imageUrl || "/images/default-trip.jpg",
+    name: booking.trip?.name || "Unnamed Trip",
+    startDate: booking.trip?.startDate || new Date().toISOString(),
+    endDate: booking.trip?.endDate || new Date().toISOString(),
     status: booking.status,
     totalPrice: booking.totalPrice,
   }))
@@ -94,8 +94,8 @@ export async function getBookingHistory(
   const roomBookingsDisplay = roomBookingsData.map((booking) => ({
     id: booking.id,
     type: "stay" as const,
-    image: booking.room.images[0] || "/default-room.jpg",
-    name: `${booking.room.hotel.name} - ${booking.room.name}`,
+    image: booking.room?.images?.[0] || "/images/default-room.jpg",
+    name: `${booking.room?.hotel?.name || "Unknown Hotel"} - ${booking.room?.name || "Unknown Room"}`,
     startDate: booking.checkIn,
     endDate: booking.checkOut,
     status: booking.status,
@@ -106,10 +106,10 @@ export async function getBookingHistory(
   const carBookingsDisplay = carBookingsData.map((booking) => ({
     id: booking.id,
     type: "car" as const,
-    image: booking.car.images[0] || "/default-car.jpg",
-    name: `${booking.car.brand} ${booking.car.model}`,
-    startDate: booking.start_date.toISOString(),
-    endDate: booking.end_date.toISOString(),
+    image: booking.car?.images?.[0] || "/images/default-car.jpg",
+    name: `${booking.car?.brand || "Unknown Brand"} ${booking.car?.model || "Unknown Model"}`,
+    startDate: booking.start_date?.toISOString() || new Date().toISOString(),
+    endDate: booking.end_date?.toISOString() || new Date().toISOString(),
     status: booking.status,
     totalPrice: booking.total_price,
   }))

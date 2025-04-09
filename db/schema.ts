@@ -233,6 +233,7 @@ export const room = pgTable("room", {
   }).notNull(),
   pricePerNightChild: decimal("price_per_night_child", {
     precision: 10,
+    
     scale: 2,
   }).notNull(),
   roomType: varchar("room_type").notNull(), // e.g., "single", "double", "suite"
@@ -509,4 +510,27 @@ export const agenciesRelations = relations(agencies, ({ one, many }) => ({
     references: [user.id],
   }),
   hotels: many(hotel), // Added hotels relation
+}))
+
+export const agencyEmployees = pgTable("agency_employees", {
+  id: serial("id").primaryKey(),
+  employeeId: text("employee_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  agencyId: text("agency_id")
+    .notNull()
+    .references(() => agencies.userId, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
+// Add relations for agencyEmployees
+export const agencyEmployeesRelations = relations(agencyEmployees, ({ one }) => ({
+  employee: one(user, {
+    fields: [agencyEmployees.employeeId],
+    references: [user.id],
+  }),
+  agency: one(agencies, {
+    fields: [agencyEmployees.agencyId],
+    references: [agencies.userId],
+  }),
 }))
