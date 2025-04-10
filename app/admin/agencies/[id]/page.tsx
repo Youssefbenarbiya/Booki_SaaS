@@ -19,7 +19,10 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Ban, CheckCircle, Users } from "lucide-react"
-import { toggleUserBan, getAgencyDetails } from "../agencies"
+import {
+  toggleUserBan,
+  getAgencyDetails,
+} from "../../../../actions/admin/agencies"
 
 export default async function AgencyDetailsPage({
   params,
