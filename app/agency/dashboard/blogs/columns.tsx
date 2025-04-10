@@ -25,6 +25,7 @@ export type Blog = {
   views: number
   readTime: number | null
   createdAt: Date
+  status: string
   author: {
     id: string
     name: string
@@ -108,6 +109,26 @@ export const columns: ColumnDef<Blog>[] = [
         </div>
       ) : (
         "Unknown"
+      )
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Approval Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string
+      return (
+        <Badge
+          variant={
+            status === "approved"
+              ? "default"
+              : status === "pending"
+              ? "outline"
+              : "destructive"
+          }
+        >
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
       )
     },
   },
