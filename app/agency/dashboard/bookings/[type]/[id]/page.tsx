@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Metadata } from "next";
 import { getBookingDetails } from "@/actions/bookings";
-import { auth } from "@/auth";
+import { headers } from "next/headers"
+import { auth } from "@/auth"
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, Car, Home, Plane, User, Phone, Mail, CreditCard, AlertCircle } from "lucide-react";
+import { Calendar, Clock, Car, Home, Plane, User, Phone, Mail, CreditCard, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,6 +16,7 @@ import { cancelBooking, BookingType } from "@/actions/bookings";
 
 export async function generateMetadata({ params }: { params: { type: string; id: string } }): Promise<Metadata> {
   const type = params.type as BookingType;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const id = parseInt(params.id);
   
   const typeTitles = {
@@ -29,7 +32,10 @@ export async function generateMetadata({ params }: { params: { type: string; id:
 }
 
 export default async function BookingDetailsPage({ params }: { params: { type: string; id: string } }) {
-  const session = await auth();
+const session = await auth.api.getSession({
+  headers: await headers(),
+})
+
   
   if (!session?.user) {
     redirect("/sign-in");
