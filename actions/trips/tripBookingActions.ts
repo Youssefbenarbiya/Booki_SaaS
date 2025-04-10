@@ -50,7 +50,7 @@ export async function createBooking({
         userId: userId,
         seatsBooked: seatsBooked,
         totalPrice: sql`${totalPrice}::decimal`,
-        status: "pending",
+        status: "confirmed",
         bookingDate: new Date(),
       })
       .returning()
