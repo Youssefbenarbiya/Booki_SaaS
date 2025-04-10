@@ -1,15 +1,4 @@
-import db from "@/db/drizzle"
-import {
-  agencies,
-  user,
-  agencyEmployees,
-  trips,
-  cars,
-  hotel,
-  blogs,
-} from "@/db/schema"
-import { eq } from "drizzle-orm"
-import { notFound, redirect } from "next/navigation"
+import { notFound } from "next/navigation"
 import Link from "next/link"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
@@ -30,36 +19,7 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Ban, CheckCircle, Users } from "lucide-react"
-
-// Server action to ban/unban a user
-async function toggleUserBan(formData: FormData) {
-  "use server"
-
-  const userId = formData.get("userId") as string
-  const agencyId = formData.get("agencyId") as string
-  const currentBanStatus = formData.get("currentBanStatus") === "true"
-
-  // Get user
-  const userRecord = await db.query.user.findFirst({
-    where: eq(user.id, userId),
-  })
-
-  if (!userRecord) {
-    throw new Error("User not found")
-  }
-
-  // Update user ban status
-  await db
-    .update(user)
-    .set({
-      banned: !currentBanStatus,
-      banReason: !currentBanStatus ? "Administrative action" : null,
-    })
-    .where(eq(user.id, userId))
-
-  // Redirect back to the agency page
-  redirect(`/admin/agencies/${agencyId}`)
-}
+import { toggleUserBan, getAgencyDetails } from "../agencies"
 
 export default async function AgencyDetailsPage({
   params,
@@ -68,84 +28,21 @@ export default async function AgencyDetailsPage({
 }) {
   const { id } = await params
 
-  const agencyId = parseInt(id)
+  const data = await getAgencyDetails(id)
 
-  if (isNaN(agencyId)) {
+  if (!data) {
     return notFound()
   }
 
-  // Fetch agency details
-  const agency = await db.query.agencies.findFirst({
-    where: eq(agencies.id, agencyId),
-    with: {
-      user: true,
-    },
-  })
-
-  if (!agency) {
-    return notFound()
-  }
-
-  // Fetch agency employees
-  const employees = await db.query.agencyEmployees.findMany({
-    where: eq(agencyEmployees.agencyId, agency.userId),
-    with: {
-      employee: true,
-    },
-  })
-
-  // Fetch agency offers
-  const agencyTrips = await db.query.trips.findMany({
-    where: eq(trips.agencyId, agency.userId),
-  })
-
-  const agencyCars = await db.query.cars.findMany({
-    where: eq(cars.agencyId, agency.userId),
-  })
-
-  const agencyHotels = await db.query.hotel.findMany({
-    where: eq(hotel.agencyId, agency.userId),
-  })
-
-  const agencyBlogs = await db.query.blogs.findMany({
-    where: eq(blogs.agencyId, agency.userId),
-  })
-
-  // Count bookings
-  const tripBookingsList = await db.query.tripBookings.findMany({
-    where: (fields, { inArray }) =>
-      inArray(
-        fields.tripId,
-        agencyTrips.map((trip) => trip.id)
-      ),
-  })
-
-  const carBookingsList = await db.query.carBookings.findMany({
-    where: (fields, { inArray }) =>
-      inArray(
-        fields.car_id,
-        agencyCars.map((car) => car.id)
-      ),
-  })
-
-  const hotelRooms = await db.query.room.findMany({
-    where: (fields, { inArray }) =>
-      inArray(
-        fields.hotelId,
-        agencyHotels.map((hotel) => hotel.id)
-      ),
-  })
-
-  const roomBookingsList = await db.query.roomBookings.findMany({
-    where: (fields, { inArray }) =>
-      inArray(
-        fields.roomId,
-        hotelRooms.map((room) => room.id)
-      ),
-  })
-
-  const totalBookings =
-    tripBookingsList.length + carBookingsList.length + roomBookingsList.length
+  const {
+    agency,
+    employees,
+    agencyTrips,
+    agencyCars,
+    agencyHotels,
+    agencyBlogs,
+    totalBookings,
+  } = data
 
   return (
     <div className="space-y-6">

@@ -1,60 +1,44 @@
-import db from "@/db/drizzle"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table"
 import { Eye, Search } from "lucide-react"
-import { redirect } from "next/navigation"
-
-// Server action for searching agencies
-async function searchAgencies(formData: FormData) {
-  "use server"
-  const searchTerm = formData.get("searchTerm") as string
-  redirect(`/admin/agencies?search=${encodeURIComponent(searchTerm)}`)
-}
+import { searchAgencies, getAgencies } from "./agencies"
+import Image from "next/image"
 
 export default async function AgenciesPage({
   searchParams,
 }: {
-  searchParams?: { search?: string }
+  searchParams: Promise<{
+    [key: string]: string | string[] | undefined
+  }>
 }) {
-  const search = searchParams?.search || ""
-  
-  // Fetch all agencies with their users
-  const agencies = await db.query.agencies.findMany({
-    with: {
-      user: true,
-    },
-    orderBy: (agencies, { desc }) => [desc(agencies.createdAt)],
-  })
+  const sp = await searchParams
+  const search = (sp?.search as string) || ""
 
-  // Filter agencies if search term is provided
-  const filteredAgencies = search 
-    ? agencies.filter(agency => 
-        agency.agencyName.toLowerCase().includes(search.toLowerCase()) ||
-        agency.agencyUniqueId.toLowerCase().includes(search.toLowerCase()) ||
-        agency.contactEmail?.toLowerCase().includes(search.toLowerCase())
-      )
-    : agencies
+  // Fetch agencies using the function from agencies.ts
+  const filteredAgencies = await getAgencies(search)
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Agencies Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Agencies Management
+        </h1>
         <form action={searchAgencies}>
           <div className="flex w-full max-w-sm items-center space-x-2">
-            <Input 
-              type="text" 
+            <Input
+              type="text"
               name="searchTerm"
-              placeholder="Search agencies..." 
+              placeholder="Search agencies..."
               defaultValue={search}
               className="max-w-xs"
             />
@@ -80,21 +64,32 @@ export default async function AgenciesPage({
           <TableBody>
             {filteredAgencies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-gray-500">
-                  {search ? "No agencies found matching your search" : "No agencies registered yet"}
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-6 text-gray-500"
+                >
+                  {search
+                    ? "No agencies found matching your search"
+                    : "No agencies registered yet"}
                 </TableCell>
               </TableRow>
             ) : (
               filteredAgencies.map((agency) => (
                 <TableRow key={agency.id}>
-                  <TableCell className="font-medium">{agency.agencyName}</TableCell>
-                  <TableCell className="text-gray-500">{agency.agencyUniqueId}</TableCell>
+                  <TableCell className="font-medium">
+                    {agency.agencyName}
+                  </TableCell>
+                  <TableCell className="text-gray-500">
+                    {agency.agencyUniqueId}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center">
                       {agency.user?.image && (
-                        <img 
-                          src={agency.user.image} 
-                          alt={agency.user.name} 
+                        <Image
+                          src={agency.user.image}
+                          alt={agency.user.name}
+                          width={32}
+                          height={32}
                           className="h-8 w-8 rounded-full mr-2"
                         />
                       )}
@@ -108,9 +103,10 @@ export default async function AgenciesPage({
                     </div>
                   </TableCell>
                   <TableCell>
-                    {agency.createdAt && (
-                      formatDistanceToNow(new Date(agency.createdAt), { addSuffix: true })
-                    )}
+                    {agency.createdAt &&
+                      formatDistanceToNow(new Date(agency.createdAt), {
+                        addSuffix: true,
+                      })}
                   </TableCell>
                   <TableCell>
                     <Link href={`/admin/agencies/${agency.id}`}>
@@ -128,4 +124,4 @@ export default async function AgenciesPage({
       </div>
     </div>
   )
-} 
+}
