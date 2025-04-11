@@ -18,6 +18,9 @@ export interface Car {
   priceAfterDiscount?: number
   images: string[]
   isAvailable: boolean
+  seats: number
+  category: string
+  location: string
   createdAt: Date
   updatedAt: Date | null
 }
@@ -115,8 +118,9 @@ export function CarCard({ car, viewMode }: CarCardProps) {
                 {car.brand} {car.model}
               </h3>
               <p className="text-xs text-gray-500">Year: {car.year}</p>
-              <p className="text-xs text-gray-500">Plate: {car.plateNumber}</p>
-              <p className="text-xs text-gray-500">Color: {car.color}</p>
+              <p className="text-xs text-gray-500">Category: {car.category}</p>
+              <p className="text-xs text-gray-500">Seats: {car.seats}</p>
+              <p className="text-xs text-gray-500">Location: {car.location}</p>
             </div>
             <button
               onClick={handleHeartClick}
@@ -155,8 +159,8 @@ export function CarCard({ car, viewMode }: CarCardProps) {
             {car.brand} {car.model}
           </h3>
           <p className="text-xs text-gray-500">Year: {car.year}</p>
-          <p className="text-xs text-gray-500">Plate: {car.plateNumber}</p>
-          <p className="text-xs text-gray-500">Color: {car.color}</p>
+          <p className="text-xs text-gray-500">Category: {car.category}</p>
+          <p className="text-xs text-gray-500">Seats: {car.seats}</p>
         </div>
         <button
           onClick={handleHeartClick}

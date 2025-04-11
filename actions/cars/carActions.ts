@@ -118,6 +118,9 @@ export async function createCar(data: CarFormValues) {
         isAvailable: data.isAvailable ?? true,
         images: data.images || [],
         agencyId: agencyId,
+        seats: data.seats || 4,
+        category: data.category,
+        location: data.location,
       })
       .returning()
 
@@ -173,8 +176,11 @@ export async function updateCar(id: number, data: CarFormValues) {
             ? priceAfterDiscount.toString()
             : null,
         isAvailable: data.isAvailable,
-        images: data.images, // Ensure this matches your DB column type
+        images: data.images,
         updatedAt: new Date(),
+        seats: data.seats || 4,
+        category: data.category,
+        location: data.location,
       })
       .where(eq(cars.id, id))
       .returning()
@@ -220,15 +226,32 @@ export async function searchCars(
 ) {
   try {
     // No authentication required if searching public data
-    const availableCars = await db.query.cars.findMany({
-      where: (cars, { and, eq }) =>
-        and(eq(cars.isAvailable, true), eq(cars.status, "approved")),
-    })
-
-    return availableCars
+    let query = db.query.cars;
+    
+    if (pickupLocation && pickupLocation.trim() !== "") {
+      // Search for cars with matching location (case-insensitive partial match)
+      const availableCars = await query.findMany({
+        where: (cars, { and, eq, like }) =>
+          and(
+            eq(cars.isAvailable, true), 
+            eq(cars.status, "approved"),
+            like(cars.location, `%${pickupLocation.trim().toLowerCase()}%`)
+          ),
+      });
+      
+      return availableCars;
+    } else {
+      // If no location specified, return all available cars
+      const availableCars = await query.findMany({
+        where: (cars, { and, eq }) =>
+          and(eq(cars.isAvailable, true), eq(cars.status, "approved")),
+      });
+      
+      return availableCars;
+    }
   } catch (error) {
-    console.error("Failed to search cars:", error)
-    return []
+    console.error("Failed to search cars:", error);
+    return [];
   }
 }
 

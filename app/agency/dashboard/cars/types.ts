@@ -6,23 +6,16 @@ export interface CarType {
   plateNumber: string
   color: string
   originalPrice: number
-  discountPercentage?: number | null
-  priceAfterDiscount?: number | null
-  images?: string[]
-  isAvailable: boolean | null
-  createdAt: Date | null
-  updatedAt: Date | null
+  discountPercentage?: number
+  priceAfterDiscount?: number
+  isAvailable: boolean
+  images: string[]
+  status?: string
+  createdAt?: string
+  updatedAt?: string
+  seats: number
+  category: string
+  location: string
 }
 
-export type CarFormValues = {
-  model: string
-  brand: string
-  year: number
-  plateNumber: string
-  color: string
-  originalPrice: number
-  discountPercentage?: number | null
-  priceAfterDiscount?: number | null
-  isAvailable: boolean
-  images?: string[]
-}
+export type CarFormValues = Omit<CarType, "id" | "createdAt" | "updatedAt" | "status">

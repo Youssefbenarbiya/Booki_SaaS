@@ -128,7 +128,7 @@ export function BookingsList({ carBookings, tripBookings, hotelBookings }: Booki
                       </div>
                     </CardContent>
                     <CardFooter className="p-0 flex justify-between items-center">
-                      <Link href={`/agency/dashboard/bookings/trip/${booking.id}`}>
+                      <Link href={`/bookings/trip/${booking.id}`}>
                         <Button variant="outline" size="sm">View Details</Button>
                       </Link>
                       {booking.status !== "cancelled" && booking.status !== "completed" && (
@@ -199,7 +199,7 @@ export function BookingsList({ carBookings, tripBookings, hotelBookings }: Booki
                       </div>
                     </CardContent>
                     <CardFooter className="p-0 flex justify-between items-center">
-                      <Link href={`/agency/dashboard/bookings/hotel/${booking.id}`}>
+                      <Link href={`/bookings/hotel/${booking.id}`}>
                         <Button variant="outline" size="sm">View Details</Button>
                       </Link>
                       {booking.status !== "cancelled" && booking.status !== "completed" && (
@@ -269,7 +269,7 @@ export function BookingsList({ carBookings, tripBookings, hotelBookings }: Booki
                       </div>
                     </CardContent>
                     <CardFooter className="p-0 flex justify-between items-center">
-                      <Link href={`/agency/dashboard/bookings/car/${booking.id}`}>
+                      <Link href={`/bookings/car/${booking.id}`}>
                         <Button variant="outline" size="sm">View Details</Button>
                       </Link>
                       {booking.status !== "cancelled" && booking.status !== "completed" && (

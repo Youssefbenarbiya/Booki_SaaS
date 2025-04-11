@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Percent } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // --- Image upload imports ---
 import { ImageUploadSection } from "@/components/ImageUploadSection"
@@ -48,6 +49,9 @@ const carFormSchema = z.object({
   discountPercentage: z.coerce.number().optional(),
   priceAfterDiscount: z.coerce.number().optional(),
   isAvailable: z.boolean().default(true),
+  seats: z.coerce.number().int().min(1, "Car must have at least 1 seat").max(20, "Car cannot have more than 20 seats"),
+  category: z.string().min(1, "Category is required"),
+  location: z.string().min(1, "Pickup location is required"),
 })
 
 type CarFormProps = {
@@ -92,6 +96,9 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
           isAvailable: Boolean(initialData.isAvailable),
           discountPercentage: initialData.discountPercentage ?? undefined,
           priceAfterDiscount: initialData.priceAfterDiscount ?? undefined,
+          seats: initialData.seats ?? 4,
+          category: initialData.category ?? "",
+          location: initialData.location ?? "",
         }
       : {
           brand: "",
@@ -103,6 +110,9 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
           isAvailable: true,
           discountPercentage: undefined,
           priceAfterDiscount: undefined,
+          seats: 4,
+          category: "",
+          location: "",
         },
   })
 
@@ -327,6 +337,61 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                     <FormDescription>
                       Enter the daily price in dollars
                     </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="seats"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Number of Seats</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" max="20" {...field} />
+                    </FormControl>
+                    <FormDescription>Enter the number of seats in the car</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="SUV">SUV</SelectItem>
+                        <SelectItem value="Economy">Economy</SelectItem>
+                        <SelectItem value="Midsize">Midsize</SelectItem>
+                        <SelectItem value="Luxury">Luxury</SelectItem>
+                        <SelectItem value="Electric">Electric</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pickup Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Airport Terminal 1" {...field} />
+                    </FormControl>
+                    <FormDescription>Where customers can pick up this car</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

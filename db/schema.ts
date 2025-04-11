@@ -340,6 +340,9 @@ export const cars = pgTable("cars", {
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  seats: integer("seats").notNull().default(4),
+  category: text("category").notNull(),
+  location: text("location").notNull(),
 })
 
 // Car Bookings table
