@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ChevronDown, ChevronUp, Search, Loader2 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { searchCars } from "@/actions/cars/carActions"
 
 interface CarFilterProps {
   carsData: Car[]
