@@ -6,7 +6,10 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
-import HotelLocationMap from "@/components/HotelLocationMap"
+import { HotelApprovalActions } from "@/components/dashboard/admin/HotelApprovalActions"
+import HotelLocationMapWrapper from "@/components/HotelLocationMapWrapper"
+
+
 
 export default async function HotelDetailsPage({
   params,
@@ -36,12 +39,25 @@ export default async function HotelDetailsPage({
   return (
     <div className="container py-6 max-w-7xl">
       <div className="mb-6">
-        <Link
-          href="/admin/verify-offers?tab=hotel"
-          className="flex items-center text-blue-600 hover:text-blue-800"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Hotel Listings
-        </Link>
+        <div className="flex justify-between items-center">
+          <Link
+            href="/admin/verify-offers?tab=hotel"
+            className="flex items-center text-blue-600 hover:text-blue-800"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Hotel Listings
+          </Link>
+          <div className="flex items-center">
+            <span className="mr-2 text-sm text-gray-500">
+              Status:{" "}
+              <span className="uppercase font-semibold">
+                {hotelDetails.status}
+              </span>
+            </span>
+            {hotelDetails.status === "pending" && (
+              <HotelApprovalActions offerId={hotelDetails.id} />
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -241,7 +257,7 @@ export default async function HotelDetailsPage({
               {/* Add the map component */}
               {hotelDetails.latitude && hotelDetails.longitude && (
                 <div className="mt-4 h-64 rounded-md overflow-hidden border border-gray-200">
-                  <HotelLocationMap
+                  <HotelLocationMapWrapper
                     latitude={hotelDetails.latitude}
                     longitude={hotelDetails.longitude}
                     height="400px"

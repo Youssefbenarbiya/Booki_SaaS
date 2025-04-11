@@ -53,7 +53,7 @@ export default async function AgencyBookingsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Customer Bookings</h1>
           <p className="text-muted-foreground">
-            View and manage all customer bookings for your agency's trips, hotels, and car rentals
+            View and manage all customer bookings for your agency&apos;s trips, hotels, and car rentals
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export default async function AgencyBookingsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Customer Bookings</h1>
           <p className="text-muted-foreground">
-            View and manage all customer bookings for your agency's trips, hotels, and car rentals
+            View and manage all customer bookings for your agency&apos;s trips, hotels, and car rentals
           </p>
         </div>
         <div className="p-8 text-center">
