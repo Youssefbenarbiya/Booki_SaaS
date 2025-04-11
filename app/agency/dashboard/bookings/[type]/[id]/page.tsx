@@ -140,20 +140,20 @@ const session = await auth.api.getSession({
   const id = parseInt(params.id);
   
   if (!["car", "trip", "hotel"].includes(type) || isNaN(id)) {
-    redirect("/bookings");
+    redirect("/agency/dashboard/bookings");
   }
   
   const booking = await getBookingDetails(type, id) as unknown as Booking;
   
   if (!booking) {
-    redirect("/bookings");
+    redirect("/agency/dashboard/bookings");
   }
   
   const handleCancelBooking = async () => {
     "use server";
     
     await cancelBooking(type, id);
-    redirect("/bookings");
+    redirect("/agency/dashboard/bookings");
   };
   
   return (
@@ -171,7 +171,7 @@ const session = await auth.api.getSession({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/bookings">
+            <Link href="/agency/dashboard/bookings">
               <Button variant="outline">Back to All Bookings</Button>
             </Link>
             {booking.status !== "cancelled" && booking.status !== "completed" && (
