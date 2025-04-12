@@ -5,6 +5,8 @@ import { Heart } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useFavorite } from "@/lib/hooks/useFavorite"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { formatPrice } from "@/lib/utils"
 
 export interface Car {
   id: number
@@ -21,6 +23,7 @@ export interface Car {
   seats: number
   category: string
   location: string
+  currency?: string
   createdAt: Date
   updatedAt: Date | null
 }
@@ -33,6 +36,7 @@ interface CarCardProps {
 export function CarCard({ car, viewMode }: CarCardProps) {
   const router = useRouter()
   const { isFavorite, toggleFavorite, isLoading } = useFavorite(car.id, "car")
+  const { currency, convertPrice, isLoading: currencyLoading } = useCurrency()
 
   const handleCardClick = () => {
     router.push(`/cars/${car.id}/booking`)
@@ -58,9 +62,14 @@ export function CarCard({ car, viewMode }: CarCardProps) {
   
   const hasDiscount = discountPercentage > 0 && priceAfterDiscount < originalPrice
 
-  const formatPrice = (price: number) => {
-    return typeof price === "number" ? price.toFixed(2) : "0.00"
-  }
+  // Get the car's currency or default to USD
+  const carCurrency = car.currency || "USD"
+  
+  // Convert prices to selected currency
+  const convertedOriginalPrice = convertPrice(originalPrice, carCurrency)
+  const convertedDiscountedPrice = hasDiscount 
+    ? convertPrice(priceAfterDiscount, carCurrency) 
+    : null
 
   // Enhanced PriceDisplay component to show all pricing information
   const PriceDisplay = () => (
@@ -68,7 +77,7 @@ export function CarCard({ car, viewMode }: CarCardProps) {
       {/* Always show the original price */}
       <div className="flex items-center gap-2">
         <span className={hasDiscount ? "text-xs text-gray-500 line-through" : "font-bold text-lg"}>
-          ${formatPrice(originalPrice)}
+          {formatPrice(convertedOriginalPrice, { currency })}
         </span>
         
         {hasDiscount && (
@@ -82,7 +91,7 @@ export function CarCard({ car, viewMode }: CarCardProps) {
       {hasDiscount && (
         <div className="flex items-center gap-1">
           <span className="font-bold text-lg text-green-600">
-            ${formatPrice(priceAfterDiscount)}
+            {formatPrice(convertedDiscountedPrice || convertedOriginalPrice, { currency })}
           </span>
         </div>
       )}
