@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import PaymentSelector from "@/components/payment/PaymentSelector"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
 
 interface RoomBookingRecord {
   roomId: string
@@ -91,6 +92,13 @@ export default function BookRoomForm({
     "flouci" | "stripe"
   >("flouci")
 
+  // Use the currency context for conversion
+  const { currency: selectedCurrency, convertPrice } = useCurrency()
+
+  // Get the prices in the selected currency
+  const convertedPricePerNightAdult = convertPrice(pricePerNightAdult, currency)
+  const convertedPricePerNightChild = convertPrice(pricePerNightChild, currency)
+
   const formatDate = format
 
   const [formDetails, setFormDetails] = useState({
@@ -110,10 +118,16 @@ export default function BookRoomForm({
       : 0
 
   // Calculate total price based on adult and child rates (infants are free).
-  const totalPrice =
+  const basePrice =
     nights *
     (adultCount * parseFloat(pricePerNightAdult.toString()) +
       childCount * parseFloat(pricePerNightChild.toString()))
+      
+  // Calculate the converted total price
+  const totalPrice = 
+    nights *
+    (adultCount * convertedPricePerNightAdult +
+      childCount * convertedPricePerNightChild)
 
   // Add total guests calculation
   const totalGuests = adultCount + childCount + infantCount
@@ -243,18 +257,18 @@ export default function BookRoomForm({
       try {
         console.log(`Starting booking with ${selectedPaymentMethod} payment...`)
 
-        // Create booking with selected payment method
+        // Create booking with selected payment method - uses the original price
         const booking = await createRoomBooking({
           roomId,
           userId,
           checkIn: dateRange.from!,
           checkOut: dateRange.to!,
-          totalPrice,
+          totalPrice: basePrice, // Use base price for actual payment/booking
           adultCount,
           childCount,
           infantCount,
           initiatePayment: true,
-          paymentMethod: selectedPaymentMethod, // Pass selected payment method
+          paymentMethod: selectedPaymentMethod,
         })
 
         console.log("Booking response:", booking)
@@ -388,7 +402,7 @@ export default function BookRoomForm({
                 <div>
                   <p className="font-medium">Adult (18+)</p>
                   <p className="text-sm text-gray-500">
-                    {formatPrice(pricePerNightAdult, { currency })}
+                    {formatPrice(convertedPricePerNightAdult, { currency: selectedCurrency })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -414,7 +428,7 @@ export default function BookRoomForm({
                 <div>
                   <p className="font-medium">Child (5-17)</p>
                   <p className="text-sm text-gray-500">
-                    {formatPrice(pricePerNightChild, { currency })}
+                    {formatPrice(convertedPricePerNightChild, { currency: selectedCurrency })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -553,7 +567,7 @@ export default function BookRoomForm({
           <div className="flex justify-between items-center mb-4">
             <div>
               <p className="text-sm text-gray-500">Total Price</p>
-              <p className="text-2xl font-bold">{formatPrice(totalPrice, { currency })}</p>
+              <p className="text-2xl font-bold">{formatPrice(totalPrice, { currency: selectedCurrency })}</p>
             </div>
             <Button
               type="submit"
