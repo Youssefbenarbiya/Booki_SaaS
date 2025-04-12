@@ -36,7 +36,7 @@ interface CarCardProps {
 export function CarCard({ car, viewMode }: CarCardProps) {
   const router = useRouter()
   const { isFavorite, toggleFavorite, isLoading } = useFavorite(car.id, "car")
-  const { currency, convertPrice, isLoading: currencyLoading } = useCurrency()
+  const { currency, convertPrice, rates, isLoading: currencyLoading } = useCurrency()
 
   const handleCardClick = () => {
     router.push(`/cars/${car.id}/booking`)
@@ -52,18 +52,11 @@ export function CarCard({ car, viewMode }: CarCardProps) {
   const discountPercentage = car.discountPercentage ? Number(car.discountPercentage) : 0
   const priceAfterDiscount = car.priceAfterDiscount ? Number(car.priceAfterDiscount) : originalPrice
   
-  // Debug the discount values from database in console
-  console.log(`Car ${car.id} discount data:`, {
-    originalPrice,
-    discountPercentage,
-    priceAfterDiscount,
-    hasDiscount: discountPercentage > 0 && priceAfterDiscount < originalPrice
-  })
+  // Get the car's currency or default to TND (since that's the DB default)
+  const carCurrency = car.currency || "TND"
   
+  // Determine if there's a discount
   const hasDiscount = discountPercentage > 0 && priceAfterDiscount < originalPrice
-
-  // Get the car's currency or default to USD
-  const carCurrency = car.currency || "USD"
   
   // Convert prices to selected currency
   const convertedOriginalPrice = convertPrice(originalPrice, carCurrency)
@@ -71,13 +64,23 @@ export function CarCard({ car, viewMode }: CarCardProps) {
     ? convertPrice(priceAfterDiscount, carCurrency) 
     : null
 
-  // Debug currency conversion
-  console.log(`Car ${car.id} currency data:`, {
+  // Enhanced debugging for currency conversion
+  console.log(`Car ${car.id} conversion info:`, {
+    // Car data
     originalPrice,
     originalCurrency: carCurrency,
-    convertedPrice: convertedOriginalPrice,
-    targetCurrency: currency,
-    conversionFactor: convertedOriginalPrice / originalPrice
+    
+    // Expected conversion based on fixed rates
+    expectedConversion: carCurrency === "TND" && currency === "USD" 
+      ? `${originalPrice} TND → $${(originalPrice * 0.32).toFixed(2)} USD`
+      : carCurrency === "USD" && currency === "TND"
+      ? `$${originalPrice} USD → ${(originalPrice * 3.13).toFixed(2)} TND`
+      : null,
+    
+    // Actual conversion result
+    actualConversion: `${formatPrice(originalPrice, { currency: carCurrency })} → ${formatPrice(convertedOriginalPrice, { currency })}`,
+    actualNumeric: `${originalPrice} → ${convertedOriginalPrice.toFixed(2)}`,
+    conversionFactor: (convertedOriginalPrice / originalPrice).toFixed(4)
   });
 
   // Enhanced PriceDisplay component to show all pricing information

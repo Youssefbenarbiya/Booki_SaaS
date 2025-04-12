@@ -115,7 +115,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
   // Convert price to the user-selected currency
   const convertedEffectivePrice = useMemo(() => {
     if (!car) return 0
-    const carCurrency = car.currency || "USD"
+    const carCurrency = car.currency || "TND" // Default to TND since that's the DB default
     return convertPrice(effectivePrice, carCurrency)
   }, [car, effectivePrice, convertPrice])
 

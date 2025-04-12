@@ -110,7 +110,7 @@ export async function createCar(data: CarFormValues) {
         plateNumber: data.plateNumber,
         color: data.color,
         originalPrice: data.originalPrice.toString(),
-        currency: data.currency || "USD",
+        currency: data.currency || "TND",
         discountPercentage: discountPercentage ?? undefined,
         priceAfterDiscount:
           priceAfterDiscount !== undefined && priceAfterDiscount !== null
@@ -171,7 +171,7 @@ export async function updateCar(id: number, data: CarFormValues) {
         plateNumber: data.plateNumber,
         color: data.color,
         originalPrice: data.originalPrice.toString(),
-        currency: data.currency || "USD",
+        currency: data.currency || "TND",
         discountPercentage: discountPercentage ?? null,
         priceAfterDiscount:
           priceAfterDiscount !== undefined && priceAfterDiscount !== null
