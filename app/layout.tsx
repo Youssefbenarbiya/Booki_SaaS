@@ -4,7 +4,7 @@ import Navbar from "@/components/navbar/navbar"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "next-themes"
 import Header from "@/components/header/header"
-
+import { CurrencyProvider } from "@/contexts/CurrencyContext"
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -17,20 +17,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-      >
+      <body>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <Navbar />
-          <Header />
+          <CurrencyProvider>
+            <Navbar />
+            <Header />
 
             {children}
-          
-          <Toaster />
+
+            <Toaster />
+          </CurrencyProvider>
         </ThemeProvider>
       </body>
     </html>

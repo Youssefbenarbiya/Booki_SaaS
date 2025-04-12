@@ -104,6 +104,7 @@ export const trips = pgTable("trips", {
     precision: 10,
     scale: 2,
   }),
+  currency: varchar("currency", { length: 10 }).default("TND").notNull(),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
@@ -491,6 +492,7 @@ export const agencies = pgTable("agencies", {
   contactEmail: varchar("contact_email", { length: 255 }),
   contactPhone: varchar("contact_phone", { length: 50 }),
   address: text("address"),
+  logo: text("logo"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
