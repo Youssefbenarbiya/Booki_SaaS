@@ -1,478 +1,212 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import type { Car } from "./CarCard"
+import { useEffect, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, Search, Loader2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Car } from "./CarCard"
 import { useRouter, useSearchParams } from "next/navigation"
-import { searchCars } from "@/actions/cars/carActions"
 
 interface CarFilterProps {
   carsData: Car[]
-  setFilteredCars: (cars: Car[]) => void
+  setFilteredCars: React.Dispatch<React.SetStateAction<Car[]>>
   onFilterChange?: (filteredCars: Car[]) => void
   isMobileView?: boolean
-  className?: string
-  searchParams?: Record<string, string>
+  searchParams: {
+    pickupLocation: string
+    pickupDate: string
+    returnDate: string
+  }
 }
 
-// Helper function to calculate display price
-function getDisplayPrice(car: Car): number {
-  const originalPrice =
-    typeof car.originalPrice === "string"
-      ? parseFloat(car.originalPrice)
-      : car.originalPrice
-  const priceAfterDiscount =
-    car.priceAfterDiscount !== undefined
-      ? typeof car.priceAfterDiscount === "string"
-        ? parseFloat(car.priceAfterDiscount)
-        : car.priceAfterDiscount
-      : undefined
-  return priceAfterDiscount ?? originalPrice
-}
+// Define the car categories
+const CAR_CATEGORIES = [
+  { id: "economy", label: "Economy" },
+  { id: "midsize", label: "Midsize" },
+  { id: "suv", label: "SUV" },
+  { id: "luxury", label: "Luxury" },
+  { id: "electric", label: "Electric" },
+]
 
 export function CarFilter({
   carsData,
   setFilteredCars,
   onFilterChange,
-  className = "",
-  searchParams = {},
+  isMobileView = false,
+  searchParams,
 }: CarFilterProps) {
-  const router = useRouter();
-  const urlSearchParams = useSearchParams();
-  
-  // Extract unique values from car data
-  const carBrands = Array.from(new Set(carsData.map((car) => car.brand)))
-  const carCategories = Array.from(new Set(carsData.map((car) => car.category))).filter(Boolean)
-  const carLocations = Array.from(new Set(carsData.map((car) => car.location))).filter(Boolean)
+  const router = useRouter()
+  const urlSearchParams = useSearchParams()
 
-  // Price calculations
-  const prices = carsData.map((car) => getDisplayPrice(car))
-  const minPrice = prices.length ? Math.min(...prices) : 0
-  const maxPrice = prices.length ? Math.max(...prices) : 1000
-
-  // State variables
-  const [priceRange, setPriceRange] = useState<[number, number]>([minPrice, maxPrice])
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([])
+  const [location, setLocation] = useState(searchParams.pickupLocation || "")
+  const MIN_PRICE = 0
+  const MAX_PRICE = 5000
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    MIN_PRICE,
+    MAX_PRICE,
+  ])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([])
-  const [selectedSeats, setSelectedSeats] = useState<number[]>([])
-  const [availableOnly, setAvailableOnly] = useState(true)
-  const [fromLocation, setFromLocation] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-  const [expandedSections, setExpandedSections] = useState({
-    brand: false,
-    category: true,
-    capacity: true,
-    location: false,
-  })
 
-  // Initialize location from URL params if available
-  useEffect(() => {
-    const pickupLocation = urlSearchParams.get('pickupLocation');
-    if (pickupLocation) {
-      setFromLocation(pickupLocation);
-    }
-  }, [urlSearchParams]);
+  // Apply filters function
+  const applyFilters = () => {
+    const filtered = carsData.filter((car) => {
+      // Location filter
+      const locationMatch =
+        location === "" ||
+        (car.location &&
+          car.location.toLowerCase().includes(location.toLowerCase()))
 
-  // Update price range when min/max changes
-  useEffect(() => {
-    setPriceRange([minPrice, maxPrice])
-  }, [minPrice, maxPrice])
+      // Improved price filter handling
+      const price =
+        car.priceAfterDiscount !== null
+          ? car.priceAfterDiscount
+          : car.originalPrice
+      const priceValue = typeof price === "string" ? parseFloat(price) : price
+      const priceMatch =
+        typeof priceValue === "number" &&
+        !isNaN(priceValue) &&
+        priceValue >= priceRange[0] &&
+        priceValue <= priceRange[1]
 
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...carsData]
+      // Category filter
+      const categoryMatch =
+        selectedCategories.length === 0 ||
+        (car.category &&
+          selectedCategories.includes(car.category.toLowerCase()))
 
-    // Filter by availability
-    if (availableOnly) {
-      filtered = filtered.filter((car) => car.isAvailable)
-    }
-
-    // Filter by price range
-    filtered = filtered.filter((car) => {
-      const price = getDisplayPrice(car)
-      return price >= priceRange[0] && price <= priceRange[1]
+      return locationMatch && priceMatch && categoryMatch
     })
 
-    // Filter by selected brands
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter((car) => selectedBrands.includes(car.brand))
-    }
-    
-    // Filter by selected categories
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter((car) => selectedCategories.includes(car.category))
-    }
-    
-    // Filter by selected locations
-    if (selectedLocations.length > 0) {
-      filtered = filtered.filter((car) => selectedLocations.includes(car.location))
-    }
-    
-    // Filter by selected seats
-    if (selectedSeats.length > 0) {
-      filtered = filtered.filter((car) => selectedSeats.includes(car.seats))
-    }
-    
-    // Filter by location text (if no specific locations are selected)
-    if (fromLocation && selectedLocations.length === 0) {
-      filtered = filtered.filter((car) => 
-        car.location.toLowerCase().includes(fromLocation.toLowerCase())
-      )
-    }
-
     setFilteredCars(filtered)
-
-    // Call onFilterChange if provided
     if (onFilterChange) {
       onFilterChange(filtered)
     }
-  }, [
-    carsData,
-    priceRange,
-    selectedBrands,
-    selectedCategories,
-    selectedLocations,
-    selectedSeats,
-    availableOnly,
-    fromLocation,
-    setFilteredCars,
-    onFilterChange,
-  ])
-
-  // Toggle functions for filters
-  const toggleBrand = (brand: string) => {
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
-    )
-  }
-  
-  const toggleCategory = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
-    )
-  }
-  
-  const toggleLocation = (location: string) => {
-    setSelectedLocations((prev) =>
-      prev.includes(location) ? prev.filter((l) => l !== location) : [...prev, location]
-    )
-  }
-  
-  const toggleSeat = (seat: number) => {
-    setSelectedSeats((prev) =>
-      prev.includes(seat) ? prev.filter((s) => s !== seat) : [...prev, seat]
-    )
   }
 
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }))
-  }
+  // Update search parameters with new location
+  const updateSearchParams = (newLocation: string) => {
+    // Create a new URLSearchParams object from the current search params
+    const params = new URLSearchParams(urlSearchParams.toString())
 
-  // Handle search by location
-  const handleSearch = async () => {
-    if (!fromLocation.trim()) return;
-    
-    setIsSearching(true);
-    
-    try {
-      // Update the URL query params to include the search location
-      const params = new URLSearchParams(searchParams);
-      params.set('pickupLocation', fromLocation.trim());
-      
-      // Get current date and tomorrow's date in ISO format for pickup/return dates
-      const today = new Date().toISOString().split('T')[0];
-      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      
-      params.set('pickupDate', searchParams.pickupDate || today);
-      params.set('returnDate', searchParams.returnDate || tomorrow);
-      
-      // Update the URL without refreshing the page
-      router.push(`/cars?${params.toString()}`);
-      
-      // You can also directly call the searchCars function to update the results immediately
-      // This is optional if you're handling the search server-side
-      // const results = await searchCars(fromLocation.trim(), today, tomorrow);
-      // if (results && results.length > 0) {
-      //   setFilteredCars(results);
-      // }
-    } finally {
-      setIsSearching(false);
+    // Update the location parameter
+    params.set("pickupLocation", newLocation)
+
+    // Keep the existing type parameter
+    if (!params.has("type")) {
+      params.set("type", "rent")
     }
-  };
+
+    // Preserve pickup and return dates
+    if (searchParams.pickupDate) {
+      params.set("pickupDate", searchParams.pickupDate)
+    }
+    if (searchParams.returnDate) {
+      params.set("returnDate", searchParams.returnDate)
+    }
+
+    // Navigate to the updated URL without a full page reload
+    router.push(`/?${params.toString()}`)
+  }
+
+  // Handle location change and search
+  const handleLocationChange = () => {
+    updateSearchParams(location)
+    applyFilters()
+  }
+
+  // Apply filters when search params or filter values change
+  useEffect(() => {
+    applyFilters()
+  }, [location, priceRange, selectedCategories, carsData])
+
+  // Update location from search params when they change
+  useEffect(() => {
+    if (searchParams.pickupLocation !== location) {
+      setLocation(searchParams.pickupLocation)
+    }
+  }, [searchParams.pickupLocation])
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    )
+  }
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm ${className}`}>
-      {/* Header */}
-      <div className="bg-[#e0e10a] rounded-t-lg p-4 text-center relative">
-        <div className="absolute w-4 h-4 bg-[#e0e10a] rotate-45 left-1/2 -bottom-2 -translate-x-1/2"></div>
-        <h2 className="font-bold text-lg">Find Your Rental Car</h2>
-      </div>
-
-      {/* Search Form */}
-      <div className="p-4 space-y-4">
-        <div>
-          <p className="text-xs font-medium mb-1">PICKUP LOCATION</p>
-          <Input
-            value={fromLocation}
-            onChange={(e) => setFromLocation(e.target.value)}
-            className="border border-gray-300"
-            placeholder="Airport, city, address..."
-          />
-        </div>
-        <Button
-          className="w-full bg-[#e0e10a] hover:bg-[#c5c609] text-black font-semibold"
-          onClick={handleSearch}
-          disabled={isSearching}
-        >
-          {isSearching ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching...
-            </>
-          ) : (
-            <>
-              <Search className="mr-2 h-4 w-4" /> SEARCH
-            </>
-          )}
-        </Button>
-      </div>
-
-      <div className="border-t border-gray-200 mx-4 my-2"></div>
-
-      {/* Filters Header */}
-      <div className="px-4 py-2">
-        <h3 className="font-semibold text-lg">Filters</h3>
-      </div>
-
-      <div className="border-t border-gray-200 mx-4 mb-4"></div>
-
-      {/* Price Range */}
-      <div className="px-4 mb-6">
-        <h3 className="font-semibold mb-3">Price Range</h3>
-        <Slider
-          defaultValue={[minPrice, maxPrice]}
-          max={maxPrice}
-          min={minPrice}
-          step={10}
-          value={priceRange}
-          onValueChange={(value) => setPriceRange(value as [number, number])}
-          className="mb-2"
-        />
-        <div className="flex justify-between text-sm text-gray-500">
-          <span>${priceRange[0]}</span>
-          <span>${priceRange[1]}</span>
-        </div>
-      </div>
-
-      {/* Brand Section */}
-      <div className="px-4 mb-4">
-        <div
-          className="flex justify-between items-center cursor-pointer mb-3"
-          onClick={() => toggleSection("brand")}
-        >
-          <h3 className="font-semibold">Brand</h3>
-          {expandedSections.brand ? (
-            <ChevronUp size={18} />
-          ) : (
-            <ChevronDown size={18} />
-          )}
-        </div>
-
-        {expandedSections.brand && (
+    <Card className={isMobileView ? "w-full" : ""}>
+      <CardContent className="pt-6">
+        <div className="space-y-6">
           <div className="space-y-2">
-            {carBrands.map((brand) => (
-              <div key={brand} className="flex items-center gap-2">
-                <Checkbox
-                  id={`brand-${brand}`}
-                  checked={selectedBrands.includes(brand)}
-                  onCheckedChange={() => toggleBrand(brand)}
-                />
-                <Label htmlFor={`brand-${brand}`}>{brand}</Label>
-              </div>
-            ))}
+            <Label htmlFor="location">Location</Label>
+            <div className="flex gap-2">
+              <Input
+                id="location"
+                placeholder="Search by location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+              <Button onClick={handleLocationChange} size="sm">
+                Search
+              </Button>
+            </div>
           </div>
-        )}
-      </div>
 
-      <div className="border-t border-gray-200 mx-4 mb-4"></div>
-
-      {/* Category Section */}
-      <div className="px-4 mb-4">
-        <div
-          className="flex justify-between items-center cursor-pointer mb-3"
-          onClick={() => toggleSection("category")}
-        >
-          <h3 className="font-semibold">Category</h3>
-          {expandedSections.category ? (
-            <ChevronUp size={18} />
-          ) : (
-            <ChevronDown size={18} />
-          )}
-        </div>
-
-        {expandedSections.category && (
-          <div className="space-y-2">
-            {carCategories.length > 0 ? (
-              carCategories.map((category) => (
-                <div key={category} className="flex items-center gap-2">
-                  <Checkbox
-                    id={`category-${category}`}
-                    checked={selectedCategories.includes(category)}
-                    onCheckedChange={() => toggleCategory(category)}
-                  />
-                  <Label htmlFor={`category-${category}`}>{category}</Label>
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <Checkbox id="category-suv" onCheckedChange={() => toggleCategory("SUV")} />
-                  <Label htmlFor="category-suv">SUV</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox id="category-economy" onCheckedChange={() => toggleCategory("Economy")} />
-                  <Label htmlFor="category-economy">Economy</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox id="category-midsize" onCheckedChange={() => toggleCategory("Midsize")} />
-                  <Label htmlFor="category-midsize">Midsize</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox id="category-luxury" onCheckedChange={() => toggleCategory("Luxury")} />
-                  <Label htmlFor="category-luxury">Luxury</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox id="category-electric" onCheckedChange={() => toggleCategory("Electric")} />
-                  <Label htmlFor="category-electric">Electric</Label>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-gray-200 mx-4 mb-4"></div>
-
-      {/* Capacity Section */}
-      <div className="px-4 mb-6">
-        <div
-          className="flex justify-between items-center cursor-pointer mb-3"
-          onClick={() => toggleSection("capacity")}
-        >
-          <h3 className="font-semibold">Capacity</h3>
-          {expandedSections.capacity ? (
-            <ChevronUp size={18} />
-          ) : (
-            <ChevronDown size={18} />
-          )}
-        </div>
-
-        {expandedSections.capacity && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="capacity-2" 
-                checked={selectedSeats.includes(2)}
-                onCheckedChange={() => toggleSeat(2)}
-              />
-              <Label htmlFor="capacity-2">2 persons</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="capacity-4" 
-                checked={selectedSeats.includes(4)}
-                onCheckedChange={() => toggleSeat(4)}
-              />
-              <Label htmlFor="capacity-4">4 persons</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="capacity-5" 
-                checked={selectedSeats.includes(5)}
-                onCheckedChange={() => toggleSeat(5)}
-              />
-              <Label htmlFor="capacity-5">5 persons</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="capacity-7" 
-                checked={selectedSeats.includes(7)}
-                onCheckedChange={() => toggleSeat(7)}
-              />
-              <Label htmlFor="capacity-7">7 persons</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="capacity-8plus" 
-                onCheckedChange={() => {
-                  const hasEight = selectedSeats.some(s => s >= 8);
-                  if (hasEight) {
-                    setSelectedSeats(prev => prev.filter(s => s < 8));
-                  } else {
-                    setSelectedSeats(prev => [...prev, 8]);
-                  }
+          <div className="space-y-4">
+            <Label>Price Range</Label>
+            <div className="px-2">
+              <Slider
+                min={MIN_PRICE}
+                max={MAX_PRICE}
+                step={100}
+                value={priceRange}
+                onValueChange={(value: number[]) => {
+                  setPriceRange([value[0], value[1]])
+                  applyFilters()
                 }}
-                checked={selectedSeats.some(s => s >= 8)}
+                className="py-4"
               />
-              <Label htmlFor="capacity-8plus">8 or More</Label>
+              <div className="flex justify-between text-sm text-gray-500 mt-2">
+                <span>${priceRange[0].toLocaleString()}</span>
+                <span>${priceRange[1].toLocaleString()}</span>
+              </div>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Location Section */}
-      <div className="px-4 mb-6">
-        <div
-          className="flex justify-between items-center cursor-pointer mb-3"
-          onClick={() => toggleSection("location")}
-        >
-          <h3 className="font-semibold">Pickup Locations</h3>
-          {expandedSections.location ? (
-            <ChevronUp size={18} />
-          ) : (
-            <ChevronDown size={18} />
-          )}
-        </div>
-
-        {expandedSections.location && (
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {carLocations.length > 0 ? (
-              carLocations.map((location) => (
-                <div key={location} className="flex items-center gap-2">
+          <div className="space-y-2">
+            <Label>Car Category</Label>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {CAR_CATEGORIES.map((category) => (
+                <div key={category.id} className="flex items-center space-x-2">
                   <Checkbox
-                    id={`location-${location}`}
-                    checked={selectedLocations.includes(location)}
-                    onCheckedChange={() => toggleLocation(location)}
+                    id={`category-${category.id}`}
+                    checked={selectedCategories.includes(
+                      category.id.toLowerCase()
+                    )}
+                    onCheckedChange={() =>
+                      handleCategoryToggle(category.id.toLowerCase())
+                    }
                   />
-                  <Label htmlFor={`location-${location}`} className="text-sm truncate">{location}</Label>
+                  <label
+                    htmlFor={`category-${category.id}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {category.label}
+                  </label>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500">No locations available</p>
-            )}
+              ))}
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Availability (kept from original but hidden) */}
-      <div className="hidden">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="available"
-            checked={availableOnly}
-            onCheckedChange={() => setAvailableOnly(!availableOnly)}
-          />
-          <Label htmlFor="available">Show only available cars</Label>
+          <Button onClick={applyFilters} className="w-full">
+            Apply Filters
+          </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
