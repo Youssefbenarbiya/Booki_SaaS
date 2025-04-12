@@ -30,6 +30,7 @@ const tripSchema = z.object({
   capacity: z.coerce.number().int().positive("Capacity must be positive"),
   isAvailable: z.boolean().default(true),
   images: z.array(z.string()),
+  currency: z.string().default("USD"),
   activities: z
     .array(
       z.object({
@@ -104,6 +105,7 @@ export async function createTrip(data: TripInput) {
         isAvailable: validatedData.isAvailable,
         agencyId: agencyId, // Use the agencyId from our helper
         createdBy: session.user.id, // Track who created it
+        currency: validatedData.currency || "USD",
       })
       .returning()
 
@@ -206,6 +208,7 @@ export async function updateTrip(id: number, data: TripInput) {
           validatedData.priceAfterDiscount?.toString() ?? null,
         capacity: validatedData.capacity,
         isAvailable: validatedData.isAvailable,
+        currency: validatedData.currency || "USD",
       })
       .where(eq(trips.id, id))
       .returning()
