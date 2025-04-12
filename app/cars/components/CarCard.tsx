@@ -71,6 +71,15 @@ export function CarCard({ car, viewMode }: CarCardProps) {
     ? convertPrice(priceAfterDiscount, carCurrency) 
     : null
 
+  // Debug currency conversion
+  console.log(`Car ${car.id} currency data:`, {
+    originalPrice,
+    originalCurrency: carCurrency,
+    convertedPrice: convertedOriginalPrice,
+    targetCurrency: currency,
+    conversionFactor: convertedOriginalPrice / originalPrice
+  });
+
   // Enhanced PriceDisplay component to show all pricing information
   const PriceDisplay = () => (
     <div>
