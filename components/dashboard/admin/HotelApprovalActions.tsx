@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { approveHotel, rejectHotel } from "@/actions/admin/ApprovalActions"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
-export function HotelApprovalActions({ offerId }: { offerId: number }) {
+export function HotelApprovalActions({ offerId }: { offerId: string | number }) {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState<{
     approve: boolean
     reject: boolean
@@ -17,17 +19,19 @@ export function HotelApprovalActions({ offerId }: { offerId: number }) {
   const handleApprove = async () => {
     setIsLoading({ ...isLoading, approve: true })
     try {
+      console.log(`Sending approve request for hotel ID: ${offerId}`)
       const result = await approveHotel(offerId)
+      
       if (result.success) {
         toast.success("Hotel approved successfully")
-        // Refresh the page to reflect changes
-        window.location.reload()
+        // Use router.refresh instead of window.location.reload for better UX
+        router.refresh()
       } else {
         toast.error(result.message || "Failed to approve hotel")
       }
     } catch (error) {
+      console.error("Error approving hotel:", error)
       toast.error("An error occurred while approving the hotel")
-      console.error(error)
     } finally {
       setIsLoading({ ...isLoading, approve: false })
     }
@@ -36,17 +40,19 @@ export function HotelApprovalActions({ offerId }: { offerId: number }) {
   const handleReject = async () => {
     setIsLoading({ ...isLoading, reject: true })
     try {
+      console.log(`Sending reject request for hotel ID: ${offerId}`)
       const result = await rejectHotel(offerId)
+      
       if (result.success) {
         toast.success("Hotel rejected successfully")
-        // Refresh the page to reflect changes
-        window.location.reload()
+        // Use router.refresh instead of window.location.reload for better UX
+        router.refresh()
       } else {
         toast.error(result.message || "Failed to reject hotel")
       }
     } catch (error) {
+      console.error("Error rejecting hotel:", error)
       toast.error("An error occurred while rejecting the hotel")
-      console.error(error)
     } finally {
       setIsLoading({ ...isLoading, reject: false })
     }

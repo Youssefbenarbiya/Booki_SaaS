@@ -1,4 +1,6 @@
+"use client"
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useEffect } from "react"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import {
@@ -18,6 +20,7 @@ import { Separator } from "@/components/ui/separator"
 import { formatPrice, getDurationInDays, formatDateRange } from "@/lib/utils"
 import Link from "next/link"
 import { getTripById } from "@/actions/trips/tripActions"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
 
 interface TripPageProps {
   params: {
@@ -25,9 +28,36 @@ interface TripPageProps {
   }
 }
 
-export default async function TripDetailsPage({ params }: TripPageProps) {
-  const { tripId } = await params
-  const trip = await getTripById(parseInt(tripId))
+export default function TripDetailsPage({ params }: TripPageProps) {
+  const { currency, convertPrice } = useCurrency()
+  const { tripId } = params
+
+  // Use state to hold the trip data
+  const [trip, setTrip] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState(true)
+
+  // Fetch trip data
+  React.useEffect(() => {
+    const fetchTrip = async () => {
+      try {
+        const tripData = await getTripById(parseInt(tripId))
+        if (!tripData) {
+          notFound()
+        }
+        setTrip(tripData)
+      } catch (error) {
+        console.error("Error fetching trip:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTrip()
+  }, [tripId])
+
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+  }
 
   if (!trip) {
     notFound()
@@ -38,7 +68,7 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
   // Group activities by day
   const activitiesByDay: { [key: string]: any[] } = {}
 
-  trip.activities.forEach((activity) => {
+  trip.activities.forEach((activity: any) => {
     if (!activity.scheduledDate) return
 
     const date = new Date(activity.scheduledDate).toLocaleDateString()
@@ -54,6 +84,11 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
     hasDiscount && trip.priceAfterDiscount
       ? Number(trip.priceAfterDiscount)
       : Number(trip.originalPrice)
+      
+  // Convert prices to selected currency
+  const tripCurrency = trip.currency || "USD"
+  const convertedOriginalPrice = convertPrice(Number(trip.originalPrice), tripCurrency)
+  const convertedEffectivePrice = convertPrice(effectivePrice, tripCurrency)
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -80,7 +115,7 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
 
             {/* Image Gallery */}
             <div className="grid grid-cols-2 gap-2 mt-4">
-              {trip.images.slice(0, 4).map((image, index) => (
+              {trip.images.slice(0, 4).map((image: any, index: number) => (
                 <div
                   key={image.id}
                   className={`relative rounded-lg overflow-hidden ${
@@ -109,11 +144,11 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
                 {hasDiscount ? (
                   <>
                     <div className="text-2xl font-bold text-primary">
-                      {formatPrice(effectivePrice)}
+                      {formatPrice(convertedEffectivePrice, { currency })}
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm line-through text-gray-500">
-                        {formatPrice(Number(trip.originalPrice))}
+                        {formatPrice(convertedOriginalPrice, { currency })}
                       </span>
                       <span className="text-sm font-medium text-green-600">
                         {trip.discountPercentage}% off
@@ -122,7 +157,7 @@ export default async function TripDetailsPage({ params }: TripPageProps) {
                   </>
                 ) : (
                   <div className="text-2xl font-bold text-primary">
-                    {formatPrice(effectivePrice)}
+                    {formatPrice(convertedEffectivePrice, { currency })}
                   </div>
                 )}
               </div>

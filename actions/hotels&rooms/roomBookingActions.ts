@@ -92,7 +92,7 @@ export async function createRoomBooking({
         checkIn: checkIn.toISOString(),
         checkOut: checkOut.toISOString(),
         totalPrice: sql`${finalTotalPrice}::decimal`,
-        status: "pending", // initial status until payment is confirmed
+        status: "confirmed", // initial status until payment is confirmed
         paymentStatus: "pending",
       })
       .returning()

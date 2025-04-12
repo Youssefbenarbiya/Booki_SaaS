@@ -1,19 +1,117 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Metadata } from "next";
 import { getBookingDetails } from "@/actions/bookings";
-import { auth } from "@/auth";
+import { headers } from "next/headers"
+import { auth } from "@/auth"
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, Car, Home, Plane, User, Phone, Mail, CreditCard, AlertCircle } from "lucide-react";
+import { Calendar, Clock, Car, Home, Plane, User, Phone, Mail, CreditCard, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { cancelBooking, BookingType } from "@/actions/bookings";
 
+// Update type definitions for different booking types
+type CarBooking = {
+  status: string;
+  id: number;
+  user_id: string;
+  start_date: Date;
+  end_date: Date;
+  total_price: string;
+  car: {
+    brand: string;
+    model: string;
+    year: string;
+    color: string;
+    images: string[];
+    plateNumber: string;
+    originalPrice: string;
+    discountPercentage: number;
+  };
+  drivingLicense?: string;
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paymentDate?: Date;
+};
+
+type TripBooking = {
+  status: string;
+  id: number;
+  userId: string;
+  tripId: number;
+  seatsBooked: number;
+  totalPrice: string;
+  bookingDate: Date | null;
+  paymentId: string | null;
+  paymentStatus: string | null;
+  paymentMethod: string | null;
+  paymentDate: Date | null;
+  trip: {
+    name: string;
+    destination: string;
+    startDate: Date;
+    endDate: Date;
+    images: { imageUrl: string }[];
+    activities: {
+      id: number;
+      activityName: string;
+      description: string;
+      scheduledDate?: Date;
+    }[];
+    originalPrice: string;
+    discountPercentage: number;
+  };
+};
+
+type HotelBooking = {
+  status: string;
+  id: number;
+  userId: string;
+  checkIn: Date;
+  checkOut: Date;
+  totalPrice: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paymentDate?: Date;
+  room: {
+    name: string;
+    roomType: string;
+    capacity: number;
+    pricePerNightAdult: string;
+    hotel: {
+      name: string;
+      address: string;
+      city: string;
+      images: string[];
+    };
+  };
+};
+
+type Booking = CarBooking | TripBooking | HotelBooking;
+
+// Add type guard functions
+function isCarBooking(booking: Booking): booking is CarBooking {
+  return 'car' in booking;
+}
+
+function isTripBooking(booking: Booking): booking is TripBooking {
+  return 'trip' in booking;
+}
+
+function isHotelBooking(booking: Booking): booking is HotelBooking {
+  return 'room' in booking;
+}
+
 export async function generateMetadata({ params }: { params: { type: string; id: string } }): Promise<Metadata> {
   const type = params.type as BookingType;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const id = parseInt(params.id);
   
   const typeTitles = {
@@ -29,7 +127,10 @@ export async function generateMetadata({ params }: { params: { type: string; id:
 }
 
 export default async function BookingDetailsPage({ params }: { params: { type: string; id: string } }) {
-  const session = await auth();
+const session = await auth.api.getSession({
+  headers: await headers(),
+})
+
   
   if (!session?.user) {
     redirect("/sign-in");
@@ -42,7 +143,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
     redirect("/bookings");
   }
   
-  const booking = await getBookingDetails(type, id);
+  const booking = await getBookingDetails(type, id) as unknown as Booking;
   
   if (!booking) {
     redirect("/bookings");
@@ -61,8 +162,8 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">
-              {type === "car" ? "Car Rental Details" : 
-               type === "trip" ? "Trip Booking Details" : 
+              {isCarBooking(booking) ? "Car Rental Details" : 
+               isTripBooking(booking) ? "Trip Booking Details" : 
                "Hotel Booking Details"}
             </h1>
             <p className="text-muted-foreground">
@@ -89,35 +190,35 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
             <CardHeader>
               <div className="flex justify-between items-start">
                 <CardTitle>
-                  {type === "car" ? `${booking.car.brand} ${booking.car.model}` : 
-                   type === "trip" ? booking.trip.name : 
-                   booking.room.hotel.name}
+                  {isCarBooking(booking) ? `${booking.car.brand} ${booking.car.model}` : 
+                   isTripBooking(booking) ? booking.trip.name : 
+                   isHotelBooking(booking) ? booking.room.hotel.name : ""}
                 </CardTitle>
                 <StatusBadge status={booking.status} />
               </div>
               <CardDescription>
-                {type === "car" ? `${booking.car.year} • ${booking.car.color}` :
-                 type === "trip" ? `Destination: ${booking.trip.destination}` :
-                 `${booking.room.name} • ${booking.room.hotel.address}, ${booking.room.hotel.city}`}
+                {isCarBooking(booking) ? `${booking.car.year} • ${booking.car.color}` :
+                 isTripBooking(booking) ? `Destination: ${booking.trip.destination}` :
+                 isHotelBooking(booking) ? `${booking.room.name} • ${booking.room.hotel.address}, ${booking.room.hotel.city}` : ""}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="relative aspect-video overflow-hidden rounded-md">
-                {type === "car" && booking.car.images?.[0] ? (
+                {isCarBooking(booking) && booking.car.images?.[0] ? (
                   <Image 
                     src={booking.car.images[0]} 
                     alt={`${booking.car.brand} ${booking.car.model}`} 
                     fill 
                     className="object-cover" 
                   />
-                ) : type === "trip" && booking.trip.images?.[0]?.imageUrl ? (
+                ) : isTripBooking(booking) && booking.trip.images?.[0]?.imageUrl ? (
                   <Image 
                     src={booking.trip.images[0].imageUrl} 
                     alt={booking.trip.name} 
                     fill 
                     className="object-cover" 
                   />
-                ) : type === "hotel" && booking.room.hotel.images?.[0] ? (
+                ) : isHotelBooking(booking) && booking.room.hotel.images?.[0] ? (
                   <Image 
                     src={booking.room.hotel.images[0]} 
                     alt={booking.room.hotel.name} 
@@ -126,8 +227,8 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                   />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
-                    {type === "car" ? <Car className="h-12 w-12 text-muted-foreground" /> :
-                     type === "trip" ? <Plane className="h-12 w-12 text-muted-foreground" /> :
+                    {isCarBooking(booking) ? <Car className="h-12 w-12 text-muted-foreground" /> :
+                     isTripBooking(booking) ? <Plane className="h-12 w-12 text-muted-foreground" /> :
                      <Home className="h-12 w-12 text-muted-foreground" />}
                   </div>
                 )}
@@ -138,10 +239,10 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <DetailsItem 
                     icon={<Calendar className="h-4 w-4" />}
-                    label={type === "car" ? "Rental Period" : type === "trip" ? "Trip Dates" : "Stay Dates"}
-                    value={type === "car" ? 
+                    label={isCarBooking(booking) ? "Rental Period" : isTripBooking(booking) ? "Trip Dates" : "Stay Dates"}
+                    value={isCarBooking(booking) ? 
                       `${format(new Date(booking.start_date), "PPP")} - ${format(new Date(booking.end_date), "PPP")}` :
-                      type === "trip" ? 
+                      isTripBooking(booking) ? 
                       `${format(new Date(booking.trip.startDate), "PPP")} - ${format(new Date(booking.trip.endDate), "PPP")}` :
                       `${format(new Date(booking.checkIn), "PPP")} - ${format(new Date(booking.checkOut), "PPP")}`
                     }
@@ -153,7 +254,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                     value={booking.paymentStatus || "pending"}
                   />
                   
-                  {type === "car" && (
+                  {isCarBooking(booking) && (
                     <>
                       <DetailsItem 
                         icon={<Car className="h-4 w-4" />}
@@ -163,7 +264,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                     </>
                   )}
                   
-                  {type === "trip" && (
+                  {isTripBooking(booking) && (
                     <>
                       <DetailsItem 
                         icon={<User className="h-4 w-4" />}
@@ -173,7 +274,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                     </>
                   )}
                   
-                  {type === "hotel" && (
+                  {isHotelBooking(booking) && (
                     <>
                       <DetailsItem 
                         icon={<Home className="h-4 w-4" />}
@@ -190,7 +291,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                 </div>
               </div>
               
-              {type === "trip" && booking.trip.activities && booking.trip.activities.length > 0 && (
+              {isTripBooking(booking) && booking.trip.activities && booking.trip.activities.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Trip Activities</h3>
                   <div className="space-y-3">
@@ -213,7 +314,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
           </Card>
           
           {/* Additional Info for Car Bookings */}
-          {type === "car" && booking.drivingLicense && (
+          {isCarBooking(booking) && booking.drivingLicense && (
             <Card>
               <CardHeader>
                 <CardTitle>Rental Information</CardTitle>
@@ -256,7 +357,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {type === "car" && (
+                {isCarBooking(booking) && (
                   <>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Car Rental</span>
@@ -271,7 +372,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                   </>
                 )}
                 
-                {type === "trip" && (
+                {isTripBooking(booking) && (
                   <>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Trip Cost (per seat)</span>
@@ -290,7 +391,7 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                   </>
                 )}
                 
-                {type === "hotel" && (
+                {isHotelBooking(booking) && (
                   <>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Room Rate (per night/adult)</span>
@@ -309,16 +410,15 @@ export default async function BookingDetailsPage({ params }: { params: { type: s
                 
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span>${type === "car" ? Number(booking.total_price).toFixed(2) : booking.totalPrice.toFixed(2)}</span>
+                  <span>${isCarBooking(booking) ? Number(booking.total_price).toFixed(2) : Number(booking.totalPrice).toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col items-stretch">
-              <div className="text-sm text-muted-foreground mb-4">
+            <CardFooter>
+              <div className="text-sm text-muted-foreground">
                 <p>Payment Method: {booking.paymentMethod || "Not specified"}</p>
                 <p>Payment Date: {booking.paymentDate ? format(new Date(booking.paymentDate), "PPP") : "Not paid yet"}</p>
               </div>
-              
               {booking.status !== "cancelled" && booking.status !== "completed" && booking.paymentStatus !== "completed" && (
                 <Button className="w-full">Make Payment</Button>
               )}

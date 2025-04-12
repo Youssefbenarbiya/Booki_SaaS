@@ -21,11 +21,19 @@ export default async function CarEditPage({ params }: CarEditPageProps) {
     notFound()
   }
 
-  // Convert string prices to numbers to match CarType
+  // Convert string prices to numbers and ensure proper type conversion for CarType
   const carWithNumberPrices = {
     ...car,
     originalPrice: Number(car.originalPrice),
-    priceAfterDiscount: car.priceAfterDiscount ? Number(car.priceAfterDiscount) : null
+    discountPercentage: car.discountPercentage ?? undefined,
+    priceAfterDiscount: car.priceAfterDiscount ? Number(car.priceAfterDiscount) : undefined,
+    isAvailable: Boolean(car.isAvailable !== false), // Convert to boolean
+    seats: car.seats || 4, // Ensure seats has a default value
+    category: car.category || "", // Ensure category has a default value
+    location: car.location || "", // Ensure location has a default value
+    // Handle date fields properly
+    createdAt: car.createdAt ? car.createdAt.toISOString() : undefined,
+    updatedAt: car.updatedAt ? car.updatedAt.toISOString() : undefined
   }
 
   return (

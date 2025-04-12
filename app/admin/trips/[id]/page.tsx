@@ -8,9 +8,10 @@ import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalAc
 export default async function TripDetailsPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const tripId = parseInt(params.id)
+  const { id } = await params
+  const tripId = parseInt(id)
 
   if (isNaN(tripId)) {
     return notFound()

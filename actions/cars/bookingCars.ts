@@ -61,7 +61,7 @@ export async function bookCar({
         end_date: endDate,
         total_price: totalPrice.toString(),
         paymentDate: new Date(),
-        status: "pending",
+        status: "confirmed",
         paymentStatus: "pending",
         fullName: customerInfo?.fullName || null,
         email: customerInfo?.email || null,
@@ -104,7 +104,7 @@ export async function bookCar({
         // Update booking with payment ID
         await db
           .update(carBookings)
-          .set({ paymentId: session.id, paymentStatus: "pending" })
+          .set({ paymentId: session.id, paymentStatus: "confirmed" })
           .where(eq(carBookings.id, newBooking.id))
 
         return {

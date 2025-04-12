@@ -104,6 +104,7 @@ export const trips = pgTable("trips", {
     precision: 10,
     scale: 2,
   }),
+  currency: varchar("currency", { length: 10 }).default("TND").notNull(),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
@@ -233,9 +234,9 @@ export const room = pgTable("room", {
   }).notNull(),
   pricePerNightChild: decimal("price_per_night_child", {
     precision: 10,
-    
     scale: 2,
   }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("TND").notNull(),
   roomType: varchar("room_type").notNull(), // e.g., "single", "double", "suite"
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
@@ -334,12 +335,16 @@ export const cars = pgTable("cars", {
     precision: 10,
     scale: 2,
   }),
+  currency: varchar("currency", { length: 10 }).default("TND").notNull(),
   images: text("images").array().default([]).notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  seats: integer("seats").notNull().default(4),
+  category: text("category").notNull(),
+  location: text("location").notNull(),
 })
 
 // Car Bookings table
@@ -488,6 +493,7 @@ export const agencies = pgTable("agencies", {
   contactEmail: varchar("contact_email", { length: 255 }),
   contactPhone: varchar("contact_phone", { length: 50 }),
   address: text("address"),
+  logo: text("logo"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })

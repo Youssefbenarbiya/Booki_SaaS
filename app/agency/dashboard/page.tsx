@@ -3,6 +3,7 @@
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -10,27 +11,34 @@ import { getDashboardStats } from "@/actions/agency/dashboardActions"
 import { formatPrice } from "@/lib/utils"
 import { getAgencyNotifications } from "@/actions/agency/notificationActions"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-
-  CreditCard,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AgencyChartsClient } from "@/components/dashboard/AgencyChartsClient"
+import {
+  BookOpenCheck,
+  Car,
   DollarSign,
   HotelIcon,
   Plane,
-  TrendingUp,
   UserCheck,
   Users,
-  Car,
   Bell,
-  BookOpenCheck,
 } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
+
 export default async function DashboardPage() {
   const stats = await getDashboardStats()
-  const { notifications, unreadCount } = await getAgencyNotifications(5)
+  const { unreadCount } = await getAgencyNotifications(5)
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
         <div className="flex items-center gap-2">
@@ -45,7 +53,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Top row of metric cards */}
+      {/* Top Metric Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -58,10 +66,9 @@ export default async function DashboardPage() {
             <div className="text-2xl font-bold">
               {formatPrice(stats.totalRevenue)}
             </div>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-xs text-gray-500">+20.1% from last month</p>
-              <TrendingUp className="h-3 w-3 text-green-500" />
-            </div>
+            <p className="text-xs text-muted-foreground pt-1">
+              Across all services
+            </p>
           </CardContent>
         </Card>
 
@@ -76,24 +83,11 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalBookings}</div>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">
-                    Trips: {stats.bookingBreakdown.trips}
-                  </span>
-                  <span className="text-gray-500">
-                    Rooms: {stats.bookingBreakdown.rooms}
-                  </span>
-                </div>
-                <Progress
-                  value={
-                    (stats.bookingBreakdown.trips / stats.totalBookings) * 100
-                  }
-                  className="h-1 mt-1"
-                />
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground pt-1">
+              {stats.bookingBreakdown.rooms} Rooms,{" "}
+              {stats.bookingBreakdown.trips} Trips,{" "}
+              {stats.bookingBreakdown.cars} Cars
+            </p>
           </CardContent>
         </Card>
 
@@ -105,218 +99,159 @@ export default async function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeUsers}</div>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-xs text-gray-500">+201 since last week</p>
-              <TrendingUp className="h-3 w-3 text-green-500" />
+            <div className="text-2xl font-bold">+{stats.activeUsers}</div>
+            <p className="text-xs text-muted-foreground pt-1">
+              In the last 30 days
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">New Hotels</CardTitle>
+            <div className="rounded-full p-2 bg-amber-50">
+              <HotelIcon className="h-4 w-4 text-amber-600" />
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+{stats.newHotels}</div>
+            <p className="text-xs text-muted-foreground pt-1">
+              In the last 7 days
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Revenue breakdown and sales overview */}
-      <Tabs defaultValue="revenue" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="revenue" className="gap-2">
-            <CreditCard className="h-4 w-4" />
-            Revenue
-          </TabsTrigger>
-        </TabsList>
+      {/* Charts Row - Use the Client Component */}
+      <AgencyChartsClient
+        monthlySales={stats.monthlySales}
+        salesBreakdown={stats.salesBreakdown}
+      />
 
-        <TabsContent value="revenue" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Revenue by Category
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="rounded-full p-2 bg-amber-50">
-                      <HotelIcon className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <p className="text-sm font-medium">Rooms</p>
-                        <p className="text-sm font-medium">
-                          {formatPrice(stats.revenueBreakdown.rooms)}
-                        </p>
+      {/* Recent Sales and Top Performers Row */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Recent Sales Table */}
+        <Card className="lg:col-span-2 shadow-sm">
+          <CardHeader>
+            <CardTitle>Recent Sales</CardTitle>
+            <CardDescription>
+              Recent bookings made through your agency.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="hidden sm:table-cell">Type</TableHead>
+                  <TableHead className="hidden sm:table-cell">Date</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.recentSales.map((sale) => (
+                  <TableRow key={sale.id + sale.date.toISOString()}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="hidden h-9 w-9 sm:flex">
+                          <AvatarImage
+                            src={sale.avatar || undefined}
+                            alt="Avatar"
+                          />
+                          <AvatarFallback>{sale.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="font-medium">{sale.name}</div>
+                        <div className="hidden text-sm text-muted-foreground md:inline">
+                          {sale.email}
+                        </div>
                       </div>
-                      <Progress
-                        value={
-                          (stats.revenueBreakdown.rooms / stats.totalRevenue) *
-                            100 || 0
-                        }
-                        className="h-2 mt-2"
-                      />
-                    </div>
-                  </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell capitalize">
+                      <Badge variant="outline" className="text-xs">
+                        {sale.type === "room" && (
+                          <HotelIcon className="h-3 w-3 mr-1" />
+                        )}
+                        {sale.type === "trip" && (
+                          <Plane className="h-3 w-3 mr-1" />
+                        )}
+                        {sale.type === "car" && (
+                          <Car className="h-3 w-3 mr-1" />
+                        )}
+                        {sale.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {new Date(sale.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatPrice(sale.amount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {stats.recentSales.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-muted-foreground"
+                    >
+                      No recent sales found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-                  <div className="flex items-center gap-4">
-                    <div className="rounded-full p-2 bg-blue-50">
-                      <Plane className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <p className="text-sm font-medium">Trips</p>
-                        <p className="text-sm font-medium">
-                          {formatPrice(stats.revenueBreakdown.trips)}
-                        </p>
-                      </div>
-                      <Progress
-                        value={
-                          (stats.revenueBreakdown.trips / stats.totalRevenue) *
-                            100 || 0
-                        }
-                        className="h-2 mt-2"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="rounded-full p-2 bg-green-50">
-                      <Car className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <p className="text-sm font-medium">Cars</p>
-                        <p className="text-sm font-medium">
-                          {formatPrice(stats.revenueBreakdown.cars)}
-                        </p>
-                      </div>
-                      <Progress
-                        value={
-                          (stats.revenueBreakdown.cars / stats.totalRevenue) *
-                            100 || 0
-                        }
-                        className="h-2 mt-2"
-                      />
-                    </div>
-                  </div>
+        {/* Top Performers Card */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>Top Performers</CardTitle>
+            <CardDescription>
+              Your most popular rooms and trips by revenue.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            {stats.topPerformers.map((item) => (
+              <div key={item.id} className="flex items-center gap-4">
+                <div
+                  className={`rounded-lg p-2 ${
+                    item.type === "room"
+                      ? "bg-amber-100"
+                      : item.type === "trip"
+                      ? "bg-blue-100"
+                      : "bg-green-100"
+                  }`}
+                >
+                  {item.type === "room" ? (
+                    <HotelIcon className="h-5 w-5 text-amber-600" />
+                  ) : item.type === "trip" ? (
+                    <Plane className="h-5 w-5 text-blue-600" />
+                  ) : (
+                    <Car className="h-5 w-5 text-green-600" />
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Booking Distribution
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold">
-                        {stats.bookingBreakdown.rooms}
-                      </div>
-                      <p className="text-xs text-gray-500">Rooms</p>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold">
-                        {stats.bookingBreakdown.trips}
-                      </div>
-                      <p className="text-xs text-gray-500">Trips</p>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold">
-                        {stats.bookingBreakdown.cars}
-                      </div>
-                      <p className="text-xs text-gray-500">Cars</p>
-                    </div>
-                  </div>
-
-                  <div className="h-2 bg-gray-100 rounded-full flex overflow-hidden">
-                    <div
-                      className="bg-amber-500"
-                      style={{
-                        width: `${
-                          (stats.bookingBreakdown.rooms / stats.totalBookings) *
-                          100
-                        }%`,
-                      }}
-                    />
-                    <div
-                      className="bg-blue-500"
-                      style={{
-                        width: `${
-                          (stats.bookingBreakdown.trips / stats.totalBookings) *
-                          100
-                        }%`,
-                      }}
-                    />
-                    <div
-                      className="bg-green-500"
-                      style={{
-                        width: `${
-                          (stats.bookingBreakdown.cars / stats.totalBookings) *
-                          100
-                        }%`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-amber-500 rounded-full" />
-                      <span>Rooms</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                      <span>Trips</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      <span>Cars</span>
-                    </div>
-                  </div>
+                <div className="grid gap-1 flex-1">
+                  <p className="text-sm font-medium leading-none truncate">
+                    {item.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.bookings} bookings
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Recent Revenue
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {formatPrice(stats.totalRevenue)}
-                      </p>
-                      <p className="text-xs text-gray-500">Total Revenue</p>
-                    </div>
-                    <Badge className="px-3 py-1.5">+18.2% YoY</Badge>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Last 7 days</span>
-                      <span className="font-medium">
-                        {formatPrice(stats.totalRevenue * 0.21)}
-                      </span>
-                    </div>
-                    <Progress value={21} className="h-2" />
-
-                    <div className="flex justify-between text-sm">
-                      <span>Last 30 days</span>
-                      <span className="font-medium">
-                        {formatPrice(stats.totalRevenue * 0.68)}
-                      </span>
-                    </div>
-                    <Progress value={68} className="h-2" />
-                  </div>
+                <div className="ml-auto font-medium">
+                  {formatPrice(item.revenue)}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+              </div>
+            ))}
+            {stats.topPerformers.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No performance data yet.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

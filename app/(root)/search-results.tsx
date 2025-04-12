@@ -148,25 +148,31 @@ export function SearchResults({
             searchParams.returnDate || ""
           )
           console.log("Cars search results:", cars)
-          // Ensure cars array is properly formatted with required properties
+
+          // Improved car formatting with better null handling
           const formattedCars = cars.map((car: any) => ({
             id: car.id,
             brand: car.brand || "Unknown",
             model: car.model || "Unknown",
-            year: car.year || "",
-            originalPrice: car.originalPrice || 0,
+            year: car.year || new Date().getFullYear(),
+            originalPrice: parseFloat(car.originalPrice) || 0,
             discountPercentage: car.discountPercentage || 0,
-            priceAfterDiscount: car.priceAfterDiscount || null,
-            isAvailable: car.isAvailable ?? true,
-            images: car.images || [],
+            priceAfterDiscount: car.priceAfterDiscount
+              ? parseFloat(car.priceAfterDiscount)
+              : null,
+            isAvailable: car.isAvailable !== false, // Default to true if undefined
+            images: Array.isArray(car.images) ? car.images : [],
             transmission: car.transmission || "Manual",
             fuelType: car.fuelType || "Gasoline",
             seats: car.seats || 4,
             plateNumber: car.plateNumber || "",
-            color: car.color || "",
-            createdAt: car.createdAt || new Date(),
-            updatedAt: car.updatedAt || new Date(),
+            color: car.color || "Not specified",
+            location: car.location || "Not specified",
+            category: car.category || "Standard",
+            createdAt: car.createdAt ? new Date(car.createdAt) : new Date(),
+            updatedAt: car.updatedAt ? new Date(car.updatedAt) : new Date(),
           })) as Car[]
+
           setCarsData(formattedCars)
           setFilteredCars(formattedCars)
         }

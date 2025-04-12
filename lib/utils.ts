@@ -11,16 +11,23 @@ export async function fileToFormData(file: File) {
   return formData
 }
 
-export function formatPrice(price: string | number | null | undefined): string {
+// Legacy formatPrice function (for server components)
+export function formatPrice(price: string | number | null | undefined, options?: {
+  currency?: string,
+  notation?: Intl.NumberFormatOptions["notation"]
+}): string {
   if (price === null || price === undefined) return "$0"
 
   const numericPrice = typeof price === "string" ? parseFloat(price) : price
 
+  const { currency = "USD", notation = "standard" } = options || {}
+
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
+    notation,
   }).format(numericPrice)
 }
 

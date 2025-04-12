@@ -288,7 +288,7 @@ export function SearchForm({ type }: SearchFormProps) {
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Aéroport de Paris - Roissy - Charles-de-Gaulle (CDG), Paris"
+                          placeholder="Airport, city, address..."
                           {...field}
                           className="border-0 p-0 bg-transparent focus:ring-0 text-sm"
                         />

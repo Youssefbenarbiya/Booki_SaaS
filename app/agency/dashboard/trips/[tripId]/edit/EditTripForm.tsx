@@ -1,4 +1,5 @@
 "use client"
+
 import Image from "next/image"
 import { useTransition, useState, useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
@@ -23,8 +24,20 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+// ---- Added imports for currency selection
+import { useCurrency, currencies } from "@/contexts/CurrencyContext"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+// Extend TripInput to include currency
 interface ExtendedTripInput extends TripInput {
   discountPercentage?: number
+  currency?: string
 }
 
 interface EditTripFormProps {
@@ -40,6 +53,8 @@ interface EditTripFormProps {
     priceAfterDiscount?: number
     capacity: number
     isAvailable: boolean
+    // If your DB doesn't have currency yet, add it here:
+    currency?: string
     images: Array<{
       id: number
       imageUrl: string
@@ -56,6 +71,11 @@ interface EditTripFormProps {
 export default function EditTripForm({ trip }: EditTripFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+
+  // We assume a currency context is available (like in your NewTripForm).
+  // If the trip doesn't have a currency set, fallback to the default from context.
+  const { currency: defaultCurrency } = useCurrency()
+  const tripCurrency = trip.currency || defaultCurrency?.code || "USD"
 
   // Format dates for input fields
   const formatDateForInput = (date: Date) => {
@@ -88,6 +108,9 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
     !!trip.discountPercentage && ![10, 20, 30].includes(trip.discountPercentage)
   )
 
+  // --- NEW: keep track of the selected currency ---
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(tripCurrency)
+
   const {
     register,
     handleSubmit,
@@ -108,6 +131,8 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
       priceAfterDiscount: trip.priceAfterDiscount,
       capacity: trip.capacity,
       isAvailable: trip.isAvailable,
+      // Pass the trip's currency (or fallback) into the form
+      currency: tripCurrency,
       activities: trip.activities.map((activity) => ({
         activityName: activity.activityName,
         description: activity.description || undefined,
@@ -118,6 +143,8 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
 
   // Watch original price to update discount calculations
   const watchedOriginalPrice = watch("originalPrice")
+  // Also watch currency for dynamic symbol changes
+  const watchedCurrency = watch("currency")
 
   // Initialize form with correct values when component mounts
   useEffect(() => {
@@ -133,6 +160,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
       priceAfterDiscount: trip.priceAfterDiscount,
       capacity: trip.capacity,
       isAvailable: trip.isAvailable,
+      currency: tripCurrency,
       activities: trip.activities.map((activity) => ({
         activityName: activity.activityName,
         description: activity.description || undefined,
@@ -140,27 +168,25 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
       })),
     })
 
-    // Set UI state based on trip data
+    // Set UI states
+    setSelectedCurrency(tripCurrency)
     if (hasExistingDiscount) {
       setHasDiscount(true)
       setDiscountPercentage(trip.discountPercentage || 0)
       setOriginalPrice(trip.originalPrice)
       setPriceAfterDiscount(trip.priceAfterDiscount || trip.originalPrice)
-
-      // Check if the discount percentage is one of our preset values
       setCustomPercentage(![10, 20, 30].includes(trip.discountPercentage || 0))
     } else {
-      // No discount case
       setHasDiscount(false)
       setDiscountPercentage(0)
       setOriginalPrice(trip.originalPrice)
       setPriceAfterDiscount(trip.originalPrice)
     }
-  }, [trip, hasExistingDiscount, reset])
+  }, [trip, hasExistingDiscount, reset, tripCurrency])
 
   // Update original price when price changes
   useEffect(() => {
-    if (watchedOriginalPrice) {
+    if (watchedOriginalPrice !== undefined) {
       const price = Number(watchedOriginalPrice)
       setOriginalPrice(price)
       if (hasDiscount && discountPercentage) {
@@ -202,10 +228,10 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
 
   async function onSubmit(data: ExtendedTripInput) {
     try {
-      // Get URLs of remaining existing images
+      // Gather existing image URLs
       let imageUrls = existingImages.map((img) => img.imageUrl)
 
-      // Upload any new images
+      // Upload new images
       if (images.length > 0) {
         try {
           const newUrls = await Promise.all(
@@ -231,7 +257,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
         )
       }
 
-      // Update trip with all image URLs and discount info
+      // Build final data for update
       const formattedData = {
         ...data,
         originalPrice: Number(data.originalPrice),
@@ -244,15 +270,18 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
             ? finalPriceAfterDiscount
             : undefined,
         images: imageUrls,
-        // Ensure dates are always Date objects
+        // Make sure dates are Date objects
         startDate:
           data.startDate instanceof Date
             ? data.startDate
             : new Date(data.startDate),
         endDate:
           data.endDate instanceof Date ? data.endDate : new Date(data.endDate),
+        // Ensure we store the currency
+        currency: data.currency || "USD",
       }
 
+      // Run your update action
       await updateTrip(trip.id, formattedData)
       router.push("/agency/dashboard/trips")
       router.refresh()
@@ -260,6 +289,10 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
       console.error("Error updating trip:", error)
     }
   }
+
+  // Helper to get currency symbol for the current selection
+  const currentCurrencySymbol =
+    currencies.find((c) => c.code === watchedCurrency)?.symbol || "$"
 
   return (
     <div className="max-w-3xl mx-auto my-8 px-4">
@@ -365,49 +398,86 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <Label htmlFor="originalPrice">Original Price</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 ml-1 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>The base price before any discounts</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                    {/* Price & Currency Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Original Price */}
+                      <div className="space-y-2">
+                        <div className="flex items-center">
+                          <Label htmlFor="originalPrice">Original Price</Label>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-4 w-4 ml-1 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>The base price before any discounts</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <div className="relative">
+                          {/* We can keep a currency symbol here or remove it 
+                              in favor of the currency dropdown. For clarity,
+                              let's remove the fixed DollarSign on the left. 
+                              We'll show it dynamically in the discount summary below. */}
+                          <Input
+                            id="originalPrice"
+                            type="number"
+                            step="0.01"
+                            {...register("originalPrice", {
+                              required: "Original price is required",
+                              onChange: (e) => {
+                                const price = Number(e.target.value)
+                                setOriginalPrice(price)
+                                if (hasDiscount && discountPercentage) {
+                                  calculatePriceAfterDiscount(
+                                    price,
+                                    discountPercentage
+                                  )
+                                }
+                              },
+                            })}
+                          />
+                        </div>
+                        {errors.originalPrice && (
+                          <p className="text-xs text-destructive">
+                            {errors.originalPrice.message}
+                          </p>
+                        )}
                       </div>
-                      <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="originalPrice"
-                          type="number"
-                          step="0.01"
-                          className="pl-9"
-                          {...register("originalPrice", {
-                            required: "Original price is required",
-                            onChange: (e) => {
-                              const price = Number(e.target.value)
-                              setOriginalPrice(price)
-                              if (hasDiscount && discountPercentage) {
-                                calculatePriceAfterDiscount(
-                                  price,
-                                  discountPercentage
-                                )
-                              }
-                            },
-                          })}
+
+                      {/* Currency Selector */}
+                      <div className="space-y-2">
+                        <Label htmlFor="currency">Currency</Label>
+                        <Controller
+                          name="currency"
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={(value) => {
+                                field.onChange(value)
+                                setSelectedCurrency(value)
+                                setValue("currency", value)
+                              }}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select Currency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {currencies.map((curr) => (
+                                  <SelectItem key={curr.code} value={curr.code}>
+                                    {curr.symbol} {curr.code} - {curr.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         />
                       </div>
-                      {errors.originalPrice && (
-                        <p className="text-xs text-destructive">
-                          {errors.originalPrice.message}
-                        </p>
-                      )}
                     </div>
 
+                    {/* Apply Discount Checkbox */}
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="hasDiscount"
@@ -420,11 +490,8 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
                             setValue("priceAfterDiscount", undefined)
                             setPriceAfterDiscount(originalPrice)
                             setCustomPercentage(false)
-                            // Reset form values immediately
-                            setValue("discountPercentage", undefined)
-                            setValue("priceAfterDiscount", undefined)
                           } else if (hasExistingDiscount) {
-                            // Restore original discount values if they exist
+                            // If discount already existed, restore
                             setDiscountPercentage(trip.discountPercentage || 0)
                             setValue(
                               "discountPercentage",
@@ -470,7 +537,6 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
                                 setCustomPercentage(true)
                                 return
                               }
-
                               setCustomPercentage(false)
                               const percentage = Number.parseInt(value, 10)
                               applyPercentageDiscount(percentage)
@@ -524,14 +590,19 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
 
                         {discountPercentage > 0 && originalPrice > 0 && (
                           <div className="bg-muted p-4 rounded-md space-y-2">
+                            {/* Original Price */}
                             <div className="flex justify-between">
                               <span>Original Price:</span>
-                              <span>${originalPrice.toFixed(2)}</span>
+                              <span>
+                                {currentCurrencySymbol}
+                                {originalPrice.toFixed(2)}
+                              </span>
                             </div>
+                            {/* Discount */}
                             <div className="flex justify-between">
                               <span>Discount ({discountPercentage}%):</span>
                               <span className="text-red-500">
-                                -$
+                                -{currentCurrencySymbol}
                                 {(
                                   (originalPrice * discountPercentage) /
                                   100
@@ -539,10 +610,12 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
                               </span>
                             </div>
                             <Separator className="my-2" />
+                            {/* Price After Discount */}
                             <div className="flex justify-between font-bold">
                               <span>Price After Discount:</span>
                               <span className="text-green-600">
-                                ${priceAfterDiscount.toFixed(2)}
+                                {currentCurrencySymbol}
+                                {priceAfterDiscount.toFixed(2)}
                               </span>
                             </div>
                             <input

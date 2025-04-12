@@ -1,7 +1,7 @@
 "use server"
 
 import { cars, agencies, agencyEmployees } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, and, sql, or } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import type { CarFormValues } from "../../app/agency/dashboard/cars/types"
 import db from "@/db/drizzle"
@@ -110,6 +110,7 @@ export async function createCar(data: CarFormValues) {
         plateNumber: data.plateNumber,
         color: data.color,
         originalPrice: data.originalPrice.toString(),
+        currency: data.currency || "TND",
         discountPercentage: discountPercentage ?? undefined,
         priceAfterDiscount:
           priceAfterDiscount !== undefined && priceAfterDiscount !== null
@@ -118,6 +119,9 @@ export async function createCar(data: CarFormValues) {
         isAvailable: data.isAvailable ?? true,
         images: data.images || [],
         agencyId: agencyId,
+        seats: data.seats || 4,
+        category: data.category,
+        location: data.location,
       })
       .returning()
 
@@ -167,14 +171,18 @@ export async function updateCar(id: number, data: CarFormValues) {
         plateNumber: data.plateNumber,
         color: data.color,
         originalPrice: data.originalPrice.toString(),
+        currency: data.currency || "TND",
         discountPercentage: discountPercentage ?? null,
         priceAfterDiscount:
           priceAfterDiscount !== undefined && priceAfterDiscount !== null
             ? priceAfterDiscount.toString()
             : null,
         isAvailable: data.isAvailable,
-        images: data.images, // Ensure this matches your DB column type
+        images: data.images,
         updatedAt: new Date(),
+        seats: data.seats || 4,
+        category: data.category,
+        location: data.location,
       })
       .where(eq(cars.id, id))
       .returning()
@@ -219,15 +227,76 @@ export async function searchCars(
   returnDate: string
 ) {
   try {
-    // No authentication required if searching public data
-    const availableCars = await db.query.cars.findMany({
-      where: (cars, { and, eq }) =>
-        and(eq(cars.isAvailable, true), eq(cars.status, "approved")),
+    // Add logging to debug the search parameters
+    console.log("Searching cars with params:", {
+      pickupLocation,
+      pickupDate,
+      returnDate,
     })
 
-    return availableCars
+    // Validate and normalize inputs
+    if (!pickupLocation || pickupLocation.trim() === "") {
+      console.log("No pickup location provided, returning all available cars")
+      const allAvailableCars = await db.query.cars.findMany({
+        where: (cars, { eq }) => eq(cars.isAvailable, true),
+      })
+      console.log(
+        `Found ${allAvailableCars.length} available cars (no location filter)`
+      )
+      return allAvailableCars
+    }
+
+    // Convert the location to lowercase for case-insensitive search
+    const normalizedLocation = pickupLocation.trim().toLowerCase()
+    console.log("Normalized location search term:", normalizedLocation)
+
+    // Use SQL LOWER function for case-insensitive comparison to avoid null issues
+    const searchResults = await db
+      .select()
+      .from(cars)
+      .where(
+        and(
+          eq(cars.isAvailable, true),
+          sql`LOWER(COALESCE(${
+            cars.location
+          }, '')) LIKE ${`%${normalizedLocation}%`}`
+        )
+      )
+
+    console.log(
+      `Found ${searchResults.length} cars matching location: ${normalizedLocation}`
+    )
+
+    // If no cars found with the exact search, try a more flexible search
+    if (searchResults.length === 0) {
+      console.log(
+        "No cars found with exact location match, trying broader search"
+      )
+      // Try alternative search by splitting the location and searching for parts
+      const locationParts = normalizedLocation.split(/\s+/)
+      const fallbackResults = await db
+        .select()
+        .from(cars)
+        .where(
+          and(
+            eq(cars.isAvailable, true),
+            or(
+              ...locationParts.map(
+                (part) =>
+                  sql`LOWER(COALESCE(${cars.location}, '')) LIKE ${`%${part}%`}`
+              )
+            )
+          )
+        )
+
+      console.log(`Found ${fallbackResults.length} cars in fallback search`)
+      return fallbackResults
+    }
+
+    return searchResults
   } catch (error) {
     console.error("Failed to search cars:", error)
+    // Return empty array instead of throwing to prevent UI errors
     return []
   }
 }

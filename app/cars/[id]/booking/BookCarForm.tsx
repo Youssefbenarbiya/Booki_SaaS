@@ -13,6 +13,8 @@ import { getCarById, getCarAvailability } from "@/actions/cars/carActions"
 import { bookCar } from "@/actions/cars/bookingCars"
 import { DatePicker } from "@/components/ui/date-picker"
 import PaymentSelector from "@/components/payment/PaymentSelector"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { formatPrice } from "@/lib/utils"
 import {
   Form,
   FormControl,
@@ -49,6 +51,7 @@ interface BookCarFormProps {
 const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
   const router = useRouter()
   const numericCarId = parseInt(carId, 10)
+  const { currency, convertPrice } = useCurrency()
 
   const [car, setCar] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -109,11 +112,18 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
     return parseFloat(car.originalPrice)
   }, [car])
 
+  // Convert price to the user-selected currency
+  const convertedEffectivePrice = useMemo(() => {
+    if (!car) return 0
+    const carCurrency = car.currency || "TND" // Default to TND since that's the DB default
+    return convertPrice(effectivePrice, carCurrency)
+  }, [car, effectivePrice, convertPrice])
+
   const totalPrice = useMemo(() => {
     const days = totalDays
-    if (!car || isNaN(days) || !effectivePrice) return 0
-    return parseFloat((days * effectivePrice).toFixed(2))
-  }, [effectivePrice, totalDays])
+    if (!car || isNaN(days) || !convertedEffectivePrice) return 0
+    return parseFloat((days * convertedEffectivePrice).toFixed(2))
+  }, [convertedEffectivePrice, totalDays])
 
   useEffect(() => {
     let isMounted = true
@@ -305,7 +315,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600">Price per day</span>
-              <span>${effectivePrice.toFixed(2)}</span>
+              <span>{formatPrice(convertedEffectivePrice, { currency })}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Days</span>
@@ -317,7 +327,9 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
             </div>
             <div className="flex justify-between font-bold text-xl mt-4">
               <span>Total</span>
-              <span>{dateRange ? `$${totalPrice.toFixed(2)}` : "TBD"}</span>
+              <span>
+                {dateRange ? formatPrice(totalPrice, { currency }) : "TBD"}
+              </span>
             </div>
           </div>
         </div>
@@ -417,7 +429,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
                         I agree to the terms and conditions of rental
                       </FormLabel>
                       <FormDescription>
-                        By agreeing, you confirm you’ve read our terms including
+                        By agreeing, you confirm you've read our terms including
                         the cancellation policy.
                       </FormDescription>
                     </div>

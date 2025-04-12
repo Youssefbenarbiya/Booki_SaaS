@@ -1,342 +1,212 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import type { Car } from "./CarCard"
+import { useEffect, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, Star } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Car } from "./CarCard"
+import { useRouter, useSearchParams } from "next/navigation"
 
 interface CarFilterProps {
   carsData: Car[]
-  setFilteredCars: (cars: Car[]) => void
+  setFilteredCars: React.Dispatch<React.SetStateAction<Car[]>>
   onFilterChange?: (filteredCars: Car[]) => void
   isMobileView?: boolean
-  className?: string
-  searchParams?: Record<string, string>
+  searchParams: {
+    pickupLocation: string
+    pickupDate: string
+    returnDate: string
+  }
 }
 
-// Helper function to calculate display price
-function getDisplayPrice(car: Car): number {
-  const originalPrice =
-    typeof car.originalPrice === "string"
-      ? parseFloat(car.originalPrice)
-      : car.originalPrice
-  const priceAfterDiscount =
-    car.priceAfterDiscount !== undefined
-      ? typeof car.priceAfterDiscount === "string"
-        ? parseFloat(car.priceAfterDiscount)
-        : car.priceAfterDiscount
-      : undefined
-  return priceAfterDiscount ?? originalPrice
-}
+// Define the car categories
+const CAR_CATEGORIES = [
+  { id: "economy", label: "Economy" },
+  { id: "midsize", label: "Midsize" },
+  { id: "suv", label: "SUV" },
+  { id: "luxury", label: "Luxury" },
+  { id: "electric", label: "Electric" },
+]
 
 export function CarFilter({
   carsData,
   setFilteredCars,
   onFilterChange,
-  className = "",
+  isMobileView = false,
+  searchParams,
 }: CarFilterProps) {
-  // Extract unique brands from car data
-  const carBrands = Array.from(new Set(carsData.map((car) => car.brand)))
+  const router = useRouter()
+  const urlSearchParams = useSearchParams()
 
-  // Compute min and max display price
-  const prices = carsData.map((car) => getDisplayPrice(car))
-  const minPrice = prices.length ? Math.min(...prices) : 0
-  const maxPrice = prices.length ? Math.max(...prices) : 1000
-
+  const [location, setLocation] = useState(searchParams.pickupLocation || "")
+  const MIN_PRICE = 0
+  const MAX_PRICE = 5000
   const [priceRange, setPriceRange] = useState<[number, number]>([
-    minPrice,
-    maxPrice,
+    MIN_PRICE,
+    MAX_PRICE,
   ])
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([])
-  const [availableOnly, setAvailableOnly] = useState(true)
-  const [fromLocation, setFromLocation] = useState("")
-  const [toLocation, setToLocation] = useState("")
-  const [starRating, setStarRating] = useState<number[]>([])
-  const [expandedSections, setExpandedSections] = useState({
-    type: false,
-    category: false,
-    capacity: false,
-  })
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
-  useEffect(() => {
-    setPriceRange([minPrice, maxPrice])
-  }, [minPrice, maxPrice])
+  // Apply filters function
+  const applyFilters = () => {
+    const filtered = carsData.filter((car) => {
+      // Location filter
+      const locationMatch =
+        location === "" ||
+        (car.location &&
+          car.location.toLowerCase().includes(location.toLowerCase()))
 
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...carsData]
+      // Improved price filter handling
+      const price =
+        car.priceAfterDiscount !== null
+          ? car.priceAfterDiscount
+          : car.originalPrice
+      const priceValue = typeof price === "string" ? parseFloat(price) : price
+      const priceMatch =
+        typeof priceValue === "number" &&
+        !isNaN(priceValue) &&
+        priceValue >= priceRange[0] &&
+        priceValue <= priceRange[1]
 
-    // Filter by availability
-    if (availableOnly) {
-      filtered = filtered.filter((car) => car.isAvailable)
-    }
+      // Category filter
+      const categoryMatch =
+        selectedCategories.length === 0 ||
+        (car.category &&
+          selectedCategories.includes(car.category.toLowerCase()))
 
-    // Filter by price range using display price
-    filtered = filtered.filter((car) => {
-      const price = getDisplayPrice(car)
-      return price >= priceRange[0] && price <= priceRange[1]
+      return locationMatch && priceMatch && categoryMatch
     })
 
-    // Filter by selected brands
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter((car) => selectedBrands.includes(car.brand))
-    }
-
     setFilteredCars(filtered)
-
-    // Call onFilterChange if provided
     if (onFilterChange) {
       onFilterChange(filtered)
     }
-  }, [
-    carsData,
-    priceRange,
-    selectedBrands,
-    availableOnly,
-    setFilteredCars,
-    onFilterChange,
-  ])
+  }
 
-  const toggleBrand = (brand: string) => {
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+  // Update search parameters with new location
+  const updateSearchParams = (newLocation: string) => {
+    // Create a new URLSearchParams object from the current search params
+    const params = new URLSearchParams(urlSearchParams.toString())
+
+    // Update the location parameter
+    params.set("pickupLocation", newLocation)
+
+    // Keep the existing type parameter
+    if (!params.has("type")) {
+      params.set("type", "rent")
+    }
+
+    // Preserve pickup and return dates
+    if (searchParams.pickupDate) {
+      params.set("pickupDate", searchParams.pickupDate)
+    }
+    if (searchParams.returnDate) {
+      params.set("returnDate", searchParams.returnDate)
+    }
+
+    // Navigate to the updated URL without a full page reload
+    router.push(`/?${params.toString()}`)
+  }
+
+  // Handle location change and search
+  const handleLocationChange = () => {
+    updateSearchParams(location)
+    applyFilters()
+  }
+
+  // Apply filters when search params or filter values change
+  useEffect(() => {
+    applyFilters()
+  }, [location, priceRange, selectedCategories, carsData])
+
+  // Update location from search params when they change
+  useEffect(() => {
+    if (searchParams.pickupLocation !== location) {
+      setLocation(searchParams.pickupLocation)
+    }
+  }, [searchParams.pickupLocation])
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
     )
-  }
-
-  const toggleStarRating = (rating: number) => {
-    setStarRating((prev) =>
-      prev.includes(rating)
-        ? prev.filter((r) => r !== rating)
-        : [...prev, rating]
-    )
-  }
-
-  const toggleSection = (section: "type" | "category" | "capacity") => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }))
-  }
-
-  const handleSearch = () => {
-    // This would handle the search functionality
-    console.log("Searching from", fromLocation, "to", toLocation)
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm ${className}`}>
-      {/* Header */}
-      <div className="bg-[#e0e10a] rounded-t-lg p-4 text-center relative">
-        <div className="absolute w-4 h-4 bg-[#e0e10a] rotate-45 left-1/2 -bottom-2 -translate-x-1/2"></div>
-        <h2 className="font-bold text-lg">Where we go ?</h2>
-      </div>
-
-      {/* Search Form */}
-      <div className="p-4 space-y-4">
-        <div>
-          <p className="text-xs font-medium mb-1">FROM ?</p>
-          <Input
-            value={fromLocation}
-            onChange={(e) => setFromLocation(e.target.value)}
-            className="border border-gray-300"
-          />
-        </div>
-        <div>
-          <p className="text-xs font-medium mb-1">WHERE ?</p>
-          <Input
-            value={toLocation}
-            onChange={(e) => setToLocation(e.target.value)}
-            className="border border-gray-300"
-          />
-        </div>
-        <Button
-          className="w-full bg-[#e0e10a] hover:bg-[#c5c609] text-black font-semibold"
-          onClick={handleSearch}
-        >
-          SEARCH
-        </Button>
-      </div>
-
-      <div className="border-t border-gray-200 mx-4 my-2"></div>
-
-      {/* Filters Header */}
-      <div className="px-4 py-2">
-        <h3 className="font-semibold text-lg">Filters</h3>
-      </div>
-
-      <div className="border-t border-gray-200 mx-4 mb-4"></div>
-
-      {/* Star Rating */}
-      <div className="px-4 mb-6">
-        <h3 className="font-semibold mb-3">Star Rating</h3>
-        <div className="space-y-2">
-          {[5, 4, 3, 2, 1].map((rating) => (
-            <div key={rating} className="flex items-center gap-2">
-              <Checkbox
-                id={`star-${rating}`}
-                checked={starRating.includes(rating)}
-                onCheckedChange={() => toggleStarRating(rating)}
+    <Card className={isMobileView ? "w-full" : ""}>
+      <CardContent className="pt-6">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <div className="flex gap-2">
+              <Input
+                id="location"
+                placeholder="Search by location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
               />
-              <Label htmlFor={`star-${rating}`} className="flex items-center">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    size={16}
-                    className={`${
-                      i < rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300"
-                    }`}
-                  />
-                ))}
-                <span className="ml-2 text-sm text-gray-600">
-                  {rating} Star
-                </span>
-              </Label>
+              <Button onClick={handleLocationChange} size="sm">
+                Search
+              </Button>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Price Range */}
-      <div className="px-4 mb-6">
-        <h3 className="font-semibold mb-3">Price Range</h3>
-        <Slider
-          defaultValue={[minPrice, maxPrice]}
-          max={maxPrice}
-          min={minPrice}
-          step={10}
-          value={priceRange}
-          onValueChange={(value) => setPriceRange(value as [number, number])}
-          className="mb-2"
-        />
-        <div className="flex justify-between text-sm text-gray-500">
-          <span>${priceRange[0]}</span>
-          <span>${priceRange[1]}</span>
-        </div>
-      </div>
-
-      {/* Type Section */}
-      <div className="px-4 mb-4">
-        <div
-          className="flex justify-between items-center cursor-pointer mb-3"
-          onClick={() => toggleSection("type")}
-        >
-          <h3 className="font-semibold">Type</h3>
-          {expandedSections.type ? (
-            <ChevronUp size={18} />
-          ) : (
-            <ChevronDown size={18} />
-          )}
-        </div>
-
-        {expandedSections.type && (
-          <div className="space-y-2">
-            {carBrands.map((brand) => (
-              <div key={brand} className="flex items-center gap-2">
-                <Checkbox
-                  id={`brand-${brand}`}
-                  checked={selectedBrands.includes(brand)}
-                  onCheckedChange={() => toggleBrand(brand)}
-                />
-                <Label htmlFor={`brand-${brand}`}>{brand}</Label>
+          <div className="space-y-4">
+            <Label>Price Range</Label>
+            <div className="px-2">
+              <Slider
+                min={MIN_PRICE}
+                max={MAX_PRICE}
+                step={100}
+                value={priceRange}
+                onValueChange={(value: number[]) => {
+                  setPriceRange([value[0], value[1]])
+                  applyFilters()
+                }}
+                className="py-4"
+              />
+              <div className="flex justify-between text-sm text-gray-500 mt-2">
+                <span>${priceRange[0].toLocaleString()}</span>
+                <span>${priceRange[1].toLocaleString()}</span>
               </div>
-            ))}
+            </div>
           </div>
-        )}
-      </div>
 
-      <div className="border-t border-gray-200 mx-4 mb-4"></div>
-
-      {/* Category Section */}
-      <div className="px-4 mb-4">
-        <div
-          className="flex justify-between items-center cursor-pointer mb-3"
-          onClick={() => toggleSection("category")}
-        >
-          <h3 className="font-semibold">Category</h3>
-          {expandedSections.category ? (
-            <ChevronUp size={18} />
-          ) : (
-            <ChevronDown size={18} />
-          )}
-        </div>
-
-        {expandedSections.category && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Checkbox id="category-a" />
-              <Label htmlFor="category-a">Véhicules catégorie A</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="category-b" />
-              <Label htmlFor="category-b">Véhicules catégorie B</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="category-c" />
-              <Label htmlFor="category-c">Véhicules catégorie C</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="category-d" />
-              <Label htmlFor="category-d">Véhicules catégorie D</Label>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-gray-200 mx-4 mb-4"></div>
-
-      {/* Capacity Section */}
-      <div className="px-4 mb-6">
-        <div
-          className="flex justify-between items-center cursor-pointer mb-3"
-          onClick={() => toggleSection("capacity")}
-        >
-          <h3 className="font-semibold">Capacity</h3>
-          {expandedSections.capacity ? (
-            <ChevronUp size={18} />
-          ) : (
-            <ChevronDown size={18} />
-          )}
-        </div>
-
-        {expandedSections.capacity && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Checkbox id="capacity-2" />
-              <Label htmlFor="capacity-2">2 person</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="capacity-4" />
-              <Label htmlFor="capacity-4">4 person</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="capacity-6" />
-              <Label htmlFor="capacity-6">6 person</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="capacity-8" />
-              <Label htmlFor="capacity-8">8 or More</Label>
+            <Label>Car Category</Label>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {CAR_CATEGORIES.map((category) => (
+                <div key={category.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`category-${category.id}`}
+                    checked={selectedCategories.includes(
+                      category.id.toLowerCase()
+                    )}
+                    onCheckedChange={() =>
+                      handleCategoryToggle(category.id.toLowerCase())
+                    }
+                  />
+                  <label
+                    htmlFor={`category-${category.id}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {category.label}
+                  </label>
+                </div>
+              ))}
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Availability (kept from original but hidden) */}
-      <div className="hidden">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="available"
-            checked={availableOnly}
-            onCheckedChange={() => setAvailableOnly(!availableOnly)}
-          />
-          <Label htmlFor="available">Show only available cars</Label>
+          <Button onClick={applyFilters} className="w-full">
+            Apply Filters
+          </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

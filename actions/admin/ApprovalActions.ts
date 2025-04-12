@@ -97,20 +97,32 @@ export async function rejectCar(carId: number) {
   }
 }
 
-export async function approveHotel(hotelId: number) {
+export async function approveHotel(hotelId: string | number) {
   try {
+    // Convert the hotelId to string if it's a number
+    const hotelIdString =
+      typeof hotelId === "number" ? String(hotelId) : hotelId
+
+    console.log(`Approving hotel with ID: ${hotelIdString}`)
+
     await db
       .update(hotel)
       .set({
         status: "approved",
         updatedAt: new Date(),
       })
-      .where(eq(hotel.id, String(hotelId)))
+      .where(eq(hotel.id, hotelIdString))
 
     // Send notification to agency
     await sendHotelStatusNotification(hotelId, "approved")
 
+    // Revalidate all relevant paths
     revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/verify-offers")
+    revalidatePath(`/admin/hotels/${hotelIdString}`)
+    revalidatePath("/")
+
+    console.log(`Successfully approved hotel with ID: ${hotelIdString}`)
     return { success: true, message: "Hotel approved successfully" }
   } catch (error) {
     console.error("Error approving hotel:", error)
@@ -118,20 +130,32 @@ export async function approveHotel(hotelId: number) {
   }
 }
 
-export async function rejectHotel(hotelId: number) {
+export async function rejectHotel(hotelId: string | number) {
   try {
+    // Convert the hotelId to string if it's a number
+    const hotelIdString =
+      typeof hotelId === "number" ? String(hotelId) : hotelId
+
+    console.log(`Rejecting hotel with ID: ${hotelIdString}`)
+
     await db
       .update(hotel)
       .set({
         status: "rejected",
         updatedAt: new Date(),
       })
-      .where(eq(hotel.id, String(hotelId)))
+      .where(eq(hotel.id, hotelIdString))
 
     // Send notification to agency
     await sendHotelStatusNotification(hotelId, "rejected")
 
+    // Revalidate all relevant paths
     revalidatePath("/admin/dashboard")
+    revalidatePath("/admin/verify-offers")
+    revalidatePath(`/admin/hotels/${hotelIdString}`)
+    revalidatePath("/")
+
+    console.log(`Successfully rejected hotel with ID: ${hotelIdString}`)
     return { success: true, message: "Hotel rejected successfully" }
   } catch (error) {
     console.error("Error rejecting hotel:", error)
@@ -141,21 +165,12 @@ export async function rejectHotel(hotelId: number) {
 
 export async function approveBlog(blogId: number) {
   try {
-    // Get blog details to check if it was marked for publishing
-    const blog = await db.query.blogs.findFirst({
-      where: eq(blogs.id, blogId),
-      columns: {
-        published: true,
-      },
-    })
-
     await db
       .update(blogs)
       .set({
         status: "approved",
-        // Only set published to true if admin approves AND agency wanted it published
-        published: blog?.published ?? false,
-        publishedAt: blog?.published ? new Date() : null,
+        published: true, // Automatically set to true when approved
+        publishedAt: new Date(), // Set publish date to now
         updatedAt: new Date(),
       })
       .where(eq(blogs.id, blogId))

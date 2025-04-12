@@ -6,13 +6,16 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, Heart, MapPin, Star, Users } from "lucide-react"
 import { useFavorite } from "@/lib/hooks/useFavorite"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { formatPrice } from "@/lib/utils"
 
 interface TripCardProps {
-  trip: any 
+  trip: any
 }
 
 export default function TripCard({ trip }: TripCardProps) {
-  const { isFavorite, toggleFavorite, isLoading } = useFavorite(trip.id, "trip")
+  const { isFavorite, toggleFavorite, isLoading: favoriteLoading } = useFavorite(trip.id, "trip")
+  const { currency, convertPrice, isLoading: currencyLoading } = useCurrency()
 
   // Format dates
   const startDate = trip.startDate
@@ -48,9 +51,16 @@ export default function TripCard({ trip }: TripCardProps) {
 
   // Handle price display logic
   const hasDiscount = trip.discountPercentage !== null
-  const originalPrice = parseFloat(trip.originalPrice.toString()).toFixed(2)
+  const originalPrice = parseFloat(trip.originalPrice.toString())
   const discountedPrice = hasDiscount
-    ? parseFloat(trip.priceAfterDiscount!.toString()).toFixed(2)
+    ? parseFloat(trip.priceAfterDiscount?.toString() || "0")
+    : null
+  const tripCurrency = trip.currency || "USD"
+  
+  // Convert prices to current selected currency
+  const convertedOriginalPrice = convertPrice(originalPrice, tripCurrency)
+  const convertedDiscountedPrice = hasDiscount 
+    ? convertPrice(discountedPrice || originalPrice, tripCurrency) 
     : null
 
   return (
@@ -74,7 +84,7 @@ export default function TripCard({ trip }: TripCardProps) {
             e.preventDefault()
             toggleFavorite()
           }}
-          disabled={isLoading}
+          disabled={favoriteLoading}
           className="absolute top-3 left-3 z-20 bg-black/30 p-2 rounded-full hover:bg-black/50 transition-colors"
         >
           <Heart
@@ -91,14 +101,16 @@ export default function TripCard({ trip }: TripCardProps) {
             {hasDiscount ? (
               <>
                 <span className="line-through text-gray-500 text-xs">
-                  ${originalPrice}
+                  {formatPrice(convertedOriginalPrice, { currency })}
                 </span>
                 <span className="text-green-600 text-sm">
-                  ${discountedPrice}
+                  {formatPrice(convertedDiscountedPrice || convertedOriginalPrice, { currency })}
                 </span>
               </>
             ) : (
-              <span className="text-sm">${originalPrice}</span>
+              <span className="text-sm">
+                {formatPrice(convertedOriginalPrice, { currency })}
+              </span>
             )}
           </Badge>
         </div>

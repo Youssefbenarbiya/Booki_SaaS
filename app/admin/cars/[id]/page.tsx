@@ -6,13 +6,16 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
+import { CarApprovalActions } from "@/components/dashboard/admin/CarApprovalActions"
 
 export default async function CarDetailsPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const carId = params.id
+  const { id } = await params
+
+  const carId = id
 
   const car = await db.query.cars.findFirst({
     where: eq(cars.id, parseInt(carId, 10)),
@@ -52,7 +55,12 @@ export default async function CarDetailsPage({
                 {car.year} • {car.color}
               </p>
             </div>
-            <Badge className={statusColor}>{car.status}</Badge>
+            <div className="flex items-center">
+              <Badge className={`${statusColor} mr-2`}>{car.status}</Badge>
+              {car.status === "pending" && (
+                <CarApprovalActions offerId={car.id} />
+              )}
+            </div>
           </div>
         </div>
 
@@ -68,7 +76,8 @@ export default async function CarDetailsPage({
                   <Image
                     src={image}
                     alt={`${car.brand} ${car.model}`}
-                    fill
+                    height={192}
+                    width={300}
                     className="object-cover"
                   />
                 </div>
