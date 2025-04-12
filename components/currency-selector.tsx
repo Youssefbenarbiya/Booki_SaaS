@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Check, Globe, Loader2, Search, X } from "lucide-react"
+import { Check, Globe, Loader2, Search } from "lucide-react"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
 import {
   Dialog,
@@ -101,13 +101,13 @@ export default function CurrencySelector() {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 px-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-medium shadow-sm transition-all"
+          className="h-8 px-3 rounded-md border border-slate-200 bg-[#FA8B02] hover:bg-[#E57F00] text-white font-medium shadow-sm transition-all"
         >
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
           ) : (
             <>
-              <div className="bg-blue-500 text-white p-1 rounded-full mr-1.5">
+              <div className="bg-white text-[#FA8B02] p-1 rounded-full mr-1.5">
                 <Globe className="h-3 w-3" />
               </div>
               <span className="text-sm">{currency}</span>
@@ -115,23 +115,15 @@ export default function CurrencySelector() {
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto p-0 rounded-lg border shadow-lg " >
-        <div className="bg-blue-600 text-white p-4">
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto p-0 rounded-lg border shadow-lg">
+        <div className="bg-[#FA8B02] text-white p-4">
           <DialogHeader className="flex flex-row items-center justify-between">
             <DialogTitle className="text-lg font-semibold">
               Select your currency
             </DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-full bg-white/20 hover:bg-white/30 text-white"
-              onClick={() => setIsOpen(false)}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
           </DialogHeader>
 
-          <p className="text-blue-50 text-xs mt-1.5 max-w-[90%] leading-relaxed">
+          <p className="text-white text-xs mt-1.5 max-w-[90%] leading-relaxed">
             Where applicable, prices will be converted to—and shown in—the
             currency you select. The currency you pay in may differ based on
             your reservation, and a service fee may also apply.
@@ -141,7 +133,7 @@ export default function CurrencySelector() {
         <div className="p-4">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
               <span className="text-slate-600 mt-3 text-sm">
                 Loading currencies...
               </span>
@@ -152,7 +144,7 @@ export default function CurrencySelector() {
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                 <Input
                   placeholder="Search currencies..."
-                  className="pl-8 py-1.5 h-9 text-sm border-slate-200 rounded-md focus-visible:ring-blue-500"
+                  className="pl-8 py-1.5 h-9 text-sm border-slate-200 rounded-md focus-visible:ring-orange-500"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -267,7 +259,7 @@ function CurrencyOption({
       className={cn(
         "flex flex-col items-start p-2.5 rounded-md text-left transition-all border",
         isSelected
-          ? "bg-blue-50 border-blue-200"
+          ? "bg-[#FFF0E0] border-[#FA8B02]"
           : "bg-white hover:bg-slate-50 border-slate-200"
       )}
       onClick={onClick}
@@ -276,17 +268,17 @@ function CurrencyOption({
         <span
           className={cn(
             "font-medium text-sm",
-            isSelected ? "text-blue-700" : "text-slate-800"
+            isSelected ? "text-[#FA8B02]" : "text-slate-800"
           )}
         >
           {name}
         </span>
-        {isSelected && <Check className="h-3 w-3 text-blue-500" />}
+        {isSelected && <Check className="h-3 w-3 text-[#FA8B02]" />}
       </div>
       <span
         className={cn(
           "text-xs mt-0.5",
-          isSelected ? "text-blue-500" : "text-slate-500"
+          isSelected ? "text-[#FA8B02]" : "text-slate-500"
         )}
       >
         {code}
