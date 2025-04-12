@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import "./globals.css"
-import Navbar from "@/components/navbar/navbar"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "next-themes"
 import Header from "@/components/header/header"
@@ -25,7 +24,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <CurrencyProvider>
-            <Navbar />
             <Header />
 
             {children}
