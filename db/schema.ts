@@ -234,9 +234,9 @@ export const room = pgTable("room", {
   }).notNull(),
   pricePerNightChild: decimal("price_per_night_child", {
     precision: 10,
-    
     scale: 2,
   }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("TND").notNull(),
   roomType: varchar("room_type").notNull(), // e.g., "single", "double", "suite"
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
