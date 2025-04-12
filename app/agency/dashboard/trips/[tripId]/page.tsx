@@ -1,9 +1,22 @@
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { formatPrice } from "@/lib/utils"
 import DeleteTripButton from "./DeleteTripButton"
 import { getTripById } from "@/actions/trips/tripActions"
+
+// Helper function to format price with the correct currency
+const formatPriceWithCurrency = (price: string | number, currency?: string) => {
+  if (!price) return "-"
+
+  const numericPrice = typeof price === "string" ? parseFloat(price) : price
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency || "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numericPrice)
+}
 
 export default async function TripDetailsPage({
   params,
@@ -77,10 +90,41 @@ export default async function TripDetailsPage({
                 <span className="font-medium">Destination:</span>{" "}
                 <span className="text-gray-900">{trip.destination}</span>
               </div>
-              <div>
-                <span className="font-medium">Price:</span>{" "}
-                <span className="text-gray-900">{formatPrice(trip.price)}</span>
-              </div>
+
+              {/* Price Information with Discount */}
+              {trip.discountPercentage ? (
+                <div className="space-y-1">
+                  <div>
+                    <span className="font-medium">Original Price:</span>{" "}
+                    <span className="text-gray-400 line-through">
+                      {formatPriceWithCurrency(
+                        trip.originalPrice,
+                        trip.currency
+                      )}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Discounted Price:</span>{" "}
+                    <span className="text-green-600 font-semibold">
+                      {formatPriceWithCurrency(
+                        trip.priceAfterDiscount || trip.originalPrice,
+                        trip.currency
+                      )}
+                      <span className="ml-2 text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                        {trip.discountPercentage}% OFF
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <span className="font-medium">Price:</span>{" "}
+                  <span className="text-gray-900">
+                    {formatPriceWithCurrency(trip.originalPrice, trip.currency)}
+                  </span>
+                </div>
+              )}
+
               <div>
                 <span className="font-medium">Capacity:</span>{" "}
                 <span className="text-gray-900">{trip.capacity} persons</span>

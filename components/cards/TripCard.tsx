@@ -7,8 +7,22 @@ import { Button } from "@/components/ui/button"
 import { Calendar, Clock, Heart, MapPin, Star, Users } from "lucide-react"
 import { useFavorite } from "@/lib/hooks/useFavorite"
 
+// Helper function to format price with the correct currency
+const formatPriceWithCurrency = (price: string | number, currency?: string) => {
+  if (!price) return "-"
+
+  const numericPrice = typeof price === "string" ? parseFloat(price) : price
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency || "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numericPrice)
+}
+
 interface TripCardProps {
-  trip: any 
+  trip: any
 }
 
 export default function TripCard({ trip }: TripCardProps) {
@@ -52,6 +66,7 @@ export default function TripCard({ trip }: TripCardProps) {
   const discountedPrice = hasDiscount
     ? parseFloat(trip.priceAfterDiscount!.toString()).toFixed(2)
     : null
+  const currency = trip.currency || "USD"
 
   return (
     <Card className="overflow-hidden group transition-all duration-300 hover:shadow-lg h-full flex flex-col">
@@ -91,14 +106,19 @@ export default function TripCard({ trip }: TripCardProps) {
             {hasDiscount ? (
               <>
                 <span className="line-through text-gray-500 text-xs">
-                  ${originalPrice}
+                  {formatPriceWithCurrency(originalPrice, currency)}
                 </span>
                 <span className="text-green-600 text-sm">
-                  ${discountedPrice}
+                  {formatPriceWithCurrency(
+                    discountedPrice || originalPrice,
+                    currency
+                  )}
                 </span>
               </>
             ) : (
-              <span className="text-sm">${originalPrice}</span>
+              <span className="text-sm">
+                {formatPriceWithCurrency(originalPrice, currency)}
+              </span>
             )}
           </Badge>
         </div>
