@@ -34,15 +34,53 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
       try {
         const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${currency}`);
         const data = await response.json();
-        setRates(data.rates);
+        
+        // Create a copy of the rates for modification
+        const updatedRates = { ...data.rates };
         
         // Add the base currency to rates with value 1
-        setRates(prev => ({
-          ...prev,
-          [currency]: 1
-        }));
+        updatedRates[currency] = 1;
+        
+        // Add Tunisian Dinar if it's not in the API response
+        // Using an approximate rate - this should be updated with real-time data if possible
+        if (!updatedRates.TND) {
+          // If TND is the current currency, set its rate to 1
+          if (currency === "TND") {
+            updatedRates.USD = 0.32; // Approximate: 1 TND ≈ 0.32 USD
+            updatedRates.EUR = 0.29; // Approximate: 1 TND ≈ 0.29 EUR
+          } else if (currency === "USD") {
+            updatedRates.TND = 3.13; // Approximate: 1 USD ≈ 3.13 TND
+          } else if (currency === "EUR") {
+            updatedRates.TND = 3.47; // Approximate: 1 EUR ≈ 3.47 TND
+          } else {
+            // For other base currencies, calculate an approximate TND rate
+            // This is simplified and not exact
+            const usdRate = updatedRates.USD || 1;
+            updatedRates.TND = usdRate * 3.13;
+          }
+        }
+        
+        setRates(updatedRates);
       } catch (error) {
         console.error("Error fetching currency rates:", error);
+        
+        // Fallback: Set some basic rates including TND
+        const fallbackRates: Record<string, number> = {
+          [currency]: 1,
+        };
+        
+        if (currency === "USD") {
+          fallbackRates.EUR = 0.91;
+          fallbackRates.TND = 3.13;
+        } else if (currency === "EUR") {
+          fallbackRates.USD = 1.09;
+          fallbackRates.TND = 3.47;
+        } else if (currency === "TND") {
+          fallbackRates.USD = 0.32;
+          fallbackRates.EUR = 0.29;
+        }
+        
+        setRates(fallbackRates);
       } finally {
         setIsLoading(false);
       }

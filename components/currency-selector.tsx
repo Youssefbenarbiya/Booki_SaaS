@@ -35,6 +35,12 @@ export default function CurrencySelector() {
           name: name as string
         }))
         
+        // Add Tunisian Dinar manually
+        currencyList.push({
+          code: "TND",
+          name: "Tunisian Dinar"
+        })
+        
         setCurrencies(currencyList)
       } catch (error) {
         console.error("Error fetching currencies:", error)
@@ -47,7 +53,7 @@ export default function CurrencySelector() {
   }, [])
 
   // Common currencies to show at the top
-  const popularCurrencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"]
+  const popularCurrencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "TND"]
   
   // Sort currencies to show popular ones first
   const sortedCurrencies = [...currencies].sort((a, b) => {
