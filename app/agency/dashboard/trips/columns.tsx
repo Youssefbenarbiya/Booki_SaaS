@@ -1,18 +1,27 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Pencil, Eye } from "lucide-react"
+import { ArrowUpDown, Pencil, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 import { Badge } from "@/components/ui/badge"
-import { formatPrice } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+
+// Helper function to format price with the correct currency
+const formatPriceWithCurrency = (price: string | number, currency?: string) => {
+  if (!price) return "-"
+
+  const numericPrice = typeof price === "string" ? parseFloat(price) : price
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency || "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numericPrice)
+}
 
 // Updated TripType to match the actual data structure
 export type TripType = {
@@ -35,6 +44,7 @@ export type TripType = {
   locationId?: number | null
   totalDays?: number | null
   totalNights?: number | null
+  currency?: string
   bookings?: any[]
 }
 
@@ -78,7 +88,8 @@ export const columns: ColumnDef<TripType>[] = [
     header: "Original Price",
     cell: ({ row }) => {
       const price = row.original.originalPrice
-      return <div>{formatPrice(parseFloat(price))}</div>
+      const currency = row.original.currency
+      return <div>{formatPriceWithCurrency(price, currency)}</div>
     },
   },
   {
@@ -97,9 +108,10 @@ export const columns: ColumnDef<TripType>[] = [
     cell: ({ row }) => {
       // Use priceAfterDiscount if exists, otherwise fallback to originalPrice
       const finalPrice = row.original.priceAfterDiscount
-        ? parseFloat(row.original.priceAfterDiscount)
-        : parseFloat(row.original.originalPrice)
-      return <div>{formatPrice(finalPrice)}</div>
+        ? row.original.priceAfterDiscount
+        : row.original.originalPrice
+      const currency = row.original.currency
+      return <div>{formatPriceWithCurrency(finalPrice, currency)}</div>
     },
   },
   {
@@ -126,13 +138,15 @@ export const columns: ColumnDef<TripType>[] = [
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(`/agency/dashboard/trips/${trip.id}/edit`)}
+            onClick={() =>
+              router.push(`/agency/dashboard/trips/${trip.id}/edit`)
+            }
             className="h-8 w-8 p-0"
           >
             <span className="sr-only">Edit</span>
             <Pencil className="h-4 w-4" />
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -142,7 +156,7 @@ export const columns: ColumnDef<TripType>[] = [
             <span className="sr-only">View</span>
             <Eye className="h-4 w-4" />
           </Button>
-          
+
           <Link href={`/agency/dashboard/trips/${trip.id}/delete`} passHref>
             <Button
               variant="ghost"
@@ -172,4 +186,4 @@ export const columns: ColumnDef<TripType>[] = [
       )
     },
   },
-] 
+]
