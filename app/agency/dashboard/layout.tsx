@@ -2,7 +2,6 @@
 import type { Metadata } from "next"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
-import { Sidebar } from "../../../components/dashboard/agency/Sidebar"
 import NotAllowed from "@/components/not-allowed"
 import { ReactNode } from "react"
 import { getAgencyNotifications } from "@/actions/agency/notificationActions"
@@ -42,31 +41,23 @@ if (
   }))
 
   return (
-    <div className="min-h-screen">
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <Sidebar />
-
-        {/* Main Content */}
-        <div className="flex-1 lg:pl-72">
-          <header className="bg-white shadow z-30 relative">
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center">
-                {/* Left side content if needed */}
-              </div>
-              <div className="flex items-center">
-                <NotificationCenter
-                  initialNotifications={typedNotifications}
-                  unreadCount={unreadCount}
-                />
-              </div>
-            </div>
-          </header>
-          <main className="p-6 overflow-y-auto max-h-[calc(100vh-64px)]">
-            {children}
-          </main>
+    <>
+      <header className="bg-white shadow z-30 relative">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center">
+            {/* Left side content if needed */}
+          </div>
+          <div className="flex items-center">
+            <NotificationCenter
+              initialNotifications={typedNotifications}
+              unreadCount={unreadCount}
+            />
+          </div>
         </div>
-      </div>
-    </div>
+      </header>
+      <main className="p-6 overflow-y-auto max-h-[calc(100vh-64px)]">
+        {children}
+      </main>
+    </>
   )
 }
