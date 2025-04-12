@@ -5,25 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-
-// Placeholder function for the delete operation
-// Replace with your actual implementation
-async function deleteTrip(id: number) {
-  try {
-    const response = await fetch(`/api/trips/${id}`, {
-      method: "DELETE",
-    })
-    
-    if (!response.ok) {
-      throw new Error("Failed to delete trip")
-    }
-    
-    return await response.json()
-  } catch (error) {
-    console.error("Error deleting trip:", error)
-    throw error
-  }
-}
+import { deleteTrip, getTripById } from "@/actions/trips/tripActions"
 
 export default function DeleteTripPage() {
   const router = useRouter()
@@ -38,13 +20,11 @@ export default function DeleteTripPage() {
   useEffect(() => {
     const fetchTripDetails = async () => {
       try {
-        // Replace with your actual API endpoint
-        const response = await fetch(`/api/trips/${tripId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setTripName(data.name)
+        const trip = await getTripById(Number(tripId))
+        if (trip) {
+          setTripName(trip.name)
         } else {
-          throw new Error("Failed to fetch trip details")
+          throw new Error("Trip not found")
         }
       } catch (error) {
         console.error("Error fetching trip:", error)

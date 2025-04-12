@@ -15,26 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-
-// Note: This is a placeholder for the actual deleteTrip action
-// You'll need to replace this with your actual implementation
-async function deleteTrip(id: number) {
-  // Replace with your actual API call to delete a trip
-  try {
-    const response = await fetch(`/api/trips/${id}`, {
-      method: "DELETE",
-    })
-    
-    if (!response.ok) {
-      throw new Error("Failed to delete trip")
-    }
-    
-    return await response.json()
-  } catch (error) {
-    console.error("Error deleting trip:", error)
-    throw error
-  }
-}
+import { deleteTrip } from "@/actions/trips/tripActions"
 
 interface DeleteTripButtonProps {
   tripId: number
