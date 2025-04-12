@@ -4,7 +4,7 @@ import Navbar from "@/components/navbar/navbar"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "next-themes"
 import Header from "@/components/header/header"
-import { CurrencyProvider } from "@/contexts/CurrencyContext"
+import { CurrencyProvider } from "@/lib/contexts/CurrencyContext"
 
 export const metadata: Metadata = {
   title: "Create Next App",

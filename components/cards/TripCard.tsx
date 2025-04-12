@@ -6,27 +6,16 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, Clock, Heart, MapPin, Star, Users } from "lucide-react"
 import { useFavorite } from "@/lib/hooks/useFavorite"
-
-// Helper function to format price with the correct currency
-const formatPriceWithCurrency = (price: string | number, currency?: string) => {
-  if (!price) return "-"
-
-  const numericPrice = typeof price === "string" ? parseFloat(price) : price
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency || "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(numericPrice)
-}
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { formatPrice } from "@/lib/utils"
 
 interface TripCardProps {
   trip: any
 }
 
 export default function TripCard({ trip }: TripCardProps) {
-  const { isFavorite, toggleFavorite, isLoading } = useFavorite(trip.id, "trip")
+  const { isFavorite, toggleFavorite, isLoading: favoriteLoading } = useFavorite(trip.id, "trip")
+  const { currency, convertPrice, isLoading: currencyLoading } = useCurrency()
 
   // Format dates
   const startDate = trip.startDate
@@ -62,11 +51,17 @@ export default function TripCard({ trip }: TripCardProps) {
 
   // Handle price display logic
   const hasDiscount = trip.discountPercentage !== null
-  const originalPrice = parseFloat(trip.originalPrice.toString()).toFixed(2)
+  const originalPrice = parseFloat(trip.originalPrice.toString())
   const discountedPrice = hasDiscount
-    ? parseFloat(trip.priceAfterDiscount!.toString()).toFixed(2)
+    ? parseFloat(trip.priceAfterDiscount?.toString() || "0")
     : null
-  const currency = trip.currency || "USD"
+  const tripCurrency = trip.currency || "USD"
+  
+  // Convert prices to current selected currency
+  const convertedOriginalPrice = convertPrice(originalPrice, tripCurrency)
+  const convertedDiscountedPrice = hasDiscount 
+    ? convertPrice(discountedPrice || originalPrice, tripCurrency) 
+    : null
 
   return (
     <Card className="overflow-hidden group transition-all duration-300 hover:shadow-lg h-full flex flex-col">
@@ -89,7 +84,7 @@ export default function TripCard({ trip }: TripCardProps) {
             e.preventDefault()
             toggleFavorite()
           }}
-          disabled={isLoading}
+          disabled={favoriteLoading}
           className="absolute top-3 left-3 z-20 bg-black/30 p-2 rounded-full hover:bg-black/50 transition-colors"
         >
           <Heart
@@ -106,18 +101,15 @@ export default function TripCard({ trip }: TripCardProps) {
             {hasDiscount ? (
               <>
                 <span className="line-through text-gray-500 text-xs">
-                  {formatPriceWithCurrency(originalPrice, currency)}
+                  {formatPrice(convertedOriginalPrice, { currency })}
                 </span>
                 <span className="text-green-600 text-sm">
-                  {formatPriceWithCurrency(
-                    discountedPrice || originalPrice,
-                    currency
-                  )}
+                  {formatPrice(convertedDiscountedPrice || convertedOriginalPrice, { currency })}
                 </span>
               </>
             ) : (
               <span className="text-sm">
-                {formatPriceWithCurrency(originalPrice, currency)}
+                {formatPrice(convertedOriginalPrice, { currency })}
               </span>
             )}
           </Badge>
