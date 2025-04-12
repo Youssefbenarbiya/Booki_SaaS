@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import Link from "next/link"
+import DeleteHotelButton from "./DeleteHotelButton"
 
 // Define the Hotel type based on the page content
 export type HotelType = {
@@ -115,31 +115,7 @@ export const columns: ColumnDef<HotelType>[] = [
             <Eye className="h-4 w-4" />
           </Button>
           
-          <Link href={`/agency/dashboard/hotels/${hotel.id}/delete`} passHref>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-100"
-            >
-              <span className="sr-only">Delete</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-              </svg>
-            </Button>
-          </Link>
+          <DeleteHotelButton hotelId={hotel.id} />
         </div>
       )
     },
