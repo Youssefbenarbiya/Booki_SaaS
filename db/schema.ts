@@ -335,6 +335,7 @@ export const cars = pgTable("cars", {
     precision: 10,
     scale: 2,
   }),
+  currency: varchar("currency", { length: 10 }).default("TND").notNull(),
   images: text("images").array().default([]).notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
