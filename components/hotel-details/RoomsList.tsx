@@ -10,6 +10,7 @@ interface RoomsListProps {
     capacity: number | null
     pricePerNightChild: string
     pricePerNightAdult: string
+    currency?: string
     roomType: string | null
     images: string[] | null
     amenities: string[] | null
@@ -59,7 +60,7 @@ export default function RoomsList({ rooms }: RoomsListProps) {
                     </p>
                   </div>
                   <p className="text-lg font-bold">
-                    {formatPrice(room.pricePerNightChild)}
+                    {formatPrice(room.pricePerNightAdult, { currency: room.currency || "TND" })}
                     <span className="text-sm font-normal text-gray-500">
                       /night
                     </span>

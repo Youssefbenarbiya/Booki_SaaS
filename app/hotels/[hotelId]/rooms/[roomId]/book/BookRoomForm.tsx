@@ -55,6 +55,7 @@ interface BookRoomFormProps {
     telephone: string
   }
   capacity: number
+  currency?: string
 }
 
 export default function BookRoomForm({
@@ -64,6 +65,7 @@ export default function BookRoomForm({
   userId,
   userDetails,
   capacity,
+  currency = "TND",
 }: BookRoomFormProps) {
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
@@ -386,7 +388,7 @@ export default function BookRoomForm({
                 <div>
                   <p className="font-medium">Adult (18+)</p>
                   <p className="text-sm text-gray-500">
-                    {formatPrice(pricePerNightAdult)}
+                    {formatPrice(pricePerNightAdult, { currency })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -412,7 +414,7 @@ export default function BookRoomForm({
                 <div>
                   <p className="font-medium">Child (5-17)</p>
                   <p className="text-sm text-gray-500">
-                    {formatPrice(pricePerNightChild)}
+                    {formatPrice(pricePerNightChild, { currency })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -551,7 +553,7 @@ export default function BookRoomForm({
           <div className="flex justify-between items-center mb-4">
             <div>
               <p className="text-sm text-gray-500">Total Price</p>
-              <p className="text-2xl font-bold">{formatPrice(totalPrice)}</p>
+              <p className="text-2xl font-bold">{formatPrice(totalPrice, { currency })}</p>
             </div>
             <Button
               type="submit"
