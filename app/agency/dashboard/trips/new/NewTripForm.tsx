@@ -36,7 +36,7 @@ import { useCurrency, currencies } from "@/contexts/CurrencyContext"
 // Extended TripInput type to include discount and currency
 interface ExtendedTripInput extends TripInput {
   discountPercentage?: number
-  currency?: string
+  currency: string
 }
 
 export default function NewTripForm() {

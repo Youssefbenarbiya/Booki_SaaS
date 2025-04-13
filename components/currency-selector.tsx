@@ -124,7 +124,7 @@ export default function CurrencySelector() {
           </DialogHeader>
 
           <p className="text-white text-xs mt-1.5 max-w-[90%] leading-relaxed">
-            Where applicable, prices will be converted to—and shown in—the
+            Where applicable, prices will be converted to and shown in the
             currency you select. The currency you pay in may differ based on
             your reservation, and a service fee may also apply.
           </p>
