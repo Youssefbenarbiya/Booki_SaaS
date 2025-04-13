@@ -1,5 +1,6 @@
 import { ContactInfo } from "./contact-info";
 import { ContactForm } from "./contact-form";
+import { ChatScript } from "@/components/chat/ChatScript";
 
 export default function ContactPage() {
   return (
@@ -14,6 +15,11 @@ export default function ContactPage() {
         <ContactInfo />
         <ContactForm />
       </div>
+
+      <ChatScript />
+
     </main>
+    
   )
+
 }
