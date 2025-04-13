@@ -46,6 +46,7 @@ const carFormSchema = z.object({
   plateNumber: z.string().min(1, "License plate number is required"),
   color: z.string().min(1, "Color is required"),
   originalPrice: z.coerce.number().positive("Price must be positive"),
+  currency: z.string().default("USD"),
   discountPercentage: z.coerce.number().optional(),
   priceAfterDiscount: z.coerce.number().optional(),
   isAvailable: z.boolean().default(true),
@@ -82,6 +83,17 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
   const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(0)
   const [customPercentage, setCustomPercentage] = useState(false)
 
+  // Currency options
+  const currencyOptions = [
+    { value: "USD", label: "USD - US Dollar" },
+    { value: "EUR", label: "EUR - Euro" },
+    { value: "GBP", label: "GBP - British Pound" },
+    { value: "JPY", label: "JPY - Japanese Yen" },
+    { value: "TND", label: "TND - Tunisian Dinar" },
+    { value: "CAD", label: "CAD - Canadian Dollar" },
+    { value: "AUD", label: "AUD - Australian Dollar" },
+  ]
+
   // Setup form with default values (convert null to undefined for discount fields)
   const form = useForm<z.infer<typeof carFormSchema>>({
     resolver: zodResolver(carFormSchema),
@@ -93,6 +105,7 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
           plateNumber: initialData.plateNumber,
           color: initialData.color,
           originalPrice: initialData.originalPrice,
+          currency: initialData.currency || "USD",
           isAvailable: Boolean(initialData.isAvailable),
           discountPercentage: initialData.discountPercentage ?? undefined,
           priceAfterDiscount: initialData.priceAfterDiscount ?? undefined,
@@ -107,6 +120,7 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
           plateNumber: "",
           color: "",
           originalPrice: 0,
+          currency: "USD",
           isAvailable: true,
           discountPercentage: undefined,
           priceAfterDiscount: undefined,
@@ -325,22 +339,46 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="originalPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Original Price (per day)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter the daily price in dollars
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="originalPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Original Price (per day)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencyOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -483,7 +521,7 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                     <div className="bg-muted p-4 rounded-md space-y-2">
                       <div className="flex justify-between">
                         <span>Original Price:</span>
-                        <span>${Number(watchedPrice).toFixed(2)}</span>
+                        <span>${Number(watchedPrice).toFixed(2)} {form.getValues("currency")}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Discount ({discountPercentage}%):</span>
@@ -492,7 +530,7 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                           {(
                             (Number(watchedPrice) * discountPercentage) /
                             100
-                          ).toFixed(2)}
+                          ).toFixed(2)} {form.getValues("currency")}
                         </span>
                       </div>
                       <div className="flex justify-between font-bold">
@@ -501,7 +539,7 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                           $
                           {typeof priceAfterDiscount === "number"
                             ? priceAfterDiscount.toFixed(2)
-                            : "0.00"}
+                            : "0.00"} {form.getValues("currency")}
                         </span>
                       </div>
                     </div>

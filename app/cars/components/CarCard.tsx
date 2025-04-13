@@ -5,6 +5,8 @@ import { Heart } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useFavorite } from "@/lib/hooks/useFavorite"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { formatPrice } from "@/lib/utils"
 
 export interface Car {
   id: number
@@ -21,6 +23,7 @@ export interface Car {
   seats: number
   category: string
   location: string
+  currency?: string
   createdAt: Date
   updatedAt: Date | null
 }
@@ -33,6 +36,7 @@ interface CarCardProps {
 export function CarCard({ car, viewMode }: CarCardProps) {
   const router = useRouter()
   const { isFavorite, toggleFavorite, isLoading } = useFavorite(car.id, "car")
+  const { currency, convertPrice, rates, isLoading: currencyLoading } = useCurrency()
 
   const handleCardClick = () => {
     router.push(`/cars/${car.id}/booking`)
@@ -48,19 +52,36 @@ export function CarCard({ car, viewMode }: CarCardProps) {
   const discountPercentage = car.discountPercentage ? Number(car.discountPercentage) : 0
   const priceAfterDiscount = car.priceAfterDiscount ? Number(car.priceAfterDiscount) : originalPrice
   
-  // Debug the discount values from database in console
-  console.log(`Car ${car.id} discount data:`, {
-    originalPrice,
-    discountPercentage,
-    priceAfterDiscount,
-    hasDiscount: discountPercentage > 0 && priceAfterDiscount < originalPrice
-  })
+  // Get the car's currency or default to TND (since that's the DB default)
+  const carCurrency = car.currency || "TND"
   
+  // Determine if there's a discount
   const hasDiscount = discountPercentage > 0 && priceAfterDiscount < originalPrice
+  
+  // Convert prices to selected currency
+  const convertedOriginalPrice = convertPrice(originalPrice, carCurrency)
+  const convertedDiscountedPrice = hasDiscount 
+    ? convertPrice(priceAfterDiscount, carCurrency) 
+    : null
 
-  const formatPrice = (price: number) => {
-    return typeof price === "number" ? price.toFixed(2) : "0.00"
-  }
+  // Enhanced debugging for currency conversion
+  console.log(`Car ${car.id} conversion info:`, {
+    // Car data
+    originalPrice,
+    originalCurrency: carCurrency,
+    
+    // Expected conversion based on fixed rates
+    expectedConversion: carCurrency === "TND" && currency === "USD" 
+      ? `${originalPrice} TND → $${(originalPrice * 0.32).toFixed(2)} USD`
+      : carCurrency === "USD" && currency === "TND"
+      ? `$${originalPrice} USD → ${(originalPrice * 3.13).toFixed(2)} TND`
+      : null,
+    
+    // Actual conversion result
+    actualConversion: `${formatPrice(originalPrice, { currency: carCurrency })} → ${formatPrice(convertedOriginalPrice, { currency })}`,
+    actualNumeric: `${originalPrice} → ${convertedOriginalPrice.toFixed(2)}`,
+    conversionFactor: (convertedOriginalPrice / originalPrice).toFixed(4)
+  });
 
   // Enhanced PriceDisplay component to show all pricing information
   const PriceDisplay = () => (
@@ -68,7 +89,7 @@ export function CarCard({ car, viewMode }: CarCardProps) {
       {/* Always show the original price */}
       <div className="flex items-center gap-2">
         <span className={hasDiscount ? "text-xs text-gray-500 line-through" : "font-bold text-lg"}>
-          ${formatPrice(originalPrice)}
+          {formatPrice(convertedOriginalPrice, { currency })}
         </span>
         
         {hasDiscount && (
@@ -82,7 +103,7 @@ export function CarCard({ car, viewMode }: CarCardProps) {
       {hasDiscount && (
         <div className="flex items-center gap-1">
           <span className="font-bold text-lg text-green-600">
-            ${formatPrice(priceAfterDiscount)}
+            {formatPrice(convertedDiscountedPrice || convertedOriginalPrice, { currency })}
           </span>
         </div>
       )}

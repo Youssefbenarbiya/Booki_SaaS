@@ -1,0 +1,11 @@
+---
+description: This rule attached to every chat and command+k request
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+- Always use shadCN for UI and tailwind
+- Always use typescript and zod and drizzle orm
+

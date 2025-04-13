@@ -6,6 +6,7 @@ export interface CarType {
   plateNumber: string
   color: string
   originalPrice: number
+  currency?: string
   discountPercentage?: number
   priceAfterDiscount?: number
   isAvailable: boolean

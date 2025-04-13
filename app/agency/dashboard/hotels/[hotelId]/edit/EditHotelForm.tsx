@@ -12,6 +12,10 @@ import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
 import { Building, BedDouble, Plus, Trash2, MapPin } from "lucide-react"
 import dynamic from "next/dynamic"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const LocationMapSelector = dynamic(
@@ -62,6 +66,7 @@ interface EditHotelFormProps {
       capacity: number
       pricePerNightAdult: string
       pricePerNightChild: string
+      currency?: string
       roomType: string
       amenities: string[]
       images: string[]
@@ -110,6 +115,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
         // Convert the string values to numbers for editing.
         pricePerNightAdult: parseFloat(room.pricePerNightAdult),
         pricePerNightChild: parseFloat(room.pricePerNightChild),
+        currency: room.currency || "TND", // Add currency with default value
         roomType: room.roomType as "single" | "double" | "suite" | "family",
         amenities: room.amenities,
         images: room.images, // will be updated on submit
@@ -274,10 +280,9 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
               {/* Basic Hotel Information */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Hotel Name</label>
-                <input
+                <Input
                   type="text"
                   {...register("name")}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 {errors.name && (
                   <p className="text-sm text-destructive">
@@ -288,24 +293,28 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Rating</label>
-                <select
-                  {...register("rating", { valueAsNumber: true })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                <Select 
+                  onValueChange={(value) => setValue("rating", parseInt(value))} 
+                  defaultValue={String(watch("rating") || "5")}
                 >
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <option key={rating} value={rating}>
-                      {rating} Star{rating !== 1 ? "s" : ""}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <SelectItem key={rating} value={String(rating)}>
+                        {rating} Star{rating !== 1 ? "s" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">City</label>
-                <input
+                <Input
                   type="text"
                   {...register("city")}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 {errors.city && (
                   <p className="text-sm text-destructive">
@@ -316,10 +325,9 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Country</label>
-                <input
+                <Input
                   type="text"
                   {...register("country")}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 {errors.country && (
                   <p className="text-sm text-destructive">
@@ -330,10 +338,9 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="md:col-span-2 space-y-2">
                 <label className="text-sm font-medium">Address</label>
-                <input
+                <Input
                   type="text"
                   {...register("address")}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 {errors.address && (
                   <p className="text-sm text-destructive">
@@ -344,9 +351,8 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="md:col-span-2 space-y-2">
                 <label className="text-sm font-medium">Description</label>
-                <textarea
+                <Textarea
                   {...register("description")}
-                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   rows={4}
                 />
                 {errors.description && (
@@ -362,12 +368,18 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {HOTEL_AMENITIES.map((amenity) => (
                     <div key={amenity} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         id={`amenity-${amenity}`}
                         value={amenity}
-                        {...register("amenities")}
-                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                        defaultChecked={hotel.amenities.includes(amenity)}
+                        onCheckedChange={(checked) => {
+                          const amenities = watch('amenities') || [];
+                          if (checked) {
+                            setValue('amenities', [...amenities, amenity]);
+                          } else {
+                            setValue('amenities', amenities.filter(a => a !== amenity));
+                          }
+                        }}
                       />
                       <label htmlFor={`amenity-${amenity}`} className="text-sm">
                         {amenity}
@@ -469,6 +481,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                     capacity: 2,
                     pricePerNightAdult: 0,
                     pricePerNightChild: 0,
+                    currency: "TND",
                     roomType: "double",
                   })
                   setNewRoomImages((prev) => [...prev, []])
@@ -527,10 +540,9 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                     {/* Room Basic Info */}
                     <div>
                       <label className="block font-medium">Room Name</label>
-                      <input
+                      <Input
                         type="text"
                         {...register(`rooms.${index}.name`)}
-                        className="input input-bordered w-full"
                       />
                       {errors.rooms?.[index]?.name && (
                         <p className="text-red-500">
@@ -541,15 +553,20 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
                     <div>
                       <label className="block font-medium">Room Type</label>
-                      <select
-                        {...register(`rooms.${index}.roomType`)}
-                        className="select select-bordered w-full"
+                      <Select
+                        onValueChange={(value) => setValue(`rooms.${index}.roomType`, value as "single" | "double" | "suite" | "family")}
+                        defaultValue={watch(`rooms.${index}.roomType`)}
                       >
-                        <option value="single">Single</option>
-                        <option value="double">Double</option>
-                        <option value="suite">Suite</option>
-                        <option value="family">Family</option>
-                      </select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select room type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="single">Single</SelectItem>
+                          <SelectItem value="double">Double</SelectItem>
+                          <SelectItem value="suite">Suite</SelectItem>
+                          <SelectItem value="family">Family</SelectItem>
+                        </SelectContent>
+                      </Select>
                       {errors.rooms?.[index]?.roomType && (
                         <p className="text-red-500">
                           {errors.rooms[index]?.roomType?.message}
@@ -559,12 +576,11 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
                     <div>
                       <label className="block font-medium">Capacity</label>
-                      <input
+                      <Input
                         type="number"
                         {...register(`rooms.${index}.capacity`, {
                           valueAsNumber: true,
                         })}
-                        className="input input-bordered w-full"
                       />
                       {errors.rooms?.[index]?.capacity && (
                         <p className="text-red-500">
@@ -580,13 +596,12 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                           <label className="block font-medium">
                             Price per Night (Adult)
                           </label>
-                          <input
+                          <Input
                             type="number"
                             step="0.01"
                             {...register(`rooms.${index}.pricePerNightAdult`, {
                               valueAsNumber: true,
                             })}
-                            className="input input-bordered w-full"
                           />
                           {errors.rooms?.[index]?.pricePerNightAdult && (
                             <p className="text-red-500">
@@ -598,13 +613,12 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                           <label className="block font-medium">
                             Price per Night (Child)
                           </label>
-                          <input
+                          <Input
                             type="number"
                             step="0.01"
                             {...register(`rooms.${index}.pricePerNightChild`, {
                               valueAsNumber: true,
                             })}
-                            className="input input-bordered w-full"
                           />
                           {errors.rooms?.[index]?.pricePerNightChild && (
                             <p className="text-red-500">
@@ -613,13 +627,34 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                           )}
                         </div>
                       </div>
+                      <div className="mt-4">
+                        <label className="block font-medium">Currency</label>
+                        <Select
+                          onValueChange={(value) => setValue(`rooms.${index}.currency`, value)}
+                          defaultValue={watch(`rooms.${index}.currency`) || "TND"}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="TND">TND (Tunisian Dinar)</SelectItem>
+                            <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                            <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                            <SelectItem value="GBP">GBP (British Pound)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.rooms?.[index]?.currency && (
+                          <p className="text-red-500">
+                            {errors.rooms[index]?.currency?.message}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="md:col-span-2">
                       <label className="block font-medium">Description</label>
-                      <textarea
+                      <Textarea
                         {...register(`rooms.${index}.description`)}
-                        className="textarea textarea-bordered w-full"
                         rows={2}
                       />
                       {errors.rooms?.[index]?.description && (
@@ -640,12 +675,18 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                             key={`${index}-${amenity}`}
                             className="flex items-center space-x-2"
                           >
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               id={`room-${index}-amenity-${amenity}`}
                               value={amenity}
-                              {...register(`rooms.${index}.amenities`)}
-                              className="rounded border-gray-300 text-primary focus:ring-primary"
+                              defaultChecked={hotel.rooms[index]?.amenities.includes(amenity)}
+                              onCheckedChange={(checked) => {
+                                const amenities = watch(`rooms.${index}.amenities`) || [];
+                                if (checked) {
+                                  setValue(`rooms.${index}.amenities`, [...amenities, amenity]);
+                                } else {
+                                  setValue(`rooms.${index}.amenities`, amenities.filter(a => a !== amenity));
+                                }
+                              }}
                             />
                             <label
                               htmlFor={`room-${index}-amenity-${amenity}`}

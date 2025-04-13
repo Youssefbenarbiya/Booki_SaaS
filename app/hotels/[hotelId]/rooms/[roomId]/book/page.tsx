@@ -90,7 +90,7 @@ export default async function BookRoomPage({
                 Price per Night (Adult):
               </span>
               <span className="font-semibold text-black">
-                {formatPrice(Number(room.pricePerNightAdult))}
+                {formatPrice(Number(room.pricePerNightAdult), { currency: room.currency || "TND" })}
               </span>
             </p>
             <p className="flex justify-between">
@@ -98,7 +98,7 @@ export default async function BookRoomPage({
                 Price per Night (Child):
               </span>
               <span className="font-semibold text-black">
-                {formatPrice(Number(room.pricePerNightChild))}
+                {formatPrice(Number(room.pricePerNightChild), { currency: room.currency || "TND" })}
               </span>
             </p>
 
@@ -135,6 +135,7 @@ export default async function BookRoomPage({
             telephone: session.user.phoneNumber || "",
           }}
           capacity={room.capacity}
+          currency={room.currency}
         />
       </div>
     </div>
