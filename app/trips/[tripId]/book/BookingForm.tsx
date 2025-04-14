@@ -16,12 +16,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Minus, Plus, CheckCircle, Loader2 } from "lucide-react"
 import PaymentSelector from "@/components/payment/PaymentSelector"
 import { createBookingWithPayment } from "@/actions/trips/tripBookingActions"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
 
 interface BookingFormProps {
   tripId: number
   maxSeats: number
   pricePerSeat: number
   userId: string
+  originalCurrency?: string
 }
 
 export default function BookingForm({
@@ -29,15 +31,22 @@ export default function BookingForm({
   maxSeats,
   pricePerSeat,
   userId,
+  originalCurrency = "TND", // Default currency if not specified
 }: BookingFormProps) {
   const [seats, setSeats] = useState(1)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
+  const { currency, convertPrice } = useCurrency()
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "flouci" | "stripe"
   >("flouci")
 
+  // Convert price per seat to the user's selected currency
+  const convertedPricePerSeat = convertPrice(pricePerSeat, originalCurrency)
+  // Calculate total price in the user's selected currency
+  const totalPrice = seats * convertedPricePerSeat
+  
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
@@ -53,7 +62,7 @@ export default function BookingForm({
           tripId,
           userId,
           seatsBooked: seats,
-          pricePerSeat,
+          pricePerSeat, // Use original price for database
           paymentMethod: selectedPaymentMethod, // Pass the selected payment method
         })
 
@@ -159,7 +168,7 @@ export default function BookingForm({
             <div className="text-lg font-semibold mb-4 w-full flex justify-between items-center">
               <span>Total Price:</span>
               <span className="text-primary">
-                {formatPrice(seats * pricePerSeat)}
+                {formatPrice(totalPrice, { currency })}
               </span>
             </div>
 

@@ -3,11 +3,11 @@ import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import BookRoomForm from "./BookRoomForm"
 import { getRoomById } from "@/actions/hotels&rooms/hotelActions"
-import { formatPrice } from "@/lib/utils"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import Image from "next/image"
 import SignInRedirectMessage from "@/app/(auth)/sign-in/SignInRedirectMessage"
+import RoomSummary from "./RoomSummary"
+
 export default async function BookRoomPage({
   params,
 }: {
@@ -53,74 +53,7 @@ export default async function BookRoomPage({
 
       <div className="grid gap-8 md:grid-cols-2">
         {/* Room Summary */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-4">Room Summary</h2>
-
-          {room.images && room.images.length > 0 && (
-            <div className="relative h-48 mb-4 rounded-lg overflow-hidden">
-              <Image
-                src={room.images[0] || "/placeholder.svg"}
-                alt={room.name}
-                width={500}
-                height={500}
-                className="object-cover"
-              />
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <p className="flex justify-between">
-              <span className="font-medium text-gray-700">Room:</span>
-              <span>{room.name}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-medium text-gray-700">Hotel:</span>
-              <span>{room.hotel.name}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-medium text-gray-700">Type:</span>
-              <span>{room.roomType}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-medium text-gray-700">Capacity:</span>
-              <span>{room.capacity} guests</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-medium text-gray-700">
-                Price per Night (Adult):
-              </span>
-              <span className="font-semibold text-black">
-                {formatPrice(Number(room.pricePerNightAdult), { currency: room.currency || "TND" })}
-              </span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-medium text-gray-700">
-                Price per Night (Child):
-              </span>
-              <span className="font-semibold text-black">
-                {formatPrice(Number(room.pricePerNightChild), { currency: room.currency || "TND" })}
-              </span>
-            </p>
-
-            {room.amenities && room.amenities.length > 0 && (
-              <div className="mt-4">
-                <h3 className="font-medium text-gray-700 mb-2">
-                  Room Amenities:
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {room.amenities.map((amenity, index) => (
-                    <span
-                      key={index}
-                      className="bg-gray-100 text-gray-800 text-xs rounded-full px-2 py-1"
-                    >
-                      {amenity}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <RoomSummary room={room} />
 
         {/* Booking Form */}
         <BookRoomForm

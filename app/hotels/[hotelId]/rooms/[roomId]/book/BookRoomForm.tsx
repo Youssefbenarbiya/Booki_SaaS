@@ -124,10 +124,20 @@ export default function BookRoomForm({
       childCount * parseFloat(pricePerNightChild.toString()))
       
   // Calculate the converted total price
-  const totalPrice = 
+  const convertedTotalPrice = 
     nights *
     (adultCount * convertedPricePerNightAdult +
       childCount * convertedPricePerNightChild)
+      
+  // Format price with the correct currency
+  const formatPriceWithCurrency = (price: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: selectedCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
+  }
 
   // Add total guests calculation
   const totalGuests = adultCount + childCount + infantCount
@@ -306,7 +316,7 @@ export default function BookRoomForm({
         <div className="mb-4">
           <Image
             src="/assets/icons/logo.png"
-            alt="Ostelflow logo"
+            alt="Booki logo"
             width={150}
             height={30}
             className="object-contain"
@@ -402,7 +412,7 @@ export default function BookRoomForm({
                 <div>
                   <p className="font-medium">Adult (18+)</p>
                   <p className="text-sm text-gray-500">
-                    {formatPrice(convertedPricePerNightAdult, { currency: selectedCurrency })}
+                    {formatPriceWithCurrency(convertedPricePerNightAdult)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -428,7 +438,7 @@ export default function BookRoomForm({
                 <div>
                   <p className="font-medium">Child (5-17)</p>
                   <p className="text-sm text-gray-500">
-                    {formatPrice(convertedPricePerNightChild, { currency: selectedCurrency })}
+                    {formatPriceWithCurrency(convertedPricePerNightChild)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -567,7 +577,7 @@ export default function BookRoomForm({
           <div className="flex justify-between items-center mb-4">
             <div>
               <p className="text-sm text-gray-500">Total Price</p>
-              <p className="text-2xl font-bold">{formatPrice(totalPrice, { currency: selectedCurrency })}</p>
+              <p className="text-2xl font-bold">{formatPriceWithCurrency(convertedTotalPrice)}</p>
             </div>
             <Button
               type="submit"

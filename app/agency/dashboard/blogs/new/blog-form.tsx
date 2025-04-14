@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { TipTapEditor } from "@/components/TipTapEditor"
+import { PlusCircle } from "lucide-react"
 import {
   Form,
   FormControl,
@@ -29,10 +30,18 @@ import {
 import {
   createBlog,
   updateBlog,
+  createCategory,
 } from "../../../../../actions/blogs/blogActions"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 // Define a schema for blog data validation
 const formSchema = z.object({
@@ -95,6 +104,10 @@ export function BlogForm({
   const [uploadError, setUploadError] = useState("")
   const [editorContent, setEditorContent] = useState(initialData?.content || "")
   const [isMounted, setIsMounted] = useState(false)
+  const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false)
+  const [newCategory, setNewCategory] = useState("")
+  const [categoryList, setCategoryList] = useState<Category[]>(categories)
+  const [creatingCategory, setCreatingCategory] = useState(false)
 
   // Fix hydration issues by only showing editor after component mounts
   useEffect(() => {
@@ -136,6 +149,42 @@ export function BlogForm({
     setEditorContent(content)
     form.setValue("content", content, { shouldValidate: true })
   }
+
+  // Handle new category creation
+  const handleCreateCategory = async () => {
+    if (!newCategory.trim()) {
+      toast.error("Category name cannot be empty");
+      return;
+    }
+    
+    try {
+      setCreatingCategory(true);
+      const result = await createCategory(newCategory.trim());
+      
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      
+      if (result.category) {
+        // Add the new category to the local list
+        setCategoryList(prev => [...prev, result.category]);
+        
+        // Select the new category in the form
+        form.setValue("categoryId", result.category.id.toString());
+        
+        // Close dialog and reset input
+        setShowNewCategoryDialog(false);
+        setNewCategory("");
+        toast.success("Category created successfully");
+      }
+    } catch (error) {
+      console.error("Failed to create category:", error);
+      toast.error("Failed to create category");
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -223,30 +272,41 @@ export function BlogForm({
             />
           </div>
 
-          {/* Category */}
+          {/* Category with Add New option */}
           <FormField
             control={form.control}
             name="categoryId"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem
-                          key={category.id}
-                          value={category.id.toString()}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
+                <div className="flex gap-2">
+                  <FormControl className="flex-1">
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryList.map((category) => (
+                          <SelectItem
+                            key={category.id}
+                            value={category.id.toString()}
+                          >
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setShowNewCategoryDialog(true)}
+                    className="shrink-0"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -408,6 +468,37 @@ export function BlogForm({
             ? "Update Blog"
             : "Create Blog"}
         </Button>
+
+        {/* Dialog for new category */}
+        <Dialog open={showNewCategoryDialog} onOpenChange={setShowNewCategoryDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Category</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <Input
+                placeholder="Enter category name"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowNewCategoryDialog(false)}
+                disabled={creatingCategory}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCreateCategory} 
+                disabled={creatingCategory || !newCategory.trim()}
+              >
+                {creatingCategory ? "Creating..." : "Create Category"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </form>
     </Form>
   )

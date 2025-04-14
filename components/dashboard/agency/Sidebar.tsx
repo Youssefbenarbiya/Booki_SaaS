@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
@@ -8,12 +9,19 @@ import {
   Car,
   Globe,
   LayoutDashboard,
+  Mail,
   PlaneTakeoff,
   BookOpen,
   Users,
   CalendarCheck,
+  UserCircle,
+  Settings,
 } from "lucide-react"
-import { useSession } from "@/auth-client" 
+import { useSession } from "@/auth-client"
+import { Separator } from "@/components/ui/separator"
+import { useEffect, useState } from "react"
+import { getAgencyProfile } from "@/actions/agency/agencyActions"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const navigation = [
   {
@@ -46,35 +54,123 @@ const navigation = [
     href: "/agency/dashboard/employees",
     icon: Users,
   },
-
   {
     name: "Bookings",
     href: "/agency/dashboard/bookings",
     icon: CalendarCheck,
   },
-
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
   const session = useSession()
   const userRole = session.data?.user?.role
+  const [agencyData, setAgencyData] = useState<{name?: string, email?: string, logo?: string} | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch agency data
+  useEffect(() => {
+    const fetchAgencyData = async () => {
+      try {
+        const response = await getAgencyProfile()
+        if (response.agency) {
+          setAgencyData({
+            name: response.agency.agencyName || "Agency",
+            email: response.agency.contactEmail || session.data?.user?.email || "",
+            logo: response.agency.logo || "",
+          })
+        } else {
+          // Fallback to user email if no agency found
+          setAgencyData({
+            name: "Agency",
+            email: session.data?.user?.email || "",
+            logo: "",
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching agency data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAgencyData()
+  }, [session.data?.user?.email])
 
   // If the user is an employee, filter out the Employees tab
   const filteredNavigation =
-    userRole === "employee"
-      ? navigation.filter((item) => item.name !== "Employees")
-      : navigation
+    userRole === "employee" ? navigation.filter((item) => item.name !== "Employees") : navigation
 
   return (
     <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
       <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4">
-        <div className="flex h-16 shrink-0 items-center">
-          <Link href="/" className="flex items-center space-x-2">
-            <Globe className="h-6 w-6 text-white" />
-            <span className="text-xl font-bold text-white">Travel Agency</span>
-          </Link>
+        {/* Agency Profile Section */}
+        <div className="py-6">
+          <div className="flex items-center justify-center mb-4">
+            {isLoading ? (
+              <Skeleton className="h-16 w-16 rounded-full bg-gray-800" />
+            ) : agencyData?.logo ? (
+              <div className="h-16 w-16 rounded-full overflow-hidden relative">
+                <Image 
+                  src={agencyData.logo} 
+                  alt={agencyData.name || "Agency Logo"}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className="h-16 w-16 rounded-full overflow-hidden relative bg-gray-800">
+                <Image 
+                  src="/images/default-logo.png" 
+                  alt="Default Agency Logo"
+                  fill
+                  className="object-cover"
+                  onError={(e) => {
+                    // Fallback to Globe icon if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = `
+                      <div class="h-16 w-16 rounded-full bg-gray-800 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-white">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="2" y1="12" x2="22" y2="12"></line>
+                          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                      </div>
+                    `;
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          <div className="text-center">
+            {isLoading ? (
+              <>
+                <Skeleton className="h-7 w-36 mx-auto mb-2 bg-gray-800" />
+                <Skeleton className="h-5 w-48 mx-auto bg-gray-800" />
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold text-white">{agencyData?.name}</h2>
+                <div className="flex items-center justify-center mt-2 text-gray-400">
+                  <Mail className="h-4 w-4 mr-2" />
+                  <span className="text-sm">{agencyData?.email}</span>
+                </div>
+              </>
+            )}
+            <div className="mt-3">
+              <Link 
+                href="/agency/profile" 
+                className="text-sm text-yellow-400 hover:text-yellow-300 flex items-center justify-center"
+              >
+                <UserCircle className="h-4 w-4 mr-1" />
+                View Profile
+              </Link>
+            </div>
+          </div>
         </div>
+
+        <Separator className="bg-gray-800" />
+
         <nav className="flex flex-1 flex-col">
           <ul role="list" className="flex flex-1 flex-col gap-y-7">
             <li>
@@ -86,22 +182,26 @@ export function Sidebar() {
                       <Link
                         href={item.href}
                         className={cn(
-                          isActive
-                            ? "bg-gray-800 text-white"
-                            : "text-gray-400 hover:text-white hover:bg-gray-800",
-                          "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+                          isActive ? "bg-gray-800 text-white" : "text-gray-400 hover:text-white hover:bg-gray-800",
+                          "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold",
                         )}
                       >
-                        <item.icon
-                          className="h-6 w-6 shrink-0"
-                          aria-hidden="true"
-                        />
+                        <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
                         {item.name}
                       </Link>
                     </li>
                   )
                 })}
               </ul>
+            </li>
+            <li className="mt-auto">
+              <Link
+                href="/agency/settings"
+                className="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+              >
+                <Settings className="h-6 w-6 shrink-0" aria-hidden="true" />
+                Settings
+              </Link>
             </li>
           </ul>
         </nav>

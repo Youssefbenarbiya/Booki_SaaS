@@ -1,6 +1,5 @@
 "use client"
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import {
@@ -21,23 +20,28 @@ import { formatPrice, getDurationInDays, formatDateRange } from "@/lib/utils"
 import Link from "next/link"
 import { getTripById } from "@/actions/trips/tripActions"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { useState, useEffect } from "react"
+import React from "react"
+
+interface TripParams {
+  tripId: string
+}
 
 interface TripPageProps {
-  params: {
-    tripId: string
-  }
+  // The type of params is explicitly a Promise that resolves to TripParams.
+  params: Promise<TripParams>
 }
 
 export default function TripDetailsPage({ params }: TripPageProps) {
   const { currency, convertPrice } = useCurrency()
-  const { tripId } = params
-
+   const resolvedParams = React.use(params)
+   const { tripId } = resolvedParams
   // Use state to hold the trip data
-  const [trip, setTrip] = React.useState<any>(null)
-  const [loading, setLoading] = React.useState(true)
+  const [trip, setTrip] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   // Fetch trip data
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchTrip = async () => {
       try {
         const tripData = await getTripById(parseInt(tripId))
@@ -56,7 +60,11 @@ export default function TripDetailsPage({ params }: TripPageProps) {
   }, [tripId])
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading...
+      </div>
+    )
   }
 
   if (!trip) {
@@ -84,10 +92,13 @@ export default function TripDetailsPage({ params }: TripPageProps) {
     hasDiscount && trip.priceAfterDiscount
       ? Number(trip.priceAfterDiscount)
       : Number(trip.originalPrice)
-      
+
   // Convert prices to selected currency
   const tripCurrency = trip.currency || "USD"
-  const convertedOriginalPrice = convertPrice(Number(trip.originalPrice), tripCurrency)
+  const convertedOriginalPrice = convertPrice(
+    Number(trip.originalPrice),
+    tripCurrency
+  )
   const convertedEffectivePrice = convertPrice(effectivePrice, tripCurrency)
 
   return (
@@ -301,7 +312,7 @@ export default function TripDetailsPage({ params }: TripPageProps) {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-semibold mb-4">Destination</h3>
-            
+
             <h4 className="font-medium text-gray-900 flex items-center mb-2">
               <MapPin className="h-4 w-4 mr-1 text-primary" />
               {trip.destination}
