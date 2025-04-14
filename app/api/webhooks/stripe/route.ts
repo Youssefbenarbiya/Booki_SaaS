@@ -1,7 +1,7 @@
 import db from "@/db/drizzle"
 import { tripBookings, trips } from "@/db/schema"
 import { eq } from "drizzle-orm"
-import { sql } from "drizzle-orm" // Add missing sql import
+import { sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
 import { Stripe } from "stripe"

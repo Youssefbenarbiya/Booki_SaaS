@@ -154,6 +154,8 @@ export const tripBookings = pgTable("trip_bookings", {
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDate: timestamp("payment_date"),
   paymentCurrency: varchar("payment_currency", { length: 10 }),
+  originalCurrency: varchar("original_currency", { length: 10 }),
+  originalPricePerSeat: decimal("original_price_per_seat", { precision: 10, scale: 2 }),
 })
 
 // Trip Relations

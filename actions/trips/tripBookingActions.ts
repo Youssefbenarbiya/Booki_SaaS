@@ -16,6 +16,8 @@ interface CreateBookingParams {
   totalPrice?: number
   status?: string
   paymentMethod?: "flouci" | "stripe"
+  convertedPricePerSeat?: number
+  paymentCurrency?: string
 }
 
 export async function createBooking({
@@ -23,7 +25,15 @@ export async function createBooking({
   userId,
   seatsBooked,
   pricePerSeat,
-}: CreateBookingParams & { pricePerSeat: number }) {
+  convertedPricePerSeat,
+  paymentCurrency,
+  paymentMethod,
+}: CreateBookingParams & { 
+  pricePerSeat: number,
+  convertedPricePerSeat?: number,
+  paymentCurrency?: string,
+  paymentMethod?: string
+}) {
   try {
     // Get trip to check capacity
     const trip = await db.query.trips.findFirst({
@@ -42,7 +52,12 @@ export async function createBooking({
       throw new Error("Not enough seats available")
     }
 
-    const totalPrice = seatsBooked * pricePerSeat
+    // Use the converted price for calculating total if provided
+    const effectivePricePerSeat = convertedPricePerSeat || pricePerSeat
+    const totalPrice = seatsBooked * effectivePricePerSeat
+    
+    console.log(`Creating booking with price per seat: ${effectivePricePerSeat} ${paymentCurrency || trip.currency}`)
+    console.log(`Total price: ${totalPrice} ${paymentCurrency || trip.currency}`)
 
     const [booking] = await db
       .insert(tripBookings)
@@ -51,8 +66,11 @@ export async function createBooking({
         userId: userId,
         seatsBooked: seatsBooked,
         totalPrice: sql`${totalPrice}::decimal`,
-        status: "confirmed",
+        status: "pending", // Start as pending until payment is confirmed
         bookingDate: new Date(),
+        paymentCurrency: paymentCurrency || trip.currency, // Store the payment currency
+        originalCurrency: trip.currency, // Store the original currency for reference
+        originalPricePerSeat: sql`${pricePerSeat}::decimal`, // Store the original price
       })
       .returning()
 
@@ -97,30 +115,29 @@ export async function createBookingWithPayment({
     // Calculate total price in the trip's original currency
     const totalPriceInOriginalCurrency = seatsBooked * pricePerSeat
 
-    // Create the initial booking with the original currency price
-    const booking = await createBooking({
-      tripId,
-      userId,
-      seatsBooked,
-      pricePerSeat,
-    })
-
-    if (!booking) {
-      throw new Error("Failed to create booking")
-    }
-
-    console.log(
-      `Booking created: #${booking.id}, processing payment via ${paymentMethod}`
-    )
-
     // Handle payment based on selected method
     if (paymentMethod === "stripe") {
       try {
         // Convert price to USD for Stripe regardless of trip's currency
-        // Pass the original pricePerSeat and the trip's currency for conversion
         const pricePerSeatInUSD = await convertCurrency(pricePerSeat, tripCurrency, "USD")
-        
         console.log(`Converting from ${tripCurrency} to USD: ${pricePerSeat} -> ${pricePerSeatInUSD}`)
+        
+        // Create the initial booking with the CONVERTED USD price
+        const booking = await createBooking({
+          tripId,
+          userId,
+          seatsBooked,
+          pricePerSeat,
+          convertedPricePerSeat: pricePerSeatInUSD,
+          paymentCurrency: "USD",
+          paymentMethod: "STRIPE_USD",
+        })
+
+        if (!booking) {
+          throw new Error("Failed to create booking")
+        }
+
+        console.log(`Booking created: #${booking.id}, processing payment via Stripe in USD`)
         
         // Create Stripe checkout session with USD
         const session = await stripe.checkout.sessions.create({
@@ -157,7 +174,6 @@ export async function createBookingWithPayment({
             paymentId: session.id,
             paymentStatus: "pending",
             paymentMethod: "STRIPE_USD",
-            paymentCurrency: "USD", // Store the payment currency
           })
           .where(eq(tripBookings.id, booking.id))
 
@@ -167,9 +183,8 @@ export async function createBookingWithPayment({
           url: session.url,
         }
       } catch (stripeError) {
-        // If Stripe payment creation fails, delete the booking to avoid orphaned records
         console.error("Stripe payment error:", stripeError)
-        await db.delete(tripBookings).where(eq(tripBookings.id, booking.id))
+        // Don't delete the booking here - instead, we'll handle failures via webhook
         throw new Error(
           `Stripe payment failed: ${
             stripeError instanceof Error ? stripeError.message : "Unknown error"
@@ -178,13 +193,29 @@ export async function createBookingWithPayment({
       }
     } else {
       // For Flouci, ensure the amount is in TND
-      // Convert from the trip's currency to TND
       const totalPriceInTND = await convertCurrency(totalPriceInOriginalCurrency, tripCurrency, "TND")
+      const pricePerSeatInTND = await convertCurrency(pricePerSeat, tripCurrency, "TND")
       
-      console.log(`Converting from ${tripCurrency} to TND: ${totalPriceInOriginalCurrency} -> ${totalPriceInTND}`)
+      console.log(`Converting from ${tripCurrency} to TND: ${pricePerSeat} -> ${pricePerSeatInTND}`)
+      
+      // Create the initial booking with the CONVERTED TND price
+      const booking = await createBooking({
+        tripId,
+        userId,
+        seatsBooked,
+        pricePerSeat,
+        convertedPricePerSeat: pricePerSeatInTND,
+        paymentCurrency: "TND",
+        paymentMethod: "FLOUCI_TND",
+      })
+
+      if (!booking) {
+        throw new Error("Failed to create booking")
+      }
+
+      console.log(`Booking created: #${booking.id}, processing payment via Flouci in TND`)
       
       // Format the amount to ensure it's accepted by the payment API
-      // Convert to a fixed number of decimal places (2) and ensure it's a valid number
       const formattedAmount = parseFloat(totalPriceInTND.toFixed(2))
 
       const paymentData = await generateTripPaymentLink({
@@ -193,8 +224,6 @@ export async function createBookingWithPayment({
       })
 
       if (!paymentData || !paymentData.paymentId) {
-        // If payment link generation fails, delete the booking
-        await db.delete(tripBookings).where(eq(tripBookings.id, booking.id))
         throw new Error("Failed to generate payment link")
       }
 
@@ -204,7 +233,6 @@ export async function createBookingWithPayment({
           paymentId: paymentData.paymentId,
           paymentStatus: "pending",
           paymentMethod: "FLOUCI_TND",
-          paymentCurrency: "TND", // Store the payment currency
         })
         .where(eq(tripBookings.id, booking.id))
 
