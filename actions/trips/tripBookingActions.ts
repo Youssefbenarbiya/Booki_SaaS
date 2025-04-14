@@ -91,6 +91,8 @@ export async function createBookingWithPayment({
 
     // Get the trip's original currency from the database
     const tripCurrency = trip.currency || "TND" // Default to TND if not specified
+    
+    console.log(`Trip currency: ${tripCurrency}, Price per seat: ${pricePerSeat}`)
 
     // Calculate total price in the trip's original currency
     const totalPriceInOriginalCurrency = seatsBooked * pricePerSeat
@@ -114,8 +116,11 @@ export async function createBookingWithPayment({
     // Handle payment based on selected method
     if (paymentMethod === "stripe") {
       try {
-        // Convert price to USD for Stripe regardless of user's selected currency
+        // Convert price to USD for Stripe regardless of trip's currency
+        // Pass the original pricePerSeat and the trip's currency for conversion
         const pricePerSeatInUSD = await convertCurrency(pricePerSeat, tripCurrency, "USD")
+        
+        console.log(`Converting from ${tripCurrency} to USD: ${pricePerSeat} -> ${pricePerSeatInUSD}`)
         
         // Create Stripe checkout session with USD
         const session = await stripe.checkout.sessions.create({
@@ -138,6 +143,8 @@ export async function createBookingWithPayment({
           cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/trips/payment/failed`,
           metadata: {
             bookingId: booking.id.toString(),
+            originalCurrency: tripCurrency,
+            convertedFromPrice: pricePerSeat.toString(),
           },
         })
 
@@ -148,8 +155,9 @@ export async function createBookingWithPayment({
           .update(tripBookings)
           .set({
             paymentId: session.id,
-            paymentStatus: "completed",
-            paymentMethod: "STRIPE",
+            paymentStatus: "pending",
+            paymentMethod: "STRIPE_USD",
+            paymentCurrency: "USD", // Store the payment currency
           })
           .where(eq(tripBookings.id, booking.id))
 
@@ -170,8 +178,10 @@ export async function createBookingWithPayment({
       }
     } else {
       // For Flouci, ensure the amount is in TND
-      // Convert from the trip's currency to TND if needed
+      // Convert from the trip's currency to TND
       const totalPriceInTND = await convertCurrency(totalPriceInOriginalCurrency, tripCurrency, "TND")
+      
+      console.log(`Converting from ${tripCurrency} to TND: ${totalPriceInOriginalCurrency} -> ${totalPriceInTND}`)
       
       // Format the amount to ensure it's accepted by the payment API
       // Convert to a fixed number of decimal places (2) and ensure it's a valid number
@@ -192,8 +202,9 @@ export async function createBookingWithPayment({
         .update(tripBookings)
         .set({
           paymentId: paymentData.paymentId,
-          paymentStatus: "completed",
-          paymentMethod: "FLOUCI",
+          paymentStatus: "pending",
+          paymentMethod: "FLOUCI_TND",
+          paymentCurrency: "TND", // Store the payment currency
         })
         .where(eq(tripBookings.id, booking.id))
 

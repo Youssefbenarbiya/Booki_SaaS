@@ -1,7 +1,7 @@
 "use client"
 
 import { formatPrice } from "@/lib/utils"
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect } from "react"
 import {
   Card,
   CardContent,
@@ -17,6 +17,7 @@ import { Minus, Plus, CheckCircle, Loader2 } from "lucide-react"
 import PaymentSelector from "@/components/payment/PaymentSelector"
 import { createBookingWithPayment } from "@/actions/trips/tripBookingActions"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { convertCurrency } from "@/lib/currencyUtils"
 
 interface BookingFormProps {
   tripId: number
@@ -41,11 +42,63 @@ export default function BookingForm({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "flouci" | "stripe"
   >("flouci")
+  
+  // State for payment method specific pricing
+  const [stripePrice, setStripePrice] = useState<number | null>(null)
+  const [flouciPrice, setFlouciPrice] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Convert price per seat to the user's selected currency
-  const convertedPricePerSeat = convertPrice(pricePerSeat, originalCurrency)
-  // Calculate total price in the user's selected currency
-  const totalPrice = seats * convertedPricePerSeat
+  // Fetch converted prices when component loads or payment method changes
+  useEffect(() => {
+    async function fetchConvertedPrices() {
+      try {
+        setLoading(true)
+        // Convert to USD for Stripe
+        const priceInUSD = await convertCurrency(pricePerSeat, originalCurrency, "USD")
+        setStripePrice(priceInUSD)
+        
+        // Convert to TND for Flouci
+        const priceInTND = await convertCurrency(pricePerSeat, originalCurrency, "TND")
+        setFlouciPrice(priceInTND)
+      } catch (error) {
+        console.error("Error converting prices:", error)
+        // Fallback to original prices if conversion fails
+        setStripePrice(pricePerSeat)
+        setFlouciPrice(pricePerSeat)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchConvertedPrices()
+  }, [pricePerSeat, originalCurrency])
+
+  // Get the appropriate price based on selected payment method
+  const getDisplayPrice = () => {
+    if (selectedPaymentMethod === "stripe" && stripePrice !== null) {
+      return {
+        pricePerSeat: stripePrice,
+        currency: "USD",
+      }
+    } else if (selectedPaymentMethod === "flouci" && flouciPrice !== null) {
+      return {
+        pricePerSeat: flouciPrice,
+        currency: "TND",
+      }
+    } else {
+      // Fallback to using the original price with the user's selected currency
+      return {
+        pricePerSeat: convertPrice(pricePerSeat, originalCurrency),
+        currency: currency,
+      }
+    }
+  }
+  
+  // Get the display info
+  const { pricePerSeat: displayPricePerSeat, currency: displayCurrency } = getDisplayPrice()
+  
+  // Calculate total price in the appropriate currency
+  const totalPrice = seats * displayPricePerSeat
   
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -163,19 +216,39 @@ export default function BookingForm({
             selectedPaymentMethod={selectedPaymentMethod}
             setSelectedPaymentMethod={setSelectedPaymentMethod}
           />
+          
+          {loading ? (
+            <div className="text-center py-2">
+              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+              <p className="text-sm text-muted-foreground mt-1">Loading price information...</p>
+            </div>
+          ) : (
+            <div className="flex flex-col space-y-2 pt-4">
+              <div className="text-sm text-muted-foreground flex justify-between">
+                <span>Payment Currency:</span>
+                <span className="font-medium">{displayCurrency}</span>
+              </div>
+              <div className="text-sm text-muted-foreground flex justify-between">
+                <span>Price per Seat:</span>
+                <span className="font-medium">
+                  {formatPrice(displayPricePerSeat, { currency: displayCurrency })}
+                </span>
+              </div>
+            </div>
+          )}
 
           <CardFooter className="flex flex-col pt-4 px-0 border-t">
             <div className="text-lg font-semibold mb-4 w-full flex justify-between items-center">
               <span>Total Price:</span>
               <span className="text-primary">
-                {formatPrice(totalPrice, { currency })}
+                {formatPrice(totalPrice, { currency: displayCurrency })}
               </span>
             </div>
 
             <Button
               type="submit"
               className="w-full"
-              disabled={isPending}
+              disabled={isPending || loading}
               size="lg"
             >
               {isPending ? (
