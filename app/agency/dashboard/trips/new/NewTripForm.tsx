@@ -31,7 +31,25 @@ import { format, startOfDay } from "date-fns"
 import { CalendarIcon, Percent, DollarSign } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
-import { useCurrency, currencies } from "@/contexts/CurrencyContext"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
+
+// Define currency type for this component
+type Currency = {
+  code: string
+  symbol: string
+  name: string
+}
+
+// Define available currencies array locally since it's not exported by the context
+const currencies: Currency[] = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'TND', symbol: 'DT', name: 'Tunisian Dinar' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' }
+];
 
 // Extended TripInput type to include discount and currency
 interface ExtendedTripInput extends TripInput {
@@ -42,7 +60,9 @@ interface ExtendedTripInput extends TripInput {
 export default function NewTripForm() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const { currency: defaultCurrency } = useCurrency()
+  
+  // Get the currency from the context
+  const { currency: contextCurrency, setCurrency } = useCurrency()
 
   // Image states
   const [images, setImages] = useState<File[]>([])
@@ -56,8 +76,8 @@ export default function NewTripForm() {
   const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(0)
   const [customPercentage, setCustomPercentage] = useState<boolean>(false)
 
-  // Currency state
-  const [selectedCurrency, setSelectedCurrency] = useState(defaultCurrency.code)
+  // Currency state - use context currency as default
+  const [selectedCurrency, setSelectedCurrency] = useState(contextCurrency || "USD")
 
   // Date states
   const [startDate, setStartDate] = useState<Date>()
@@ -73,7 +93,7 @@ export default function NewTripForm() {
     defaultValues: {
       isAvailable: true,
       activities: [],
-      currency: defaultCurrency.code,
+      currency: contextCurrency || "USD",
     },
   })
 
@@ -116,6 +136,8 @@ export default function NewTripForm() {
   const handleCurrencyChange = (value: string) => {
     setSelectedCurrency(value)
     setValue("currency", value)
+    // Update the context currency
+    setCurrency(value)
   }
 
   async function onSubmit(data: ExtendedTripInput) {
@@ -323,13 +345,22 @@ export default function NewTripForm() {
                         <Label htmlFor="currency">Currency</Label>
                         <Select
                           value={selectedCurrency}
+                          defaultValue={contextCurrency || "USD"}
                           onValueChange={handleCurrencyChange}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Currency" />
+                            <SelectValue>
+                              {selectedCurrency ? (
+                                <>
+                                  {currencies.find((c) => c.code === selectedCurrency)?.symbol || ""} {selectedCurrency}
+                                </>
+                              ) : (
+                                "Select Currency"
+                              )}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {currencies.map((curr) => (
+                            {currencies.map((curr: Currency) => (
                               <SelectItem key={curr.code} value={curr.code}>
                                 {curr.symbol} {curr.code} - {curr.name}
                               </SelectItem>
@@ -432,7 +463,7 @@ export default function NewTripForm() {
                               <span>Original Price:</span>
                               <span>
                                 {currencies.find(
-                                  (c) => c.code === selectedCurrency
+                                  (c: Currency) => c.code === selectedCurrency
                                 )?.symbol || ""}
                                 {originalPrice.toFixed(2)} {selectedCurrency}
                               </span>
@@ -442,7 +473,7 @@ export default function NewTripForm() {
                               <span className="text-red-500">
                                 -
                                 {currencies.find(
-                                  (c) => c.code === selectedCurrency
+                                  (c: Currency) => c.code === selectedCurrency
                                 )?.symbol || ""}
                                 {(
                                   (originalPrice * discountPercentage) /
@@ -456,7 +487,7 @@ export default function NewTripForm() {
                               <span>Price After Discount:</span>
                               <span className="text-green-600">
                                 {currencies.find(
-                                  (c) => c.code === selectedCurrency
+                                  (c: Currency) => c.code === selectedCurrency
                                 )?.symbol || ""}
                                 {priceAfterDiscount.toFixed(2)}{" "}
                                 {selectedCurrency}

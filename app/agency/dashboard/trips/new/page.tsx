@@ -1,7 +1,7 @@
 "use client"
 
+import { CurrencyProvider } from "@/lib/contexts/CurrencyContext"
 import NewTripForm from "./NewTripForm"
-import { CurrencyProvider } from "@/contexts/CurrencyContext"
 
 export default function NewTripPage() {
   return (
