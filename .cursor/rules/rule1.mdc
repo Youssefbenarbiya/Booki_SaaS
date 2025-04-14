@@ -1,4 +1,9 @@
 ---
+description: 
+globs: 
+alwaysApply: true
+---
+---
 description: This rule attached to every chat and command+k request
 globs: 
 alwaysApply: false
