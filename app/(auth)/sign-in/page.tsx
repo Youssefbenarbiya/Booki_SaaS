@@ -39,7 +39,7 @@ export default function SignIn() {
 
   const [translations, setTranslations] = useState({
     title: "Login",
-    subtitle: "Login to access your Ostelflow account",
+    subtitle: "Login to access your Booki account",
     emailPlaceholder: "john.doe@gmail.com",
     passwordPlaceholder: "••••••••••••",
     rememberMe: "Remember me",

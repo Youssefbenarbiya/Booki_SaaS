@@ -316,7 +316,7 @@ export default function BookRoomForm({
         <div className="mb-4">
           <Image
             src="/assets/icons/logo.png"
-            alt="Ostelflow logo"
+            alt="Booki logo"
             width={150}
             height={30}
             className="object-contain"

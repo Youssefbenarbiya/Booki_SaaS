@@ -15,7 +15,7 @@ export function Footer() {
             <Link href="/" className="inline-block">
               <div className="flex items-center">
                 <span className="text-2xl font-bold">
-                  <span className="text-orange-500">Booking</span>ostelflow.
+                  <span className="text-orange-500">Booking</span>Booki.
                 </span>
               </div>
             </Link>
@@ -125,7 +125,7 @@ export function Footer() {
             <div className="flex flex-col gap-2">
               <Input
                 type="email"
-                placeholder="ostelflowbooking@gmail.com"
+                placeholder="booking@gmail.com"
                 className="bg-transparent border-gray-700 text-white placeholder:text-gray-400"
               />
               <Button
