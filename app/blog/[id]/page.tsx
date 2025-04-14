@@ -49,7 +49,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
   
   const publishDate = blog.publishedAt 
     ? format(new Date(blog.publishedAt), "MMMM dd, yyyy") 
-    : format(new Date(blog.createdAt), "MMMM dd, yyyy");
+    : format(new Date(blog.createdAt || new Date()), "MMMM dd, yyyy");
 
   return (
     <div className="container max-w-5xl mx-auto py-8 px-4 md:px-6">
@@ -59,12 +59,12 @@ export default async function BlogPage({ params }: BlogPageProps) {
         
         <div className="flex items-center gap-4 mb-6">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={blog.author.image || ""} alt={blog.author.name} />
-            <AvatarFallback>{blog.author.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarImage src={blog.author?.image || ""} alt={blog.author?.name || ""} />
+            <AvatarFallback>{blog.author?.name?.slice(0, 2).toUpperCase() || "BL"}</AvatarFallback>
           </Avatar>
           
           <div className="flex flex-col">
-            <span className="text-sm font-medium">{blog.author.name}</span>
+            <span className="text-sm font-medium">{blog.author?.name || "Unknown"}</span>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>{publishDate}</span>
               <span>•</span>
