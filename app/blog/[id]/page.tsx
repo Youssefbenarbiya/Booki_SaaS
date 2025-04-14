@@ -1,196 +1,135 @@
 import Image from "next/image"
 import Link from "next/link"
-import { getBlogById, getBlogs } from "@/actions/blogs/blogActions"
-import { notFound } from "next/navigation"
+import { getBlogs, getBlogCategories } from "@/actions/blogs/blogActions"
+import { ChatScript } from "@/components/chat/ChatScript"
+import { Clock, Calendar, Tag } from "lucide-react"
 
-// Generate static params for blogs
-export async function generateStaticParams() {
+export default async function BlogPage() {
   const { blogs = [] } = await getBlogs()
-
-  return blogs.map((blog) => ({
-    id: blog.id.toString(),
-  }))
-}
-
-export default async function BlogDetail({
-  params: promiseParams,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id: paramId } = await promiseParams
-  const blogId = parseInt(paramId)
-
-  const { blog } = await getBlogById(blogId)
-
-  if (!blog) {
-    return notFound()
-  }
+  const { categories = [] } = await getBlogCategories()
 
   return (
-    <div className="flex max-w-6xl mx-auto px-4 py-8 gap-8">
-      {/* Main Content */}
-      <div className="flex-grow max-w-4xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="text-sm text-gray-600 mb-2">
-            {blog.category?.name || "Uncategorized"}
-          </div>
-          <h1 className="text-4xl font-serif font-bold mb-4">{blog.title}</h1>
-          <div className="flex items-center gap-3 mt-4">
-            {blog.author?.image && (
-              <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                <Image
-                  src={blog.author.image}
-                  alt={blog.author.name}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            )}
-            <div>
-              <div className="font-medium">
-                {blog.author?.name || "Anonymous"}
-              </div>
-              <div className="text-sm text-gray-500">
-                {blog.publishedAt
-                  ? new Date(blog.publishedAt).toLocaleDateString()
-                  : "Draft"}{" "}
-                · {blog.readTime || "5"} min read
-              </div>
-            </div>
-          </div>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="container mx-auto px-4 py-12">
+        
+        {/* Category Filter */}
+        <div className="mb-10 flex flex-wrap gap-3 justify-center">
+          <Link
+            href="/blog"
+            className="px-5 py-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition duration-200"
+          >
+            All
+          </Link>
+          {categories.map((category) => (
+            <Link
+              key={category.id}
+              href={`/blog/category/${category.id}`}
+              className="px-5 py-2 rounded-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 transition duration-200"
+            >
+              {category.name}
+            </Link>
+          ))}
         </div>
 
-        {/* Hero Image */}
-        <div className="relative h-[400px] mb-8 rounded-lg overflow-hidden">
-          <Image
-            src={blog.featuredImage || "/assets/blog1.jpeg"}
-            alt={blog.title}
-            fill
-            className="object-cover"
-            priority
-          />
-        </div>
+        {/* Blog Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {blogs.map((post) => (
+            <Link href={`/blog/${post.id}`} key={post.id} className="group">
+              <div className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-lg transition duration-300 flex flex-col h-full">
+                
+                {/* Optional Image */}
+                {post.image && (
+                  <div className="relative h-48 w-full">
+                    <Image
+                      src={post.image}
+                      alt={post.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
 
-        {/* Content */}
-        <div className="prose max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: blog.content }} />
-
-          {/* Show additional images if available */}
-          {blog.images?.length > 0 && (
-            <div className="mt-8 space-y-8">
-              {blog.images.map((image, index) => (
-                <div
-                  key={index}
-                  className="relative h-[300px] rounded-lg overflow-hidden"
-                >
-                  <Image
-                    src={image}
-                    alt={`${blog.title} - image ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
+                {/* Category header */}
+                <div className="bg-orange-100 text-orange-700 text-xs font-semibold px-4 py-2">
+                  {post.category?.name || "Uncategorized"}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Sidebar */}
-      <div className="w-80 shrink-0 space-y-8 hidden lg:block">
-        {/* Author */}
-        {blog.author && (
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-4">Author</h3>
-            <div className="flex items-center gap-4">
-              {blog.author.image && (
-                <div className="relative w-16 h-16 rounded-full overflow-hidden">
-                  <Image
-                    src={blog.author.image}
-                    alt={blog.author.name}
-                    fill
-                    className="object-cover"
-                  />
+                <div className="p-6 flex flex-col flex-grow">
+                  
+                  {/* Meta Info */}
+                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Calendar size={14} />
+                      <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : "Draft"}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock size={14} />
+                      <span>{post.readTime || 5} min read</span>
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors">
+                    {post.title}
+                  </h2>
+
+                  {/* Excerpt */}
+                  <p className="text-sm text-gray-600 line-clamp-3 mb-4">
+                    {post.excerpt}
+                  </p>
+
+                  {/* Tags */}
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {post.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-md flex items-center gap-1"
+                        >
+                          <Tag size={12} />
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Author */}
+                  <div className="mt-auto pt-4 border-t border-gray-100 flex items-center gap-3">
+                    {post.author?.image ? (
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                        <Image
+                          src={post.author.image}
+                          alt={post.author.name || "Author"}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                        <span className="text-orange-600 text-sm font-bold">
+                          {post.author?.name?.charAt(0) || "A"}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-sm font-medium text-gray-700">
+                      {post.author?.name || "Anonymous"}
+                    </span>
+                  </div>
                 </div>
-              )}
-              <div>
-                <h4 className="font-medium">{blog.author.name}</h4>
               </div>
-            </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {blogs.length === 0 && (
+          <div className="text-center py-20">
+            <h3 className="text-2xl font-medium text-gray-600">No blog posts found</h3>
+            <p className="text-gray-500 mt-2">Check back later for new content</p>
           </div>
         )}
-
-        {/* Recent Posts */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Recent Posts</h3>
-          <div className="space-y-4">
-            {[1, 2, 3].map((_, index) => (
-              <Link
-                href={`/blog/recent-post-${index}`}
-                key={index}
-                className="group flex gap-3"
-              >
-                <div className="relative w-20 h-20 shrink-0 rounded overflow-hidden">
-                  <Image
-                    src="/assets/blog1.jpeg"
-                    alt="Recent post"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium group-hover:text-orange-500 line-clamp-2">
-                    Travel Stories For Now and the Future
-                  </h4>
-                  <p className="text-xs text-gray-500 mt-1">8 Places in 2022</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Categories */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Categories</h3>
-          <div className="space-y-2">
-            <Link
-              href="/blog?category=perfect"
-              className="block text-gray-600 hover:text-orange-500"
-            >
-              Perfect
-            </Link>
-            <Link
-              href="/blog?category=tips"
-              className="block text-gray-600 hover:text-orange-500"
-            >
-              Tips
-            </Link>
-            <Link
-              href="/blog?category=destination"
-              className="block text-gray-600 hover:text-orange-500"
-            >
-              Destination
-            </Link>
-          </div>
-        </div>
-
-        {/* Have Any Questions Box */}
-        <div className="bg-orange-50 p-6 rounded-lg">
-          <h3 className="text-xl font-semibold mb-2">Have Any Questions?</h3>
-          <p className="text-gray-600 mb-4">
-            Ready to help if you have any questions, we will provide a solution.
-          </p>
-          <div className="flex items-center text-orange-500">
-            <span className="mr-2">📞</span>
-            <span>+216 99 999 999</span>
-          </div>
-          <div className="flex items-center text-orange-500 mt-2">
-            <span className="mr-2">✉️</span>
-            <span>book1@gmail.com</span>
-          </div>
-        </div>
       </div>
+      <ChatScript />
     </div>
   )
 }
