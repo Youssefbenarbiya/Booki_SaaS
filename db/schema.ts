@@ -153,6 +153,7 @@ export const tripBookings = pgTable("trip_bookings", {
   paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDate: timestamp("payment_date"),
+  paymentCurrency: varchar("payment_currency", { length: 10 }),
 })
 
 // Trip Relations

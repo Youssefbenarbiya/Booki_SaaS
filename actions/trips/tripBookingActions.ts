@@ -7,6 +7,7 @@ import { generateTripPaymentLink } from "@/services/tripPaymentFlouci"
 import { sql } from "drizzle-orm"
 import { stripe } from "@/lib/stripe"
 import db from "@/db/drizzle"
+import { convertCurrency } from "@/lib/currencyUtils"
 
 interface CreateBookingParams {
   tripId: number
@@ -88,10 +89,13 @@ export async function createBookingWithPayment({
       throw new Error("Trip not found")
     }
 
-    // Calculate total price and ensure it's properly formatted
-    const totalPrice = seatsBooked * pricePerSeat
+    // Get the trip's original currency from the database
+    const tripCurrency = trip.currency || "TND" // Default to TND if not specified
 
-    // Create the initial booking
+    // Calculate total price in the trip's original currency
+    const totalPriceInOriginalCurrency = seatsBooked * pricePerSeat
+
+    // Create the initial booking with the original currency price
     const booking = await createBooking({
       tripId,
       userId,
@@ -110,18 +114,21 @@ export async function createBookingWithPayment({
     // Handle payment based on selected method
     if (paymentMethod === "stripe") {
       try {
-        // Create Stripe checkout session
+        // Convert price to USD for Stripe regardless of user's selected currency
+        const pricePerSeatInUSD = await convertCurrency(pricePerSeat, tripCurrency, "USD")
+        
+        // Create Stripe checkout session with USD
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           line_items: [
             {
               price_data: {
-                currency: "usd", // Change to your desired currency
+                currency: "usd", // Stripe payment always in USD
                 product_data: {
                   name: trip.name,
                   description: `Trip to ${trip.destination}`,
                 },
-                unit_amount: Math.round(pricePerSeat * 100), // Stripe uses cents
+                unit_amount: Math.round(pricePerSeatInUSD * 100), // Stripe uses cents
               },
               quantity: seatsBooked,
             },
@@ -162,13 +169,13 @@ export async function createBookingWithPayment({
         )
       }
     } else {
-      // Flouci payment logic - fix the amount format
-      // Convert to string and ensure it's properly formatted for Flouci API
-      // Some payment APIs require specific decimal formats
-
+      // For Flouci, ensure the amount is in TND
+      // Convert from the trip's currency to TND if needed
+      const totalPriceInTND = await convertCurrency(totalPriceInOriginalCurrency, tripCurrency, "TND")
+      
       // Format the amount to ensure it's accepted by the payment API
       // Convert to a fixed number of decimal places (2) and ensure it's a valid number
-      const formattedAmount = parseFloat(totalPrice.toFixed(2))
+      const formattedAmount = parseFloat(totalPriceInTND.toFixed(2))
 
       const paymentData = await generateTripPaymentLink({
         amount: formattedAmount,

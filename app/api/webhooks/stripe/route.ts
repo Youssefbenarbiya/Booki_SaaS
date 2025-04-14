@@ -64,16 +64,19 @@ export async function POST(req: Request) {
       }
 
       // Update booking status to confirmed
+      // Note: Even though we're not setting paymentCurrency directly,
+      // we're updating paymentMethod to "STRIPE_USD" to indicate USD payment
       await db
         .update(tripBookings)
         .set({
           status: "confirmed",
           paymentStatus: "completed",
           paymentDate: new Date(),
+          paymentMethod: "STRIPE_USD", // Indicate payment was in USD via Stripe
         })
         .where(eq(tripBookings.id, bookingId))
 
-      console.log(`✅ Payment confirmed for booking #${bookingId}`)
+      console.log(`✅ Payment confirmed for booking #${bookingId} (USD payment via Stripe)`)
     }
 
     // Handle payment failures if needed

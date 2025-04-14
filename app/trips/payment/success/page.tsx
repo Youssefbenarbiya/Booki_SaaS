@@ -13,6 +13,7 @@ export default function PaymentSuccessPage() {
   // Get bookingId from query parameters
   const searchParams = useSearchParams()
   const bookingId = searchParams.get("bookingId")
+  const paymentId = searchParams.get("paymentId") // Flouci returns a paymentId
 
   const [tripData, setTripData] = useState<any>(null)
   const [bookingData, setBookingData] = useState<any>(null)
@@ -29,6 +30,20 @@ export default function PaymentSuccessPage() {
 
     async function fetchBookingData() {
       try {
+        // If this success page was called with a paymentId, it's from Flouci and we need to verify
+        if (paymentId) {
+          // Verify the Flouci payment first
+          const verifyRes = await fetch(`/api/payment/trip-verify?paymentId=${paymentId}&bookingId=${bookingId}`)
+          if (!verifyRes.ok) {
+            throw new Error("Failed to verify payment")
+          }
+          const verifyData = await verifyRes.json()
+          if (!verifyData.success) {
+            throw new Error("Payment verification failed")
+          }
+        }
+
+        // Now get the booking data
         const res = await fetch(`/api/trip-booking?bookingId=${bookingId}`)
         if (!res.ok) {
           throw new Error("Failed to fetch booking data.")
@@ -48,7 +63,7 @@ export default function PaymentSuccessPage() {
     }
 
     fetchBookingData()
-  }, [bookingId])
+  }, [bookingId, paymentId])
 
   const handleDownloadPDF = () => {
     if (tripData && bookingData && userData) {
@@ -88,6 +103,11 @@ export default function PaymentSuccessPage() {
   const hasDiscount =
     tripData?.discountPercentage && tripData?.discountPercentage > 0
 
+  // Determine currency based on payment method
+  const paymentMethod = bookingData?.paymentMethod || ""
+  const isUsdPayment = paymentMethod.includes("STRIPE")
+  const displayCurrency = isUsdPayment ? "USD" : "TND"
+
   return (
     <div className="container mx-auto px-4 py-16 flex flex-col items-center">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg text-center">
@@ -117,17 +137,21 @@ export default function PaymentSuccessPage() {
               </p>
               <p>
                 <strong>Price per Seat:</strong>{" "}
-                {effectivePrice && formatPrice(effectivePrice)}
+                {effectivePrice && formatPrice(effectivePrice, { currency: displayCurrency })}
                 {hasDiscount && (
                   <span className="ml-2 text-sm">
                     <span className="line-through text-gray-500">
-                      {formatPrice(Number(tripData.originalPrice))}
+                      {formatPrice(Number(tripData.originalPrice), { currency: displayCurrency })}
                     </span>
                     <span className="text-green-600 ml-1">
                       ({tripData.discountPercentage}% off)
                     </span>
                   </span>
                 )}
+              </p>
+              <p>
+                <strong>Payment Method:</strong>{" "}
+                {paymentMethod.includes("STRIPE") ? "Credit Card (USD)" : "Flouci (TND)"}
               </p>
             </>
           ) : (
