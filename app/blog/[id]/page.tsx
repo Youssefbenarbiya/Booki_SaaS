@@ -1,196 +1,156 @@
-import Image from "next/image"
-import Link from "next/link"
-import { getBlogById, getBlogs } from "@/actions/blogs/blogActions"
-import { notFound } from "next/navigation"
+import Image from "next/image";
+import { getBlogById, getRelatedBlogs } from "@/actions/blogs/blogActions";
+import { notFound } from "next/navigation";
+import { Metadata } from "next";
+import { format } from "date-fns";
+import Link from "next/link";
 
-// Generate static params for blogs
-export async function generateStaticParams() {
-  const { blogs = [] } = await getBlogs()
+// UI Components
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
-  return blogs.map((blog) => ({
-    id: blog.id.toString(),
-  }))
+type BlogPageProps = {
+  params: {
+    id: string;
+  };
+};
+
+export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
+  const { blog } = await getBlogById(parseInt(params.id));
+  
+  if (!blog) {
+    return {
+      title: "Blog Not Found",
+      description: "The requested blog could not be found.",
+    };
+  }
+  
+  return {
+    title: blog.title,
+    description: blog.excerpt || `Read ${blog.title} on Booki`,
+    openGraph: {
+      title: blog.title,
+      description: blog.excerpt || `Read ${blog.title} on Booki`,
+      images: blog.featuredImage ? [blog.featuredImage] : [],
+    },
+  };
 }
 
-export default async function BlogDetail({
-  params: promiseParams,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id: paramId } = await promiseParams
-  const blogId = parseInt(paramId)
-
-  const { blog } = await getBlogById(blogId)
-
+export default async function BlogPage({ params }: BlogPageProps) {
+  const id = parseInt(params.id);
+  const { blog } = await getBlogById(id);
+  const { blogs: relatedBlogs } = await getRelatedBlogs(id, 3);
+  
   if (!blog) {
-    return notFound()
+    notFound();
   }
+  
+  const publishDate = blog.publishedAt 
+    ? format(new Date(blog.publishedAt), "MMMM dd, yyyy") 
+    : format(new Date(blog.createdAt || new Date()), "MMMM dd, yyyy");
 
   return (
-    <div className="flex max-w-6xl mx-auto px-4 py-8 gap-8">
-      {/* Main Content */}
-      <div className="flex-grow max-w-4xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="text-sm text-gray-600 mb-2">
-            {blog.category?.name || "Uncategorized"}
-          </div>
-          <h1 className="text-4xl font-serif font-bold mb-4">{blog.title}</h1>
-          <div className="flex items-center gap-3 mt-4">
-            {blog.author?.image && (
-              <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                <Image
-                  src={blog.author.image}
-                  alt={blog.author.name}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            )}
-            <div>
-              <div className="font-medium">
-                {blog.author?.name || "Anonymous"}
-              </div>
-              <div className="text-sm text-gray-500">
-                {blog.publishedAt
-                  ? new Date(blog.publishedAt).toLocaleDateString()
-                  : "Draft"}{" "}
-                · {blog.readTime || "5"} min read
-              </div>
+    <div className="container max-w-5xl mx-auto py-8 px-4 md:px-6">
+      {/* Blog Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">{blog.title}</h1>
+        
+        <div className="flex items-center gap-4 mb-6">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={blog.author?.image || ""} alt={blog.author?.name || ""} />
+            <AvatarFallback>{blog.author?.name?.slice(0, 2).toUpperCase() || "BL"}</AvatarFallback>
+          </Avatar>
+          
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{blog.author?.name || "Unknown"}</span>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>{publishDate}</span>
+              <span>•</span>
+              <span>{blog.readTime || 5} min read</span>
+              <span>•</span>
+              <span>{blog.views} views</span>
             </div>
           </div>
         </div>
-
-        {/* Hero Image */}
-        <div className="relative h-[400px] mb-8 rounded-lg overflow-hidden">
-          <Image
-            src={blog.featuredImage || "/assets/blog1.jpeg"}
+        
+        {blog.category && (
+          <Link href={`/blog/category/${blog.category.id}`}>
+            <Badge variant="secondary" className="mb-4">
+              {blog.category.name}
+            </Badge>
+          </Link>
+        )}
+      </div>
+      
+      {/* Featured Image */}
+      {blog.featuredImage && (
+        <div className="relative w-full h-[400px] rounded-lg overflow-hidden mb-8">
+          <Image 
+            src={blog.featuredImage} 
             alt={blog.title}
             fill
             className="object-cover"
             priority
           />
         </div>
-
-        {/* Content */}
-        <div className="prose max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: blog.content }} />
-
-          {/* Show additional images if available */}
-          {blog.images?.length > 0 && (
-            <div className="mt-8 space-y-8">
-              {blog.images.map((image, index) => (
-                <div
-                  key={index}
-                  className="relative h-[300px] rounded-lg overflow-hidden"
-                >
-                  <Image
-                    src={image}
-                    alt={`${blog.title} - image ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      )}
+      
+      {/* Blog Content */}
+      <div className="prose prose-lg max-w-none">
+        <div dangerouslySetInnerHTML={{ __html: blog.content }} />
       </div>
-
-      {/* Sidebar */}
-      <div className="w-80 shrink-0 space-y-8 hidden lg:block">
-        {/* Author */}
-        {blog.author && (
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold mb-4">Author</h3>
-            <div className="flex items-center gap-4">
-              {blog.author.image && (
-                <div className="relative w-16 h-16 rounded-full overflow-hidden">
-                  <Image
-                    src={blog.author.image}
-                    alt={blog.author.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              )}
-              <div>
-                <h4 className="font-medium">{blog.author.name}</h4>
-              </div>
-            </div>
+      
+      {/* Tags */}
+      {blog.tags && blog.tags.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-2">Tags</h3>
+          <div className="flex flex-wrap gap-2">
+            {blog.tags.map((tag, index) => (
+              <Badge key={index} variant="outline">
+                {tag}
+              </Badge>
+            ))}
           </div>
-        )}
-
-        {/* Recent Posts */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Recent Posts</h3>
-          <div className="space-y-4">
-            {[1, 2, 3].map((_, index) => (
-              <Link
-                href={`/blog/recent-post-${index}`}
-                key={index}
-                className="group flex gap-3"
-              >
-                <div className="relative w-20 h-20 shrink-0 rounded overflow-hidden">
-                  <Image
-                    src="/assets/blog1.jpeg"
-                    alt="Recent post"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium group-hover:text-orange-500 line-clamp-2">
-                    Travel Stories For Now and the Future
-                  </h4>
-                  <p className="text-xs text-gray-500 mt-1">8 Places in 2022</p>
-                </div>
+        </div>
+      )}
+      
+      {/* Separator */}
+      <Separator className="my-10" />
+      
+      {/* Related Posts */}
+      {relatedBlogs.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-6">Related Posts</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {relatedBlogs.map((relatedBlog) => (
+              <Link href={`/blog/${relatedBlog.id}`} key={relatedBlog.id}>
+                <Card className="h-full transition-all hover:shadow-md">
+                  {relatedBlog.featuredImage && (
+                    <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
+                      <Image
+                        src={relatedBlog.featuredImage}
+                        alt={relatedBlog.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg line-clamp-2 mb-2">
+                      {relatedBlog.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {relatedBlog.excerpt || ''}
+                    </p>
+                  </CardContent>
+                </Card>
               </Link>
             ))}
           </div>
         </div>
-
-        {/* Categories */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Categories</h3>
-          <div className="space-y-2">
-            <Link
-              href="/blog?category=perfect"
-              className="block text-gray-600 hover:text-orange-500"
-            >
-              Perfect
-            </Link>
-            <Link
-              href="/blog?category=tips"
-              className="block text-gray-600 hover:text-orange-500"
-            >
-              Tips
-            </Link>
-            <Link
-              href="/blog?category=destination"
-              className="block text-gray-600 hover:text-orange-500"
-            >
-              Destination
-            </Link>
-          </div>
-        </div>
-
-        {/* Have Any Questions Box */}
-        <div className="bg-orange-50 p-6 rounded-lg">
-          <h3 className="text-xl font-semibold mb-2">Have Any Questions?</h3>
-          <p className="text-gray-600 mb-4">
-            Ready to help if you have any questions, we will provide a solution.
-          </p>
-          <div className="flex items-center text-orange-500">
-            <span className="mr-2">📞</span>
-            <span>+216 99 999 999</span>
-          </div>
-          <div className="flex items-center text-orange-500 mt-2">
-            <span className="mr-2">✉️</span>
-            <span>book1@gmail.com</span>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
-  )
+  );
 }
