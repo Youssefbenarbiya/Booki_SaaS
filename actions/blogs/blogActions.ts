@@ -2,9 +2,9 @@
 "use server"
 
 import db from "@/db/drizzle"
-import { blogs, agencies, agencyEmployees } from "@/db/schema"
+import { blogs, agencies, agencyEmployees, blogCategories } from "@/db/schema"
 import { revalidatePath } from "next/cache"
-import { eq } from "drizzle-orm"
+import { eq, and, sql } from "drizzle-orm"
 import { uploadImages } from "@/actions/uploadActions"
 import { v2 as cloudinary } from "cloudinary"
 
@@ -387,5 +387,43 @@ export async function deleteBlog(id: number) {
   } catch (error) {
     console.error("Blog deletion error:", error)
     throw new Error("Failed to delete blog")
+  }
+}
+
+// New server action to create a blog category
+export async function createCategory(name: string) {
+  try {
+    // Basic validation
+    if (!name || name.trim() === "") {
+      return { error: "Category name is required" }
+    }
+    
+    // Check if category already exists (case insensitive)
+    const existingCategory = await db.query.blogCategories.findFirst({
+      where: sql`LOWER(${blogCategories.name}) = LOWER(${name.trim()})`,
+    })
+    
+    if (existingCategory) {
+      return { error: "Category already exists", category: existingCategory }
+    }
+    
+    // Create new category
+    const [newCategory] = await db
+      .insert(blogCategories)
+      .values({
+        name: name.trim(),
+        slug: name.trim().toLowerCase().replace(/\s+/g, "-"),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning()
+    
+    revalidatePath("/agency/dashboard/blogs")
+    revalidatePath("/blog")
+    
+    return { success: true, category: newCategory }
+  } catch (error) {
+    console.error("Failed to create category:", error)
+    return { error: "Failed to create category" }
   }
 }

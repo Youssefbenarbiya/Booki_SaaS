@@ -5,6 +5,8 @@ import { SearchForm } from "./search-form"
 import TopVacations from "@/components/home/topVacations"
 import TopDestinations from "@/components/home/topDestinations"
 import { SearchResults } from "./search-results"
+import { ChatScript } from "@/components/chat/ChatScript"
+
 interface SearchParams {
   type?: string
   destination?: string
@@ -47,6 +49,9 @@ export default async function HomePage({
       <TopVacations />
       <TopDestinations />
       <Footer />
+      
+      {/* Chatbot */}
+      <ChatScript />
     </main>
   )
 }

@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { getBlogs } from "@/actions/blogs/blogActions"
+import { ChatScript } from "@/components/chat/ChatScript"
 
 export default async function BlogPage() {
   const { blogs = [] } = await getBlogs()
@@ -23,7 +24,7 @@ export default async function BlogPage() {
               />
             </div>
             <div className="space-y-2">
-              <p className="text-sm text-gray-600">{post.category.name}</p>
+              <p className="text-sm text-gray-600">{post.category?.name || "Uncategorized"}</p>
               <h2 className="text-xl font-semibold group-hover:text-orange-500 transition-colors">
                 {post.title}
               </h2>
@@ -34,7 +35,11 @@ export default async function BlogPage() {
             </div>
           </Link>
         ))}
+        
       </div>
+      <ChatScript />
+
     </div>
+    
   )
 }
