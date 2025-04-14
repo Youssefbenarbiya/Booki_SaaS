@@ -10,30 +10,8 @@ export default async function BlogPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Removed the gradient hero section */}
 
       <div className="container mx-auto px-4 py-12">
-       
-
-        {/* Category Filter */}
-        <div className="mb-8 flex flex-wrap gap-3 justify-center">
-          <Link
-            href="/blog"
-            className="px-4 py-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition duration-200"
-          >
-            All
-          </Link>
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              href={`/blog/category/${category.id}`}
-              className="px-4 py-2 rounded-full bg-white border hover:bg-gray-50 transition duration-200"
-            >
-              {category.name}
-            </Link>
-          ))}
-        </div>
-
         {/* Blog Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {blogs.map((post) => (
