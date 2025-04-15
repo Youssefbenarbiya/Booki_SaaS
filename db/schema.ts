@@ -281,6 +281,12 @@ export const roomBookings = pgTable("room_bookings", {
   paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDate: timestamp("payment_date"),
+  paymentCurrency: varchar("payment_currency", { length: 10 }),
+  originalCurrency: varchar("original_currency", { length: 10 }),
+  originalPrice: decimal("original_price", { precision: 10, scale: 2 }),
+  adultCount: integer("adult_count").default(1),
+  childCount: integer("child_count").default(0),
+  infantCount: integer("infant_count").default(0),
 })
 
 // Hotel & Room Relations
