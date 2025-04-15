@@ -314,8 +314,8 @@ export default function SignUp() {
             }
             alt="Forest view from below"
             width={500}
-            height={700}
-            className="object-cover rounded-2xl shadow-lg"
+            height={400} // Reduced from 700 to 400
+            className="object-cover rounded-2xl shadow-lg max-h-[450px]" // Added max-h class to control height
             priority
           />
         </motion.div>
@@ -356,11 +356,6 @@ export default function SignUp() {
             <h2 className="text-3xl font-semibold">
               Register as {userType === "agency" ? "an Agency" : "a Customer"}
             </h2>
-            <p className="text-gray-600 mt-2">
-              {userType === "agency"
-                ? "Create your agency account to start listing your services"
-                : "Join us to discover and book amazing travel experiences"}
-            </p>
           </div>
 
           <Form {...form}>
