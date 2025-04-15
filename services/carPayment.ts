@@ -25,6 +25,9 @@ export async function generateCarPaymentLink({
       throw new Error("Payment amount must be greater than zero")
     }
 
+    // Ensure amount is in TND (should already be converted by this point)
+    console.log(`Processing Flouci payment for car booking #${bookingId} - Amount: ${amount} TND`);
+
     // Convert amount from TND to millimes
     const amountInMillimes = Math.round(amount * 1000)
 

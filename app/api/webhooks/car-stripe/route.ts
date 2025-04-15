@@ -74,10 +74,12 @@ export async function POST(req: Request) {
           status: "confirmed",
           paymentStatus: "completed",
           paymentDate: new Date(),
+          paymentMethod: "STRIPE_USD", // Ensure method indicates USD payment via Stripe
+          paymentCurrency: "USD", // Explicitly set payment currency
         })
         .where(eq(carBookings.id, bookingId))
 
-      console.log(`✅ Payment confirmed for car booking #${bookingId}`)
+      console.log(`✅ Payment confirmed for car booking #${bookingId} (USD payment via Stripe)`)
     }
 
     // Handle payment failures if needed

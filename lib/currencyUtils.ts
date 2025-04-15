@@ -49,6 +49,7 @@ export async function convertCurrency(
   
   // If source and target currencies are the same, no conversion needed
   if (fromCurrency === toCurrency) {
+    console.log(`Same currency (${fromCurrency}), no conversion needed`);
     return amount;
   }
 
@@ -57,10 +58,12 @@ export async function convertCurrency(
     const from = fromCurrency.toUpperCase();
     const to = toCurrency.toUpperCase();
     
+    console.log(`Normalized currencies: ${from} to ${to}`);
+    
     // Direct conversion if rates exist
     if (EXCHANGE_RATES[from]?.[to]) {
       const result = amount * EXCHANGE_RATES[from][to];
-      console.log(`Direct conversion: ${amount} ${from} = ${result} ${to}`);
+      console.log(`Direct conversion: ${amount} ${from} = ${result} ${to} (rate: ${EXCHANGE_RATES[from][to]})`);
       return result;
     }
     
@@ -70,6 +73,7 @@ export async function convertCurrency(
       const amountInUSD = amount / EXCHANGE_RATES.USD[from];
       const result = amountInUSD * EXCHANGE_RATES.USD[to];
       console.log(`USD conversion: ${amount} ${from} → ${amountInUSD} USD → ${result} ${to}`);
+      console.log(`Rates used: ${from} to USD: ${1/EXCHANGE_RATES.USD[from]}, USD to ${to}: ${EXCHANGE_RATES.USD[to]}`);
       return result;
     }
     
@@ -79,6 +83,7 @@ export async function convertCurrency(
       const amountInEUR = amount / EXCHANGE_RATES.EUR[from];
       const result = amountInEUR * EXCHANGE_RATES.EUR[to];
       console.log(`EUR conversion: ${amount} ${from} → ${amountInEUR} EUR → ${result} ${to}`);
+      console.log(`Rates used: ${from} to EUR: ${1/EXCHANGE_RATES.EUR[from]}, EUR to ${to}: ${EXCHANGE_RATES.EUR[to]}`);
       return result;
     }
     
@@ -88,34 +93,35 @@ export async function convertCurrency(
       const amountInTND = amount / EXCHANGE_RATES.TND[from];
       const result = amountInTND * EXCHANGE_RATES.TND[to];
       console.log(`TND conversion: ${amount} ${from} → ${amountInTND} TND → ${result} ${to}`);
+      console.log(`Rates used: ${from} to TND: ${1/EXCHANGE_RATES.TND[from]}, TND to ${to}: ${EXCHANGE_RATES.TND[to]}`);
       return result;
     }
     
     // Special case for EUR to USD conversion (important for payment processing)
     if (from === 'EUR' && to === 'USD') {
       const result = amount * 1.09; // 1 EUR = 1.09 USD
-      console.log(`Special EUR→USD: ${amount} EUR = ${result} USD`);
+      console.log(`Special EUR→USD: ${amount} EUR = ${result} USD (rate: 1.09)`);
       return result;
     }
     
     // Special case for USD to EUR conversion
     if (from === 'USD' && to === 'EUR') {
       const result = amount * 0.92; // 1 USD = 0.92 EUR
-      console.log(`Special USD→EUR: ${amount} USD = ${result} EUR`);
+      console.log(`Special USD→EUR: ${amount} USD = ${result} EUR (rate: 0.92)`);
       return result;
     }
     
     // Special case for EUR to TND conversion
     if (from === 'EUR' && to === 'TND') {
       const result = amount * 3.45; // 1 EUR = 3.45 TND
-      console.log(`Special EUR→TND: ${amount} EUR = ${result} TND`);
+      console.log(`Special EUR→TND: ${amount} EUR = ${result} TND (rate: 3.45)`);
       return result;
     }
     
     // Special case for TND to EUR conversion
     if (from === 'TND' && to === 'EUR') {
       const result = amount * 0.29; // 1 TND = 0.29 EUR
-      console.log(`Special TND→EUR: ${amount} TND = ${result} EUR`);
+      console.log(`Special TND→EUR: ${amount} TND = ${result} EUR (rate: 0.29)`);
       return result;
     }
     

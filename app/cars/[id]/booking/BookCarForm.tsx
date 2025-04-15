@@ -112,7 +112,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
     return parseFloat(car.originalPrice)
   }, [car])
 
-  // Convert price to the user-selected currency
+  // Convert price to the user-selected currency for display purposes only
   const convertedEffectivePrice = useMemo(() => {
     if (!car) return 0
     const carCurrency = car.currency || "TND" // Default to TND since that's the DB default
@@ -209,12 +209,20 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
 
       try {
         setIsSubmitting(true)
+        
+        // Calculate the total price in the car's original currency
+        const carCurrency = car.currency || "TND";
+        const priceInOriginalCurrency = effectivePrice * totalDays;
+        
+        console.log(`Booking car with original price: ${priceInOriginalCurrency} ${carCurrency}`);
+        console.log(`Car details: ID=${car.id}, Currency=${carCurrency}, Original Price=${car.originalPrice}, Effective Price=${effectivePrice}`);
+        
         const result = await bookCar({
           carId: numericCarId,
           userId: session.user.id,
           startDate: dateRange.from,
           endDate: dateRange.to,
-          totalPrice,
+          totalPrice: priceInOriginalCurrency, // Use the price in the car's original currency
           customerInfo: data,
           paymentMethod: selectedPaymentMethod,
         })
@@ -244,7 +252,9 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
       dateRange,
       hasDateOverlap,
       numericCarId,
-      totalPrice,
+      effectivePrice,
+      totalDays,
+      car,
       session,
       selectedPaymentMethod,
     ]
