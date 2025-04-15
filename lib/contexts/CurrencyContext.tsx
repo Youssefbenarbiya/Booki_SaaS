@@ -66,6 +66,7 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
         }
         
         setRates(apiRates);
+        console.log("Currency rates loaded:", apiRates);
       } catch (error) {
         console.error("Error fetching currency rates:", error);
         
@@ -82,6 +83,7 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
         
         setApiBaseCurrency("EUR");
         setRates(fallbackRates);
+        console.log("Using fallback currency rates:", fallbackRates);
       } finally {
         setIsLoading(false);
       }
@@ -99,9 +101,14 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
     if (isNaN(numericAmount)) return 0;
     
     // If the source and target currencies are the same, no conversion needed
-    if (fromCurrency === currency) return numericAmount;
+    if (fromCurrency === currency) {
+      console.log(`Same currency (${fromCurrency}), no conversion needed`);
+      return numericAmount;
+    }
     
     try {
+      console.log(`Converting ${numericAmount} from ${fromCurrency} to ${currency}`);
+      
       // SIMPLIFIED CONVERSION ALGORITHM:
       // 1. Convert fromCurrency to API base currency (EUR in our case)
       // 2. Convert from API base currency to target currency
@@ -109,18 +116,28 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
       // Special handling for TND which might not be in the API
       if (fromCurrency === "TND" && currency === "EUR") {
         // Direct conversion from TND to EUR
-        return numericAmount * FIXED_TND_RATES.EUR;
+        const result = numericAmount * FIXED_TND_RATES.EUR;
+        console.log(`Direct TND to EUR: ${numericAmount} TND = ${result} EUR (rate: ${FIXED_TND_RATES.EUR})`);
+        return result;
       } else if (fromCurrency === "EUR" && currency === "TND") {
         // Direct conversion from EUR to TND
-        return numericAmount * (1 / FIXED_TND_RATES.EUR);
+        const result = numericAmount * (1 / FIXED_TND_RATES.EUR);
+        console.log(`Direct EUR to TND: ${numericAmount} EUR = ${result} TND (rate: ${1 / FIXED_TND_RATES.EUR})`);
+        return result;
       } else if (fromCurrency === "TND") {
         // Two-step conversion: TND -> EUR -> target currency
         const amountInEur = numericAmount * FIXED_TND_RATES.EUR;
-        return amountInEur * (rates[currency] || 1);
+        const result = amountInEur * (rates[currency] || 1);
+        console.log(`TND to ${currency}: ${numericAmount} TND -> ${amountInEur} EUR -> ${result} ${currency}`);
+        console.log(`Rates used: TND to EUR: ${FIXED_TND_RATES.EUR}, EUR to ${currency}: ${rates[currency] || 1}`);
+        return result;
       } else if (currency === "TND") {
         // Two-step conversion: source currency -> EUR -> TND
         const amountInEur = fromCurrency === "EUR" ? numericAmount : numericAmount / (rates[fromCurrency] || 1);
-        return amountInEur * (1 / FIXED_TND_RATES.EUR);
+        const result = amountInEur * (1 / FIXED_TND_RATES.EUR);
+        console.log(`${fromCurrency} to TND: ${numericAmount} ${fromCurrency} -> ${amountInEur} EUR -> ${result} TND`);
+        console.log(`Rates used: ${fromCurrency} to EUR: ${fromCurrency === "EUR" ? 1 : 1/(rates[fromCurrency] || 1)}, EUR to TND: ${1 / FIXED_TND_RATES.EUR}`);
+        return result;
       } else {
         // Standard conversion through EUR as intermediate
         // First convert to EUR
@@ -129,7 +146,10 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
           : numericAmount / (rates[fromCurrency] || 1);
         
         // Then convert from EUR to target currency
-        return amountInBaseCurrency * (rates[currency] || 1);
+        const result = amountInBaseCurrency * (rates[currency] || 1);
+        console.log(`${fromCurrency} to ${currency}: ${numericAmount} ${fromCurrency} -> ${amountInBaseCurrency} ${apiBaseCurrency} -> ${result} ${currency}`);
+        console.log(`Rates used: ${fromCurrency} to ${apiBaseCurrency}: ${fromCurrency === apiBaseCurrency ? 1 : 1/(rates[fromCurrency] || 1)}, ${apiBaseCurrency} to ${currency}: ${rates[currency] || 1}`);
+        return result;
       }
     } catch (error) {
       console.error("Error converting currency:", error, {

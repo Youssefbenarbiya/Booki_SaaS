@@ -4,7 +4,6 @@ import { generateAgencyId } from "@/lib/utils"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
 
-// Make sure this export is at the top level and not inside another function
 export async function POST(req: Request) {
   try {
     const body = await req.json()

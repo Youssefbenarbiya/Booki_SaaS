@@ -13,6 +13,7 @@ export default function PaymentSuccessPage() {
   // Get bookingId from query parameters
   const searchParams = useSearchParams()
   const bookingId = searchParams.get("bookingId")
+  const paymentId = searchParams.get("paymentId") // Flouci returns a paymentId
 
   const [tripData, setTripData] = useState<any>(null)
   const [bookingData, setBookingData] = useState<any>(null)
@@ -29,6 +30,20 @@ export default function PaymentSuccessPage() {
 
     async function fetchBookingData() {
       try {
+        // If this success page was called with a paymentId, it's from Flouci and we need to verify
+        if (paymentId) {
+          // Verify the Flouci payment first
+          const verifyRes = await fetch(`/api/payment/trip-verify?paymentId=${paymentId}&bookingId=${bookingId}`)
+          if (!verifyRes.ok) {
+            throw new Error("Failed to verify payment")
+          }
+          const verifyData = await verifyRes.json()
+          if (!verifyData.success) {
+            throw new Error("Payment verification failed")
+          }
+        }
+
+        // Now get the booking data
         const res = await fetch(`/api/trip-booking?bookingId=${bookingId}`)
         if (!res.ok) {
           throw new Error("Failed to fetch booking data.")
@@ -48,7 +63,7 @@ export default function PaymentSuccessPage() {
     }
 
     fetchBookingData()
-  }, [bookingId])
+  }, [bookingId, paymentId])
 
   const handleDownloadPDF = () => {
     if (tripData && bookingData && userData) {
@@ -56,16 +71,6 @@ export default function PaymentSuccessPage() {
     } else {
       alert("Missing data for PDF generation.")
     }
-  }
-
-  // Helper function to determine the effective price
-  const getEffectivePrice = (trip: any) => {
-    if (!trip) return null
-
-    const hasDiscount = trip.discountPercentage && trip.discountPercentage > 0
-    return hasDiscount && trip.priceAfterDiscount
-      ? Number(trip.priceAfterDiscount)
-      : Number(trip.originalPrice || trip.price || 0)
   }
 
   if (loading) {
@@ -84,9 +89,16 @@ export default function PaymentSuccessPage() {
     )
   }
 
-  const effectivePrice = getEffectivePrice(tripData)
-  const hasDiscount =
-    tripData?.discountPercentage && tripData?.discountPercentage > 0
+  // Determine the payment currency based on payment method
+  const paymentMethod = bookingData?.paymentMethod || ""
+  const paymentCurrency = bookingData?.paymentCurrency || "USD"
+  
+  // Calculate price per seat from total price and seats booked
+  const pricePerSeat = bookingData?.totalPrice / bookingData?.seatsBooked
+  
+  // Determine if Stripe or Flouci was used
+  const isStripePayment = paymentMethod.includes("STRIPE")
+  const isFlouciPayment = paymentMethod.includes("FLOUCI")
 
   return (
     <div className="container mx-auto px-4 py-16 flex flex-col items-center">
@@ -110,28 +122,66 @@ export default function PaymentSuccessPage() {
                 <strong>Destination:</strong> {tripData.destination}
               </p>
               <p>
-                <strong>Start Date:</strong> {tripData.startDate}
+                <strong>Start Date:</strong> {new Date(tripData.startDate).toLocaleDateString()}
               </p>
               <p>
-                <strong>End Date:</strong> {tripData.endDate}
+                <strong>End Date:</strong> {new Date(tripData.endDate).toLocaleDateString()}
               </p>
               <p>
-                <strong>Price per Seat:</strong>{" "}
-                {effectivePrice && formatPrice(effectivePrice)}
-                {hasDiscount && (
-                  <span className="ml-2 text-sm">
-                    <span className="line-through text-gray-500">
-                      {formatPrice(Number(tripData.originalPrice))}
-                    </span>
-                    <span className="text-green-600 ml-1">
-                      ({tripData.discountPercentage}% off)
-                    </span>
-                  </span>
-                )}
+                <strong>Booking Reference:</strong> #{bookingData?.id}
               </p>
             </>
           ) : (
             <p>No trip details available.</p>
+          )}
+        </div>
+
+        {/* Display Payment Details */}
+        <div className="text-left mb-4">
+          <h2 className="text-xl font-semibold mb-2">Payment Details</h2>
+          {bookingData ? (
+            <>
+              <p>
+                <strong>Payment Method:</strong>{" "}
+                {isStripePayment 
+                  ? "Credit Card (USD)" 
+                  : isFlouciPayment 
+                    ? "Flouci (TND)"
+                    : paymentMethod}
+              </p>
+              <p>
+                <strong>Payment Status:</strong>{" "}
+                <span className="text-green-600 font-medium">
+                  {bookingData.paymentStatus === "completed" ? "Completed" : bookingData.paymentStatus}
+                </span>
+              </p>
+              <p>
+                <strong>Seats Booked:</strong> {bookingData.seatsBooked}
+              </p>
+              <p>
+                <strong>Price per Seat:</strong>{" "}
+                {formatPrice(pricePerSeat, { currency: paymentCurrency })}
+              </p>
+              <p>
+                <strong>Total Amount:</strong>{" "}
+                <span className="font-bold">
+                  {formatPrice(bookingData.totalPrice, { currency: paymentCurrency })}
+                </span>
+              </p>
+              {bookingData.paymentDate && (
+                <p>
+                  <strong>Payment Date:</strong>{" "}
+                  {new Date(bookingData.paymentDate).toLocaleString()}
+                </p>
+              )}
+              {bookingData.originalCurrency && bookingData.originalCurrency !== paymentCurrency && (
+                <p className="text-sm text-gray-500 mt-2">
+                  * Price converted from {bookingData.originalCurrency} to {paymentCurrency}
+                </p>
+              )}
+            </>
+          ) : (
+            <p>No payment details available.</p>
           )}
         </div>
 

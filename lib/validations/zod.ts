@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { object, string, z } from "zod"
 
 const getPasswordSchema = (type: "password" | "confirmPassword") =>
@@ -24,35 +25,62 @@ const getPhoneNumberSchema = () => {
       "Phone number must be a valid format (e.g., +1234567890)"
     )
 }
-export const signUpSchema = object({
-  name: getNameSchema(),
-  email: getEmailSchema(),
-  password: getPasswordSchema("password"),
-  confirmPassword: getPasswordSchema("confirmPassword"),
-  isAgency: z.boolean().optional(),
-  phoneNumber: getPhoneNumberSchema(),
-  agencyName: z
-    .string()
-    .min(3, { message: "Agency name must be at least 3 characters" })
-    .optional(),
-})
+// export const signUpSchema = object({
+//   name: getNameSchema(),
+//   email: getEmailSchema(),
+//   password: getPasswordSchema("password"),
+//   confirmPassword: getPasswordSchema("confirmPassword"),
+//   isAgency: z.boolean().optional(),
+//   phoneNumber: getPhoneNumberSchema(),
+//   agencyName: z
+//     .string()
+//     .min(3, { message: "Agency name must be at least 3 characters" })
+//     .optional(),
+// })
+//   .refine((data) => data.password === data.confirmPassword, {
+//     message: "Passwords don't match",
+//     path: ["confirmPassword"],
+//   })
+//   .refine(
+//     (data) => {
+//       if (data.isAgency && (!data.agencyName || data.agencyName.length < 3)) {
+//         return false
+//       }
+//       return true
+//     },
+//     {
+//       message: "Agency name is required and must be at least 3 characters",
+//       path: ["agencyName"],
+//     }
+//   )
+
+export const signUpSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Invalid email"),
+    password: z.string().min(6, "Password must be 6 or more characters"),
+    confirmPassword: z
+      .string()
+      .min(6, "Confirm Password must be 6 or more characters"),
+    phoneNumber: z.string().min(1, "Phone number is required"),
+    isAgency: z.boolean(),
+    // Make agencyName optional
+    agencyName: z.string().optional(),
+  })
+  // Check that passwords match
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
+    message: "Passwords do not match",
     path: ["confirmPassword"],
   })
+  // Conditionally require agencyName if isAgency is true
   .refine(
-    (data) => {
-      if (data.isAgency && (!data.agencyName || data.agencyName.length < 3)) {
-        return false
-      }
-      return true
-    },
+    (data) =>
+      !data.isAgency || (data.agencyName && data.agencyName.length >= 3),
     {
       message: "Agency name is required and must be at least 3 characters",
       path: ["agencyName"],
     }
   )
-
 export const signInSchema = object({
   email: getEmailSchema(),
   password: getPasswordSchema("password"),

@@ -24,8 +24,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-// ---- Added imports for currency selection
-import { useCurrency, currencies } from "@/contexts/CurrencyContext"
+// Import the useCurrency hook from the correct location
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
 import {
   Select,
   SelectContent,
@@ -34,10 +34,28 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+// Define currency type to fix linting issues
+type Currency = {
+  code: string
+  symbol: string
+  name: string
+}
+
+// Define the currencies array locally since it's not exported from the context
+const currencies: Currency[] = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'TND', symbol: 'DT', name: 'Tunisian Dinar' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' }
+];
+
 // Extend TripInput to include currency
 interface ExtendedTripInput extends TripInput {
   discountPercentage?: number
-  currency?: string
+  currency: string
 }
 
 interface EditTripFormProps {
@@ -53,7 +71,6 @@ interface EditTripFormProps {
     priceAfterDiscount?: number
     capacity: number
     isAvailable: boolean
-    // If your DB doesn't have currency yet, add it here:
     currency?: string
     images: Array<{
       id: number
@@ -72,10 +89,11 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  // We assume a currency context is available (like in your NewTripForm).
-  // If the trip doesn't have a currency set, fallback to the default from context.
-  const { currency: defaultCurrency } = useCurrency()
-  const tripCurrency = trip.currency || defaultCurrency?.code || "USD"
+  // Get the currency context
+  const { currency: contextCurrency, setCurrency } = useCurrency()
+  
+  // Use the trip's currency if available, otherwise use the context currency
+  const tripCurrency = trip.currency || contextCurrency || "USD"
 
   // Format dates for input fields
   const formatDateForInput = (date: Date) => {
@@ -108,7 +126,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
     !!trip.discountPercentage && ![10, 20, 30].includes(trip.discountPercentage)
   )
 
-  // --- NEW: keep track of the selected currency ---
+  // --- keep track of the selected currency ---
   const [selectedCurrency, setSelectedCurrency] = useState<string>(tripCurrency)
 
   const {
@@ -257,6 +275,11 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
         )
       }
 
+      // When currency changes, update the context
+      if (data.currency && data.currency !== contextCurrency) {
+        setCurrency(data.currency)
+      }
+
       // Build final data for update
       const formattedData = {
         ...data,
@@ -292,7 +315,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
 
   // Helper to get currency symbol for the current selection
   const currentCurrencySymbol =
-    currencies.find((c) => c.code === watchedCurrency)?.symbol || "$"
+    currencies.find((c: Currency) => c.code === watchedCurrency)?.symbol || "$"
 
   return (
     <div className="max-w-3xl mx-auto my-8 px-4">
@@ -455,6 +478,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
                           render={({ field }) => (
                             <Select
                               value={field.value}
+                              defaultValue={tripCurrency}
                               onValueChange={(value) => {
                                 field.onChange(value)
                                 setSelectedCurrency(value)
@@ -462,10 +486,18 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
                               }}
                             >
                               <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select Currency" />
+                                <SelectValue>
+                                  {field.value ? (
+                                    <>
+                                      {currencies.find((c) => c.code === field.value)?.symbol || ""} {field.value}
+                                    </>
+                                  ) : (
+                                    "Select Currency"
+                                  )}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                {currencies.map((curr) => (
+                                {currencies.map((curr: Currency) => (
                                   <SelectItem key={curr.code} value={curr.code}>
                                     {curr.symbol} {curr.code} - {curr.name}
                                   </SelectItem>

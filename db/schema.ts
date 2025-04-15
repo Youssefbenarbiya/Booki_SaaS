@@ -153,6 +153,9 @@ export const tripBookings = pgTable("trip_bookings", {
   paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDate: timestamp("payment_date"),
+  paymentCurrency: varchar("payment_currency", { length: 10 }),
+  originalCurrency: varchar("original_currency", { length: 10 }),
+  originalPricePerSeat: decimal("original_price_per_seat", { precision: 10, scale: 2 }),
 })
 
 // Trip Relations
@@ -278,6 +281,12 @@ export const roomBookings = pgTable("room_bookings", {
   paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDate: timestamp("payment_date"),
+  paymentCurrency: varchar("payment_currency", { length: 10 }),
+  originalCurrency: varchar("original_currency", { length: 10 }),
+  originalPrice: decimal("original_price", { precision: 10, scale: 2 }),
+  adultCount: integer("adult_count").default(1),
+  childCount: integer("child_count").default(0),
+  infantCount: integer("infant_count").default(0),
 })
 
 // Hotel & Room Relations
@@ -360,6 +369,9 @@ export const carBookings = pgTable("car_bookings", {
   paymentStatus: varchar("payment_status", { length: 50 }).default("pending"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDate: timestamp("payment_date").defaultNow().notNull(),
+  paymentCurrency: varchar("payment_currency", { length: 10 }),
+  originalCurrency: varchar("original_currency", { length: 10 }),
+  originalPrice: numeric("original_price"),
   fullName: text("full_name"),
   email: text("email"),
   phone: text("phone"),

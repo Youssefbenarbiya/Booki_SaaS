@@ -3,6 +3,7 @@ import { getTripById } from "@/actions/trips/tripActions"
 import { notFound } from "next/navigation"
 import EditTripForm from "./EditTripForm"
 import { type TripInput } from "@/actions/trips/tripActions"
+import { CurrencyProvider } from "@/lib/contexts/CurrencyContext"
 
 export default async function EditTripPage({
   params,
@@ -15,6 +16,9 @@ export default async function EditTripPage({
   if (!trip) {
     notFound()
   }
+
+  // Log the trip data to see what we have
+  console.log("Trip data from DB:", JSON.stringify(trip, null, 2))
 
   // Transform the trip data to match the form's expected types
   const transformedTrip = {
@@ -29,6 +33,7 @@ export default async function EditTripPage({
     priceAfterDiscount: trip.priceAfterDiscount ? Number(trip.priceAfterDiscount) : undefined,
     capacity: trip.capacity,
     isAvailable: trip.isAvailable ?? false,
+    currency: trip.currency || "USD", // Ensure currency is passed, default to USD if not available
     images: trip.images.map((img: any) => ({
       id: img.id,
       imageUrl: img.imageUrl,
@@ -44,7 +49,9 @@ export default async function EditTripPage({
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Edit Trip</h1>
-      <EditTripForm trip={transformedTrip} />
+      <CurrencyProvider>
+        <EditTripForm trip={transformedTrip} />
+      </CurrencyProvider>
     </div>
   )
 }
