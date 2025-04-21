@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-// Helper functions for common validations
+// Helper functions with hardcoded messages (fallback)
 const getPasswordSchema = (type: "password" | "confirmPassword") =>
   z
     .string({ required_error: `${type} is required` })
@@ -22,13 +22,14 @@ const getNameSchema = () =>
 const getPhoneNumberSchema = () =>
   z
     .string()
-    .min(10, "Phone number must be at least 10 digits long")
+    .min(8, "Phone number must be at least 8 digits long")
     .max(15, "Phone number must not exceed 15 digits")
     .regex(
       /^\+?[0-9]*$/,
       "Phone number must be a valid format (e.g., +1234567890)"
     )
 
+// Default schema with English error messages
 export const signUpSchema = z
   .object({
     name: getNameSchema(),
@@ -39,12 +40,10 @@ export const signUpSchema = z
     isAgency: z.boolean().default(false),
     agencyName: z.string().optional(),
   })
-  // Check that passwords match
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   })
-  // Conditionally require agencyName if isAgency is true
   .refine(
     (data) =>
       !data.isAgency || (data.agencyName && data.agencyName.length >= 3),
@@ -53,3 +52,58 @@ export const signUpSchema = z
       path: ["agencyName"],
     }
   )
+
+// Function to create a schema with translations
+export const createSignUpSchema = (t: (key: string) => string) => {
+  const getPasswordSchema = (type: "password" | "confirmPassword") => {
+    const errorKey = type === "password" ? "password" : "confirmPassword"
+    return z
+      .string({
+        required_error: t(`errors.${errorKey}.required`),
+      })
+      .min(8, t(`errors.${errorKey}.tooShort`))
+      .max(32, t(`errors.${errorKey}.tooLong`))
+  }
+
+  const getEmailSchema = () =>
+    z
+      .string({ required_error: t("errors.email.required") })
+      .min(1, t("errors.email.required"))
+      .email(t("errors.email.invalid"))
+
+  const getNameSchema = () =>
+    z
+      .string({ required_error: t("errors.name.required") })
+      .min(1, t("errors.name.tooShort"))
+      .max(50, t("errors.name.tooLong"))
+
+  const getPhoneNumberSchema = () =>
+    z
+      .string()
+      .min(8, t("errors.phoneNumber.tooShort"))
+      .max(15, t("errors.phoneNumber.tooLong"))
+      .regex(/^\+?[0-9]*$/, t("errors.phoneNumber.invalid"))
+
+  return z
+    .object({
+      name: getNameSchema(),
+      email: getEmailSchema(),
+      password: getPasswordSchema("password"),
+      confirmPassword: getPasswordSchema("confirmPassword"),
+      phoneNumber: getPhoneNumberSchema(),
+      isAgency: z.boolean().default(false),
+      agencyName: z.string().optional(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t("errors.confirmPassword.mismatch"),
+      path: ["confirmPassword"],
+    })
+    .refine(
+      (data) =>
+        !data.isAgency || (data.agencyName && data.agencyName.length >= 3),
+      {
+        message: t("errors.agencyName.required"),
+        path: ["agencyName"],
+      }
+    )
+}

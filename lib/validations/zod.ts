@@ -2,7 +2,7 @@ import { z } from "zod"
 const getPhoneNumberSchema = () =>
   z
     .string()
-    .min(10, "Phone number must be at least 10 digits long")
+    .min(8, "Phone number must be at least 8 digits long")
     .max(15, "Phone number must not exceed 15 digits")
     .regex(
       /^\+?[0-9]*$/,

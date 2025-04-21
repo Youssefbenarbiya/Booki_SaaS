@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
-import { signUpSchema } from "@/lib/validations/signup"
+import { signUpSchema, createSignUpSchema } from "@/lib/validations/signup"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { z } from "zod"
@@ -23,6 +23,8 @@ import Image from "next/image"
 import GoogleSignIn from "../(Oauth)/google"
 import FacebookSignIn from "../(Oauth)/facebook"
 import { motion, AnimatePresence } from "framer-motion"
+import { useTranslations } from "next-intl"
+import { useParams } from "next/navigation"
 
 export default function SignUp() {
   const [pending, setPending] = useState(false)
@@ -33,8 +35,16 @@ export default function SignUp() {
   )
   const { toast } = useToast()
 
+  // Get translations
+  const t = useTranslations("signUp")
+  // Create schema with translated error messages
+  const localizedSignUpSchema = createSignUpSchema((key) => t(key))
+
+  const params = useParams()
+  const currentLocale = (params.locale as string) || "en"
+
   const form = useForm<z.infer<typeof signUpSchema>>({
-    resolver: zodResolver(signUpSchema),
+    resolver: zodResolver(localizedSignUpSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -117,16 +127,14 @@ export default function SignUp() {
 
               // Success message for agency
               toast({
-                title: "Agency account created",
-                description:
-                  "Your agency account has been created. Check your email for a verification link.",
+                title: t("agencyAccountCreated"),
+                description: t("agencyVerificationEmail"),
               })
             } catch (agencyError) {
               console.error("Agency registration error:", agencyError)
               toast({
-                title: "Agency setup failed",
-                description:
-                  "Your account was created but we couldn't set up your agency. Please contact support.",
+                title: t("agencySetupFailed"),
+                description: t("accountCreatedAgencyFailed"),
                 variant: "destructive",
               })
             }
@@ -151,17 +159,15 @@ export default function SignUp() {
 
               // Regular user success message
               toast({
-                title: "Account created",
-                description:
-                  "Your account has been created. Check your email for a verification link.",
+                title: t("accountCreated"),
+                description: t("verificationEmail"),
               })
             } catch (customerError) {
               console.error("Customer registration error:", customerError)
               // Still show success since the auth account was created
               toast({
-                title: "Account created",
-                description:
-                  "Your account has been created. Check your email for a verification link.",
+                title: t("accountCreated"),
+                description: t("verificationEmail"),
               })
             }
           }
@@ -169,10 +175,8 @@ export default function SignUp() {
         onError: (error: any) => {
           console.error("User creation error:", error)
           toast({
-            title: "Account creation failed",
-            description:
-              (error as any)?.message ||
-              "Something went wrong creating your account.",
+            title: t("accountCreationFailed"),
+            description: (error as any)?.message || t("errors.auth.generic"),
             variant: "destructive",
           })
         },
@@ -180,8 +184,8 @@ export default function SignUp() {
     } catch (error: any) {
       console.error("Registration error:", error)
       toast({
-        title: "Something went wrong",
-        description: error?.message || "Something went wrong.",
+        title: t("somethingWentWrong"),
+        description: error?.message || t("errors.auth.generic"),
         variant: "destructive",
       })
     } finally {
@@ -208,8 +212,8 @@ export default function SignUp() {
           transition={{ duration: 0.5 }}
         >
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold mb-2">Create a new account</h1>
-            <p className="text-gray-600">Choose how you want to register</p>
+            <h1 className="text-3xl font-bold mb-2">{t("title")}</h1>
+            <p className="text-gray-600">{t("chooseRegistration")}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
@@ -226,20 +230,22 @@ export default function SignUp() {
               <div className="bg-blue-50 p-4 rounded-full mb-4">
                 <User className="h-12 w-12 text-blue-500" />
               </div>
-              <h2 className="text-2xl font-semibold mb-2">Customer Account</h2>
+              <h2 className="text-2xl font-semibold mb-2">
+                {t("customerAccount")}
+              </h2>
 
               <ul className="text-left mt-6 space-y-2">
                 <li className="flex items-center">
                   <span className="bg-blue-100 rounded-full p-1 mr-2">✓</span>
-                  Book trips , accommodations & cars
+                  {t("customerFeature1")}
                 </li>
                 <li className="flex items-center">
                   <span className="bg-blue-100 rounded-full p-1 mr-2">✓</span>
-                  Save favorite destinations
+                  {t("customerFeature2")}
                 </li>
                 <li className="flex items-center">
                   <span className="bg-blue-100 rounded-full p-1 mr-2">✓</span>
-                  Track booking history
+                  {t("customerFeature3")}
                 </li>
               </ul>
             </motion.div>
@@ -257,32 +263,34 @@ export default function SignUp() {
               <div className="bg-orange-50 p-4 rounded-full mb-4">
                 <Building2 className="h-12 w-12 text-orange-500" />
               </div>
-              <h2 className="text-2xl font-semibold mb-2">Agency Account</h2>
+              <h2 className="text-2xl font-semibold mb-2">
+                {t("agencyAccount")}
+              </h2>
 
               <ul className="text-left mt-6 space-y-2">
                 <li className="flex items-center">
                   <span className="bg-orange-100 rounded-full p-1 mr-2">✓</span>
-                  List and manage offerings
+                  {t("agencyFeature1")}
                 </li>
                 <li className="flex items-center">
                   <span className="bg-orange-100 rounded-full p-1 mr-2">✓</span>
-                  Manage bookings & employees
+                  {t("agencyFeature2")}
                 </li>
                 <li className="flex items-center">
                   <span className="bg-orange-100 rounded-full p-1 mr-2">✓</span>
-                  Dashboard analytics
+                  {t("agencyFeature3")}
                 </li>
               </ul>
             </motion.div>
           </div>
 
           <div className="text-center mt-8 text-sm text-gray-600">
-            Already have an account?{" "}
+            {t("alreadyHaveAccount")}{" "}
             <Link
-              href="/en/sign-in"
+              href={`/${currentLocale}/sign-in`}
               className="text-orange-500 hover:underline"
             >
-              Login
+              {t("loginLink")}
             </Link>
           </div>
         </motion.div>
@@ -313,8 +321,8 @@ export default function SignUp() {
             }
             alt="Forest view from below"
             width={500}
-            height={400} // Reduced from 700 to 400
-            className="object-cover rounded-2xl shadow-lg max-h-[450px]" // Added max-h class to control height
+            height={400}
+            className="object-cover rounded-2xl shadow-lg max-h-[450px]"
             priority
           />
         </motion.div>
@@ -350,10 +358,11 @@ export default function SignUp() {
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
-              Back to selection
+              {t("backToSelection")}
             </motion.button>
             <h2 className="text-3xl font-semibold">
-              Register as {userType === "agency" ? "an Agency" : "a Customer"}
+              {t("registerAs")}{" "}
+              {userType === "agency" ? t("anAgency") : t("aCustomer")}
             </h2>
           </div>
 
@@ -370,11 +379,11 @@ export default function SignUp() {
                   <FormItem>
                     <div className="flex items-center w-full gap-4">
                       <FormLabel className="text-sm font-medium min-w-[120px]">
-                        Name
+                        {t("name")}
                       </FormLabel>
                       <FormControl className="flex-1">
                         <Input
-                          placeholder="John Doe"
+                          placeholder={t("namePlaceholder")}
                           {...field}
                           className="h-12 w-full"
                         />
@@ -392,12 +401,12 @@ export default function SignUp() {
                   <FormItem>
                     <div className="flex items-center w-full gap-4">
                       <FormLabel className="text-sm font-medium min-w-[120px]">
-                        Email
+                        {t("email")}
                       </FormLabel>
                       <FormControl className="flex-1">
                         <Input
                           type="email"
-                          placeholder="john.doe@gmail.com"
+                          placeholder={t("emailPlaceholder")}
                           {...field}
                           className="h-12 w-full"
                         />
@@ -416,12 +425,12 @@ export default function SignUp() {
                   <FormItem>
                     <div className="flex items-center w-full gap-4">
                       <FormLabel className="text-sm font-medium min-w-[120px]">
-                        Phone Number
+                        {t("phoneNumber")}
                       </FormLabel>
                       <FormControl className="flex-1">
                         <Input
                           type="tel"
-                          placeholder="+216 4567890"
+                          placeholder={t("phoneNumberPlaceholder")}
                           {...field}
                           className="h-12 w-full"
                         />
@@ -439,7 +448,7 @@ export default function SignUp() {
                   <FormItem>
                     <div className="flex items-center w-full gap-4">
                       <FormLabel className="text-sm font-medium min-w-[120px]">
-                        Password
+                        {t("password")}
                       </FormLabel>
                       <FormControl className="flex-1">
                         <div className="relative w-full">
@@ -474,7 +483,7 @@ export default function SignUp() {
                   <FormItem>
                     <div className="flex items-center w-full gap-4">
                       <FormLabel className="text-sm font-medium min-w-[120px]">
-                        Confirm Password
+                        {t("confirmPassword")}
                       </FormLabel>
                       <FormControl className="flex-1">
                         <div className="relative w-full">
@@ -520,11 +529,11 @@ export default function SignUp() {
                         <FormItem>
                           <div className="flex items-center w-full gap-4">
                             <FormLabel className="text-sm font-medium min-w-[120px]">
-                              Agency Name
+                              {t("agencyName")}
                             </FormLabel>
                             <FormControl className="flex-1">
                               <Input
-                                placeholder="Your Agency Name"
+                                placeholder={t("agencyNamePlaceholder")}
                                 {...field}
                                 className={`h-12 w-full ${
                                   form.formState.errors.agencyName
@@ -541,8 +550,7 @@ export default function SignUp() {
                                       e.target.value.length < 3)
                                   ) {
                                     form.setError("agencyName", {
-                                      message:
-                                        "Agency name is required and must be at least 3 characters",
+                                      message: t("agencyNameError"),
                                     })
                                   } else {
                                     form.clearErrors("agencyName")
@@ -562,13 +570,13 @@ export default function SignUp() {
               <div className="flex items-center space-x-2">
                 <Checkbox id="terms" />
                 <label htmlFor="terms" className="text-sm text-gray-600">
-                  I agree to all the{" "}
+                  {t("agreeToTerms")}{" "}
                   <Link href="#" className="text-orange-500 hover:underline">
-                    Terms
+                    {t("terms")}
                   </Link>{" "}
-                  and{" "}
+                  {t("and")}{" "}
                   <Link href="#" className="text-orange-500 hover:underline">
-                    Privacy Policies
+                    {t("privacyPolicies")}
                   </Link>
                 </label>
               </div>
@@ -601,20 +609,20 @@ export default function SignUp() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Processing...
+                    {t("processing")}
                   </span>
                 ) : (
-                  "Create account"
+                  t("registerButton")
                 )}
               </button>
 
               <div className="text-center text-sm text-gray-600">
-                Already have an account?{" "}
+                {t("alreadyHaveAccount")}{" "}
                 <Link
-                  href="/en/sign-in"
+                  href={`/${currentLocale}/sign-in`}
                   className="text-orange-500 hover:underline"
                 >
-                  Login
+                  {t("loginLink")}
                 </Link>
               </div>
 
@@ -627,7 +635,7 @@ export default function SignUp() {
                     </div>
                     <div className="relative flex justify-center text-sm">
                       <span className="px-2 bg-white text-gray-500">
-                        Or Sign up with
+                        {t("orSignUpWith")}
                       </span>
                     </div>
                   </div>

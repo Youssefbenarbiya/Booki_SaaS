@@ -51,6 +51,75 @@
     "registerButton": "تسجيل",
     "alreadyHaveAccount": "لديك حساب بالفعل؟",
     "loginLink": "تسجيل الدخول",
-    "orRegisterWith": "أو التسجيل باستخدام"
+    "orRegisterWith": "أو التسجيل باستخدام",
+    "chooseRegistration": "اختر كيفية التسجيل",
+    "customerAccount": "حساب عميل",
+    "agencyAccount": "حساب وكالة",
+    "customerFeature1": "حجز الرحلات والإقامات والسيارات",
+    "customerFeature2": "حفظ الوجهات المفضلة",
+    "customerFeature3": "تتبع سجل الحجوزات",
+    "agencyFeature1": "إدراج وإدارة العروض",
+    "agencyFeature2": "إدارة الحجوزات والموظفين",
+    "agencyFeature3": "تحليلات لوحة المعلومات",
+    "backToSelection": "العودة إلى الاختيار",
+    "registerAs": "التسجيل كـ",
+    "anAgency": "وكالة",
+    "aCustomer": "عميل",
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "phoneNumber": "رقم الهاتف",
+    "phoneNumberPlaceholder": "+216 4567890",
+    "password": "كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "agencyName": "اسم الوكالة",
+    "agencyNameError": "اسم الوكالة مطلوب ويجب أن يتكون من 3 أحرف على الأقل",
+    "agreeToTerms": "أوافق على جميع",
+    "terms": "الشروط",
+    "and": "و",
+    "privacyPolicies": "سياسات الخصوصية",
+    "processing": "جاري المعالجة...",
+    "orSignUpWith": "أو تسجيل باستخدام",
+    "accountCreated": "تم إنشاء الحساب",
+    "verificationEmail": "تم إنشاء حسابك. تحقق من بريدك الإلكتروني للحصول على رابط التحقق.",
+    "agencyAccountCreated": "تم إنشاء حساب الوكالة",
+    "agencyVerificationEmail": "تم إنشاء حساب وكالتك. تحقق من بريدك الإلكتروني للحصول على رابط التحقق.",
+    "agencySetupFailed": "فشل إعداد الوكالة",
+    "accountCreatedAgencyFailed": "تم إنشاء حسابك ولكن لم نتمكن من إعداد وكالتك. يرجى الاتصال بالدعم.",
+    "accountCreationFailed": "فشل إنشاء الحساب",
+    "somethingWentWrong": "حدث خطأ ما",
+    "errors": {
+      "name": {
+        "required": "الاسم مطلوب",
+        "tooShort": "يجب أن يتكون الاسم من حرف واحد على الأقل",
+        "tooLong": "يجب أن يكون الاسم أقل من 50 حرفًا"
+      },
+      "email": {
+        "required": "البريد الإلكتروني مطلوب",
+        "invalid": "صيغة البريد الإلكتروني غير صالحة"
+      },
+      "password": {
+        "required": "كلمة المرور مطلوبة",
+        "tooShort": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
+        "tooLong": "لا يمكن أن تتجاوز كلمة المرور 32 حرفًا"
+      },
+      "confirmPassword": {
+        "required": "يرجى تأكيد كلمة المرور",
+        "tooShort": "يجب أن يحتوي التأكيد على 8 أحرف على الأقل",
+        "tooLong": "لا يمكن أن يتجاوز التأكيد 32 حرفًا",
+        "mismatch": "كلمات المرور غير متطابقة"
+      },
+      "phoneNumber": {
+        "required": "رقم الهاتف مطلوب",
+        "tooShort": "يجب أن يتكون رقم الهاتف من 8 أرقام على الأقل",
+        "tooLong": "يجب ألا يتجاوز رقم الهاتف 15 رقمًا",
+        "invalid": "يجب أن يكون رقم الهاتف بتنسيق صالح (مثال: ‎+1234567890)"
+      },
+      "agencyName": {
+        "required": "اسم الوكالة مطلوب ويجب أن يتكون من 3 أحرف على الأقل"
+      },
+      "auth": {
+        "generic": "حدث خطأ ما أثناء التسجيل. يرجى المحاولة مرة أخرى."
+      }
+    }
   }
 }
