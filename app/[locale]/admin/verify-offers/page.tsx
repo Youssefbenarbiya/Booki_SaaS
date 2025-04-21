@@ -12,12 +12,16 @@ import { BlogApprovalActions } from "@/components/dashboard/admin/BlogApprovalAc
 
 export default async function VerifyOffersPage({
   searchParams,
+  params,
 }: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
+  params: { locale: string }
 }) {
+  const { locale } = params
+
   // Await the searchParams before using its properties
-  const params = await searchParams
-  const tabParam = params?.tab
+  const paramsData = await searchParams
+  const tabParam = paramsData?.tab
 
   // Get current tab from URL parameters or default to "trips"
   // Handle string[] case by taking first value or defaulting to "trips"
@@ -167,7 +171,7 @@ export default async function VerifyOffersPage({
               )}
               <td className="px-6 py-4 whitespace-nowrap">
                 <Link
-                  href={`/admin/${type}s/${offer.id}`}
+                  href={`/${locale}/admin/${type}s/${offer.id}`}
                   className="text-indigo-600 hover:text-indigo-900"
                 >
                   View Details

@@ -2,13 +2,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { generateHotelRoomBookingPDF } from "@/actions/hotels&rooms/generateInvoiceRoom"
 
 export default function PaymentSuccessPage() {
+  // Get the locale from URL params
+  const params = useParams()
+  const locale = params.locale as string
+
   // Get bookingId from query parameters
   const searchParams = useSearchParams()
   const bookingId = searchParams.get("bookingId")
@@ -138,12 +142,12 @@ export default function PaymentSuccessPage() {
           >
             Download Booking PDF
           </Button>
-          <Link href="/user/profile/bookingHistory">
+          <Link href={`/${locale}/user/profile/bookingHistory`}>
             <Button variant="default" className="w-full">
               View My Bookings
             </Button>
           </Link>
-          <Link href="/?type=hotels">
+          <Link href={`/${locale}/?type=hotels`}>
             <Button variant="outline" className="w-full">
               Browse More Hotels
             </Button>

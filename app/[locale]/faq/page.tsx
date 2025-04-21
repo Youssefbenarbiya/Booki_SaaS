@@ -8,11 +8,14 @@ import {
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Mail } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useState } from "react"
 
 export default function FAQ() {
   const router = useRouter()
+  const params = useParams()
+  const locale = params.locale as string
+
   const faqs = [
     {
       question: "What types of hotels and rooms can I book?",
@@ -59,7 +62,7 @@ export default function FAQ() {
   )
 
   const handleContactClick = () => {
-    router.push('/contact')
+    router.push(`/${locale}/contact`)
   }
 
   return (
@@ -108,7 +111,7 @@ export default function FAQ() {
         <h2 className="text-xl font-semibold mb-4">
           Can&apos;t find what you are looking for?
         </h2>
-        <Button 
+        <Button
           className="bg-[#F68B1F] hover:bg-[#E57D1E] text-white"
           onClick={handleContactClick}
         >
@@ -117,7 +120,6 @@ export default function FAQ() {
         </Button>
       </div>
       <ChatScript />
-
     </div>
   )
 }

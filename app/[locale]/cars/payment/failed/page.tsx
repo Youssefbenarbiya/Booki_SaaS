@@ -1,12 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useParams } from "next/navigation"
 import { XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function CarPaymentFailedPage() {
   const searchParams = useSearchParams()
+  const { locale } = useParams()
   const bookingId = searchParams.get("bookingId") || "Unknown"
 
   return (
@@ -25,19 +26,19 @@ export default function CarPaymentFailedPage() {
 
       <div className="text-center space-y-4 max-w-lg">
         <p className="text-gray-600">
-          Please check your payment details and try again. If the problem persists, 
-          contact our support team.
+          Please check your payment details and try again. If the problem
+          persists, contact our support team.
         </p>
 
         <div className="flex gap-4 justify-center">
           <Button asChild variant="outline">
-            <Link href={`/cars/${bookingId}/booking`}>Try Again</Link>
+            <Link href={`/${locale}/cars/${bookingId}/booking`}>Try Again</Link>
           </Button>
           <Button asChild>
-            <Link href="/contact">Contact Support</Link>
+            <Link href={`/${locale}/contact`}>Contact Support</Link>
           </Button>
         </div>
       </div>
     </div>
   )
-} 
+}

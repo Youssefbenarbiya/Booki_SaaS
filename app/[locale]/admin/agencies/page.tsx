@@ -11,16 +11,19 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Eye, Search } from "lucide-react"
-import { searchAgencies, getAgencies } from "../../../actions/admin/agencies"
 import Image from "next/image"
+import { getAgencies, searchAgencies } from "@/actions/admin/agencies"
 
 export default async function AgenciesPage({
   searchParams,
+  params,
 }: {
   searchParams: Promise<{
     [key: string]: string | string[] | undefined
   }>
+  params: { locale: string }
 }) {
+  const { locale } = params
   const sp = await searchParams
   const search = (sp?.search as string) || ""
 
@@ -42,6 +45,8 @@ export default async function AgenciesPage({
               defaultValue={search}
               className="w-full max-w-xs border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm"
             />
+            <input type="hidden" name="locale" value={locale} />{" "}
+            {/* Add locale to the form data */}
             <Button
               type="submit"
               size="icon"
@@ -134,7 +139,7 @@ export default async function AgenciesPage({
                         })}
                     </TableCell>
                     <TableCell className="px-4 py-3">
-                      <Link href={`/admin/agencies/${agency.id}`}>
+                      <Link href={`/${locale}/admin/agencies/${agency.id}`}>
                         <Button
                           variant="ghost"
                           size="sm"

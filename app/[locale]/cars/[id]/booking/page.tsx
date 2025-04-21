@@ -5,11 +5,11 @@ import BookCarForm from "./BookCarForm"
 import SignInRedirectMessage from "@/app/[locale]/(auth)/sign-in/SignInRedirectMessage"
 
 interface BookingPageProps {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; locale: string }>
 }
 
 export default async function BookingPage({ params }: BookingPageProps) {
-  const { id: carId } = await params
+  const { id: carId, locale } = await params
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -18,10 +18,10 @@ export default async function BookingPage({ params }: BookingPageProps) {
   if (!session || !session.user) {
     return (
       <SignInRedirectMessage
-        callbackUrl={`/en/sign-in?callbackUrl=/cars/${carId}/booking`}
+        callbackUrl={`/${locale}/sign-in?callbackUrl=/${locale}/cars/${carId}/booking`}
       />
     )
   }
 
-  return <BookCarForm carId={carId} session={session} />
+  return <BookCarForm carId={carId} session={session} locale={locale} />
 }

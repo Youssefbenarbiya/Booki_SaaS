@@ -8,9 +8,9 @@ import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalAc
 export default async function TripDetailsPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; locale: string }>
 }) {
-  const { id } = await params
+  const { id, locale } = await params
   const tripId = parseInt(id)
 
   if (isNaN(tripId)) {
@@ -47,7 +47,7 @@ export default async function TripDetailsPage({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <Link
-          href="/admin/verify-offers"
+          href={`/${locale}/admin/verify-offers`}
           className="text-indigo-600 hover:text-indigo-900 flex items-center"
         >
           <svg

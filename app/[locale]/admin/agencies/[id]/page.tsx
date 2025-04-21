@@ -19,17 +19,14 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Ban, CheckCircle, Users } from "lucide-react"
-import {
-  toggleUserBan,
-  getAgencyDetails,
-} from "../../../../actions/admin/agencies"
+import { getAgencyDetails, toggleUserBan } from "@/actions/admin/agencies"
 
 export default async function AgencyDetailsPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; locale: string }>
 }) {
-  const { id } = await params
+  const { id, locale } = await params
 
   const data = await getAgencyDetails(id)
 
@@ -51,7 +48,7 @@ export default async function AgencyDetailsPage({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <Link
-          href="/admin/agencies"
+          href={`/${locale}/admin/agencies`}
           className="flex items-center text-blue-600 hover:text-blue-800"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -395,7 +392,9 @@ export default async function AgencyDetailsPage({
                                   </span>
                                 </TableCell>
                                 <TableCell>
-                                  <Link href={`/admin/trips/${trip.id}`}>
+                                  <Link
+                                    href={`/${locale}/admin/trips/${trip.id}`}
+                                  >
                                     <Button variant="ghost" size="sm">
                                       View
                                     </Button>
@@ -461,7 +460,9 @@ export default async function AgencyDetailsPage({
                                   </span>
                                 </TableCell>
                                 <TableCell>
-                                  <Link href={`/admin/hotels/${hotel.id}`}>
+                                  <Link
+                                    href={`/${locale}/admin/hotels/${hotel.id}`}
+                                  >
                                     <Button variant="ghost" size="sm">
                                       View
                                     </Button>
@@ -543,7 +544,9 @@ export default async function AgencyDetailsPage({
                                   </span>
                                 </TableCell>
                                 <TableCell>
-                                  <Link href={`/admin/cars/${car.id}`}>
+                                  <Link
+                                    href={`/${locale}/admin/cars/${car.id}`}
+                                  >
                                     <Button variant="ghost" size="sm">
                                       View
                                     </Button>
@@ -609,7 +612,9 @@ export default async function AgencyDetailsPage({
                                   </span>
                                 </TableCell>
                                 <TableCell>
-                                  <Link href={`/admin/blogs/${blog.id}`}>
+                                  <Link
+                                    href={`/${locale}/admin/blogs/${blog.id}`}
+                                  >
                                     <Button variant="ghost" size="sm">
                                       View
                                     </Button>

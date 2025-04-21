@@ -11,7 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { cn, formatPrice } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { format, isBefore, isWithinInterval } from "date-fns"
 
 import { CalendarIcon, Minus, Plus } from "lucide-react"
@@ -57,6 +57,7 @@ interface BookRoomFormProps {
   }
   capacity: number
   currency?: string
+  locale?: string // Add locale parameter
 }
 
 export default function BookRoomForm({
@@ -67,6 +68,7 @@ export default function BookRoomForm({
   userDetails,
   capacity,
   currency = "TND",
+  locale = "en", // Default to English
 }: BookRoomFormProps) {
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
@@ -122,13 +124,13 @@ export default function BookRoomForm({
     nights *
     (adultCount * parseFloat(pricePerNightAdult.toString()) +
       childCount * parseFloat(pricePerNightChild.toString()))
-      
+
   // Calculate the converted total price
-  const convertedTotalPrice = 
+  const convertedTotalPrice =
     nights *
     (adultCount * convertedPricePerNightAdult +
       childCount * convertedPricePerNightChild)
-      
+
   // Format price with the correct currency
   const formatPriceWithCurrency = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -279,6 +281,7 @@ export default function BookRoomForm({
           infantCount,
           initiatePayment: true,
           paymentMethod: selectedPaymentMethod,
+          locale: locale, // Pass locale to the server action
         })
 
         console.log("Booking response:", booking)
@@ -577,7 +580,9 @@ export default function BookRoomForm({
           <div className="flex justify-between items-center mb-4">
             <div>
               <p className="text-sm text-gray-500">Total Price</p>
-              <p className="text-2xl font-bold">{formatPriceWithCurrency(convertedTotalPrice)}</p>
+              <p className="text-2xl font-bold">
+                {formatPriceWithCurrency(convertedTotalPrice)}
+              </p>
             </div>
             <Button
               type="submit"

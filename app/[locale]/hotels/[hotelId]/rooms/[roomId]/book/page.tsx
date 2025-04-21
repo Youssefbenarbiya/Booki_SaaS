@@ -5,15 +5,15 @@ import BookRoomForm from "./BookRoomForm"
 import { getRoomById } from "@/actions/hotels&rooms/hotelActions"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import SignInRedirectMessage from "@/app/(auth)/en/sign-in/SignInRedirectMessage"
 import RoomSummary from "./RoomSummary"
+import SignInRedirectMessage from "@/app/[locale]/(auth)/sign-in/SignInRedirectMessage"
 
 export default async function BookRoomPage({
   params,
 }: {
-  params: { roomId: string; hotelId: string }
+  params: { roomId: string; hotelId: string; locale: string }
 }) {
-  const { roomId, hotelId } = await params
+  const { roomId, hotelId, locale } = await params
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -22,7 +22,7 @@ export default async function BookRoomPage({
   if (!session || !session.user) {
     return (
       <SignInRedirectMessage
-        callbackUrl={`/en/sign-in?callbackUrl=/hotels/${hotelId}/rooms/${roomId}/book`}
+        callbackUrl={`/${locale}/sign-in?callbackUrl=/${locale}/hotels/${hotelId}/rooms/${roomId}/book`}
       />
     )
   }
@@ -41,7 +41,7 @@ export default async function BookRoomPage({
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
         <Link
-          href={`/hotels/${hotelId}`}
+          href={`/${locale}/hotels/${hotelId}`}
           className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
@@ -69,6 +69,7 @@ export default async function BookRoomPage({
           }}
           capacity={room.capacity}
           currency={room.currency}
+          locale={locale}
         />
       </div>
     </div>

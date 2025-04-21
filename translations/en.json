@@ -1,7 +1,12 @@
 {
-    "404":{
-      "not-found": "Oops! page not found",
-      "bhome": "Back to Home"
-    }
-
+  "404": {
+    "not-found": "Oops! page not found",
+    "bhome": "Back to Home"
+  },
+  "admin": {
+    "panel": "Admin Panel",
+    "dashboard": "Dashboard",
+    "verifyOffers": "Verify Offers",
+    "agencies": "Agencies"
+  }
 }

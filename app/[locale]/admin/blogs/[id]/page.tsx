@@ -18,9 +18,10 @@ import Image from "next/image"
 export default async function AdminBlogDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: { id: string; locale: string }
 }) {
-  const blogId = parseInt(params.id)
+  const { id, locale } = params
+  const blogId = parseInt(id)
 
   if (isNaN(blogId)) {
     return notFound()
@@ -51,7 +52,7 @@ export default async function AdminBlogDetailPage({
         <h1 className="text-3xl font-bold text-gray-900">{blog.title}</h1>
         <div className="flex items-center space-x-2">
           <Link
-            href="/admin/verify-blogs"
+            href={`/${locale}/admin/verify-blogs`}
             className="text-blue-600 hover:text-blue-800"
           >
             Back to Blog Verification

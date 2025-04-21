@@ -46,9 +46,14 @@ export type BookingFormValues = z.infer<typeof bookingFormSchema>
 interface BookCarFormProps {
   carId: string
   session: any
+  locale?: string // Add locale parameter
 }
 
-const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
+const BookCarForm: React.FC<BookCarFormProps> = ({
+  carId,
+  session,
+  locale = "en", // Default to English
+}) => {
   const router = useRouter()
   const numericCarId = parseInt(carId, 10)
   const { currency, convertPrice } = useCurrency()
@@ -209,14 +214,18 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
 
       try {
         setIsSubmitting(true)
-        
+
         // Calculate the total price in the car's original currency
-        const carCurrency = car.currency || "TND";
-        const priceInOriginalCurrency = effectivePrice * totalDays;
-        
-        console.log(`Booking car with original price: ${priceInOriginalCurrency} ${carCurrency}`);
-        console.log(`Car details: ID=${car.id}, Currency=${carCurrency}, Original Price=${car.originalPrice}, Effective Price=${effectivePrice}`);
-        
+        const carCurrency = car.currency || "TND"
+        const priceInOriginalCurrency = effectivePrice * totalDays
+
+        console.log(
+          `Booking car with original price: ${priceInOriginalCurrency} ${carCurrency}`
+        )
+        console.log(
+          `Car details: ID=${car.id}, Currency=${carCurrency}, Original Price=${car.originalPrice}, Effective Price=${effectivePrice}`
+        )
+
         const result = await bookCar({
           carId: numericCarId,
           userId: session.user.id,
@@ -225,6 +234,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
           totalPrice: priceInOriginalCurrency, // Use the price in the car's original currency
           customerInfo: data,
           paymentMethod: selectedPaymentMethod,
+          locale: locale, // Pass locale to server action
         })
 
         if (result.success) {
@@ -257,6 +267,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
       car,
       session,
       selectedPaymentMethod,
+      locale,
     ]
   )
 
@@ -439,7 +450,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({ carId, session }) => {
                         I agree to the terms and conditions of rental
                       </FormLabel>
                       <FormDescription>
-                        By agreeing, you confirm you've read our terms including
+                        By agreeing, you confirm you&apos;ve read our terms including
                         the cancellation policy.
                       </FormDescription>
                     </div>

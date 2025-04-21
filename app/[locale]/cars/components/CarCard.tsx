@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import type React from "react"
 import { Heart } from "lucide-react"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useFavorite } from "@/lib/hooks/useFavorite"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
 import { formatPrice } from "@/lib/utils"
@@ -35,11 +36,17 @@ interface CarCardProps {
 
 export function CarCard({ car, viewMode }: CarCardProps) {
   const router = useRouter()
+  const { locale } = useParams()
   const { isFavorite, toggleFavorite, isLoading } = useFavorite(car.id, "car")
-  const { currency, convertPrice, rates, isLoading: currencyLoading } = useCurrency()
+  const {
+    currency,
+    convertPrice,
+    rates,
+    isLoading: currencyLoading,
+  } = useCurrency()
 
   const handleCardClick = () => {
-    router.push(`/cars/${car.id}/booking`)
+    router.push(`/${locale}/cars/${car.id}/booking`)
   }
 
   const handleHeartClick = (e: React.MouseEvent) => {
@@ -49,19 +56,24 @@ export function CarCard({ car, viewMode }: CarCardProps) {
 
   // Price calculations - explicitly use values from database
   const originalPrice = Number(car.originalPrice) || 0
-  const discountPercentage = car.discountPercentage ? Number(car.discountPercentage) : 0
-  const priceAfterDiscount = car.priceAfterDiscount ? Number(car.priceAfterDiscount) : originalPrice
-  
+  const discountPercentage = car.discountPercentage
+    ? Number(car.discountPercentage)
+    : 0
+  const priceAfterDiscount = car.priceAfterDiscount
+    ? Number(car.priceAfterDiscount)
+    : originalPrice
+
   // Get the car's currency or default to TND (since that's the DB default)
   const carCurrency = car.currency || "TND"
-  
+
   // Determine if there's a discount
-  const hasDiscount = discountPercentage > 0 && priceAfterDiscount < originalPrice
-  
+  const hasDiscount =
+    discountPercentage > 0 && priceAfterDiscount < originalPrice
+
   // Convert prices to selected currency
   const convertedOriginalPrice = convertPrice(originalPrice, carCurrency)
-  const convertedDiscountedPrice = hasDiscount 
-    ? convertPrice(priceAfterDiscount, carCurrency) 
+  const convertedDiscountedPrice = hasDiscount
+    ? convertPrice(priceAfterDiscount, carCurrency)
     : null
 
   // Enhanced debugging for currency conversion
@@ -69,45 +81,56 @@ export function CarCard({ car, viewMode }: CarCardProps) {
     // Car data
     originalPrice,
     originalCurrency: carCurrency,
-    
+
     // Expected conversion based on fixed rates
-    expectedConversion: carCurrency === "TND" && currency === "USD" 
-      ? `${originalPrice} TND → $${(originalPrice * 0.32).toFixed(2)} USD`
-      : carCurrency === "USD" && currency === "TND"
-      ? `$${originalPrice} USD → ${(originalPrice * 3.13).toFixed(2)} TND`
-      : null,
-    
+    expectedConversion:
+      carCurrency === "TND" && currency === "USD"
+        ? `${originalPrice} TND → $${(originalPrice * 0.32).toFixed(2)} USD`
+        : carCurrency === "USD" && currency === "TND"
+        ? `$${originalPrice} USD → ${(originalPrice * 3.13).toFixed(2)} TND`
+        : null,
+
     // Actual conversion result
-    actualConversion: `${formatPrice(originalPrice, { currency: carCurrency })} → ${formatPrice(convertedOriginalPrice, { currency })}`,
+    actualConversion: `${formatPrice(originalPrice, {
+      currency: carCurrency,
+    })} → ${formatPrice(convertedOriginalPrice, { currency })}`,
     actualNumeric: `${originalPrice} → ${convertedOriginalPrice.toFixed(2)}`,
-    conversionFactor: (convertedOriginalPrice / originalPrice).toFixed(4)
-  });
+    conversionFactor: (convertedOriginalPrice / originalPrice).toFixed(4),
+  })
 
   // Enhanced PriceDisplay component to show all pricing information
   const PriceDisplay = () => (
     <div>
       {/* Always show the original price */}
       <div className="flex items-center gap-2">
-        <span className={hasDiscount ? "text-xs text-gray-500 line-through" : "font-bold text-lg"}>
+        <span
+          className={
+            hasDiscount
+              ? "text-xs text-gray-500 line-through"
+              : "font-bold text-lg"
+          }
+        >
           {formatPrice(convertedOriginalPrice, { currency })}
         </span>
-        
+
         {hasDiscount && (
           <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full">
             {discountPercentage}% OFF
           </span>
         )}
       </div>
-      
+
       {/* Show discounted price if available */}
       {hasDiscount && (
         <div className="flex items-center gap-1">
           <span className="font-bold text-lg text-green-600">
-            {formatPrice(convertedDiscountedPrice || convertedOriginalPrice, { currency })}
+            {formatPrice(convertedDiscountedPrice || convertedOriginalPrice, {
+              currency,
+            })}
           </span>
         </div>
       )}
-      
+
       <span className="text-xs text-gray-500">/day</span>
     </div>
   )

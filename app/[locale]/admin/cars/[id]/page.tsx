@@ -11,9 +11,9 @@ import { CarApprovalActions } from "@/components/dashboard/admin/CarApprovalActi
 export default async function CarDetailsPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string; locale: string }>
 }) {
-  const { id } = await params
+  const { id, locale } = await params
 
   const carId = id
 
@@ -36,7 +36,7 @@ export default async function CarDetailsPage({
     <div className="container py-6 max-w-7xl">
       <div className="mb-6">
         <Link
-          href="/admin/verify-offers?tab=cars"
+          href={`/${locale}/admin/verify-offers?tab=cars`}
           className="flex items-center text-blue-600 hover:text-blue-800"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Car Listings

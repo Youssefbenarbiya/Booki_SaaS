@@ -4,13 +4,12 @@ import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import TripCard from "@/components/cards/TripCard"
 import { HotelCard } from "@/components/cards/HotelCard"
-import { CarCard } from "@/app/cars/components/CarCard"
 import { Loader2 } from "lucide-react"
 import { useSession } from "@/auth-client"
 import { getUserFavorites } from "@/actions/users/favorites"
 import type { InferSelectModel } from "drizzle-orm"
 import { hotel, room, trips } from "@/db/schema"
-import type { Car } from "@/app/cars/components/CarCard"
+import { Car, CarCard } from "@/app/[locale]/cars/components/CarCard"
 
 // Define types for state variables
 type Trip = InferSelectModel<typeof trips> & {

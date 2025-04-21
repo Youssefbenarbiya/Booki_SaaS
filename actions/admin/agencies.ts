@@ -18,6 +18,7 @@ export async function toggleUserBan(formData: FormData) {
   const userId = formData.get("userId") as string
   const agencyId = formData.get("agencyId") as string
   const currentBanStatus = formData.get("currentBanStatus") === "true"
+  const locale = (formData.get("locale") as string) || "en" // Add locale parameter with default
 
   // Get user
   const userRecord = await db.query.user.findFirst({
@@ -37,14 +38,15 @@ export async function toggleUserBan(formData: FormData) {
     })
     .where(eq(user.id, userId))
 
-  // Redirect back to the agency page
-  redirect(`/admin/agencies/${agencyId}`)
+  // Redirect back to the agency page with locale
+  redirect(`/${locale}/admin/agencies/${agencyId}`)
 }
 
 // Server action for searching agencies
 export async function searchAgencies(formData: FormData) {
   const searchTerm = formData.get("searchTerm") as string
-  redirect(`/admin/agencies?search=${encodeURIComponent(searchTerm)}`)
+  const locale = (formData.get("locale") as string) || "en" // Add locale parameter with default
+  redirect(`/${locale}/admin/agencies?search=${encodeURIComponent(searchTerm)}`)
 }
 
 // Data fetching function for agencies list page

@@ -6,7 +6,6 @@ import {
   User,
   Heart,
   Clock,
-  LogOut,
   Phone,
   Mail,
 } from "lucide-react"
@@ -56,12 +55,7 @@ export function Sidebar({ user }: SidebarProps) {
       href: "/user/profile/bookingHistory",
       icon: Clock,
     },
-    {
-      id: "logout",
-      label: "logout",
-      href: "/profile/logout",
-      icon: LogOut,
-    },
+ 
   ]
 
   const pathname = usePathname()

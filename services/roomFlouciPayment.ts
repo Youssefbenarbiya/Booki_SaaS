@@ -18,7 +18,8 @@ export async function generatePaymentLink({
   bookingId,
   developerTrackingId = "",
   sessionTimeoutSecs = 1200,
-}: GeneratePaymentParams) {
+  locale = "en", // Add locale parameter with default
+}: GeneratePaymentParams & { locale?: string }) {
   try {
     // Convert amount to millimes (1 TND = 1000 millimes)
     const amountInMillimes = Math.round(amount * 1000)
@@ -26,9 +27,9 @@ export async function generatePaymentLink({
     // Create the base URL for success and failure redirects
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
-    const successPath = `/hotels/payment/success?bookingId=${bookingId}`
+    const successPath = `/${locale}/hotels/payment/success?bookingId=${bookingId}`
 
-    const failPath = `/hotels/payment/failed?bookingId=${bookingId}`
+    const failPath = `/${locale}/hotels/payment/failed?bookingId=${bookingId}`
 
     const response = await fetch(`${FLOUCI_API_URL}/generate_payment`, {
       method: "POST",
@@ -43,8 +44,7 @@ export async function generatePaymentLink({
         session_timeout_secs: sessionTimeoutSecs,
         success_link: `${baseUrl}${successPath}`,
         fail_link: `${baseUrl}${failPath}`,
-        developer_tracking_id:
-          developerTrackingId || `${bookingId}`,
+        developer_tracking_id: developerTrackingId || `${bookingId}`,
       }),
     })
 

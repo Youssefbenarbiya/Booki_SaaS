@@ -6,6 +6,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 interface PaymentFailedPageProps {
+  params: { locale: string }
   searchParams: {
     bookingId?: string
     paymentMethod?: string
@@ -13,12 +14,14 @@ interface PaymentFailedPageProps {
 }
 
 export default async function PaymentFailedPage({
+  params,
   searchParams,
 }: PaymentFailedPageProps) {
+  const { locale } = params
   const { bookingId, paymentMethod = "flouci" } = searchParams
 
   if (!bookingId) {
-    redirect("/dashboard/bookings")
+    redirect(`/${locale}/dashboard/bookings`)
   }
 
   // Update booking payment status with the correct payment method
@@ -45,10 +48,10 @@ export default async function PaymentFailedPage({
         </p>
         <div className="space-y-4">
           <Button asChild className="w-full bg-red-600 hover:bg-red-700">
-            <Link href={`/dashboard/bookings`}>View My Bookings</Link>
+            <Link href={`/${locale}/dashboard/bookings`}>View My Bookings</Link>
           </Button>
           <Button asChild variant="outline" className="w-full">
-            <Link href="/">Return to Home</Link>
+            <Link href={`/${locale}`}>Return to Home</Link>
           </Button>
         </div>
       </Card>

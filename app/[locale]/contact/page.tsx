@@ -1,8 +1,19 @@
-import { ContactInfo } from "./contact-info";
-import { ContactForm } from "./contact-form";
-import { ChatScript } from "@/components/chat/ChatScript";
+import { ContactInfo } from "./contact-info"
+import { ContactForm } from "./contact-form"
+import { ChatScript } from "@/components/chat/ChatScript"
+import { Metadata } from "next"
 
-export default function ContactPage() {
+export const metadata: Metadata = {
+  title: "Contact Us",
+  description: "Get in touch with our team for any questions or concerns.",
+}
+
+export default function ContactPage({
+  params,
+}: {
+  params: { locale: string }
+}) {
+  // The locale is available here as params.locale if needed for any future functionality
   return (
     <main className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
@@ -17,9 +28,6 @@ export default function ContactPage() {
       </div>
 
       <ChatScript />
-
     </main>
-    
   )
-
 }

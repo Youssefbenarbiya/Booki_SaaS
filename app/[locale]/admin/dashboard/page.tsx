@@ -28,7 +28,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  params,
+}: {
+  params: { locale: string }
+}) {
+  const { locale } = params
   const stats = await getDashboardStats()
   const recentActivities = await getRecentActivities()
   const bookingStats = await getBookingStatistics()
@@ -336,7 +341,7 @@ export default async function AdminDashboard() {
 
                   <div className="text-center pt-2">
                     <Link
-                      href="/admin/bookings"
+                      href={`/${locale}/admin/bookings`}
                       className="text-sm text-blue-500 hover:underline"
                     >
                       View all bookings
@@ -375,7 +380,7 @@ export default async function AdminDashboard() {
 
                   <div className="text-center pt-2">
                     <Link
-                      href="/admin/users"
+                      href={`/${locale}/admin/users`}
                       className="text-sm text-blue-500 hover:underline"
                     >
                       View all users
@@ -484,7 +489,7 @@ export default async function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                <Link href="/admin/users">
+                <Link href={`/${locale}/admin/users`}>
                   <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors cursor-pointer">
                     <Users className="h-8 w-8 text-slate-600 mb-2" />
                     <h3 className="font-medium">User Management</h3>
@@ -494,7 +499,7 @@ export default async function AdminDashboard() {
                   </div>
                 </Link>
 
-                <Link href="/admin/verify-offers">
+                <Link href={`/${locale}/admin/verify-offers`}>
                   <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors cursor-pointer">
                     <AlertCircle className="h-8 w-8 text-amber-600 mb-2" />
                     <h3 className="font-medium">Pending Approvals</h3>
@@ -504,7 +509,7 @@ export default async function AdminDashboard() {
                   </div>
                 </Link>
 
-                <Link href="/admin/bookings">
+                <Link href={`/${locale}/admin/bookings`}>
                   <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors cursor-pointer">
                     <Calendar className="h-8 w-8 text-blue-600 mb-2" />
                     <h3 className="font-medium">Bookings</h3>
@@ -514,7 +519,7 @@ export default async function AdminDashboard() {
                   </div>
                 </Link>
 
-                <Link href="/admin/content">
+                <Link href={`/${locale}/admin/content`}>
                   <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors cursor-pointer">
                     <FileText className="h-8 w-8 text-purple-600 mb-2" />
                     <h3 className="font-medium">Content</h3>

@@ -7,8 +7,8 @@ import { revalidatePath } from "next/cache"
 import { generatePaymentLink } from "@/services/roomFlouciPayment"
 import { stripe } from "@/lib/stripe"
 import { sql } from "drizzle-orm"
-import { RoomBookingWithPayment } from "@/app/hotels/[hotelId]/rooms/[roomId]/book/BookRoomForm"
 import { convertCurrency } from "@/lib/currencyUtils"
+import { RoomBookingWithPayment } from "@/app/[locale]/hotels/[hotelId]/rooms/[roomId]/book/BookRoomForm"
 
 interface CreateRoomBookingParams {
   roomId: string
@@ -37,7 +37,10 @@ export async function createRoomBooking({
   adultCount = 1,
   childCount = 0,
   paymentMethod = "flouci", // default to flouci
-}: CreateRoomBookingWithPaymentParams): Promise<RoomBookingWithPayment> {
+  locale = "en", // Add locale parameter with default
+}: CreateRoomBookingWithPaymentParams & {
+  locale?: string
+}): Promise<RoomBookingWithPayment> {
   try {
     // Check for overlapping bookings
     const existingBookings = await db.query.roomBookings.findMany({
@@ -72,7 +75,7 @@ export async function createRoomBooking({
     }
 
     // Get the room's currency (default to TND if not specified)
-    const roomCurrency = roomData.currency || "TND";
+    const roomCurrency = roomData.currency || "TND"
 
     // Calculate total price if not provided
     let finalTotalPrice = totalPrice
@@ -86,13 +89,21 @@ export async function createRoomBooking({
         nights
     }
 
-    console.log(`Creating booking with original total price: ${finalTotalPrice} ${roomCurrency}`)
+    console.log(
+      `Creating booking with original total price: ${finalTotalPrice} ${roomCurrency}`
+    )
 
     // Handle different payment methods
     if (paymentMethod === "stripe") {
       // Convert price to USD for Stripe
-      const totalPriceInUSD = await convertCurrency(finalTotalPrice, roomCurrency, "USD");
-      console.log(`Converting room price from ${roomCurrency} to USD: ${finalTotalPrice} -> ${totalPriceInUSD}`);
+      const totalPriceInUSD = await convertCurrency(
+        finalTotalPrice,
+        roomCurrency,
+        "USD"
+      )
+      console.log(
+        `Converting room price from ${roomCurrency} to USD: ${finalTotalPrice} -> ${totalPriceInUSD}`
+      )
 
       // Insert booking record with USD price
       const [booking] = await db
@@ -128,7 +139,8 @@ export async function createRoomBooking({
         }
 
         // Define the base URL for success and cancel URLs
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
         if (!appUrl.startsWith("http://") && !appUrl.startsWith("https://")) {
           throw new Error(
             "NEXT_PUBLIC_APP_URL must be a valid absolute URL including protocol"
@@ -156,8 +168,8 @@ export async function createRoomBooking({
               },
             ],
             mode: "payment",
-            success_url: `${appUrl}/hotels/payment/success?bookingId=${booking.id}`,
-            cancel_url: `${appUrl}/hotels/payment/failed?bookingId=${booking.id}`,
+            success_url: `${appUrl}/${locale}/hotels/payment/success?bookingId=${booking.id}`,
+            cancel_url: `${appUrl}/${locale}/hotels/payment/failed?bookingId=${booking.id}`,
             metadata: {
               bookingId: booking.id.toString(),
               bookingType: "hotel",
@@ -197,8 +209,14 @@ export async function createRoomBooking({
       }
     } else {
       // Flouci payment flow - convert price to TND
-      const totalPriceInTND = await convertCurrency(finalTotalPrice, roomCurrency, "TND");
-      console.log(`Converting room price from ${roomCurrency} to TND: ${finalTotalPrice} -> ${totalPriceInTND}`);
+      const totalPriceInTND = await convertCurrency(
+        finalTotalPrice,
+        roomCurrency,
+        "TND"
+      )
+      console.log(
+        `Converting room price from ${roomCurrency} to TND: ${finalTotalPrice} -> ${totalPriceInTND}`
+      )
 
       // Insert booking record with TND price
       const [booking] = await db
@@ -227,6 +245,7 @@ export async function createRoomBooking({
           amount: totalPriceInTND,
           bookingId: booking.id,
           developerTrackingId: `room_booking_${booking.id}`,
+          locale: locale, // Pass locale to payment link generator
         })
 
         if (!paymentData || !paymentData.paymentId) {

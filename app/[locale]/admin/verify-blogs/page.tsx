@@ -6,7 +6,13 @@ import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import Image from "next/image"
 
-export default async function VerifyBlogsPage() {
+export default async function VerifyBlogsPage({
+  params,
+}: {
+  params: { locale: string }
+}) {
+  const { locale } = params
+
   // Get all pending blogs
   const pendingBlogs = await db.query.blogs.findMany({
     where: eq(blogs.status, "pending"),
@@ -60,7 +66,9 @@ export default async function VerifyBlogsPage() {
               {pendingBlogs.map((blog) => (
                 <tr key={blog.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{blog.title}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {blog.title}
+                    </div>
                     <div className="text-sm text-gray-500 truncate max-w-xs">
                       {blog.excerpt || blog.content?.substring(0, 100)}
                     </div>
@@ -68,26 +76,34 @@ export default async function VerifyBlogsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {blog.author?.image && (
-                        <Image 
-                          src={blog.author.image} 
-                          alt={blog.author?.name || "Author"} 
+                        <Image
+                          src={blog.author.image}
+                          alt={blog.author?.name || "Author"}
                           className="h-8 w-8 rounded-full mr-2"
                         />
                       )}
-                      <div className="text-sm text-gray-900">{blog.author?.name || "Unknown Author"}</div>
+                      <div className="text-sm text-gray-900">
+                        {blog.author?.name || "Unknown Author"}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{blog.category?.name || "Uncategorized"}</div>
+                    <div className="text-sm text-gray-500">
+                      {blog.category?.name || "Uncategorized"}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">
-                      {blog.createdAt ? formatDistanceToNow(new Date(blog.createdAt), { addSuffix: true }) : "Unknown"}
+                      {blog.createdAt
+                        ? formatDistanceToNow(new Date(blog.createdAt), {
+                            addSuffix: true,
+                          })
+                        : "Unknown"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Link
-                      href={`/admin/blogs/${blog.id}`}
+                      href={`/${locale}/admin/blogs/${blog.id}`}
                       className="text-indigo-600 hover:text-indigo-900"
                     >
                       View Details

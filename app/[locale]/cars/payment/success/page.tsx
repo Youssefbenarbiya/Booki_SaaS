@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Download } from "lucide-react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Separator } from "@/components/ui/separator"
 import { generateCarBookingPDF } from "@/actions/cars/generateCarBookingPDF"
@@ -43,6 +43,7 @@ interface BookingDetails {
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()
+  const { locale } = useParams()
   const bookingId = searchParams.get("bookingId")
   const [booking, setBooking] = useState<BookingDetails | null>(null)
 
@@ -114,8 +115,10 @@ export default function PaymentSuccessPage() {
         <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
-          <p className="text-gray-600 mb-6">Your booking has been confirmed. Thank you for your reservation!</p>
-          <Link href="/cars">
+          <p className="text-gray-600 mb-6">
+            Your booking has been confirmed. Thank you for your reservation!
+          </p>
+          <Link href={`/${locale}/cars`}>
             <Button variant="default" className="w-full">
               Browse More Cars
             </Button>
@@ -131,7 +134,9 @@ export default function PaymentSuccessPage() {
         <div className="text-center mb-8">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
-          <p className="text-gray-600">Your booking has been confirmed. Thank you for your reservation!</p>
+          <p className="text-gray-600">
+            Your booking has been confirmed. Thank you for your reservation!
+          </p>
         </div>
 
         <Separator className="my-6" />
@@ -150,7 +155,8 @@ export default function PaymentSuccessPage() {
                   <div>
                     <p className="text-gray-500">Vehicle</p>
                     <p className="font-medium">
-                      {booking.car.brand} {booking.car.model} ({booking.car.year})
+                      {booking.car.brand} {booking.car.model} (
+                      {booking.car.year})
                     </p>
                   </div>
                   <div>
@@ -169,11 +175,15 @@ export default function PaymentSuccessPage() {
               </div>
               <div>
                 <p className="text-gray-500">Start Date</p>
-                <p className="font-medium">{new Date(booking.booking.startDate).toLocaleDateString()}</p>
+                <p className="font-medium">
+                  {new Date(booking.booking.startDate).toLocaleDateString()}
+                </p>
               </div>
               <div>
                 <p className="text-gray-500">End Date</p>
-                <p className="font-medium">{new Date(booking.booking.endDate).toLocaleDateString()}</p>
+                <p className="font-medium">
+                  {new Date(booking.booking.endDate).toLocaleDateString()}
+                </p>
               </div>
             </div>
           </div>
@@ -195,7 +205,9 @@ export default function PaymentSuccessPage() {
                 </div>
                 <div>
                   <p className="text-gray-500">Phone</p>
-                  <p className="font-medium">{booking.user.phoneNumber || "N/A"}</p>
+                  <p className="font-medium">
+                    {booking.user.phoneNumber || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Address</p>
@@ -203,7 +215,9 @@ export default function PaymentSuccessPage() {
                 </div>
                 <div>
                   <p className="text-gray-500">Driving License</p>
-                  <p className="font-medium">{booking.booking.drivingLicense}</p>
+                  <p className="font-medium">
+                    {booking.booking.drivingLicense}
+                  </p>
                 </div>
               </div>
             )}
@@ -220,13 +234,13 @@ export default function PaymentSuccessPage() {
             Download Booking Confirmation
           </Button>
 
-          <Link href="/user/profile/bookingHistory">
+          <Link href={`/${locale}/user/profile/bookingHistory`}>
             <Button variant="default" className="w-full">
               View My Bookings
             </Button>
           </Link>
 
-          <Link href="/">
+          <Link href={`/${locale}`}>
             <Button variant="outline" className="w-full">
               Return to Home
             </Button>
@@ -236,4 +250,3 @@ export default function PaymentSuccessPage() {
     </div>
   )
 }
-

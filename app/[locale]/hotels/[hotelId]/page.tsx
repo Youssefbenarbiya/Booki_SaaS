@@ -16,9 +16,9 @@ export async function generateStaticParams() {
 export default async function HotelPage({
   params,
 }: {
-  params: { hotelId: string }
+  params: { hotelId: string; locale: string }
 }) {
-  const { hotelId } = await params 
+  const { hotelId, locale } = await params
   const hotelData = await getHotelById(hotelId)
 
   if (!hotelData) {
@@ -49,6 +49,7 @@ export default async function HotelPage({
         rooms={hotelData.rooms.map((room) => ({
           ...room,
           hotelId,
+          locale, // Pass locale to RoomsList
         }))}
       />
     </div>

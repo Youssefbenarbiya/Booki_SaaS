@@ -9,14 +9,13 @@ import Image from "next/image"
 import { HotelApprovalActions } from "@/components/dashboard/admin/HotelApprovalActions"
 import HotelLocationMapWrapper from "@/components/HotelLocationMapWrapper"
 
-
-
 export default async function HotelDetailsPage({
   params,
 }: {
-  params: { id: string }
+  params: { id: string; locale: string }
 }) {
-  const hotelId = params.id
+  const { id, locale } = params
+  const hotelId = id
 
   const hotelDetails = await db.query.hotel.findFirst({
     where: eq(hotel.id, hotelId),
@@ -41,7 +40,7 @@ export default async function HotelDetailsPage({
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <Link
-            href="/admin/verify-offers?tab=hotel"
+            href={`/${locale}/admin/verify-offers?tab=hotel`}
             className="flex items-center text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Hotel Listings
