@@ -227,7 +227,7 @@ export default function SignUp() {
                 <User className="h-12 w-12 text-blue-500" />
               </div>
               <h2 className="text-2xl font-semibold mb-2">Customer Account</h2>
-             
+
               <ul className="text-left mt-6 space-y-2">
                 <li className="flex items-center">
                   <span className="bg-blue-100 rounded-full p-1 mr-2">✓</span>
@@ -258,7 +258,7 @@ export default function SignUp() {
                 <Building2 className="h-12 w-12 text-orange-500" />
               </div>
               <h2 className="text-2xl font-semibold mb-2">Agency Account</h2>
-             
+
               <ul className="text-left mt-6 space-y-2">
                 <li className="flex items-center">
                   <span className="bg-orange-100 rounded-full p-1 mr-2">✓</span>
@@ -278,7 +278,10 @@ export default function SignUp() {
 
           <div className="text-center mt-8 text-sm text-gray-600">
             Already have an account?{" "}
-            <Link href="/sign-in" className="text-orange-500 hover:underline">
+            <Link
+              href="/en/sign-in"
+              className="text-orange-500 hover:underline"
+            >
               Login
             </Link>
           </div>
@@ -608,7 +611,7 @@ export default function SignUp() {
               <div className="text-center text-sm text-gray-600">
                 Already have an account?{" "}
                 <Link
-                  href="/sign-in"
+                  href="/en/sign-in"
                   className="text-orange-500 hover:underline"
                 >
                   Login

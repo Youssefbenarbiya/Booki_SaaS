@@ -13,8 +13,13 @@ import { auth } from "@/auth"
 import SignoutButton from "../navbar/signout-button"
 import { headers } from "next/headers"
 import Navbar from "@/components/navbar/navbar"
+import { Locale } from "@/i18n/routing"
 
-export default async function Header() {
+interface HeaderProps {
+  locale: Locale
+}
+
+export default async function Header({ locale = "en" }: HeaderProps) {
   const session = await auth.api.getSession({
     query: {
       disableCookieCache: true,
@@ -105,8 +110,8 @@ export default async function Header() {
                         <Link
                           href={
                             session.user.role === "admin"
-                              ? "/admin"
-                              : "/agency/dashboard"
+                              ? `/${locale}/admin`
+                              : `/${locale}/agency/dashboard`
                           }
                           className="w-full"
                         >

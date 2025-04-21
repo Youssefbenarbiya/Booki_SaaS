@@ -3,10 +3,10 @@
 import { cars, agencies, agencyEmployees } from "@/db/schema"
 import { eq, and, sql, or } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import type { CarFormValues } from "../../app/agency/dashboard/cars/types"
 import db from "@/db/drizzle"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
+import { CarFormValues } from "@/app/[locale]/agency/dashboard/cars/types"
 
 // Helper function to get the current session
 async function getSession() {

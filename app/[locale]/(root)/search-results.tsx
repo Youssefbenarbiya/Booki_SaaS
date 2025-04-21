@@ -8,14 +8,14 @@ import { searchCars } from "@/actions/cars/carActions"
 import HotelList from "@/components/cards/HotelList"
 import { HotelFilter } from "@/components/filter/hotel/HotelFilter"
 import { TripFilter, TripFilterOptions } from "@/components/filter/TripFilter"
-import { CarList } from "@/app/cars/components/CarList"
-import { CarFilter } from "@/app/cars/components/CarFilter"
-import { Car } from "@/app/cars/components/CarCard"
+import { CarList } from "../cars/components/CarList"
+import { Car } from "../cars/components/CarCard"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { SlidersHorizontal } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import TripCard from "@/components/cards/TripCard"
+import { CarFilter } from "../cars/components/CarFilter"
 
 interface Trip {
   id: number

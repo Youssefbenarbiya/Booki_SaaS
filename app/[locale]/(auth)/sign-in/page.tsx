@@ -16,7 +16,7 @@ import LoadingButton from "@/components/loading-button"
 import type { ErrorContext } from "@better-fetch/fetch"
 import GoogleSignIn from "../(Oauth)/google"
 import FacebookSignIn from "../(Oauth)/facebook"
-import { translateContent } from "@/app/actions"
+import { translateContent } from "@/app/[locale]/actions"
 import LanguageSelector from "@/components/language-selector"
 
 export default function SignIn() {
