@@ -12,13 +12,17 @@ export const metadata: Metadata = {
   description: "View all customer bookings for your agency's offerings",
 }
 
-export default async function AgencyBookingsPage() {
+export default async function AgencyBookingsPage({
+  params,
+}: {
+  params: { locale: string }
+}) {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
 
   if (!session?.user) {
-    redirect("/en/sign-in")
+    redirect(`/${params.locale}/sign-in`)
   }
 
   if (
@@ -26,7 +30,7 @@ export default async function AgencyBookingsPage() {
     session.user.role !== "employee" &&
     session.user.role !== "admin"
   ) {
-    redirect("/")
+    redirect(`/${params.locale}/`)
   }
 
   try {

@@ -3,6 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 import DeleteTripButton from "./DeleteTripButton"
 import { getTripById } from "@/actions/trips/tripActions"
+import { Locale } from "@/i18n/routing"
 
 // Helper function to format price with the correct currency
 const formatPriceWithCurrency = (price: string | number, currency?: string) => {
@@ -18,12 +19,17 @@ const formatPriceWithCurrency = (price: string | number, currency?: string) => {
   }).format(numericPrice)
 }
 
+interface TripDetailsPageProps {
+  params: {
+    tripId: string
+    locale: Locale
+  }
+}
+
 export default async function TripDetailsPage({
   params,
-}: {
-  params: Promise<{ tripId: string }>
-}) {
-  const { tripId } = await params
+}: TripDetailsPageProps) {
+  const { tripId, locale } = params
   const trip = await getTripById(parseInt(tripId))
 
   if (!trip) {
@@ -37,13 +43,13 @@ export default async function TripDetailsPage({
         <h1 className="text-3xl font-bold text-gray-900">Trip Details</h1>
         <div className="flex flex-wrap gap-3 mt-4 sm:mt-0">
           <Link
-            href="/agency/dashboard/trips"
+            href={`/${locale}/agency/dashboard/trips`}
             className="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           >
             Back to Trips
           </Link>
           <Link
-            href={`/agency/dashboard/trips/${trip.id}/edit`}
+            href={`/${locale}/agency/dashboard/trips/${trip.id}/edit`}
             className="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           >
             Edit Trip

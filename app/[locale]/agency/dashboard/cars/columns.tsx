@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { formatPrice } from "@/lib/utils"
 import { CarType } from "./types"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { deleteCar } from "@/actions/cars/carActions"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -108,6 +108,8 @@ export const columns: ColumnDef<CarType>[] = [
     cell: function Cell({ row }) {
       const car = row.original
       const router = useRouter()
+      const params = useParams()
+      const locale = params.locale as string
       const [isLoading, setIsLoading] = useState(false)
       const [alertOpen, setAlertOpen] = useState(false)
 
@@ -150,7 +152,9 @@ export const columns: ColumnDef<CarType>[] = [
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onClick={() => router.push(`/agency/dashboard/cars/${car.id}`)}
+                onClick={() =>
+                  router.push(`/${locale}/agency/dashboard/cars/${car.id}`)
+                }
               >
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit

@@ -3,8 +3,17 @@
 import { deleteHotel } from "@/actions/hotels&rooms/hotelActions"
 import { useRouter } from "next/navigation"
 import { useTransition } from "react"
+import { Locale } from "@/i18n/routing"
 
-export default function DeleteHotelButton({ hotelId }: { hotelId: string }) {
+interface DeleteHotelButtonProps {
+  hotelId: string
+  locale: Locale
+}
+
+export default function DeleteHotelButton({
+  hotelId,
+  locale,
+}: DeleteHotelButtonProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -12,6 +21,7 @@ export default function DeleteHotelButton({ hotelId }: { hotelId: string }) {
     if (confirm("Are you sure you want to delete this hotel?")) {
       startTransition(async () => {
         await deleteHotel(hotelId)
+        router.push(`/${locale}/agency/dashboard/hotels`)
         router.refresh()
       })
     }

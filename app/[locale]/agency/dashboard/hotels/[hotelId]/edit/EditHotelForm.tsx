@@ -14,8 +14,15 @@ import { Building, BedDouble, Plus, Trash2, MapPin } from "lucide-react"
 import dynamic from "next/dynamic"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Locale } from "@/i18n/routing"
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const LocationMapSelector = dynamic(
@@ -72,9 +79,10 @@ interface EditHotelFormProps {
       images: string[]
     }>
   }
+  locale: Locale
 }
 
-export default function EditHotelForm({ hotel }: EditHotelFormProps) {
+export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -241,7 +249,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
         const cleanedData = JSON.parse(JSON.stringify(formattedData))
 
         await updateHotel(hotel.id, cleanedData)
-        router.push("/agency/dashboard/hotels")
+        router.push(`/${locale}/agency/dashboard/hotels`)
         router.refresh()
       } catch (error) {
         console.error("Error updating hotel:", error)
@@ -280,10 +288,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
               {/* Basic Hotel Information */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Hotel Name</label>
-                <Input
-                  type="text"
-                  {...register("name")}
-                />
+                <Input type="text" {...register("name")} />
                 {errors.name && (
                   <p className="text-sm text-destructive">
                     {errors.name.message}
@@ -293,8 +298,8 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Rating</label>
-                <Select 
-                  onValueChange={(value) => setValue("rating", parseInt(value))} 
+                <Select
+                  onValueChange={(value) => setValue("rating", parseInt(value))}
                   defaultValue={String(watch("rating") || "5")}
                 >
                   <SelectTrigger>
@@ -312,10 +317,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">City</label>
-                <Input
-                  type="text"
-                  {...register("city")}
-                />
+                <Input type="text" {...register("city")} />
                 {errors.city && (
                   <p className="text-sm text-destructive">
                     {errors.city.message}
@@ -325,10 +327,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Country</label>
-                <Input
-                  type="text"
-                  {...register("country")}
-                />
+                <Input type="text" {...register("country")} />
                 {errors.country && (
                   <p className="text-sm text-destructive">
                     {errors.country.message}
@@ -338,10 +337,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="md:col-span-2 space-y-2">
                 <label className="text-sm font-medium">Address</label>
-                <Input
-                  type="text"
-                  {...register("address")}
-                />
+                <Input type="text" {...register("address")} />
                 {errors.address && (
                   <p className="text-sm text-destructive">
                     {errors.address.message}
@@ -351,10 +347,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
 
               <div className="md:col-span-2 space-y-2">
                 <label className="text-sm font-medium">Description</label>
-                <Textarea
-                  {...register("description")}
-                  rows={4}
-                />
+                <Textarea {...register("description")} rows={4} />
                 {errors.description && (
                   <p className="text-sm text-destructive">
                     {errors.description.message}
@@ -373,11 +366,14 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                         value={amenity}
                         defaultChecked={hotel.amenities.includes(amenity)}
                         onCheckedChange={(checked) => {
-                          const amenities = watch('amenities') || [];
+                          const amenities = watch("amenities") || []
                           if (checked) {
-                            setValue('amenities', [...amenities, amenity]);
+                            setValue("amenities", [...amenities, amenity])
                           } else {
-                            setValue('amenities', amenities.filter(a => a !== amenity));
+                            setValue(
+                              "amenities",
+                              amenities.filter((a) => a !== amenity)
+                            )
                           }
                         }}
                       />
@@ -540,10 +536,7 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                     {/* Room Basic Info */}
                     <div>
                       <label className="block font-medium">Room Name</label>
-                      <Input
-                        type="text"
-                        {...register(`rooms.${index}.name`)}
-                      />
+                      <Input type="text" {...register(`rooms.${index}.name`)} />
                       {errors.rooms?.[index]?.name && (
                         <p className="text-red-500">
                           {errors.rooms[index]?.name?.message}
@@ -554,7 +547,12 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                     <div>
                       <label className="block font-medium">Room Type</label>
                       <Select
-                        onValueChange={(value) => setValue(`rooms.${index}.roomType`, value as "single" | "double" | "suite" | "family")}
+                        onValueChange={(value) =>
+                          setValue(
+                            `rooms.${index}.roomType`,
+                            value as "single" | "double" | "suite" | "family"
+                          )
+                        }
                         defaultValue={watch(`rooms.${index}.roomType`)}
                       >
                         <SelectTrigger>
@@ -630,17 +628,25 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                       <div className="mt-4">
                         <label className="block font-medium">Currency</label>
                         <Select
-                          onValueChange={(value) => setValue(`rooms.${index}.currency`, value)}
-                          defaultValue={watch(`rooms.${index}.currency`) || "TND"}
+                          onValueChange={(value) =>
+                            setValue(`rooms.${index}.currency`, value)
+                          }
+                          defaultValue={
+                            watch(`rooms.${index}.currency`) || "TND"
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select currency" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="TND">TND (Tunisian Dinar)</SelectItem>
+                            <SelectItem value="TND">
+                              TND (Tunisian Dinar)
+                            </SelectItem>
                             <SelectItem value="USD">USD (US Dollar)</SelectItem>
                             <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                            <SelectItem value="GBP">GBP (British Pound)</SelectItem>
+                            <SelectItem value="GBP">
+                              GBP (British Pound)
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         {errors.rooms?.[index]?.currency && (
@@ -678,13 +684,22 @@ export default function EditHotelForm({ hotel }: EditHotelFormProps) {
                             <Checkbox
                               id={`room-${index}-amenity-${amenity}`}
                               value={amenity}
-                              defaultChecked={hotel.rooms[index]?.amenities.includes(amenity)}
+                              defaultChecked={hotel.rooms[
+                                index
+                              ]?.amenities.includes(amenity)}
                               onCheckedChange={(checked) => {
-                                const amenities = watch(`rooms.${index}.amenities`) || [];
+                                const amenities =
+                                  watch(`rooms.${index}.amenities`) || []
                                 if (checked) {
-                                  setValue(`rooms.${index}.amenities`, [...amenities, amenity]);
+                                  setValue(`rooms.${index}.amenities`, [
+                                    ...amenities,
+                                    amenity,
+                                  ])
                                 } else {
-                                  setValue(`rooms.${index}.amenities`, amenities.filter(a => a !== amenity));
+                                  setValue(
+                                    `rooms.${index}.amenities`,
+                                    amenities.filter((a) => a !== amenity)
+                                  )
                                 }
                               }}
                             />

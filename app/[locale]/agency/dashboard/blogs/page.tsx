@@ -6,9 +6,17 @@ import { Plus } from "lucide-react"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
 import { getBlogs } from "@/actions/blogs/blogActions"
+import { Locale } from "@/i18n/routing"
 
+interface BlogsPageProps {
+  params: {
+    locale: Locale
+  }
+}
 
-export default async function BlogsPage() {
+export default async function BlogsPage({ params }: BlogsPageProps) {
+  const { locale } = params
+
   // Get the current session using the provided method
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -24,7 +32,7 @@ export default async function BlogsPage() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">Blog Management</h2>
         <Button asChild>
-          <Link href="/agency/dashboard/blogs/new">
+          <Link href={`/${locale}/agency/dashboard/blogs/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Add New Blog
           </Link>

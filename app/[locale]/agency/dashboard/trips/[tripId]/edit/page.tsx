@@ -2,15 +2,18 @@
 import { getTripById } from "@/actions/trips/tripActions"
 import { notFound } from "next/navigation"
 import EditTripForm from "./EditTripForm"
-import { type TripInput } from "@/actions/trips/tripActions"
 import { CurrencyProvider } from "@/lib/contexts/CurrencyContext"
+import { Locale } from "@/i18n/routing"
 
-export default async function EditTripPage({
-  params,
-}: {
-  params: Promise<{ tripId: string }>
-}) {
-  const { tripId } = await params
+interface EditTripPageProps {
+  params: {
+    tripId: string
+    locale: Locale
+  }
+}
+
+export default async function EditTripPage({ params }: EditTripPageProps) {
+  const { tripId, locale } = params
   const trip = await getTripById(parseInt(tripId))
 
   if (!trip) {
@@ -30,7 +33,9 @@ export default async function EditTripPage({
     endDate: new Date(trip.endDate),
     originalPrice: Number(trip.originalPrice),
     discountPercentage: trip.discountPercentage ?? undefined,
-    priceAfterDiscount: trip.priceAfterDiscount ? Number(trip.priceAfterDiscount) : undefined,
+    priceAfterDiscount: trip.priceAfterDiscount
+      ? Number(trip.priceAfterDiscount)
+      : undefined,
     capacity: trip.capacity,
     isAvailable: trip.isAvailable ?? false,
     currency: trip.currency || "USD", // Ensure currency is passed, default to USD if not available
@@ -50,7 +55,7 @@ export default async function EditTripPage({
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Edit Trip</h1>
       <CurrencyProvider>
-        <EditTripForm trip={transformedTrip} />
+        <EditTripForm trip={transformedTrip} locale={locale} />
       </CurrencyProvider>
     </div>
   )

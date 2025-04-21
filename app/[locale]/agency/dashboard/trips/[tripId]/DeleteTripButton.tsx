@@ -1,11 +1,13 @@
 "use client"
 
 import { deleteTrip } from "@/actions/trips/tripActions"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useTransition } from "react"
 
 export default function DeleteTripButton({ tripId }: { tripId: number }) {
   const router = useRouter()
+  const params = useParams()
+  const locale = params.locale as string
   const [isPending, startTransition] = useTransition()
 
   function handleDelete() {
@@ -15,7 +17,7 @@ export default function DeleteTripButton({ tripId }: { tripId: number }) {
     startTransition(async () => {
       try {
         await deleteTrip(tripId)
-        router.push("/agency/dashboard/trips")
+        router.push(`/${locale}/agency/dashboard/trips`)
         router.refresh()
       } catch (error) {
         console.error("Error deleting trip:", error)

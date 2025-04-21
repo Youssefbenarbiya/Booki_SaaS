@@ -14,6 +14,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { deleteBlog } from "@/actions/blogs/blogActions"
+import { useParams } from "next/navigation"
 
 export type Blog = {
   id: number
@@ -188,6 +189,9 @@ export const columns: ColumnDef<Blog>[] = [
     id: "actions",
     cell: ({ row }) => {
       const blog = row.original
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const params = useParams()
+      const locale = params.locale as string
 
       return (
         <DropdownMenu>
@@ -199,13 +203,13 @@ export const columns: ColumnDef<Blog>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
-              <Link href={`/blog/${blog.id}`} target="_blank">
+              <Link href={`/${locale}/blog/${blog.id}`} target="_blank">
                 <Eye className="mr-2 h-4 w-4" />
                 <span>View</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/agency/dashboard/blogs/${blog.id}`}>
+              <Link href={`/${locale}/agency/dashboard/blogs/${blog.id}`}>
                 <Edit className="mr-2 h-4 w-4" />
                 <span>Edit</span>
               </Link>

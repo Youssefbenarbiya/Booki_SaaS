@@ -4,8 +4,16 @@ import { columns } from "./columns"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { getCars } from "@/actions/cars/carActions"
+import { Locale } from "@/i18n/routing"
 
-export default async function CarsPage() {
+interface CarsPageProps {
+  params: {
+    locale: Locale
+  }
+}
+
+export default async function CarsPage({ params }: CarsPageProps) {
+  const { locale } = params
   const { cars } = await getCars()
 
   // Transform the cars data so that price fields are numbers
@@ -22,7 +30,7 @@ export default async function CarsPage() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">Cars Management</h2>
         <Button asChild>
-          <Link href="/agency/dashboard/cars/new">
+          <Link href={`/${locale}/agency/dashboard/cars/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Add New Car
           </Link>

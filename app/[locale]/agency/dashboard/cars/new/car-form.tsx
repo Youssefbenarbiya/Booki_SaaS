@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CarType } from "../types"
-import { createCar, updateCar } from "../../../../../actions/cars/carActions"
+import { createCar, updateCar } from "@/actions/cars/carActions"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
@@ -26,13 +26,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Percent } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // --- Image upload imports ---
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
 // ----------------------------------
+import { Locale } from "@/i18n/routing"
 
 // Extend the schema to include discount fields.
 const carFormSchema = z.object({
@@ -50,7 +57,11 @@ const carFormSchema = z.object({
   discountPercentage: z.coerce.number().optional(),
   priceAfterDiscount: z.coerce.number().optional(),
   isAvailable: z.boolean().default(true),
-  seats: z.coerce.number().int().min(1, "Car must have at least 1 seat").max(20, "Car cannot have more than 20 seats"),
+  seats: z.coerce
+    .number()
+    .int()
+    .min(1, "Car must have at least 1 seat")
+    .max(20, "Car cannot have more than 20 seats"),
   category: z.string().min(1, "Category is required"),
   location: z.string().min(1, "Pickup location is required"),
 })
@@ -58,9 +69,14 @@ const carFormSchema = z.object({
 type CarFormProps = {
   initialData?: CarType
   isEditing?: boolean
+  locale: Locale
 }
 
-export function CarForm({ initialData, isEditing = false }: CarFormProps) {
+export function CarForm({
+  initialData,
+  isEditing = false,
+  locale,
+}: CarFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -226,7 +242,7 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
         await createCar(formattedValues)
         toast.success("Car created successfully")
       }
-      router.push("/agency/dashboard/cars")
+      router.push(`/${locale}/agency/dashboard/cars`)
       router.refresh()
     } catch (error) {
       console.error("Form submission error:", error)
@@ -360,7 +376,10 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a currency" />
@@ -389,7 +408,9 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                     <FormControl>
                       <Input type="number" min="1" max="20" {...field} />
                     </FormControl>
-                    <FormDescription>Enter the number of seats in the car</FormDescription>
+                    <FormDescription>
+                      Enter the number of seats in the car
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -401,7 +422,10 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category" />
@@ -427,9 +451,14 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                   <FormItem>
                     <FormLabel>Pickup Location</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Airport Terminal 1" {...field} />
+                      <Input
+                        placeholder="e.g., Airport Terminal 1"
+                        {...field}
+                      />
                     </FormControl>
-                    <FormDescription>Where customers can pick up this car</FormDescription>
+                    <FormDescription>
+                      Where customers can pick up this car
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -521,7 +550,10 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                     <div className="bg-muted p-4 rounded-md space-y-2">
                       <div className="flex justify-between">
                         <span>Original Price:</span>
-                        <span>${Number(watchedPrice).toFixed(2)} {form.getValues("currency")}</span>
+                        <span>
+                          ${Number(watchedPrice).toFixed(2)}{" "}
+                          {form.getValues("currency")}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Discount ({discountPercentage}%):</span>
@@ -530,7 +562,8 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                           {(
                             (Number(watchedPrice) * discountPercentage) /
                             100
-                          ).toFixed(2)} {form.getValues("currency")}
+                          ).toFixed(2)}{" "}
+                          {form.getValues("currency")}
                         </span>
                       </div>
                       <div className="flex justify-between font-bold">
@@ -539,7 +572,8 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
                           $
                           {typeof priceAfterDiscount === "number"
                             ? priceAfterDiscount.toFixed(2)
-                            : "0.00"} {form.getValues("currency")}
+                            : "0.00"}{" "}
+                          {form.getValues("currency")}
                         </span>
                       </div>
                     </div>
@@ -584,7 +618,7 @@ export function CarForm({ initialData, isEditing = false }: CarFormProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/agency/dashboard/cars")}
+                onClick={() => router.push(`/${locale}/agency/dashboard/cars`)}
               >
                 Cancel
               </Button>

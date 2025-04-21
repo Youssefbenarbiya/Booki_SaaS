@@ -31,7 +31,7 @@ import {
   createBlog,
   updateBlog,
   createCategory,
-} from "../../../../../actions/blogs/blogActions"
+} from "@/actions/blogs/blogActions"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -42,6 +42,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { Locale } from "@/i18n/routing"
 
 // Define a schema for blog data validation
 const formSchema = z.object({
@@ -83,6 +84,7 @@ interface BlogFormProps {
   categories: Category[]
   isEditing?: boolean
   authorId: string
+  locale: Locale
 }
 
 export function BlogForm({
@@ -90,6 +92,7 @@ export function BlogForm({
   categories,
   isEditing = false,
   authorId,
+  locale,
 }: BlogFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -153,38 +156,38 @@ export function BlogForm({
   // Handle new category creation
   const handleCreateCategory = async () => {
     if (!newCategory.trim()) {
-      toast.error("Category name cannot be empty");
-      return;
+      toast.error("Category name cannot be empty")
+      return
     }
-    
+
     try {
-      setCreatingCategory(true);
-      const result = await createCategory(newCategory.trim());
-      
+      setCreatingCategory(true)
+      const result = await createCategory(newCategory.trim())
+
       if (result.error) {
-        toast.error(result.error);
-        return;
+        toast.error(result.error)
+        return
       }
-      
+
       if (result.category) {
         // Add the new category to the local list
-        setCategoryList(prev => [...prev, result.category]);
-        
+        setCategoryList((prev) => [...prev, result.category])
+
         // Select the new category in the form
-        form.setValue("categoryId", result.category.id.toString());
-        
+        form.setValue("categoryId", result.category.id.toString())
+
         // Close dialog and reset input
-        setShowNewCategoryDialog(false);
-        setNewCategory("");
-        toast.success("Category created successfully");
+        setShowNewCategoryDialog(false)
+        setNewCategory("")
+        toast.success("Category created successfully")
       }
     } catch (error) {
-      console.error("Failed to create category:", error);
-      toast.error("Failed to create category");
+      console.error("Failed to create category:", error)
+      toast.error("Failed to create category")
     } finally {
-      setCreatingCategory(false);
+      setCreatingCategory(false)
     }
-  };
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -242,7 +245,7 @@ export function BlogForm({
         isEditing ? "Blog updated successfully!" : "Blog created successfully!"
       )
       router.refresh()
-      router.push("/agency/dashboard/blogs")
+      router.push(`/${locale}/agency/dashboard/blogs`)
     } catch (error) {
       console.error("Form submission error:", error)
       toast.error("Something went wrong. Please try again.")
@@ -297,10 +300,10 @@ export function BlogForm({
                       </SelectContent>
                     </Select>
                   </FormControl>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="icon" 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
                     onClick={() => setShowNewCategoryDialog(true)}
                     className="shrink-0"
                   >
@@ -470,7 +473,10 @@ export function BlogForm({
         </Button>
 
         {/* Dialog for new category */}
-        <Dialog open={showNewCategoryDialog} onOpenChange={setShowNewCategoryDialog}>
+        <Dialog
+          open={showNewCategoryDialog}
+          onOpenChange={setShowNewCategoryDialog}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Category</DialogTitle>
@@ -483,15 +489,15 @@ export function BlogForm({
               />
             </div>
             <DialogFooter>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowNewCategoryDialog(false)}
                 disabled={creatingCategory}
               >
                 Cancel
               </Button>
-              <Button 
-                onClick={handleCreateCategory} 
+              <Button
+                onClick={handleCreateCategory}
                 disabled={creatingCategory || !newCategory.trim()}
               >
                 {creatingCategory ? "Creating..." : "Create Category"}

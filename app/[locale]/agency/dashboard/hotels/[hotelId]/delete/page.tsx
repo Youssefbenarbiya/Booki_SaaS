@@ -4,14 +4,22 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { deleteHotel, getHotelById } from "@/actions/hotels&rooms/hotelActions"
 
 export default function DeleteHotelPage() {
   const router = useRouter()
   const params = useParams()
   const hotelId = params.hotelId as string
-  
+  const locale = params.locale as string
+
   const [isLoading, setIsLoading] = useState(false)
   const [hotelName, setHotelName] = useState<string | null>(null)
   const [isLoadingHotel, setIsLoadingHotel] = useState(true)
@@ -42,7 +50,7 @@ export default function DeleteHotelPage() {
     try {
       await deleteHotel(hotelId)
       toast.success("Hotel deleted successfully")
-      router.push("/agency/dashboard/hotels")
+      router.push(`/${locale}/agency/dashboard/hotels`)
     } catch (error) {
       toast.error("Failed to delete hotel")
       console.error(error)
@@ -61,7 +69,8 @@ export default function DeleteHotelPage() {
         <CardHeader>
           <CardTitle>Delete Hotel</CardTitle>
           <CardDescription>
-            Are you sure you want to delete this hotel? This action cannot be undone.
+            Are you sure you want to delete this hotel? This action cannot be
+            undone.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -69,16 +78,15 @@ export default function DeleteHotelPage() {
             <p>Loading hotel details...</p>
           ) : (
             <p className="font-medium">
-              You are about to delete: <span className="text-red-600">{hotelName || "Unknown Hotel"}</span>
+              You are about to delete:{" "}
+              <span className="text-red-600">
+                {hotelName || "Unknown Hotel"}
+              </span>
             </p>
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             Cancel
           </Button>
           <Button
@@ -92,4 +100,4 @@ export default function DeleteHotelPage() {
       </Card>
     </div>
   )
-} 
+}

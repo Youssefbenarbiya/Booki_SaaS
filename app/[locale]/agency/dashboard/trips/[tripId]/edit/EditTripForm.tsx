@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import Image from "next/image"
@@ -33,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Locale } from "@/i18n/routing"
 
 // Define currency type to fix linting issues
 type Currency = {
@@ -43,14 +45,14 @@ type Currency = {
 
 // Define the currencies array locally since it's not exported from the context
 const currencies: Currency[] = [
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'TND', symbol: 'DT', name: 'Tunisian Dinar' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' }
-];
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "EUR", symbol: "€", name: "Euro" },
+  { code: "GBP", symbol: "£", name: "British Pound" },
+  { code: "TND", symbol: "DT", name: "Tunisian Dinar" },
+  { code: "JPY", symbol: "¥", name: "Japanese Yen" },
+  { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
+  { code: "AUD", symbol: "A$", name: "Australian Dollar" },
+]
 
 // Extend TripInput to include currency
 interface ExtendedTripInput extends TripInput {
@@ -83,15 +85,16 @@ interface EditTripFormProps {
       scheduledDate: Date | null
     }>
   }
+  locale: Locale
 }
 
-export default function EditTripForm({ trip }: EditTripFormProps) {
+export default function EditTripForm({ trip, locale }: EditTripFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   // Get the currency context
   const { currency: contextCurrency, setCurrency } = useCurrency()
-  
+
   // Use the trip's currency if available, otherwise use the context currency
   const tripCurrency = trip.currency || contextCurrency || "USD"
 
@@ -306,7 +309,7 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
 
       // Run your update action
       await updateTrip(trip.id, formattedData)
-      router.push("/agency/dashboard/trips")
+      router.push(`/${locale}/agency/dashboard/trips`)
       router.refresh()
     } catch (error) {
       console.error("Error updating trip:", error)
@@ -489,7 +492,10 @@ export default function EditTripForm({ trip }: EditTripFormProps) {
                                 <SelectValue>
                                   {field.value ? (
                                     <>
-                                      {currencies.find((c) => c.code === field.value)?.symbol || ""} {field.value}
+                                      {currencies.find(
+                                        (c) => c.code === field.value
+                                      )?.symbol || ""}{" "}
+                                      {field.value}
                                     </>
                                   ) : (
                                     "Select Currency"

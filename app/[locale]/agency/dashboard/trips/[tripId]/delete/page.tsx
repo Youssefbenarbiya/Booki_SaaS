@@ -4,14 +4,22 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { deleteTrip, getTripById } from "@/actions/trips/tripActions"
 
 export default function DeleteTripPage() {
   const router = useRouter()
   const params = useParams()
   const tripId = params.tripId as string
-  
+  const locale = params.locale as string
+
   const [isLoading, setIsLoading] = useState(false)
   const [tripName, setTripName] = useState<string | null>(null)
   const [isLoadingTrip, setIsLoadingTrip] = useState(true)
@@ -42,7 +50,7 @@ export default function DeleteTripPage() {
     try {
       await deleteTrip(Number(tripId))
       toast.success("Trip deleted successfully")
-      router.push("/agency/dashboard/trips")
+      router.push(`/${locale}/agency/dashboard/trips`)
     } catch (error) {
       toast.error("Failed to delete trip")
       console.error(error)
@@ -61,7 +69,8 @@ export default function DeleteTripPage() {
         <CardHeader>
           <CardTitle>Delete Trip</CardTitle>
           <CardDescription>
-            Are you sure you want to delete this trip? This action cannot be undone.
+            Are you sure you want to delete this trip? This action cannot be
+            undone.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -69,16 +78,13 @@ export default function DeleteTripPage() {
             <p>Loading trip details...</p>
           ) : (
             <p className="font-medium">
-              You are about to delete: <span className="text-red-600">{tripName || "Unknown Trip"}</span>
+              You are about to delete:{" "}
+              <span className="text-red-600">{tripName || "Unknown Trip"}</span>
             </p>
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             Cancel
           </Button>
           <Button
@@ -92,4 +98,4 @@ export default function DeleteTripPage() {
       </Card>
     </div>
   )
-} 
+}

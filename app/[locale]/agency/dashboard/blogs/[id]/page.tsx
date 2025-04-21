@@ -1,20 +1,20 @@
 import { notFound } from "next/navigation"
-import {
-  getBlogById,
-  getBlogCategories,
-} from "../../../../../actions/blogs/blogActions"
+import { getBlogById, getBlogCategories } from "@/actions/blogs/blogActions"
 import { BlogForm } from "../new/blog-form"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
+import { Locale } from "@/i18n/routing"
 
 interface BlogEditPageProps {
-  params: { id: string } // Updated to not be a Promise
+  params: {
+    id: string
+    locale: Locale
+  }
 }
 
 export default async function BlogEditPage({ params }: BlogEditPageProps) {
-  // No need to await params as it's not a Promise
-  const { id: blogId } = params
+  const { id: blogId, locale } = params
 
   // Ensure params is correctly typed
   if (!blogId) {
@@ -28,7 +28,7 @@ export default async function BlogEditPage({ params }: BlogEditPageProps) {
 
   // Check if user is authenticated
   if (!session || !session.user) {
-    redirect("/en/sign-in")
+    redirect(`/${locale}/sign-in`)
   }
 
   // Parse the blog ID safely
@@ -59,6 +59,7 @@ export default async function BlogEditPage({ params }: BlogEditPageProps) {
         categories={categories}
         isEditing={true}
         authorId={session.user.id}
+        locale={locale}
       />
     </div>
   )

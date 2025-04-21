@@ -151,34 +151,34 @@ export async function generateMetadata({
 export default async function BookingDetailsPage({
   params,
 }: {
-  params: { type: string; id: string }
+  params: { type: string; id: string; locale: string }
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
 
   if (!session?.user) {
-    redirect("/en/sign-in")
+    redirect(`/${params.locale}/sign-in`)
   }
 
   const type = params.type as BookingType
   const id = parseInt(params.id)
 
   if (!["car", "trip", "hotel"].includes(type) || isNaN(id)) {
-    redirect("/bookings")
+    redirect(`/${params.locale}/bookings`)
   }
 
   const booking = (await getBookingDetails(type, id)) as unknown as Booking
 
   if (!booking) {
-    redirect("/bookings")
+    redirect(`/${params.locale}/bookings`)
   }
 
   const handleCancelBooking = async () => {
     "use server"
 
     await cancelBooking(type, id)
-    redirect("/bookings")
+    redirect(`/${params.locale}/agency/dashboard/bookings`)
   }
 
   return (
@@ -198,7 +198,7 @@ export default async function BookingDetailsPage({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/bookings">
+            <Link href={`/${params.locale}/agency/dashboard/bookings`}>
               <Button variant="outline">Back to All Bookings</Button>
             </Link>
             {booking.status !== "cancelled" &&

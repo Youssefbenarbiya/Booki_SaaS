@@ -3,13 +3,17 @@
 import { getHotelById } from "@/actions/hotels&rooms/hotelActions"
 import EditHotelForm from "./EditHotelForm"
 import { notFound } from "next/navigation"
+import { Locale } from "@/i18n/routing"
 
-export default async function EditHotelPage({
-  params,
-}: {
-  params: Promise<{ hotelId: string }>
-}) {
-  const { hotelId } = await params
+interface EditHotelPageProps {
+  params: {
+    hotelId: string
+    locale: Locale
+  }
+}
+
+export default async function EditHotelPage({ params }: EditHotelPageProps) {
+  const { hotelId, locale } = params
 
   const hotel = await getHotelById(hotelId)
 
@@ -17,13 +21,5 @@ export default async function EditHotelPage({
     notFound()
   }
 
-  return <EditHotelForm hotel={hotel} />
+  return <EditHotelForm hotel={hotel} locale={locale} />
 }
-
-// export default async function EditHotelPage() {
-//   return (
-//     <div>
-//       <h1>Edit Hotel</h1>
-//     </div>
-//   )
-// }

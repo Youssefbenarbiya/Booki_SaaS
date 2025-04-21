@@ -4,13 +4,19 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import DeleteHotelButton from "./DeleteHotelButton"
 import HotelLocationMap from "@/components/HotelLocationMap"
+import { Locale } from "@/i18n/routing"
+
+interface HotelDetailsPageProps {
+  params: {
+    hotelId: string
+    locale: Locale
+  }
+}
 
 export default async function HotelDetailsPage({
   params,
-}: {
-  params: Promise<{ hotelId: string }>
-}) {
-  const { hotelId } = await params
+}: HotelDetailsPageProps) {
+  const { hotelId, locale } = params
 
   const hotel = await getHotelById(hotelId)
   if (!hotel) {
@@ -24,18 +30,18 @@ export default async function HotelDetailsPage({
         <h1 className="text-3xl font-bold text-gray-900">Hotel Details</h1>
         <div className="flex flex-wrap gap-3 mt-4 sm:mt-0">
           <Link
-            href="/agency/dashboard/hotels"
+            href={`/${locale}/agency/dashboard/hotels`}
             className="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
           >
             Back to Hotels
           </Link>
           <Link
-            href={`/agency/dashboard/hotels/${hotel.id}/edit`}
+            href={`/${locale}/agency/dashboard/hotels/${hotel.id}/edit`}
             className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 transition"
           >
             Edit Hotel
           </Link>
-          <DeleteHotelButton hotelId={hotel.id} />
+          <DeleteHotelButton hotelId={hotel.id} locale={locale} />
         </div>
       </div>
 

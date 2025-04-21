@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Trash } from "lucide-react"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,8 @@ interface DeleteTripButtonProps {
 
 export default function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
   const router = useRouter()
+  const params = useParams()
+  const locale = params.locale as string
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -52,7 +55,7 @@ export default function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
         <Trash className="h-4 w-4 mr-1" />
         Delete
       </Button>
-      
+
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -65,8 +68,8 @@ export default function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction asChild>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={handleDelete}
                 disabled={isLoading}
               >
@@ -78,4 +81,4 @@ export default function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
       </AlertDialog>
     </>
   )
-} 
+}

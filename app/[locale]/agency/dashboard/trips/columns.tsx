@@ -5,7 +5,7 @@ import { ArrowUpDown, Pencil, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 import { Badge } from "@/components/ui/badge"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -132,6 +132,8 @@ export const columns: ColumnDef<TripType>[] = [
     cell: function Cell({ row }) {
       const trip = row.original
       const router = useRouter()
+      const params = useParams()
+      const locale = params.locale as string
 
       return (
         <div className="flex items-center gap-2">
@@ -139,7 +141,7 @@ export const columns: ColumnDef<TripType>[] = [
             variant="ghost"
             size="sm"
             onClick={() =>
-              router.push(`/agency/dashboard/trips/${trip.id}/edit`)
+              router.push(`/${locale}/agency/dashboard/trips/${trip.id}/edit`)
             }
             className="h-8 w-8 p-0"
           >
@@ -150,14 +152,19 @@ export const columns: ColumnDef<TripType>[] = [
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(`/agency/dashboard/trips/${trip.id}`)}
+            onClick={() =>
+              router.push(`/${locale}/agency/dashboard/trips/${trip.id}`)
+            }
             className="h-8 w-8 p-0"
           >
             <span className="sr-only">View</span>
             <Eye className="h-4 w-4" />
           </Button>
 
-          <Link href={`/agency/dashboard/trips/${trip.id}/delete`} passHref>
+          <Link
+            href={`/${locale}/agency/dashboard/trips/${trip.id}/delete`}
+            passHref
+          >
             <Button
               variant="ghost"
               size="sm"
