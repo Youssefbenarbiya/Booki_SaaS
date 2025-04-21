@@ -8,5 +8,49 @@
     "dashboard": "لوحة المعلومات",
     "verifyOffers": "التحقق من العروض",
     "agencies": "الوكالات"
+  },
+  "signIn": {
+    "title": "تسجيل الدخول",
+    "subtitle": "تسجيل الدخول للوصول إلى حسابك في بوكي",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "passwordPlaceholder": "••••••••••••",
+    "rememberMe": "تذكرني",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "loginButton": "تسجيل الدخول",
+    "noAccount": "ليس لديك حساب؟",
+    "register": "التسجيل",
+    "orLoginWith": "أو تسجيل الدخول باستخدام",
+    "errors": {
+      "email": {
+        "required": "البريد الإلكتروني مطلوب",
+        "invalid": "صيغة البريد الإلكتروني غير صالحة"
+      },
+      "password": {
+        "required": "كلمة المرور مطلوبة",
+        "tooShort": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
+        "tooLong": "لا يمكن أن تتجاوز كلمة المرور 32 حرفًا"
+      },
+      "auth": {
+        "invalid": "بريد إلكتروني أو كلمة مرور غير صالحة",
+        "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+      }
+    }
+  },
+  "signUp": {
+    "title": "التسجيل",
+    "subtitle": "إنشاء حساب بوكي الخاص بك",
+    "namePlaceholder": "جون دو",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "phonePlaceholder": "رقم الهاتف",
+    "passwordPlaceholder": "••••••••••••",
+    "confirmPasswordPlaceholder": "تأكيد كلمة المرور",
+    "isAgency": "أسجل كوكالة سفر",
+    "agencyNamePlaceholder": "اسم الوكالة",
+    "termsText": "أوافق على",
+    "termsLink": "الشروط والأحكام",
+    "registerButton": "تسجيل",
+    "alreadyHaveAccount": "لديك حساب بالفعل؟",
+    "loginLink": "تسجيل الدخول",
+    "orRegisterWith": "أو التسجيل باستخدام"
   }
 }

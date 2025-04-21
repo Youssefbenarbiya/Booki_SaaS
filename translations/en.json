@@ -8,5 +8,49 @@
     "dashboard": "Dashboard",
     "verifyOffers": "Verify Offers",
     "agencies": "Agencies"
+  },
+  "signIn": {
+    "title": "Login",
+    "subtitle": "Login to access your Booki account",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "passwordPlaceholder": "••••••••••••",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot Password?",
+    "loginButton": "Login",
+    "noAccount": "Don't have an account?",
+    "register": "Register",
+    "orLoginWith": "Or login with",
+    "errors": {
+      "email": {
+        "required": "Email is required",
+        "invalid": "Invalid email format"
+      },
+      "password": {
+        "required": "Password is required",
+        "tooShort": "Password must be at least 8 characters",
+        "tooLong": "Password cannot exceed 32 characters"
+      },
+      "auth": {
+        "invalid": "Invalid email or password",
+        "generic": "Something went wrong. Please try again."
+      }
+    }
+  },
+  "signUp": {
+    "title": "Register",
+    "subtitle": "Create your Booki account",
+    "namePlaceholder": "John Doe",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "phonePlaceholder": "Phone number",
+    "passwordPlaceholder": "••••••••••••",
+    "confirmPasswordPlaceholder": "Confirm password",
+    "isAgency": "I am registering as a travel agency",
+    "agencyNamePlaceholder": "Agency name",
+    "termsText": "I agree to the",
+    "termsLink": "Terms and Conditions",
+    "registerButton": "Register",
+    "alreadyHaveAccount": "Already have an account?",
+    "loginLink": "Login",
+    "orRegisterWith": "Or register with"
   }
 }

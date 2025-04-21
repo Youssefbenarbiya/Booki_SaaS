@@ -1,13 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import type { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { FiEye, FiEyeOff } from "react-icons/fi"
-import { signInSchema } from "@/lib/validations/zod"
+import { createSignInSchema, signInSchema } from "@/lib/validations/signin"
+import type { z } from "zod"
 import { authClient } from "@/auth-client"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -16,15 +17,20 @@ import LoadingButton from "@/components/loading-button"
 import type { ErrorContext } from "@better-fetch/fetch"
 import GoogleSignIn from "../(Oauth)/google"
 import FacebookSignIn from "../(Oauth)/facebook"
-import { translateContent } from "@/app/[locale]/actions"
+import { useTranslations } from "next-intl"
 import LanguageSelector from "@/components/language-selector"
+
+// Define the type directly from the schema
+type SignInSchemaType = z.infer<typeof signInSchema>
 
 export default function SignIn() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const params = useParams()
+  const currentLocale = (params.locale as string) || "en"
+
   // Extract callbackUrl from the query parameters; default to "/" if not present
   const callbackUrl = searchParams.get("callbackUrl") || "/"
-  const lang = searchParams.get("lang") || "en"
 
   const { toast } = useToast()
   const [pendingCredentials, setPendingCredentials] = useState(false)
@@ -37,19 +43,6 @@ export default function SignIn() {
     // Add more slide images here
   ]
 
-  const [translations, setTranslations] = useState({
-    title: "Login",
-    subtitle: "Login to access your Booki account",
-    emailPlaceholder: "john.doe@gmail.com",
-    passwordPlaceholder: "••••••••••••",
-    rememberMe: "Remember me",
-    forgotPassword: "Forgot Password?",
-    loginButton: "Login",
-    noAccount: "Don't have an account?",
-    register: "Register",
-    orLoginWith: "Or login with",
-  })
-
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
@@ -58,33 +51,25 @@ export default function SignIn() {
     return () => clearInterval(interval)
   }, [slides.length])
 
-  useEffect(() => {
-    const loadTranslations = async () => {
-      if (lang !== "en") {
-        const translated = await translateContent(translations, lang)
-        if (typeof translated === "object") {
-          setTranslations(translated)
-        }
-      }
-    }
-    loadTranslations()
-  }, [lang])
+  // Use next-intl for translations
+  const t = useTranslations("signIn")
+
+  // Create a schema with translated error messages
+  const localizedSignInSchema = createSignInSchema((key) => t(key))
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<z.infer<typeof signInSchema>>({
-    resolver: zodResolver(signInSchema),
+  } = useForm<SignInSchemaType>({
+    resolver: zodResolver(localizedSignInSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   })
 
-  const handleCredentialsSignIn = async (
-    values: z.infer<typeof signInSchema>
-  ) => {
+  const handleCredentialsSignIn = async (values: SignInSchemaType) => {
     await authClient.signIn.email(
       {
         email: values.email,
@@ -102,8 +87,8 @@ export default function SignIn() {
         onError: (ctx: ErrorContext) => {
           console.log(ctx)
           toast({
-            title: "Something went wrong",
-            description: ctx.error.message ?? "Something went wrong.",
+            title: "Error",
+            description: t("errors.auth.invalid"),
             variant: "destructive",
           })
         },
@@ -127,10 +112,8 @@ export default function SignIn() {
                 className="rounded-lg"
                 priority
               />
-              <h1 className="text-[1.75rem] font-serif mb-1">
-                {translations.title}
-              </h1>
-              <p className="text-gray-600 text-sm">{translations.subtitle}</p>
+              <h1 className="text-[1.75rem] font-serif mb-1">{t("title")}</h1>
+              <p className="text-gray-600 text-sm">{t("subtitle")}</p>
             </div>
             <LanguageSelector />
           </div>
@@ -143,7 +126,7 @@ export default function SignIn() {
             <div className="space-y-1">
               <Input
                 type="email"
-                placeholder={translations.emailPlaceholder}
+                placeholder={t("emailPlaceholder")}
                 className="h-12 border-gray-300"
                 {...register("email")}
               />
@@ -156,7 +139,7 @@ export default function SignIn() {
             <div className="space-y-1 relative">
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder={translations.passwordPlaceholder}
+                placeholder={t("passwordPlaceholder")}
                 className="h-12 border-gray-300"
                 {...register("password")}
               />
@@ -186,26 +169,26 @@ export default function SignIn() {
                   htmlFor="remember"
                   className="text-sm text-gray-600 leading-none"
                 >
-                  {translations.rememberMe}
+                  {t("rememberMe")}
                 </label>
               </div>
               <Link
                 href="/forgot-password"
                 className="text-[#FF5C00] text-sm hover:underline"
               >
-                {translations.forgotPassword}
+                {t("forgotPassword")}
               </Link>
             </div>
 
             {/* Login Button */}
             <LoadingButton pending={pendingCredentials}>
-              {translations.loginButton}
+              {t("loginButton")}
             </LoadingButton>
 
             <div className="text-center text-sm">
-              {translations.noAccount}{" "}
+              {t("noAccount")}{" "}
               <Link href="/sign-up" className="text-[#FF5C00] hover:underline">
-                {translations.register}
+                {t("register")}
               </Link>
             </div>
 
@@ -216,7 +199,7 @@ export default function SignIn() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-white px-4 text-gray-500">
-                  {translations.orLoginWith}
+                  {t("orLoginWith")}
                 </span>
               </div>
             </div>

@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
-import { signUpSchema } from "@/lib/validations/zod"
+import { signUpSchema } from "@/lib/validations/signup"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { z } from "zod"

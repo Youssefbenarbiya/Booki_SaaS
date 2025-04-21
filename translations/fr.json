@@ -8,5 +8,49 @@
     "dashboard": "Tableau de Bord",
     "verifyOffers": "Vérifier les Offres",
     "agencies": "Agences"
+  },
+  "signIn": {
+    "title": "Connexion",
+    "subtitle": "Connectez-vous pour accéder à votre compte Booki",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "passwordPlaceholder": "••••••••••••",
+    "rememberMe": "Se souvenir de moi",
+    "forgotPassword": "Mot de passe oublié?",
+    "loginButton": "Se connecter",
+    "noAccount": "Vous n'avez pas de compte?",
+    "register": "S'inscrire",
+    "orLoginWith": "Ou connectez-vous avec",
+    "errors": {
+      "email": {
+        "required": "L'e-mail est requis",
+        "invalid": "Format d'e-mail invalide"
+      },
+      "password": {
+        "required": "Le mot de passe est requis",
+        "tooShort": "Le mot de passe doit contenir au moins 8 caractères",
+        "tooLong": "Le mot de passe ne peut pas dépasser 32 caractères"
+      },
+      "auth": {
+        "invalid": "E-mail ou mot de passe invalide",
+        "generic": "Une erreur s'est produite. Veuillez réessayer."
+      }
+    }
+  },
+  "signUp": {
+    "title": "Inscription",
+    "subtitle": "Créez votre compte Booki",
+    "namePlaceholder": "John Doe",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "phonePlaceholder": "Numéro de téléphone",
+    "passwordPlaceholder": "••••••••••••",
+    "confirmPasswordPlaceholder": "Confirmer le mot de passe",
+    "isAgency": "Je m'inscris en tant qu'agence de voyage",
+    "agencyNamePlaceholder": "Nom de l'agence",
+    "termsText": "J'accepte les",
+    "termsLink": "Conditions Générales",
+    "registerButton": "S'inscrire",
+    "alreadyHaveAccount": "Vous avez déjà un compte?",
+    "loginLink": "Se connecter",
+    "orRegisterWith": "Ou inscrivez-vous avec"
   }
 }
