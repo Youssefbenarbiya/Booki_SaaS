@@ -1,8 +1,8 @@
 import React from "react"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
-import SignInRedirectMessage from "@/app/(auth)/en/sign-in/SignInRedirectMessage"
 import BookCarForm from "./BookCarForm"
+import SignInRedirectMessage from "@/app/[locale]/(auth)/sign-in/SignInRedirectMessage"
 
 interface BookingPageProps {
   params: Promise<{ id: string }>

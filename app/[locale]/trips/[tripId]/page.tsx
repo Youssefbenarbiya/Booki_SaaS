@@ -3,7 +3,6 @@
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import {
-  Calendar,
   Clock,
   MapPin,
   Users,
@@ -16,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { formatPrice, getDurationInDays, formatDateRange } from "@/lib/utils"
+import { formatPrice, getDurationInDays } from "@/lib/utils"
 import Link from "next/link"
 import { getTripById } from "@/actions/trips/tripActions"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
@@ -25,6 +24,7 @@ import React from "react"
 
 interface TripParams {
   tripId: string
+  locale: string
 }
 
 interface TripPageProps {
@@ -34,8 +34,8 @@ interface TripPageProps {
 
 export default function TripDetailsPage({ params }: TripPageProps) {
   const { currency, convertPrice } = useCurrency()
-   const resolvedParams = React.use(params)
-   const { tripId } = resolvedParams
+  const resolvedParams = React.use(params)
+  const { tripId, locale } = resolvedParams
   // Use state to hold the trip data
   const [trip, setTrip] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -177,32 +177,8 @@ export default function TripDetailsPage({ params }: TripPageProps) {
 
             <Separator className="my-4" />
 
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                  <span className="text-sm text-gray-700">Dates</span>
-                </div>
-                <span className="text-sm font-medium">
-                  {formatDateRange(trip.startDate, trip.endDate)}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <div className="flex items-center">
-                  <Users className="h-4 w-4 mr-2 text-gray-500" />
-                  <span className="text-sm text-gray-700">Travelers</span>
-                </div>
-                <span className="text-sm font-medium">
-                  {trip.capacity} available
-                </span>
-              </div>
-            </div>
-
-            <Separator className="my-4" />
-
             <div className="flex flex-col space-y-2">
-              <Link href={`/trips/${tripId}/book`} className="w-full">
+              <Link href={`/${locale}/trips/${tripId}/book`} className="w-full">
                 <Button size="lg" className="w-full">
                   Book Now
                 </Button>

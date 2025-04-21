@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Image from "next/image"
 import Link from "next/link"
@@ -8,14 +9,21 @@ import { Calendar, Clock, Heart, MapPin, Star, Users } from "lucide-react"
 import { useFavorite } from "@/lib/hooks/useFavorite"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
 import { formatPrice } from "@/lib/utils"
+import { useParams } from "next/navigation"
 
 interface TripCardProps {
   trip: any
 }
 
 export default function TripCard({ trip }: TripCardProps) {
-  const { isFavorite, toggleFavorite, isLoading: favoriteLoading } = useFavorite(trip.id, "trip")
+  const {
+    isFavorite,
+    toggleFavorite,
+    isLoading: favoriteLoading,
+  } = useFavorite(trip.id, "trip")
   const { currency, convertPrice, isLoading: currencyLoading } = useCurrency()
+  const params = useParams()
+  const locale = params.locale as string
 
   // Format dates
   const startDate = trip.startDate
@@ -56,11 +64,11 @@ export default function TripCard({ trip }: TripCardProps) {
     ? parseFloat(trip.priceAfterDiscount?.toString() || "0")
     : null
   const tripCurrency = trip.currency || "USD"
-  
+
   // Convert prices to current selected currency
   const convertedOriginalPrice = convertPrice(originalPrice, tripCurrency)
-  const convertedDiscountedPrice = hasDiscount 
-    ? convertPrice(discountedPrice || originalPrice, tripCurrency) 
+  const convertedDiscountedPrice = hasDiscount
+    ? convertPrice(discountedPrice || originalPrice, tripCurrency)
     : null
 
   return (
@@ -104,7 +112,10 @@ export default function TripCard({ trip }: TripCardProps) {
                   {formatPrice(convertedOriginalPrice, { currency })}
                 </span>
                 <span className="text-green-600 text-sm">
-                  {formatPrice(convertedDiscountedPrice || convertedOriginalPrice, { currency })}
+                  {formatPrice(
+                    convertedDiscountedPrice || convertedOriginalPrice,
+                    { currency }
+                  )}
                 </span>
               </>
             ) : (
@@ -192,7 +203,7 @@ export default function TripCard({ trip }: TripCardProps) {
       </CardContent>
 
       <CardFooter className="p-4 pt-0 mt-auto">
-        <Link href={`/trips/${trip.id}`} className="w-full">
+        <Link href={`/${locale}/trips/${trip.id}`} className="w-full">
           <Button
             className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded transition-all duration-300"
             variant="default"

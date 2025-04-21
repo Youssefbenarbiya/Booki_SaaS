@@ -1,8 +1,13 @@
 import { Button } from "@/components/ui/button"
 import { XCircle } from "lucide-react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 
 export default function PaymentFailedPage() {
+  // Get the locale from the URL params
+  const params = useParams()
+  const locale = params.locale as string
+
   return (
     <div className="container mx-auto px-4 py-16 flex flex-col items-center">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg text-center">
@@ -14,12 +19,12 @@ export default function PaymentFailedPage() {
         </p>
 
         <div className="flex flex-col space-y-3">
-          <Link href="/?type=trips">
+          <Link href={`/${locale}/?type=trips`}>
             <Button variant="default" className="w-full">
               Browse Trips
             </Button>
           </Link>
-          <Link href="/contact">
+          <Link href={`/${locale}/contact`}>
             <Button variant="outline" className="w-full">
               Contact Support
             </Button>

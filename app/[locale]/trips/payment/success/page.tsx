@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
@@ -10,6 +10,10 @@ import { generateTripBookingPDF } from "@/actions/trips/generateTripBookingPDF"
 import { formatPrice } from "@/lib/utils"
 
 export default function PaymentSuccessPage() {
+  // Get the locale from URL params
+  const params = useParams()
+  const locale = params.locale as string
+
   // Get bookingId from query parameters
   const searchParams = useSearchParams()
   const bookingId = searchParams.get("bookingId")
@@ -33,7 +37,9 @@ export default function PaymentSuccessPage() {
         // If this success page was called with a paymentId, it's from Flouci and we need to verify
         if (paymentId) {
           // Verify the Flouci payment first
-          const verifyRes = await fetch(`/api/payment/trip-verify?paymentId=${paymentId}&bookingId=${bookingId}`)
+          const verifyRes = await fetch(
+            `/api/payment/trip-verify?paymentId=${paymentId}&bookingId=${bookingId}`
+          )
           if (!verifyRes.ok) {
             throw new Error("Failed to verify payment")
           }
@@ -92,10 +98,10 @@ export default function PaymentSuccessPage() {
   // Determine the payment currency based on payment method
   const paymentMethod = bookingData?.paymentMethod || ""
   const paymentCurrency = bookingData?.paymentCurrency || "USD"
-  
+
   // Calculate price per seat from total price and seats booked
   const pricePerSeat = bookingData?.totalPrice / bookingData?.seatsBooked
-  
+
   // Determine if Stripe or Flouci was used
   const isStripePayment = paymentMethod.includes("STRIPE")
   const isFlouciPayment = paymentMethod.includes("FLOUCI")
@@ -122,10 +128,12 @@ export default function PaymentSuccessPage() {
                 <strong>Destination:</strong> {tripData.destination}
               </p>
               <p>
-                <strong>Start Date:</strong> {new Date(tripData.startDate).toLocaleDateString()}
+                <strong>Start Date:</strong>{" "}
+                {new Date(tripData.startDate).toLocaleDateString()}
               </p>
               <p>
-                <strong>End Date:</strong> {new Date(tripData.endDate).toLocaleDateString()}
+                <strong>End Date:</strong>{" "}
+                {new Date(tripData.endDate).toLocaleDateString()}
               </p>
               <p>
                 <strong>Booking Reference:</strong> #{bookingData?.id}
@@ -143,16 +151,18 @@ export default function PaymentSuccessPage() {
             <>
               <p>
                 <strong>Payment Method:</strong>{" "}
-                {isStripePayment 
-                  ? "Credit Card (USD)" 
-                  : isFlouciPayment 
-                    ? "Flouci (TND)"
-                    : paymentMethod}
+                {isStripePayment
+                  ? "Credit Card (USD)"
+                  : isFlouciPayment
+                  ? "Flouci (TND)"
+                  : paymentMethod}
               </p>
               <p>
                 <strong>Payment Status:</strong>{" "}
                 <span className="text-green-600 font-medium">
-                  {bookingData.paymentStatus === "completed" ? "Completed" : bookingData.paymentStatus}
+                  {bookingData.paymentStatus === "completed"
+                    ? "Completed"
+                    : bookingData.paymentStatus}
                 </span>
               </p>
               <p>
@@ -165,7 +175,9 @@ export default function PaymentSuccessPage() {
               <p>
                 <strong>Total Amount:</strong>{" "}
                 <span className="font-bold">
-                  {formatPrice(bookingData.totalPrice, { currency: paymentCurrency })}
+                  {formatPrice(bookingData.totalPrice, {
+                    currency: paymentCurrency,
+                  })}
                 </span>
               </p>
               {bookingData.paymentDate && (
@@ -174,11 +186,13 @@ export default function PaymentSuccessPage() {
                   {new Date(bookingData.paymentDate).toLocaleString()}
                 </p>
               )}
-              {bookingData.originalCurrency && bookingData.originalCurrency !== paymentCurrency && (
-                <p className="text-sm text-gray-500 mt-2">
-                  * Price converted from {bookingData.originalCurrency} to {paymentCurrency}
-                </p>
-              )}
+              {bookingData.originalCurrency &&
+                bookingData.originalCurrency !== paymentCurrency && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    * Price converted from {bookingData.originalCurrency} to{" "}
+                    {paymentCurrency}
+                  </p>
+                )}
             </>
           ) : (
             <p>No payment details available.</p>
@@ -215,12 +229,12 @@ export default function PaymentSuccessPage() {
           >
             Download Booking PDF
           </Button>
-          <Link href="/user/profile/bookingHistory">
+          <Link href={`/${locale}/user/profile/bookingHistory`}>
             <Button variant="default" className="w-full">
               View My Bookings
             </Button>
           </Link>
-          <Link href="/trips">
+          <Link href={`/${locale}?type=trips&destination=Turkey`}>
             <Button variant="outline" className="w-full">
               Browse More Trips
             </Button>

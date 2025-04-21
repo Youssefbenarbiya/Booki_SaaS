@@ -3,17 +3,16 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { getTripById } from "@/actions/trips/tripActions"
 import BookingForm from "./BookingForm"
-
-import SignInRedirectMessage from "@/app/(auth)/en/sign-in/SignInRedirectMessage"
 import TripSummary from "./TripSummary"
+import SignInRedirectMessage from "@/app/[locale]/(auth)/sign-in/SignInRedirectMessage"
 
 export default async function BookTripPage({
   params,
 }: {
-  params: { tripId: string }
+  params: { tripId: string; locale: string }
   searchParams: { travelers?: string; date?: string }
 }) {
-  const { tripId } = await params
+  const { tripId, locale } = params
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -22,7 +21,7 @@ export default async function BookTripPage({
   if (!session || !session.user) {
     return (
       <SignInRedirectMessage
-        callbackUrl={`/en/sign-in?callbackUrl=/trips/${tripId}/book`}
+        callbackUrl={`/${locale}/sign-in?callbackUrl=/${locale}/trips/${tripId}/book`}
       />
     )
   }
@@ -31,7 +30,7 @@ export default async function BookTripPage({
   const trip = await getTripById(tripIdNum)
 
   if (!trip) {
-    redirect("/?type=trips")
+    redirect(`/${locale}/?type=trips`)
   }
 
   // Calculate effective price (discounted or original)
