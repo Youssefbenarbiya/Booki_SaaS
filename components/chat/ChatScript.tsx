@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { MessageSquare, X, Send, ChevronDown, ChevronUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar } from "@/components/ui/avatar"
-import { useChatBot } from "@/app/hooks/useChatBot"
-import { ChatResults } from "@/components/chat/ChatResults"
-import { Message } from "@/app/actions/chat"
+import { useState, useEffect } from "react";
+import { MessageSquare, X, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar } from "@/components/ui/avatar";
+import { useChatBot } from "@/app/hooks/useChatBot";
+import { ChatResults } from "@/components/chat/ChatResults";
+import { Message } from "@/actions/chat";
 
 // Initial messages to guide the conversation
 const initialMessages = [
@@ -21,57 +21,58 @@ const initialMessages = [
       "Tell me about your services",
     ],
   },
-]
+];
 
 // Extend the Message type to include optional data property
 interface ExtendedMessage extends Message {
   data?: {
-    hotels?: any[]
-    trips?: any[]
-    cars?: any[]
-    rooms?: any[]
-    bookings?: any[]
-  }
+    hotels?: any[];
+    trips?: any[];
+    cars?: any[];
+    rooms?: any[];
+    bookings?: any[];
+  };
 }
 
 export function ChatScript() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
-  const [input, setInput] = useState("")
-  const [showChat, setShowChat] = useState(false)
-  
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [input, setInput] = useState("");
+  const [showChat, setShowChat] = useState(false);
+
   // Use the chat bot hook
-  const { messages, loading, sendMessage, handleOptionClick, loadMore } = useChatBot(initialMessages)
+  const { messages, loading, sendMessage, handleOptionClick, loadMore } =
+    useChatBot(initialMessages);
 
   // Initialize chat with welcome message after a delay
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowChat(true)
-    }, 2000)
+      setShowChat(true);
+    }, 2000);
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleToggleChat = () => {
-    setIsOpen(!isOpen)
+    setIsOpen(!isOpen);
     if (!isOpen) {
-      setIsMinimized(false)
+      setIsMinimized(false);
     }
-  }
+  };
 
   const handleMinimize = () => {
-    setIsMinimized(!isMinimized)
-  }
+    setIsMinimized(!isMinimized);
+  };
 
   const handleSendMessage = () => {
-    if (!input.trim()) return
-    
-    // Use the sendMessage function from the hook
-    sendMessage(input)
-    setInput("")
-  }
+    if (!input.trim()) return;
 
-  if (!showChat) return null
+    // Use the sendMessage function from the hook
+    sendMessage(input);
+    setInput("");
+  };
+
+  if (!showChat) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
@@ -91,11 +92,19 @@ export function ChatScript() {
               <h3 className="font-medium">Booki Assistant</h3>
             </div>
             <div className="flex items-center">
-              {isMinimized ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              <X size={20} className="ml-2" onClick={(e) => {
-                e.stopPropagation()
-                setIsOpen(false)
-              }} />
+              {isMinimized ? (
+                <ChevronUp size={20} />
+              ) : (
+                <ChevronDown size={20} />
+              )}
+              <X
+                size={20}
+                className="ml-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                }}
+              />
             </div>
           </div>
 
@@ -123,7 +132,7 @@ export function ChatScript() {
                       }`}
                     >
                       <p className="text-sm">{message.content}</p>
-                      
+
                       {/* Display options if available */}
                       {message.options && (
                         <div className="mt-2 space-y-1">
@@ -138,18 +147,20 @@ export function ChatScript() {
                           ))}
                         </div>
                       )}
-                      
+
                       {/* Render search results if available */}
-                      {message.type === "bot" && 'data' in message && (message as ExtendedMessage).data && (
-                        <ChatResults 
-                          data={(message as ExtendedMessage).data!} 
-                          onLoadMore={loadMore} 
-                        />
-                      )}
+                      {message.type === "bot" &&
+                        "data" in message &&
+                        (message as ExtendedMessage).data && (
+                          <ChatResults
+                            data={(message as ExtendedMessage).data!}
+                            onLoadMore={loadMore}
+                          />
+                        )}
                     </div>
                   </div>
                 ))}
-                
+
                 {/* Loading indicator */}
                 {loading && (
                   <div className="flex justify-start mb-4">
@@ -159,9 +170,15 @@ export function ChatScript() {
                     <div className="bg-gray-100 text-gray-800 rounded-lg px-4 py-2 max-w-[70%]">
                       <p className="text-sm flex items-center">
                         <span className="animate-pulse">Thinking</span>
-                        <span className="animate-[bounce_1s_infinite_200ms]">.</span>
-                        <span className="animate-[bounce_1s_infinite_400ms]">.</span>
-                        <span className="animate-[bounce_1s_infinite_600ms]">.</span>
+                        <span className="animate-[bounce_1s_infinite_200ms]">
+                          .
+                        </span>
+                        <span className="animate-[bounce_1s_infinite_400ms]">
+                          .
+                        </span>
+                        <span className="animate-[bounce_1s_infinite_600ms]">
+                          .
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -177,7 +194,7 @@ export function ChatScript() {
                   className="flex-1 focus:ring-orange-400 focus:border-orange-400"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      handleSendMessage()
+                      handleSendMessage();
                     }
                   }}
                   disabled={loading}
@@ -200,11 +217,13 @@ export function ChatScript() {
       <Button
         onClick={handleToggleChat}
         className={`rounded-full h-12 w-12 flex items-center justify-center shadow-lg transition-all ${
-          isOpen ? "bg-gray-200 text-gray-700" : "bg-orange-400 hover:bg-orange-500 text-black"
+          isOpen
+            ? "bg-gray-200 text-gray-700"
+            : "bg-orange-400 hover:bg-orange-500 text-black"
         }`}
       >
         <MessageSquare />
       </Button>
     </div>
-  )
-} 
+  );
+}
