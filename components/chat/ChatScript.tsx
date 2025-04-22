@@ -5,20 +5,14 @@ import { MessageSquare, X, Send, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar } from "@/components/ui/avatar"
-
-// Types for our chat messages
-type MessageType = "bot" | "user"
-
-interface Message {
-  type: MessageType
-  content: string
-  options?: string[]
-}
+import { useChatBot } from "@/app/hooks/useChatBot"
+import { ChatResults } from "@/components/chat/ChatResults"
+import { Message } from "@/app/actions/chat"
 
 // Initial messages to guide the conversation
-const initialMessages: Message[] = [
+const initialMessages = [
   {
-    type: "bot",
+    type: "bot" as const,
     content: "👋 Hello! Welcome to Booki! How can I help you today?",
     options: [
       "I'm looking for hotels",
@@ -29,36 +23,25 @@ const initialMessages: Message[] = [
   },
 ]
 
-// Responses for guided options
-const responses: Record<string, Message> = {
-  "I'm looking for hotels": {
-    type: "bot",
-    content: "Great! What city are you planning to visit?",
-    options: ["New York", "London", "Paris", "Tokyo", "I'll type my destination"],
-  },
-  "I want to rent a car": {
-    type: "bot",
-    content: "Sure! When do you need the car and where would you like to pick it up?",
-    options: ["Show me available cars", "I need help with dates", "I have specific requirements"],
-  },
-  "I need help with booking": {
-    type: "bot",
-    content: "I can help with that! What specifically do you need help with?",
-    options: ["Changing dates", "Cancellation policy", "Payment issues", "Speak to customer service"],
-  },
-  "Tell me about your services": {
-    type: "bot",
-    content: "Booki offers hotel bookings, car rentals, and trip planning services. We have partnerships with thousands of hotels and car rental agencies worldwide to give you the best options for your travel needs.",
-    options: ["Tell me more about hotels", "Tell me more about car rentals", "How do I make a booking?"],
-  },
+// Extend the Message type to include optional data property
+interface ExtendedMessage extends Message {
+  data?: {
+    hotels?: any[]
+    trips?: any[]
+    cars?: any[]
+    rooms?: any[]
+    bookings?: any[]
+  }
 }
 
 export function ChatScript() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [showChat, setShowChat] = useState(false)
+  
+  // Use the chat bot hook
+  const { messages, loading, sendMessage, handleOptionClick, loadMore } = useChatBot(initialMessages)
 
   // Initialize chat with welcome message after a delay
   useEffect(() => {
@@ -68,13 +51,6 @@ export function ChatScript() {
 
     return () => clearTimeout(timer)
   }, [])
-
-  // Initialize messages when chat is opened
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      setMessages(initialMessages)
-    }
-  }, [isOpen, messages.length])
 
   const handleToggleChat = () => {
     setIsOpen(!isOpen)
@@ -87,49 +63,12 @@ export function ChatScript() {
     setIsMinimized(!isMinimized)
   }
 
-  const handleOptionClick = (option: string) => {
-    // Add the selected option as a user message
-    const userMessage: Message = {
-      type: "user",
-      content: option,
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-
-    // Add the response after a short delay to simulate typing
-    setTimeout(() => {
-      const response = responses[option] || {
-        type: "bot",
-        content: "I'm not sure how to help with that. Could you try one of these options?",
-        options: ["I'm looking for hotels", "I want to rent a car", "I need help with booking"],
-      }
-
-      setMessages((prev) => [...prev, response])
-    }, 500)
-  }
-
   const handleSendMessage = () => {
     if (!input.trim()) return
-
-    // Add user message
-    const userMessage: Message = {
-      type: "user",
-      content: input,
-    }
-
-    setMessages((prev) => [...prev, userMessage])
+    
+    // Use the sendMessage function from the hook
+    sendMessage(input)
     setInput("")
-
-    // Simulate bot response
-    setTimeout(() => {
-      const botMessage: Message = {
-        type: "bot",
-        content: `Thanks for your message. One of our agents will help you with "${input}" shortly. In the meantime, would you like to explore some options?`,
-        options: ["Browse hotels", "Search for cars", "View top destinations"],
-      }
-
-      setMessages((prev) => [...prev, botMessage])
-    }, 1000)
   }
 
   if (!showChat) return null
@@ -184,6 +123,8 @@ export function ChatScript() {
                       }`}
                     >
                       <p className="text-sm">{message.content}</p>
+                      
+                      {/* Display options if available */}
                       {message.options && (
                         <div className="mt-2 space-y-1">
                           {message.options.map((option) => (
@@ -197,9 +138,34 @@ export function ChatScript() {
                           ))}
                         </div>
                       )}
+                      
+                      {/* Render search results if available */}
+                      {message.type === "bot" && 'data' in message && (message as ExtendedMessage).data && (
+                        <ChatResults 
+                          data={(message as ExtendedMessage).data!} 
+                          onLoadMore={loadMore} 
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
+                
+                {/* Loading indicator */}
+                {loading && (
+                  <div className="flex justify-start mb-4">
+                    <Avatar className="h-8 w-8 bg-orange-100 mr-2 flex items-center justify-center">
+                      <MessageSquare className="h-4 w-4 text-orange-500" />
+                    </Avatar>
+                    <div className="bg-gray-100 text-gray-800 rounded-lg px-4 py-2 max-w-[70%]">
+                      <p className="text-sm flex items-center">
+                        <span className="animate-pulse">Thinking</span>
+                        <span className="animate-[bounce_1s_infinite_200ms]">.</span>
+                        <span className="animate-[bounce_1s_infinite_400ms]">.</span>
+                        <span className="animate-[bounce_1s_infinite_600ms]">.</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Input area */}
@@ -214,11 +180,13 @@ export function ChatScript() {
                       handleSendMessage()
                     }
                   }}
+                  disabled={loading}
                 />
                 <Button
                   type="button"
                   onClick={handleSendMessage}
                   className="ml-2 bg-orange-400 hover:bg-orange-500 text-black"
+                  disabled={loading}
                 >
                   <Send className="h-4 w-4" />
                 </Button>
