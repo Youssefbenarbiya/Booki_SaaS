@@ -168,6 +168,9 @@ export default function NewTripForm() {
         )
       }
 
+      // Automatically set isAvailable to false if capacity is 0
+      const isAvailable = Number(data.capacity) === 0 ? false : data.isAvailable;
+
       // Create trip with image URLs, discount info, and currency
       const formattedData = {
         ...data,
@@ -176,6 +179,7 @@ export default function NewTripForm() {
         priceAfterDiscount: hasDiscount ? finalPriceAfterDiscount : undefined,
         currency: selectedCurrency,
         images: imageUrls,
+        isAvailable: isAvailable,
         // Ensure dates are always Date objects
         startDate: startDate || new Date(data.startDate),
         endDate: endDate || new Date(data.endDate),
