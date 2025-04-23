@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar } from "@/components/ui/avatar"
 import { useChatBot } from "@/app/hooks/useChatBot"
 import { ChatResults } from "@/components/chat/ChatResults"
-import { Message } from "@/app/actions/chat"
+import { Message } from "@/components/chat/chat"
 
 // Initial messages to guide the conversation
 const initialMessages = [
