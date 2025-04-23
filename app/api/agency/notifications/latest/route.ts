@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
@@ -19,7 +20,6 @@ export async function GET() {
     }
 
     const userId = session.user.id
-    console.log(`API route - User ID: ${userId}`)
 
     // Get the user's details including their role
     const currentUser = await db.query.user.findFirst({
@@ -33,29 +33,19 @@ export async function GET() {
       )
     }
 
-    console.log(`API route - User role: ${currentUser.role}`)
-
     // Variable to store the ID whose notifications we'll be showing
     let notificationsUserId = userId
 
     // Fix: Check for "employee" role (lowercase) instead of "AGENCY_EMPLOYEE"
     if (currentUser.role === "employee") {
-     // console.log("API route - User is an employee, looking for agency mapping")
-
       const agencyMapping = await db.query.agencyEmployees.findFirst({
         where: eq(agencyEmployees.employeeId, userId),
       })
 
       if (agencyMapping) {
         notificationsUserId = agencyMapping.agencyId
-        console.log(
-          `API route - Employee belongs to agency owner ID: ${notificationsUserId}`
-        )
       } else {
-        console.log("API route - Agency mapping not found for employee")
-        // For debugging, show all agency employee mappings
         const allMappings = await db.query.agencyEmployees.findMany({})
-        console.log(`All mappings in database: ${JSON.stringify(allMappings)}`)
       }
     }
 
@@ -65,10 +55,6 @@ export async function GET() {
       orderBy: [desc(notifications.createdAt)],
       limit: 5,
     })
-
-    console.log(
-      `API route - Found ${latestNotifications.length} notifications for user ${notificationsUserId}`
-    )
 
     // Count unread notifications
     const unreadResult = await db
