@@ -52,7 +52,7 @@ const ROOM_AMENITIES = [
   "Shower",
 ]
 
-// Update the interface so that each room has separate pricing fields.
+// Update the interface to include status property
 interface EditHotelFormProps {
   hotel: {
     id: string
@@ -66,6 +66,7 @@ interface EditHotelFormProps {
     images: string[]
     latitude?: string | null
     longitude?: string | null
+    status: string
     rooms: Array<{
       id: string
       name: string
@@ -115,6 +116,8 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
       images: hotel.images, // will be updated on submit
       latitude: initialLatitude,
       longitude: initialLongitude,
+      status: (hotel.status === "pending" || hotel.status === "approved" || hotel.status === "rejected" 
+        ? hotel.status : "pending") as "pending" | "approved" | "rejected",
       rooms: hotel.rooms.map((room) => ({
         id: room.id,
         name: room.name,
@@ -311,6 +314,24 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                         {rating} Star{rating !== 1 ? "s" : ""}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <Select
+                  onValueChange={(value) => setValue("status", value as "pending" | "approved" | "rejected")}
+                  defaultValue={(hotel.status === "pending" || hotel.status === "approved" || hotel.status === "rejected") 
+                    ? hotel.status : "pending"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

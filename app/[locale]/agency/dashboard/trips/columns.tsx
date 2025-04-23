@@ -117,7 +117,7 @@ export const columns: ColumnDef<TripType>[] = [
   },
   {
     accessorKey: "isAvailable",
-    header: "isAvailable",
+    header: "Availability",
     cell: ({ row }) => {
       const isAvailable = row.getValue("isAvailable") as boolean
       return (

@@ -100,6 +100,12 @@ export async function createCar(data: CarFormValues) {
       }
     }
 
+    // Ensure a car is marked as not available if the checkbox was unchecked
+    // This is similar to how we handle it for trips
+    const isAvailable = data.isAvailable !== undefined && data.isAvailable !== null
+      ? data.isAvailable
+      : true
+
     // Create car with discount fields included
     const newCar = await db
       .insert(cars)
@@ -116,12 +122,13 @@ export async function createCar(data: CarFormValues) {
           priceAfterDiscount !== undefined && priceAfterDiscount !== null
             ? priceAfterDiscount.toString()
             : undefined,
-        isAvailable: data.isAvailable ?? true,
+        isAvailable: isAvailable,
         images: data.images || [],
         agencyId: agencyId,
         seats: data.seats || 4,
         category: data.category,
         location: data.location,
+        status: data.status || (isAvailable ? "active" : "inactive"),
       })
       .returning()
 
@@ -162,6 +169,11 @@ export async function updateCar(id: number, data: CarFormValues) {
       }
     }
 
+    // Ensure isAvailable is explicitly set
+    const isAvailable = data.isAvailable !== undefined && data.isAvailable !== null
+      ? data.isAvailable
+      : true
+
     const updatedCar = await db
       .update(cars)
       .set({
@@ -177,12 +189,13 @@ export async function updateCar(id: number, data: CarFormValues) {
           priceAfterDiscount !== undefined && priceAfterDiscount !== null
             ? priceAfterDiscount.toString()
             : null,
-        isAvailable: data.isAvailable,
+        isAvailable: isAvailable,
         images: data.images,
         updatedAt: new Date(),
         seats: data.seats || 4,
         category: data.category,
         location: data.location,
+        status: data.status || undefined, // Preserve existing status if not provided
       })
       .where(eq(cars.id, id))
       .returning()

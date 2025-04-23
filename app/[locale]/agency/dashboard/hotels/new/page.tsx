@@ -147,6 +147,7 @@ export default function NewHotelPage() {
       // Prepare final data with image URLs
       const formattedData = {
         ...data,
+        status: "pending" as "pending" | "approved" | "rejected",
         images: hotelImageUrls,
         rooms: data.rooms.map((room, index) => ({
           ...room,

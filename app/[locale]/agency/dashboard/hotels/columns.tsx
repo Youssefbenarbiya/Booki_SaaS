@@ -76,6 +76,36 @@ export const columns: ColumnDef<HotelType>[] = [
     },
   },
   {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status?.toLowerCase() || "pending";
+      
+      let badgeVariant: "default" | "outline" | "secondary" | "destructive" = "secondary";
+      let statusText = "Pending";
+      let customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+      
+      if (status === "approved") {
+        badgeVariant = "default";
+        statusText = "Approved";
+        customClass = "bg-green-100 text-green-800 hover:bg-green-200";
+      } else if (status === "rejected") {
+        badgeVariant = "destructive";
+        statusText = "Rejected";
+      } else if (status === "pending") {
+        badgeVariant = "secondary";
+        statusText = "Pending";
+        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+      }
+      
+      return (
+        <Badge variant={badgeVariant} className={customClass}>
+          {statusText}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: "rooms",
     header: "Rooms",
     cell: ({ row }) => {
