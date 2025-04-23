@@ -1,47 +1,56 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-"use client"
+"use client";
 
-import Image from "next/image"
-import { useTransition, useState, useEffect } from "react"
-import { useForm, Controller } from "react-hook-form"
-import { useRouter } from "next/navigation"
-import { ImageUploadSection } from "@/components/ImageUploadSection"
-import { fileToFormData } from "@/lib/utils"
-import { uploadImages } from "@/actions/uploadActions"
-import { type TripInput, updateTrip } from "@/actions/trips/tripActions"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Percent, DollarSign, Info } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
+import Image from "next/image";
+import { useTransition, useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { ImageUploadSection } from "@/components/ImageUploadSection";
+import { fileToFormData } from "@/lib/utils";
+import { uploadImages } from "@/actions/uploadActions";
+import { type TripInput, updateTrip } from "@/actions/trips/tripActions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Percent, DollarSign, Info } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
+import { format, startOfDay } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 // Import the useCurrency hook from the correct location
-import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { useCurrency } from "@/lib/contexts/CurrencyContext";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Locale } from "@/i18n/routing"
+} from "@/components/ui/select";
+import { Locale } from "@/i18n/routing";
 
 // Define currency type to fix linting issues
 type Currency = {
-  code: string
-  symbol: string
-  name: string
-}
+  code: string;
+  symbol: string;
+  name: string;
+};
 
 // Define the currencies array locally since it's not exported from the context
 const currencies: Currency[] = [
@@ -52,85 +61,96 @@ const currencies: Currency[] = [
   { code: "JPY", symbol: "¥", name: "Japanese Yen" },
   { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
   { code: "AUD", symbol: "A$", name: "Australian Dollar" },
-]
+];
 
 // Extend TripInput to include currency
 interface ExtendedTripInput extends TripInput {
-  discountPercentage?: number
-  currency: string
+  discountPercentage?: number;
+  currency: string;
 }
 
 interface EditTripFormProps {
   trip: {
-    id: number
-    name: string
-    description: string
-    destination: string
-    startDate: Date
-    endDate: Date
-    originalPrice: number
-    discountPercentage?: number
-    priceAfterDiscount?: number
-    capacity: number
-    isAvailable: boolean
-    currency?: string
+    id: number;
+    name: string;
+    description: string;
+    destination: string;
+    startDate: Date;
+    endDate: Date;
+    originalPrice: number;
+    discountPercentage?: number;
+    priceAfterDiscount?: number;
+    capacity: number;
+    isAvailable: boolean;
+    currency?: string;
     images: Array<{
-      id: number
-      imageUrl: string
-    }>
+      id: number;
+      imageUrl: string;
+    }>;
     activities: Array<{
-      id: number
-      activityName: string
-      description: string
-      scheduledDate: Date | null
-    }>
-  }
-  locale: Locale
+      id: number;
+      activityName: string;
+      description: string;
+      scheduledDate: Date | null;
+    }>;
+  };
+  locale: Locale;
 }
 
 export default function EditTripForm({ trip, locale }: EditTripFormProps) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   // Get the currency context
-  const { currency: contextCurrency, setCurrency } = useCurrency()
+  const { currency: contextCurrency, setCurrency } = useCurrency();
 
   // Use the trip's currency if available, otherwise use the context currency
-  const tripCurrency = trip.currency || contextCurrency || "USD"
+  const tripCurrency = trip.currency || contextCurrency || "USD";
 
   // Format dates for input fields
   const formatDateForInput = (date: Date) => {
-    const d = new Date(date)
-    return d.toISOString().split("T")[0]
-  }
+    const d = new Date(date);
+    return d.toISOString().split("T")[0];
+  };
 
   // Image states
-  const [images, setImages] = useState<File[]>([])
-  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([])
-  const [uploadError, setUploadError] = useState<string>("")
+  const [images, setImages] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [uploadError, setUploadError] = useState<string>("");
   const [existingImages, setExistingImages] = useState<
     Array<{ id: number; imageUrl: string }>
-  >(trip.images)
+  >(trip.images);
+
+  // Date states
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    new Date(trip.startDate)
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    new Date(trip.endDate)
+  );
 
   // Determine if trip has a discount
   const hasExistingDiscount =
-    !!trip.discountPercentage && !!trip.priceAfterDiscount
+    !!trip.discountPercentage && !!trip.priceAfterDiscount;
 
   // Discount states
-  const [hasDiscount, setHasDiscount] = useState<boolean>(hasExistingDiscount)
+  const [hasDiscount, setHasDiscount] = useState<boolean>(hasExistingDiscount);
   const [discountPercentage, setDiscountPercentage] = useState<number>(
     trip.discountPercentage || 0
-  )
-  const [originalPrice, setOriginalPrice] = useState<number>(trip.originalPrice)
+  );
+  const [originalPrice, setOriginalPrice] = useState<number>(
+    trip.originalPrice
+  );
   const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(
     trip.priceAfterDiscount || trip.originalPrice
-  )
+  );
   const [customPercentage, setCustomPercentage] = useState<boolean>(
     !!trip.discountPercentage && ![10, 20, 30].includes(trip.discountPercentage)
-  )
+  );
 
   // --- keep track of the selected currency ---
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(tripCurrency)
+  const [selectedCurrency, setSelectedCurrency] =
+    useState<string>(tripCurrency);
 
   const {
     register,
@@ -160,12 +180,12 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         scheduledDate: activity.scheduledDate || undefined,
       })),
     },
-  })
+  });
 
   // Watch original price to update discount calculations
-  const watchedOriginalPrice = watch("originalPrice")
+  const watchedOriginalPrice = watch("originalPrice");
   // Also watch currency for dynamic symbol changes
-  const watchedCurrency = watch("currency")
+  const watchedCurrency = watch("currency");
 
   // Initialize form with correct values when component mounts
   useEffect(() => {
@@ -187,100 +207,104 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         description: activity.description || undefined,
         scheduledDate: activity.scheduledDate || undefined,
       })),
-    })
+    });
+
+    // Update date states
+    setStartDate(new Date(trip.startDate));
+    setEndDate(new Date(trip.endDate));
 
     // Set UI states
-    setSelectedCurrency(tripCurrency)
+    setSelectedCurrency(tripCurrency);
     if (hasExistingDiscount) {
-      setHasDiscount(true)
-      setDiscountPercentage(trip.discountPercentage || 0)
-      setOriginalPrice(trip.originalPrice)
-      setPriceAfterDiscount(trip.priceAfterDiscount || trip.originalPrice)
-      setCustomPercentage(![10, 20, 30].includes(trip.discountPercentage || 0))
+      setHasDiscount(true);
+      setDiscountPercentage(trip.discountPercentage || 0);
+      setOriginalPrice(trip.originalPrice);
+      setPriceAfterDiscount(trip.priceAfterDiscount || trip.originalPrice);
+      setCustomPercentage(![10, 20, 30].includes(trip.discountPercentage || 0));
     } else {
-      setHasDiscount(false)
-      setDiscountPercentage(0)
-      setOriginalPrice(trip.originalPrice)
-      setPriceAfterDiscount(trip.originalPrice)
+      setHasDiscount(false);
+      setDiscountPercentage(0);
+      setOriginalPrice(trip.originalPrice);
+      setPriceAfterDiscount(trip.originalPrice);
     }
-  }, [trip, hasExistingDiscount, reset, tripCurrency])
+  }, [trip, hasExistingDiscount, reset, tripCurrency]);
 
   // Update original price when price changes
   useEffect(() => {
     if (watchedOriginalPrice !== undefined) {
-      const price = Number(watchedOriginalPrice)
-      setOriginalPrice(price)
+      const price = Number(watchedOriginalPrice);
+      setOriginalPrice(price);
       if (hasDiscount && discountPercentage) {
-        calculatePriceAfterDiscount(price, discountPercentage)
+        calculatePriceAfterDiscount(price, discountPercentage);
       } else {
-        setPriceAfterDiscount(price)
+        setPriceAfterDiscount(price);
       }
     }
-  }, [watchedOriginalPrice, discountPercentage, hasDiscount])
+  }, [watchedOriginalPrice, discountPercentage, hasDiscount]);
 
   // Calculate price after discount
   const calculatePriceAfterDiscount = (price: number, percentage: number) => {
     if (!price || !percentage) {
-      setPriceAfterDiscount(price || 0)
-      setValue("priceAfterDiscount", undefined)
-      return price || 0
+      setPriceAfterDiscount(price || 0);
+      setValue("priceAfterDiscount", undefined);
+      return price || 0;
     }
 
-    const calculatedPrice = price - price * (percentage / 100)
-    const roundedPrice = Math.round(calculatedPrice * 100) / 100 // Round to 2 decimal places
-    setPriceAfterDiscount(roundedPrice)
-    setValue("priceAfterDiscount", roundedPrice)
-    return roundedPrice
-  }
+    const calculatedPrice = price - price * (percentage / 100);
+    const roundedPrice = Math.round(calculatedPrice * 100) / 100; // Round to 2 decimal places
+    setPriceAfterDiscount(roundedPrice);
+    setValue("priceAfterDiscount", roundedPrice);
+    return roundedPrice;
+  };
 
   // Apply percentage discount
   const applyPercentageDiscount = (percentage: number) => {
-    setDiscountPercentage(percentage)
-    setValue("discountPercentage", percentage)
+    setDiscountPercentage(percentage);
+    setValue("discountPercentage", percentage);
 
-    const price = Number(watchedOriginalPrice) || 0
-    calculatePriceAfterDiscount(price, percentage)
-  }
+    const price = Number(watchedOriginalPrice) || 0;
+    calculatePriceAfterDiscount(price, percentage);
+  };
 
   // Handle deletion of existing images
   const handleDeleteExistingImage = (index: number) => {
-    setExistingImages((prev) => prev.filter((_, i) => i !== index))
-  }
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   async function onSubmit(data: ExtendedTripInput) {
     try {
       // Gather existing image URLs
-      let imageUrls = existingImages.map((img) => img.imageUrl)
+      let imageUrls = existingImages.map((img) => img.imageUrl);
 
       // Upload new images
       if (images.length > 0) {
         try {
           const newUrls = await Promise.all(
             images.map(async (file) => {
-              const formData = await fileToFormData(file)
-              return uploadImages(formData)
+              const formData = await fileToFormData(file);
+              return uploadImages(formData);
             })
-          )
-          imageUrls = [...imageUrls, ...newUrls]
+          );
+          imageUrls = [...imageUrls, ...newUrls];
         } catch (error) {
-          console.error("Error uploading images:", error)
-          setUploadError("Failed to upload images")
-          return
+          console.error("Error uploading images:", error);
+          setUploadError("Failed to upload images");
+          return;
         }
       }
 
       // Calculate price after discount if applicable
-      let finalPriceAfterDiscount = undefined
+      let finalPriceAfterDiscount = undefined;
       if (hasDiscount && data.discountPercentage) {
         finalPriceAfterDiscount = calculatePriceAfterDiscount(
           Number(data.originalPrice),
           data.discountPercentage
-        )
+        );
       }
 
       // When currency changes, update the context
       if (data.currency && data.currency !== contextCurrency) {
-        setCurrency(data.currency)
+        setCurrency(data.currency);
       }
 
       // Build final data for update
@@ -297,28 +321,24 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
             : undefined,
         images: imageUrls,
         // Make sure dates are Date objects
-        startDate:
-          data.startDate instanceof Date
-            ? data.startDate
-            : new Date(data.startDate),
-        endDate:
-          data.endDate instanceof Date ? data.endDate : new Date(data.endDate),
+        startDate: startDate || new Date(),
+        endDate: endDate || new Date(),
         // Ensure we store the currency
         currency: data.currency || "USD",
-      }
+      };
 
       // Run your update action
-      await updateTrip(trip.id, formattedData)
-      router.push(`/${locale}/agency/dashboard/trips`)
-      router.refresh()
+      await updateTrip(trip.id, formattedData);
+      router.push(`/${locale}/agency/dashboard/trips`);
+      router.refresh();
     } catch (error) {
-      console.error("Error updating trip:", error)
+      console.error("Error updating trip:", error);
     }
   }
 
   // Helper to get currency symbol for the current selection
   const currentCurrencySymbol =
-    currencies.find((c: Currency) => c.code === watchedCurrency)?.symbol || "$"
+    currencies.find((c: Currency) => c.code === watchedCurrency)?.symbol || "$";
 
   return (
     <div className="max-w-3xl mx-auto my-8 px-4">
@@ -356,18 +376,33 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="startDate">Start Date</Label>
-                <Controller
-                  name="startDate"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={formatDateForInput(new Date(field.value))}
-                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={(date) => {
+                        setStartDate(date);
+                        if (date) {
+                          setValue("startDate", date);
+                        }
+                      }}
+                      initialFocus
                     />
-                  )}
-                />
+                  </PopoverContent>
+                </Popover>
                 {errors.startDate && (
                   <p className="text-xs text-destructive">
                     {errors.startDate.message}
@@ -377,18 +412,36 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="endDate">End Date</Label>
-                <Controller
-                  name="endDate"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formatDateForInput(new Date(field.value))}
-                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={(date) => {
+                        setEndDate(date);
+                        if (date) {
+                          setValue("endDate", date);
+                        }
+                      }}
+                      disabled={{
+                        before: startDate ? startDate : new Date(),
+                      }}
+                      initialFocus
                     />
-                  )}
-                />
+                  </PopoverContent>
+                </Popover>
                 {errors.endDate && (
                   <p className="text-xs text-destructive">
                     {errors.endDate.message}
@@ -453,13 +506,13 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
                             {...register("originalPrice", {
                               required: "Original price is required",
                               onChange: (e) => {
-                                const price = Number(e.target.value)
-                                setOriginalPrice(price)
+                                const price = Number(e.target.value);
+                                setOriginalPrice(price);
                                 if (hasDiscount && discountPercentage) {
                                   calculatePriceAfterDiscount(
                                     price,
                                     discountPercentage
-                                  )
+                                  );
                                 }
                               },
                             })}
@@ -483,9 +536,9 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
                               value={field.value}
                               defaultValue={tripCurrency}
                               onValueChange={(value) => {
-                                field.onChange(value)
-                                setSelectedCurrency(value)
-                                setValue("currency", value)
+                                field.onChange(value);
+                                setSelectedCurrency(value);
+                                setValue("currency", value);
                               }}
                             >
                               <SelectTrigger className="w-full">
@@ -521,32 +574,32 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
                         id="hasDiscount"
                         checked={hasDiscount}
                         onCheckedChange={(checked) => {
-                          setHasDiscount(!!checked)
+                          setHasDiscount(!!checked);
                           if (!checked) {
-                            setDiscountPercentage(0)
-                            setValue("discountPercentage", undefined)
-                            setValue("priceAfterDiscount", undefined)
-                            setPriceAfterDiscount(originalPrice)
-                            setCustomPercentage(false)
+                            setDiscountPercentage(0);
+                            setValue("discountPercentage", undefined);
+                            setValue("priceAfterDiscount", undefined);
+                            setPriceAfterDiscount(originalPrice);
+                            setCustomPercentage(false);
                           } else if (hasExistingDiscount) {
                             // If discount already existed, restore
-                            setDiscountPercentage(trip.discountPercentage || 0)
+                            setDiscountPercentage(trip.discountPercentage || 0);
                             setValue(
                               "discountPercentage",
                               trip.discountPercentage
-                            )
+                            );
                             setPriceAfterDiscount(
                               trip.priceAfterDiscount || originalPrice
-                            )
+                            );
                             setValue(
                               "priceAfterDiscount",
                               trip.priceAfterDiscount
-                            )
+                            );
                             setCustomPercentage(
                               ![10, 20, 30].includes(
                                 trip.discountPercentage || 0
                               )
-                            )
+                            );
                           }
                         }}
                       />
@@ -572,12 +625,12 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
                             }
                             onValueChange={(value) => {
                               if (value === "custom") {
-                                setCustomPercentage(true)
-                                return
+                                setCustomPercentage(true);
+                                return;
                               }
-                              setCustomPercentage(false)
-                              const percentage = Number.parseInt(value, 10)
-                              applyPercentageDiscount(percentage)
+                              setCustomPercentage(false);
+                              const percentage = Number.parseInt(value, 10);
+                              applyPercentageDiscount(percentage);
                             }}
                             className="flex flex-wrap gap-2"
                           >
@@ -610,13 +663,13 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
                                   const value = Number.parseInt(
                                     e.target.value,
                                     10
-                                  )
+                                  );
                                   if (
                                     !isNaN(value) &&
                                     value >= 0 &&
                                     value <= 100
                                   ) {
-                                    applyPercentageDiscount(value)
+                                    applyPercentageDiscount(value);
                                   }
                                 }}
                                 className="w-24"
@@ -776,5 +829,5 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
