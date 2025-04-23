@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import { chatAction, Message, ChatResult } from "@/actions/chat";
+import { useState, useCallback, useRef } from "react"
+import { chatAction, Message, ChatResult } from "@/app/actions/chat"
 
 export interface UseChatBotResult {
   messages: Message[];
