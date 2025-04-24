@@ -8,6 +8,7 @@ import { CurrencyProvider } from "@/lib/contexts/CurrencyContext"
 import { NextIntlClientProvider } from "next-intl"
 import { Locale, routing } from "@/i18n/routing"
 import { notFound } from "next/navigation"
+import { ChatScript } from "@/components/chat/ChatScript"
 
 async function getMessages(locale: string) {
   try {
@@ -54,6 +55,7 @@ export default async function RootLayout({
               {children}
 
               <Toaster />
+              <ChatScript/>
             </CurrencyProvider>
           </NextIntlClientProvider>
         </ThemeProvider>

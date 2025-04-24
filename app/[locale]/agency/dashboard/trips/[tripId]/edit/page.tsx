@@ -53,7 +53,7 @@ export default async function EditTripPage({ params }: EditTripPageProps) {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Edit Trip</h1>
+     
       <CurrencyProvider>
         <EditTripForm trip={transformedTrip} locale={locale} />
       </CurrencyProvider>

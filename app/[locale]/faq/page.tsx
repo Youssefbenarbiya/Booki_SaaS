@@ -1,5 +1,4 @@
 "use client"
-import { ChatScript } from "@/components/chat/ChatScript"
 import {
   Accordion,
   AccordionContent,
@@ -119,7 +118,6 @@ export default function FAQ() {
           Email Us
         </Button>
       </div>
-      <ChatScript />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 // filepath: d:\booki\app\agency\dashboard\employees\employees-list.tsx
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -9,12 +9,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { getEmployeesList } from "@/actions/agency/get-employees"
-import { updateEmployee, deleteEmployee } from "@/actions/agency/manage-employees"
-import { toast } from "sonner"
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { getEmployeesList } from "@/actions/agency/get-employees";
+import {
+  updateEmployee,
+  deleteEmployee,
+} from "@/actions/agency/manage-employees";
+import { toast } from "sonner";
 
 import {
   Form,
@@ -23,19 +26,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Loader2, Pencil, Trash2 } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,17 +48,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 type Employee = {
-  id: string
-  name: string
-  email: string
-  phoneNumber: string | null
-  address: string | null
-  image: string | null
-  createdAt: Date | null
-}
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string | null;
+  address: string | null;
+  image: string | null;
+  createdAt: Date | null;
+};
 
 // Validation schema
 const employeeFormSchema = z.object({
@@ -63,17 +66,19 @@ const employeeFormSchema = z.object({
   email: z.string().email("Valid email is required"),
   phone: z.string().optional(),
   address: z.string().optional(),
-})
+});
 
-type EmployeeFormValues = z.infer<typeof employeeFormSchema>
+type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 export function EmployeesList() {
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
@@ -83,112 +88,114 @@ export function EmployeesList() {
       phone: "",
       address: "",
     },
-  })
+  });
 
   useEffect(() => {
     async function loadEmployees() {
-      setLoading(true)
+      setLoading(true);
       try {
-        console.log("Fetching employees...")
-        const result = await getEmployeesList()
-        console.log("Fetch result:", result)
+        console.log("Fetching employees...");
+        const result = await getEmployeesList();
+        console.log("Fetch result:", result);
 
         if (result.error) {
-          toast.error(result.error)
+          toast.error(result.error);
         } else if (result.employees) {
-          console.log("Setting employees:", result.employees)
-          setEmployees(result.employees)
+          console.log("Setting employees:", result.employees);
+          setEmployees(result.employees);
         }
       } catch (error) {
-        console.error("Failed to load employees:", error)
-        toast.error("Failed to load employees")
+        console.error("Failed to load employees:", error);
+        toast.error("Failed to load employees");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    loadEmployees()
-  }, []) // The key from parent will force remount when needed
+    loadEmployees();
+  }, []); // The key from parent will force remount when needed
 
   // Handle opening the edit dialog
   const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee)
+    setSelectedEmployee(employee);
     form.reset({
       name: employee.name,
       email: employee.email,
       phone: employee.phoneNumber || "",
       address: employee.address || "",
-    })
-    setEditDialogOpen(true)
-  }
+    });
+    setEditDialogOpen(true);
+  };
 
   // Handle opening the delete dialog
   const handleDeleteClick = (employee: Employee) => {
-    setSelectedEmployee(employee)
-    setDeleteDialogOpen(true)
-  }
+    setSelectedEmployee(employee);
+    setDeleteDialogOpen(true);
+  };
 
   // Handle form submission for editing employee
   const onSubmit = async (data: EmployeeFormValues) => {
-    if (!selectedEmployee) return
-    
-    setIsSubmitting(true)
+    if (!selectedEmployee) return;
+
+    setIsSubmitting(true);
     try {
-      const result = await updateEmployee(selectedEmployee.id, data)
-      
+      const result = await updateEmployee(selectedEmployee.id, data);
+
       if (result.error) {
-        toast.error(result.error)
+        toast.error(result.error);
       } else {
-        toast.success("Employee updated successfully")
-        setEditDialogOpen(false)
-        
+        toast.success("Employee updated successfully");
+        setEditDialogOpen(false);
+
         // Update the employee in the local state
-        setEmployees(prev => 
-          prev.map(emp => 
-            emp.id === selectedEmployee.id 
-              ? { 
-                  ...emp, 
-                  name: data.name, 
-                  email: data.email, 
+        setEmployees((prev) =>
+          prev.map((emp) =>
+            emp.id === selectedEmployee.id
+              ? {
+                  ...emp,
+                  name: data.name,
+                  email: data.email,
                   phoneNumber: data.phone || null,
-                  address: data.address || null
-                } 
+                  address: data.address || null,
+                }
               : emp
           )
-        )
+        );
       }
     } catch (error) {
-      console.error("Error updating employee:", error)
-      toast.error("Failed to update employee")
+      console.error("Error updating employee:", error);
+      toast.error("Failed to update employee");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Handle deleting employee
   const handleDelete = async () => {
-    if (!selectedEmployee) return
-    
-    setIsSubmitting(true)
+    if (!selectedEmployee) return;
+
+    setIsSubmitting(true);
     try {
-      const result = await deleteEmployee(selectedEmployee.id)
-      
+      const result = await deleteEmployee(selectedEmployee.id);
+
       if (result.error) {
-        toast.error(result.error)
+        toast.error(result.error);
       } else {
-        toast.success("Employee removed successfully")
-        setDeleteDialogOpen(false)
-        
+        toast.success("Employee removed successfully");
+        setDeleteDialogOpen(false);
+
         // Remove employee from the local state
-        setEmployees(prev => prev.filter(emp => emp.id !== selectedEmployee.id))
+        setEmployees((prev) =>
+          prev.filter((emp) => emp.id !== selectedEmployee.id)
+        );
       }
     } catch (error) {
-      console.error("Error removing employee:", error)
-      toast.error("Failed to remove employee")
+      console.error("Error removing employee:", error);
+      toast.error("Failed to remove employee");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   function getInitials(name: string) {
     return name
@@ -196,7 +203,7 @@ export function EmployeesList() {
       .map((part) => part[0])
       .join("")
       .toUpperCase()
-      .substring(0, 2)
+      .substring(0, 2);
   }
 
   const handleEditOpenChange = (open: boolean) => {
@@ -214,7 +221,7 @@ export function EmployeesList() {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading employees...</div>
+    return <div className="flex justify-center p-8">Loading employees...</div>;
   }
 
   if (employees.length === 0) {
@@ -225,7 +232,7 @@ export function EmployeesList() {
           Add employees to your agency to see them here.
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -249,7 +256,9 @@ export function EmployeesList() {
                     {employee.image ? (
                       <AvatarImage src={employee.image} alt={employee.name} />
                     ) : null}
-                    <AvatarFallback>{getInitials(employee.name)}</AvatarFallback>
+                    <AvatarFallback>
+                      {getInitials(employee.name)}
+                    </AvatarFallback>
                   </Avatar>
                   <span>{employee.name}</span>
                 </div>
@@ -262,26 +271,27 @@ export function EmployeesList() {
                   : "—"}
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      Actions
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleDeleteClick(employee)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Remove
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-2 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditEmployee(employee)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <span className="sr-only">Edit</span>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteClick(employee)}
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                  >
+                    <span className="sr-only">Remove</span>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -299,7 +309,10 @@ export function EmployeesList() {
           </AlertDialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4 py-4"
+            >
               <FormField
                 control={form.control}
                 name="name"
@@ -380,13 +393,17 @@ export function EmployeesList() {
       </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={handleDeleteOpenChange}>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDeleteOpenChange}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Employee</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {selectedEmployee?.name} from your agency?
-              Their account will remain active but they will no longer have access to your agency dashboard.
+              Are you sure you want to remove {selectedEmployee?.name} from your
+              agency? Their account will remain active but they will no longer
+              have access to your agency dashboard.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -409,5 +426,5 @@ export function EmployeesList() {
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }

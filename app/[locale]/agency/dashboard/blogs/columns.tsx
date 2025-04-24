@@ -1,144 +1,49 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
-import Image from "next/image"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { deleteBlog } from "@/actions/blogs/blogActions"
-import { useParams } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
-
-// BlogActions component to handle the delete blog functionality
-function BlogActions({ blog }: { blog: Blog }) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const params = useParams()
-  const locale = params.locale as string
-  const { toast } = useToast()
-  const router = useRouter()
-
-  const handleDeleteBlog = async () => {
-    try {
-      await deleteBlog(blog.id)
-      toast({
-        title: "Blog deleted",
-        description: "The blog has been successfully deleted",
-        variant: "destructive",
-      })
-      setIsDeleteDialogOpen(false)
-      router.refresh()
-    } catch (error) {
-      console.error("Error deleting blog:", error)
-      toast({
-        variant: "destructive",
-        title: "Action failed",
-        description: "Failed to delete the blog. Please try again.",
-      })
-      setIsDeleteDialogOpen(false)
-    }
-  }
-
-  return (
-    <>
-      <DropdownMenuItem asChild>
-        <Link href={`/${locale}/blog/${blog.id}`} target="_blank">
-          <Eye className="mr-2 h-4 w-4" />
-          <span>View</span>
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href={`/${locale}/agency/dashboard/blogs/${blog.id}`}>
-          <Edit className="mr-2 h-4 w-4" />
-          <span>Edit</span>
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        className="text-red-600"
-        onClick={() => setIsDeleteDialogOpen(true)}
-      >
-        <Trash className="mr-2 h-4 w-4" />
-        <span>Delete</span>
-      </DropdownMenuItem>
-
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) setIsDeleteDialogOpen(false)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Blog</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this blog? This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteBlog}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete Blog
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  )
-}
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { deleteBlog } from "@/actions/blogs/blogActions";
+import { useParams } from "next/navigation";
 
 export type Blog = {
-  id: number
-  title: string
-  excerpt: string | null
-  featuredImage: string | null
-  published: boolean
-  publishedAt: Date | null
-  views: number
-  readTime: number | null
-  createdAt: Date
-  status: string
+  id: number;
+  title: string;
+  excerpt: string | null;
+  featuredImage: string | null;
+  published: boolean;
+  publishedAt: Date | null;
+  views: number | null;
+  readTime: number | null;
+  createdAt: Date;
+  status: string;
   author: {
-    id: string
-    name: string
-    image: string | null
-  } | null
+    id: string;
+    name: string;
+    image: string | null;
+  } | null;
   category: {
-    id: number
-    name: string
-  } | null
-}
+    id: number;
+    name: string;
+  } | null;
+};
 
 export const columns: ColumnDef<Blog>[] = [
   {
     accessorKey: "featuredImage",
     header: "Image",
     cell: ({ row }) => {
-      const image = row.original.featuredImage
+      const image = row.original.featuredImage;
       return image ? (
         <div className="relative w-16 h-12">
           <Image
@@ -152,7 +57,7 @@ export const columns: ColumnDef<Blog>[] = [
         <div className="w-16 h-12 bg-gray-100 flex items-center justify-center rounded">
           <span className="text-xs text-gray-500">No image</span>
         </div>
-      )
+      );
     },
   },
   {
@@ -166,30 +71,30 @@ export const columns: ColumnDef<Blog>[] = [
           Title
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => {
-      const title: string = row.getValue("title")
+      const title: string = row.getValue("title");
       return (
         <div className="font-medium max-w-[200px] truncate" title={title}>
           {title}
         </div>
-      )
+      );
     },
   },
   {
     accessorKey: "category.name",
     header: "Category",
     cell: ({ row }) => {
-      const category = row.original.category?.name || "Uncategorized"
-      return <div>{category}</div>
+      const category = row.original.category?.name || "Uncategorized";
+      return <div>{category}</div>;
     },
   },
   {
     accessorKey: "author",
     header: "Author",
     cell: ({ row }) => {
-      const author = row.original.author
+      const author = row.original.author;
       return author ? (
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
@@ -205,43 +110,43 @@ export const columns: ColumnDef<Blog>[] = [
         </div>
       ) : (
         "Unknown"
-      )
+      );
     },
   },
   {
     accessorKey: "status",
     header: "Approval Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
+      const status = row.getValue("status") as string;
 
       let badgeVariant: "default" | "outline" | "secondary" | "destructive" =
-        "secondary"
-      const statusText = status.charAt(0).toUpperCase() + status.slice(1)
-      let customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+        "secondary";
+      const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+      let customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
 
       if (status === "approved") {
-        badgeVariant = "default"
-        customClass = "bg-green-100 text-green-800 hover:bg-green-200"
+        badgeVariant = "default";
+        customClass = "bg-green-100 text-green-800 hover:bg-green-200";
       } else if (status === "rejected") {
-        badgeVariant = "destructive"
-        customClass = "bg-red-100 text-red-800 hover:bg-red-200"
+        badgeVariant = "destructive";
+        customClass = "bg-red-100 text-red-800 hover:bg-red-200";
       } else if (status === "pending") {
-        badgeVariant = "secondary"
-        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+        badgeVariant = "secondary";
+        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
       }
 
       return (
         <Badge variant={badgeVariant} className={customClass}>
           {statusText}
         </Badge>
-      )
+      );
     },
   },
   {
     accessorKey: "published",
     header: "Status",
     cell: ({ row }) => {
-      const isPublished = row.getValue("published")
+      const isPublished = row.getValue("published");
       return isPublished ? (
         <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
           Published
@@ -253,7 +158,7 @@ export const columns: ColumnDef<Blog>[] = [
         >
           Draft
         </Badge>
-      )
+      );
     },
   },
   {
@@ -267,10 +172,10 @@ export const columns: ColumnDef<Blog>[] = [
           Date
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => {
-      const date = row.original.createdAt
+      const date = row.original.createdAt;
       return (
         <div>
           {new Date(date).toLocaleDateString("en-US", {
@@ -279,7 +184,7 @@ export const columns: ColumnDef<Blog>[] = [
             year: "numeric",
           })}
         </div>
-      )
+      );
     },
   },
   {
@@ -293,27 +198,58 @@ export const columns: ColumnDef<Blog>[] = [
           Views
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
   },
   {
     id: "actions",
     cell: ({ row }) => {
-      const blog = row.original
+      const blog = row.original;
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const params = useParams();
+      const locale = params.locale as string;
 
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <BlogActions blog={blog} />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.open(`/${locale}/blog/${blog.id}`, "_blank")}
+            className="h-8 w-8 p-0"
+          >
+            <span className="sr-only">View</span>
+            <Eye className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              (window.location.href = `/${locale}/agency/dashboard/blogs/${blog.id}`)
+            }
+            className="h-8 w-8 p-0"
+          >
+            <span className="sr-only">Edit</span>
+            <Edit className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              if (
+                window.confirm("Are you sure you want to delete this blog?")
+              ) {
+                await deleteBlog(blog.id);
+              }
+            }}
+            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+          >
+            <span className="sr-only">Delete</span>
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
+      );
     },
   },
-]
+];

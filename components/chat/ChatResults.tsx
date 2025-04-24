@@ -245,7 +245,7 @@ function CarResults({ cars, onLoadMore }: { cars: any[], onLoadMore: () => Promi
                 </div>
                 
                 <div className="mt-3 flex justify-between items-center">
-                  <Link href={`/en/cars/${car.id}/booking`}>
+                  <Link href={`/en/cars/${car.id}`}>
                     <Button size="sm" className="bg-orange-400 hover:bg-orange-500 text-black text-xs">
                       View details
                     </Button>

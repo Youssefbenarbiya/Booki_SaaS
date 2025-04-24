@@ -1,7 +1,7 @@
-"use client"
+"use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { notFound } from "next/navigation"
-import Image from "next/image"
+import { notFound } from "next/navigation";
+import Image from "next/image";
 import {
   Clock,
   MapPin,
@@ -11,95 +11,96 @@ import {
   Car,
   BedDouble,
   ShieldCheck,
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { formatPrice, getDurationInDays } from "@/lib/utils"
-import Link from "next/link"
-import { getTripById } from "@/actions/trips/tripActions"
-import { useCurrency } from "@/lib/contexts/CurrencyContext"
-import { useState, useEffect } from "react"
-import React from "react"
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { formatPrice, getDurationInDays } from "@/lib/utils";
+import Link from "next/link";
+import { getTripById } from "@/actions/trips/tripActions";
+import { useCurrency } from "@/lib/contexts/CurrencyContext";
+import { useState, useEffect } from "react";
+import React from "react";
+import AgencyInfo from "@/components/common/AgencyInfo";
 
 interface TripParams {
-  tripId: string
-  locale: string
+  tripId: string;
+  locale: string;
 }
 
 interface TripPageProps {
   // The type of params is explicitly a Promise that resolves to TripParams.
-  params: Promise<TripParams>
+  params: Promise<TripParams>;
 }
 
 export default function TripDetailsPage({ params }: TripPageProps) {
-  const { currency, convertPrice } = useCurrency()
-  const resolvedParams = React.use(params)
-  const { tripId, locale } = resolvedParams
+  const { currency, convertPrice } = useCurrency();
+  const resolvedParams = React.use(params);
+  const { tripId, locale } = resolvedParams;
   // Use state to hold the trip data
-  const [trip, setTrip] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [trip, setTrip] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   // Fetch trip data
   useEffect(() => {
     const fetchTrip = async () => {
       try {
-        const tripData = await getTripById(parseInt(tripId))
+        const tripData = await getTripById(parseInt(tripId));
         if (!tripData) {
-          notFound()
+          notFound();
         }
-        setTrip(tripData)
+        setTrip(tripData);
       } catch (error) {
-        console.error("Error fetching trip:", error)
+        console.error("Error fetching trip:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchTrip()
-  }, [tripId])
+    fetchTrip();
+  }, [tripId]);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         Loading...
       </div>
-    )
+    );
   }
 
   if (!trip) {
-    notFound()
+    notFound();
   }
 
-  const duration = getDurationInDays(trip.startDate, trip.endDate)
+  const duration = getDurationInDays(trip.startDate, trip.endDate);
 
   // Group activities by day
-  const activitiesByDay: { [key: string]: any[] } = {}
+  const activitiesByDay: { [key: string]: any[] } = {};
 
   trip.activities.forEach((activity: any) => {
-    if (!activity.scheduledDate) return
+    if (!activity.scheduledDate) return;
 
-    const date = new Date(activity.scheduledDate).toLocaleDateString()
+    const date = new Date(activity.scheduledDate).toLocaleDateString();
     if (!activitiesByDay[date]) {
-      activitiesByDay[date] = []
+      activitiesByDay[date] = [];
     }
-    activitiesByDay[date].push(activity)
-  })
+    activitiesByDay[date].push(activity);
+  });
 
   // Calculate effective price (discounted or original)
-  const hasDiscount = trip.discountPercentage && trip.discountPercentage > 0
+  const hasDiscount = trip.discountPercentage && trip.discountPercentage > 0;
   const effectivePrice =
     hasDiscount && trip.priceAfterDiscount
       ? Number(trip.priceAfterDiscount)
-      : Number(trip.originalPrice)
+      : Number(trip.originalPrice);
 
   // Convert prices to selected currency
-  const tripCurrency = trip.currency || "USD"
+  const tripCurrency = trip.currency || "USD";
   const convertedOriginalPrice = convertPrice(
     Number(trip.originalPrice),
     tripCurrency
-  )
-  const convertedEffectivePrice = convertPrice(effectivePrice, tripCurrency)
+  );
+  const convertedEffectivePrice = convertPrice(effectivePrice, tripCurrency);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -123,6 +124,15 @@ export default function TripDetailsPage({ params }: TripPageProps) {
             </div>
 
             <h1 className="text-3xl font-bold lg:text-4xl">{trip.name}</h1>
+
+            {/* Agency Info */}
+            <AgencyInfo
+              agencyName={trip.agency?.agencyName || "Trip Agency"}
+              agencyLogo={trip.agency?.logo || null}
+              locale={locale}
+              showContactButton={true}
+              size="md"
+            />
 
             {/* Image Gallery */}
             <div className="grid grid-cols-2 gap-2 mt-4">
@@ -345,5 +355,5 @@ export default function TripDetailsPage({ params }: TripPageProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
