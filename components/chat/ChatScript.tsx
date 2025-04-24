@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 "use client"
 
@@ -6,7 +7,7 @@ import { MessageSquare, X, Send, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar } from "@/components/ui/avatar"
-import { useChatBot } from "@/app/hooks/useChatBot"
+import { useChatBot } from "@/hooks/useChatBot"
 import { ChatResults } from "@/components/chat/ChatResults"
 import { Message } from "@/components/chat/chat"
 
