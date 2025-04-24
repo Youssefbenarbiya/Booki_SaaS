@@ -1,6 +1,5 @@
 import { ContactInfo } from "./contact-info"
 import { ContactForm } from "./contact-form"
-import { ChatScript } from "@/components/chat/ChatScript"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -9,7 +8,6 @@ export const metadata: Metadata = {
 }
 
 export default function ContactPage({
-  params,
 }: {
   params: { locale: string }
 }) {
@@ -27,7 +25,7 @@ export default function ContactPage({
         <ContactForm />
       </div>
 
-      <ChatScript />
+     
     </main>
   )
 }

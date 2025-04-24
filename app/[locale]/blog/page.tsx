@@ -1,12 +1,10 @@
 import Image from "next/image"
 import Link from "next/link"
-import { getBlogs, getBlogCategories } from "@/actions/blogs/blogActions"
-import { ChatScript } from "@/components/chat/ChatScript"
+import { getBlogs } from "@/actions/blogs/blogActions"
 import { Clock, Calendar, Tag } from "lucide-react"
 
 export default async function BlogPage() {
   const { blogs = [] } = await getBlogs()
-  const { categories = [] } = await getBlogCategories()
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -98,7 +96,7 @@ export default async function BlogPage() {
           </div>
         )}
       </div>
-      <ChatScript />
+      
     </div>
   )
 }
