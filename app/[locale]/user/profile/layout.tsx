@@ -14,7 +14,7 @@ export default async function ProfileLayout({
   const user = session?.user || {}
 
   return (
-    <div className="flex">
+    <div className="flex mt-[50px]">
       <Sidebar user={user} />
       <main className="flex-1 p-4 overflow-y-auto">{children}</main>
     </div>
