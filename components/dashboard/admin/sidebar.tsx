@@ -55,6 +55,14 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
         >
           <span>{t("agencies")}</span>
         </Link>
+        <Link
+          href={`/${currentLocale}/admin/users`}
+          className={`flex items-center px-4 py-2 rounded-md ${isActive(
+            `/${currentLocale}/admin/users`
+          )}`}
+        >
+          <span>users</span>
+        </Link>
       </nav>
     </div>
   )
