@@ -1,14 +1,7 @@
 "use client"
 import Link from "next/link"
 import Image from "next/image"
-import {
-  LayoutDashboard,
-  User,
-  Heart,
-  Clock,
-  Phone,
-  Mail,
-} from "lucide-react"
+import { LayoutDashboard, User, Heart, Clock, Phone, Mail } from "lucide-react"
 import { usePathname } from "next/navigation"
 
 interface UserProfile {
@@ -55,14 +48,44 @@ export function Sidebar({ user }: SidebarProps) {
       href: "/user/profile/bookingHistory",
       icon: Clock,
     },
- 
   ]
 
   const pathname = usePathname()
-  // If pathname doesn't match any menu item, default to dashboard.
-  const activePath = menuItems.some((item) => item.href === pathname)
-    ? pathname
-    : "/user/profile/dashboard"
+
+  // Debug the current pathname
+  console.log("Current pathname:", pathname)
+
+  // Better helper function to determine if a menu item is active
+  const isItemActive = (itemHref: string) => {
+    // The pathname might include the locale, so we need to check if itemHref is contained in pathname
+    // or if the item href path segments match the end of the pathname segments
+
+    // Extract path segments and remove empty ones
+    const pathSegments = pathname.split("/").filter(Boolean)
+    const itemSegments = itemHref.split("/").filter(Boolean)
+
+    // If itemSegments is empty, this would be the home route
+    if (itemSegments.length === 0) return pathSegments.length === 0
+
+    // Check if the last segments of pathname match the item segments
+    if (pathSegments.length >= itemSegments.length) {
+      // Get the last N segments of the pathname, where N is the length of itemSegments
+      const relevantPathSegments = pathSegments.slice(-itemSegments.length)
+
+      // Compare each segment
+      for (let i = 0; i < itemSegments.length; i++) {
+        if (
+          relevantPathSegments[i].toLowerCase() !==
+          itemSegments[i].toLowerCase()
+        ) {
+          return false
+        }
+      }
+      return true
+    }
+
+    return false
+  }
 
   return (
     <aside className="w-[280px] bg-white p-4 border-r border-gray-100 overflow-y-auto">
@@ -100,16 +123,21 @@ export function Sidebar({ user }: SidebarProps) {
         <nav>
           <ul className="space-y-1">
             {menuItems.map((item) => {
-              const isActive = activePath === item.href
+              const isActive = isItemActive(item.href)
               return (
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-2 py-2 px-3 rounded-md text-sm text-gray-600 transition-colors ${
-                      isActive ? "bg-gray-300" : "hover:bg-gray-300"
+                    className={`flex items-center gap-2 py-2 px-3 rounded-md text-sm transition-colors ${
+                      isActive
+                        ? "bg-gray-400 text-gray-900"
+                        : "text-gray-600 hover:bg-gray-200"
                     }`}
                   >
-                    <item.icon size={16} className="text-gray-500" />
+                    <item.icon
+                      size={16}
+                      className={isActive ? "text-gray-900" : "text-gray-500"}
+                    />
                     <span>{item.label}</span>
                   </Link>
                 </li>
