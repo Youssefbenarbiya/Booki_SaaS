@@ -55,16 +55,25 @@ export default async function BlogPage({ params }: BlogPageProps) {
     <div className="container max-w-5xl mx-auto py-8 px-4 md:px-6">
       {/* Blog Header */}
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">{blog.title}</h1>
-        
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+          {blog.title}
+        </h1>
+
         <div className="flex items-center gap-4 mb-6">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={blog.author?.image || ""} alt={blog.author?.name || ""} />
-            <AvatarFallback>{blog.author?.name?.slice(0, 2).toUpperCase() || "BL"}</AvatarFallback>
+            <AvatarImage
+              src={blog.author?.image || ""}
+              alt={blog.author?.name || ""}
+            />
+            <AvatarFallback>
+              {blog.author?.name?.slice(0, 2).toUpperCase() || "BL"}
+            </AvatarFallback>
           </Avatar>
-          
+
           <div className="flex flex-col">
-            <span className="text-sm font-medium">{blog.author?.name || "Unknown"}</span>
+            <span className="text-sm font-medium">
+              {blog.author?.name || "Unknown"}
+            </span>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>{publishDate}</span>
               <span>•</span>
@@ -74,7 +83,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
             </div>
           </div>
         </div>
-        
+
         {blog.category && (
           <Link href={`/blog/category/${blog.category.id}`}>
             <Badge variant="secondary" className="mb-4">
@@ -83,25 +92,26 @@ export default async function BlogPage({ params }: BlogPageProps) {
           </Link>
         )}
       </div>
-      
+
       {/* Featured Image */}
       {blog.featuredImage && (
-        <div className="relative w-full h-[400px] rounded-lg overflow-hidden mb-8">
-          <Image 
-            src={blog.featuredImage} 
+        <div className="flex justify-center mb-8">
+          <Image
+            src={blog.featuredImage}
             alt={blog.title}
-            fill
-            className="object-cover"
+            width={800}
+            height={450}
+            className="rounded-lg object-cover"
             priority
           />
         </div>
       )}
-      
+
       {/* Blog Content */}
       <div className="prose prose-lg max-w-none">
         <div dangerouslySetInnerHTML={{ __html: blog.content }} />
       </div>
-      
+
       {/* Tags */}
       {blog.tags && blog.tags.length > 0 && (
         <div className="mt-8">
@@ -115,10 +125,10 @@ export default async function BlogPage({ params }: BlogPageProps) {
           </div>
         </div>
       )}
-      
+
       {/* Separator */}
       <Separator className="my-10" />
-      
+
       {/* Related Posts */}
       {relatedBlogs.length > 0 && (
         <div className="mt-8">
@@ -142,7 +152,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
                       {relatedBlog.title}
                     </h3>
                     <p className="text-sm text-muted-foreground line-clamp-3">
-                      {relatedBlog.excerpt || ''}
+                      {relatedBlog.excerpt || ""}
                     </p>
                   </CardContent>
                 </Card>
