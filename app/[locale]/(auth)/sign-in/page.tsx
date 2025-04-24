@@ -1,73 +1,97 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-"use client"
-import { useEffect, useState } from "react"
-import { useRouter, useSearchParams, useParams } from "next/navigation"
-import Link from "next/link"
-import Image from "next/image"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { FiEye, FiEyeOff } from "react-icons/fi"
-import { createSignInSchema, signInSchema } from "@/lib/validations/signin"
-import type { z } from "zod"
-import { authClient } from "@/auth-client"
-import { useToast } from "@/hooks/use-toast"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import LoadingButton from "@/components/loading-button"
-import type { ErrorContext } from "@better-fetch/fetch"
-import GoogleSignIn from "../(Oauth)/google"
-import FacebookSignIn from "../(Oauth)/facebook"
-import { useTranslations } from "next-intl"
-import LanguageSelector from "@/components/language-selector"
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FiEye, FiEyeOff } from "react-icons/fi";
+import { createSignInSchema, signInSchema } from "@/lib/validations/signin";
+import type { z } from "zod";
+import { authClient } from "@/auth-client";
+import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import LoadingButton from "@/components/loading-button";
+import type { ErrorContext } from "@better-fetch/fetch";
+import GoogleSignIn from "../(Oauth)/google";
+import FacebookSignIn from "../(Oauth)/facebook";
+import { useTranslations } from "next-intl";
+import LanguageSelector from "@/components/language-selector";
 
 // Define the type directly from the schema
-type SignInSchemaType = z.infer<typeof signInSchema>
+type SignInSchemaType = z.infer<typeof signInSchema>;
 
 export default function SignIn() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const params = useParams()
-  const currentLocale = (params.locale as string) || "en"
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const params = useParams();
+  const currentLocale = (params.locale as string) || "en";
 
   // Extract callbackUrl from the query parameters; default to "/" if not present
-  const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
-  const { toast } = useToast()
-  const [pendingCredentials, setPendingCredentials] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [currentSlide, setCurrentSlide] = useState(0)
+  const { toast } = useToast();
+  const [pendingCredentials, setPendingCredentials] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Start with false for server rendering, then update in useEffect
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Form default values
+  const defaultEmail = "";
 
   const slides = [
     "/assets/loginImg.jpg",
     "/assets/registerImg.jpg",
     // Add more slide images here
-  ]
+  ];
 
+  // Setup slide rotation
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
-    }, 5000)
+      setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length);
+    }, 5000);
 
-    return () => clearInterval(interval)
-  }, [slides.length])
+    return () => clearInterval(interval);
+  }, [slides.length]);
+
+  // Check localStorage after component mounts (client-side only)
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      setRememberMe(true);
+    }
+  }, []);
 
   // Use next-intl for translations
-  const t = useTranslations("signIn")
+  const t = useTranslations("signIn");
 
   // Create a schema with translated error messages
-  const localizedSignInSchema = createSignInSchema((key) => t(key))
+  const localizedSignInSchema = createSignInSchema((key) => t(key));
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<SignInSchemaType>({
     resolver: zodResolver(localizedSignInSchema),
     defaultValues: {
-      email: "",
+      email: defaultEmail,
       password: "",
     },
-  })
+  });
+
+  // Update email field when component mounts (client-side only)
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      setValue("email", rememberedEmail);
+    }
+  }, []);
 
   const handleCredentialsSignIn = async (values: SignInSchemaType) => {
     await authClient.signIn.email(
@@ -77,25 +101,30 @@ export default function SignIn() {
       },
       {
         onRequest: () => {
-          setPendingCredentials(true)
+          setPendingCredentials(true);
         },
         onSuccess: async () => {
-          // Redirect to the callback URL after successful sign-in
-          router.push(callbackUrl)
-          router.refresh()
+          if (rememberMe) {
+            localStorage.setItem("rememberedEmail", values.email);
+          } else {
+            localStorage.removeItem("rememberedEmail");
+          }
+
+          router.push(callbackUrl);
+          router.refresh();
         },
         onError: (ctx: ErrorContext) => {
-          console.log(ctx)
+          console.log(ctx);
           toast({
             title: "Error",
             description: t("errors.auth.invalid"),
             variant: "destructive",
-          })
+          });
         },
       }
-    )
-    setPendingCredentials(false)
-  }
+    );
+    setPendingCredentials(false);
+  };
 
   return (
     <div className="flex min-h-screen ml-[200px] mt-[50px]">
@@ -164,7 +193,13 @@ export default function SignIn() {
             {/* Remember Me & Forgot Password */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
               <div className="flex items-center space-x-2">
-                <Checkbox id="remember" />
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) =>
+                    setRememberMe(checked as boolean)
+                  }
+                />
                 <label
                   htmlFor="remember"
                   className="text-sm text-gray-600 leading-none"
@@ -237,5 +272,5 @@ export default function SignIn() {
         </div>
       </div>
     </div>
-  )
+  );
 }
