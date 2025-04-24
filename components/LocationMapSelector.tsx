@@ -154,7 +154,7 @@ export default function LocationMapSelector({
   };
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-2 " >
       {enableSearch && !readOnly && (
         <div className="relative">
           <div className="flex gap-2">
@@ -200,8 +200,8 @@ export default function LocationMapSelector({
       )}
 
       <div
-        style={{ height, width: "100%" }}
-        className="rounded-md overflow-hidden border border-input mt-[50px]"
+        style={{ height, width: "100%", marginTop: "50px" }}
+        className="rounded-md overflow-hidden border border-input"
       >
         <MapContainer
           center={position}
