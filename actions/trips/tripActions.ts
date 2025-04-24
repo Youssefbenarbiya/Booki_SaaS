@@ -1,18 +1,18 @@
-"use server"
+"use server";
 
-import db from "@/db/drizzle"
+import db from "@/db/drizzle";
 import {
   trips,
   tripImages,
   tripActivities,
   user,
   agencyEmployees,
-} from "@/db/schema"
-import { eq } from "drizzle-orm"
-import { revalidatePath } from "next/cache"
-import { z } from "zod"
-import { auth } from "@/auth"
-import { headers } from "next/headers"
+} from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { auth } from "@/auth";
+import { headers } from "next/headers";
 
 const tripSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -40,9 +40,9 @@ const tripSchema = z.object({
       })
     )
     .optional(),
-})
+});
 
-export type TripInput = z.infer<typeof tripSchema>
+export type TripInput = z.infer<typeof tripSchema>;
 
 // Helper function to get agency ID - works for both owners and employees
 async function getAgencyId(userId: string) {
@@ -52,41 +52,45 @@ async function getAgencyId(userId: string) {
     with: {
       agency: true,
     },
-  })
+  });
 
   if (userWithAgency?.agency) {
-    return userWithAgency.agency.userId
+    return userWithAgency.agency.userId;
   }
 
   // Check if user is an employee
   const employeeRecord = await db.query.agencyEmployees.findFirst({
     where: eq(agencyEmployees.employeeId, userId),
-  })
+  });
 
   if (employeeRecord) {
-    return employeeRecord.agencyId
+    return employeeRecord.agencyId;
   }
 
-  throw new Error("No agency found for this user - not an owner or employee")
+  throw new Error("No agency found for this user - not an owner or employee");
 }
 
 export async function createTrip(data: TripInput) {
   try {
-    const validatedData = tripSchema.parse(data)
+    const validatedData = tripSchema.parse(data);
 
     // Get the current user's session
     const session = await auth.api.getSession({
       headers: await headers(),
-    })
+    });
 
     if (!session?.user) {
-      throw new Error("Unauthorized: You must be logged in to create a trip")
+      throw new Error("Unauthorized: You must be logged in to create a trip");
     }
 
     // Get the agency ID - works for both owners and employees
-    const agencyId = await getAgencyId(session.user.id)
+    const agencyId = await getAgencyId(session.user.id);
 
-    console.log(`Creating trip with agency ID: ${agencyId}`)
+    console.log(`Creating trip with agency ID: ${agencyId}`);
+
+    // Ensure isAvailable is false if capacity is 0
+    const isAvailable =
+      validatedData.capacity === 0 ? false : validatedData.isAvailable;
 
     // Create trip with proper agency ID and createdBy
     const [trip] = await db
@@ -102,12 +106,12 @@ export async function createTrip(data: TripInput) {
         priceAfterDiscount:
           validatedData.priceAfterDiscount?.toString() || undefined,
         capacity: validatedData.capacity,
-        isAvailable: validatedData.isAvailable,
+        isAvailable: isAvailable,
         agencyId: agencyId, // Use the agencyId from our helper
         createdBy: session.user.id, // Track who created it
         currency: validatedData.currency || "USD",
       })
-      .returning()
+      .returning();
 
     // Add images
     if (validatedData.images.length > 0) {
@@ -116,7 +120,7 @@ export async function createTrip(data: TripInput) {
           tripId: trip.id,
           imageUrl: url,
         }))
-      )
+      );
     }
 
     // Add activities
@@ -128,15 +132,15 @@ export async function createTrip(data: TripInput) {
           description: activity.description,
           scheduledDate: activity.scheduledDate?.toISOString(),
         }))
-      )
+      );
     }
 
-    revalidatePath("/agency/dashboard/trips")
-    revalidatePath("/")
-    return trip
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return trip;
   } catch (error) {
-    console.error("Error creating trip:", error)
-    throw error
+    console.error("Error creating trip:", error);
+    throw error;
   }
 }
 
@@ -145,15 +149,15 @@ export async function getTrips() {
     // Get the current user's session
     const session = await auth.api.getSession({
       headers: await headers(),
-    })
+    });
 
     if (!session?.user) {
-      console.log("No authenticated user found when getting trips")
-      return []
+      console.log("No authenticated user found when getting trips");
+      return [];
     }
 
     // Get the agency ID - works for both owners and employees
-    const agencyId = await getAgencyId(session.user.id)
+    const agencyId = await getAgencyId(session.user.id);
 
     // Get trips belonging to the user's agency
     const tripResults = await db.query.trips.findMany({
@@ -163,12 +167,12 @@ export async function getTrips() {
         activities: true,
         bookings: true,
       },
-    })
+    });
 
-    return tripResults
+    return tripResults;
   } catch (error) {
-    console.error("Error getting trips:", error)
-    throw error
+    console.error("Error getting trips:", error);
+    throw error;
   }
 }
 
@@ -180,18 +184,27 @@ export async function getTripById(id: number) {
         images: true,
         activities: true,
         bookings: true,
+        agency: {
+          with: {
+            user: true,
+          },
+        },
       },
-    })
-    return trip
+    });
+    return trip;
   } catch (error) {
-    console.error("Error getting trip:", error)
-    throw error
+    console.error("Error getting trip:", error);
+    throw error;
   }
 }
 
 export async function updateTrip(id: number, data: TripInput) {
   try {
-    const validatedData = tripSchema.parse(data)
+    const validatedData = tripSchema.parse(data);
+
+    // Ensure isAvailable is false if capacity is 0
+    const isAvailable =
+      validatedData.capacity === 0 ? false : validatedData.isAvailable;
 
     // Update trip with explicit null values for discount fields when they're undefined
     const [trip] = await db
@@ -207,25 +220,25 @@ export async function updateTrip(id: number, data: TripInput) {
         priceAfterDiscount:
           validatedData.priceAfterDiscount?.toString() ?? null,
         capacity: validatedData.capacity,
-        isAvailable: validatedData.isAvailable,
+        isAvailable: isAvailable,
         currency: validatedData.currency || "USD",
       })
       .where(eq(trips.id, id))
-      .returning()
+      .returning();
 
     // Update images
-    await db.delete(tripImages).where(eq(tripImages.tripId, id))
+    await db.delete(tripImages).where(eq(tripImages.tripId, id));
     if (validatedData.images.length > 0) {
       await db.insert(tripImages).values(
         validatedData.images.map((url) => ({
           tripId: trip.id,
           imageUrl: url,
         }))
-      )
+      );
     }
 
     // Update activities
-    await db.delete(tripActivities).where(eq(tripActivities.tripId, id))
+    await db.delete(tripActivities).where(eq(tripActivities.tripId, id));
     if (validatedData.activities?.length) {
       await db.insert(tripActivities).values(
         validatedData.activities.map((activity) => ({
@@ -234,15 +247,15 @@ export async function updateTrip(id: number, data: TripInput) {
           description: activity.description,
           scheduledDate: activity.scheduledDate?.toISOString(),
         }))
-      )
+      );
     }
 
-    revalidatePath("/agency/dashboard/trips")
-    revalidatePath("/")
-    return trip
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return trip;
   } catch (error) {
-    console.error("Error updating trip:", error)
-    throw error
+    console.error("Error updating trip:", error);
+    throw error;
   }
 }
 
@@ -251,13 +264,13 @@ export async function deleteTrip(id: number) {
     const [deletedTrip] = await db
       .delete(trips)
       .where(eq(trips.id, id))
-      .returning()
+      .returning();
 
-    revalidatePath("/agency/dashboard/trips")
-    revalidatePath("/")
-    return deletedTrip
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return deletedTrip;
   } catch (error) {
-    console.error("Error deleting trip:", error)
-    throw error
+    console.error("Error deleting trip:", error);
+    throw error;
   }
 }

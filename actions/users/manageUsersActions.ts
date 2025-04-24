@@ -47,7 +47,9 @@ export async function banUser(userId: string) {
       })
       .where(eq(user.id, userId))
 
+    // Revalidate both agency and admin dashboard paths
     revalidatePath("/agency/dashboard/users")
+    revalidatePath("/admin/users")
   } catch (error) {
     console.error("Error banning user:", error)
     throw new Error("Failed to ban user")
@@ -73,7 +75,9 @@ export async function unbanUser(userId: string) {
       })
       .where(eq(user.id, userId))
 
+    // Revalidate both agency and admin dashboard paths
     revalidatePath("/agency/dashboard/users")
+    revalidatePath("/admin/users")
   } catch (error) {
     console.error("Error unbanning user:", error)
     throw new Error("Failed to unban user")
@@ -98,7 +102,9 @@ export async function setUserRole(userId: string, role: string) {
       })
       .where(eq(user.id, userId))
 
+    // Revalidate both agency and admin dashboard paths
     revalidatePath("/agency/dashboard/users")
+    revalidatePath("/admin/users")
   } catch (error) {
     console.error("Error setting user role:", error)
     throw new Error("Failed to set user role")
@@ -141,7 +147,9 @@ export async function deleteUser(userId: string) {
     // Finally delete the user
     await db.delete(user).where(eq(user.id, userId))
 
+    // Revalidate both agency and admin dashboard paths
     revalidatePath("/agency/dashboard/users")
+    revalidatePath("/admin/users")
   } catch (error) {
     console.error("Error deleting user:", error)
     throw new Error("Failed to delete user")

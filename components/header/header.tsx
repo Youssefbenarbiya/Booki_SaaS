@@ -13,8 +13,13 @@ import { auth } from "@/auth"
 import SignoutButton from "../navbar/signout-button"
 import { headers } from "next/headers"
 import Navbar from "@/components/navbar/navbar"
+import { Locale } from "@/i18n/routing"
 
-export default async function Header() {
+interface HeaderProps {
+  locale: Locale
+}
+
+export default async function Header({ locale = "en" }: HeaderProps) {
   const session = await auth.api.getSession({
     query: {
       disableCookieCache: true,
@@ -27,7 +32,7 @@ export default async function Header() {
       <Navbar />
       <header className="bg-background shadow-md sticky top-[30px] left-0 right-0 z-40 w-full border-b">
         <div className="w-full px-4 py-2 flex justify-between items-center h-[50px]">
-          <Link href="/" className="text-xl font-bold">
+          <Link href={`/${locale}`} className="text-xl font-bold">
             <div className="flex items-center space-x-6">
               <Image
                 src="/assets/icons/logo.png"
@@ -43,7 +48,7 @@ export default async function Header() {
               <ul className="flex space-x-8">
                 <li>
                   <Link
-                    href="/"
+                    href={`/${locale}`}
                     className="text-foreground hover:text-primary font-poppins font-semibold text-[18px] leading-[27px]"
                   >
                     Home
@@ -51,7 +56,7 @@ export default async function Header() {
                 </li>
                 <li>
                   <Link
-                    href="/contact"
+                    href={`/${locale}/contact`}
                     className="text-foreground hover:text-primary font-poppins font-semibold text-[18px] leading-[27px]"
                   >
                     Contact
@@ -59,7 +64,7 @@ export default async function Header() {
                 </li>
                 <li>
                   <Link
-                    href="/faq"
+                    href={`/${locale}/faq`}
                     className="text-foreground hover:text-primary font-poppins font-semibold text-[18px] leading-[27px]"
                   >
                     FAQ
@@ -67,7 +72,7 @@ export default async function Header() {
                 </li>
                 <li>
                   <Link
-                    href="/blog"
+                    href={`/${locale}/blog`}
                     className="text-foreground hover:text-primary font-poppins font-semibold text-[18px] leading-[27px]"
                   >
                     Blog
@@ -96,7 +101,7 @@ export default async function Header() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuItem asChild>
-                      <Link href="/user/profile" className="w-full">
+                      <Link href={`/${locale}/user/profile`} className="w-full">
                         Profile
                       </Link>
                     </DropdownMenuItem>
@@ -105,8 +110,8 @@ export default async function Header() {
                         <Link
                           href={
                             session.user.role === "admin"
-                              ? "/admin"
-                              : "/agency/dashboard"
+                              ? `/${locale}/admin`
+                              : `/${locale}/agency/dashboard`
                           }
                           className="w-full"
                         >

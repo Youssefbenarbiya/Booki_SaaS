@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils"
 import {
   Building2,
   Car,
-  Globe,
   LayoutDashboard,
   Mail,
   PlaneTakeoff,
@@ -22,51 +21,57 @@ import { Separator } from "@/components/ui/separator"
 import { useEffect, useState } from "react"
 import { getAgencyProfile } from "@/actions/agency/agencyActions"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Locale } from "@/i18n/routing"
 
-const navigation = [
-  {
-    name: "Dashboard",
-    href: "/agency/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Trips",
-    href: "/agency/dashboard/trips",
-    icon: PlaneTakeoff,
-  },
-  {
-    name: "Hotels",
-    href: "/agency/dashboard/hotels",
-    icon: Building2,
-  },
-  {
-    name: "Cars",
-    href: "/agency/dashboard/cars",
-    icon: Car,
-  },
-  {
-    name: "Blogs",
-    href: "/agency/dashboard/blogs",
-    icon: BookOpen,
-  },
-  {
-    name: "Employees",
-    href: "/agency/dashboard/employees",
-    icon: Users,
-  },
-  {
-    name: "Bookings",
-    href: "/agency/dashboard/bookings",
-    icon: CalendarCheck,
-  },
-]
+interface SidebarProps {
+  locale: Locale
+}
 
-export function Sidebar() {
+export function Sidebar({ locale }: SidebarProps) {
   const pathname = usePathname()
   const session = useSession()
   const userRole = session.data?.user?.role
   const [agencyData, setAgencyData] = useState<{name?: string, email?: string, logo?: string} | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  // Create navigation items with locale
+  const navigation = [
+    {
+      name: "Dashboard",
+      href: `/${locale}/agency/dashboard`,
+      icon: LayoutDashboard,
+    },
+    {
+      name: "Trips",
+      href: `/${locale}/agency/dashboard/trips`,
+      icon: PlaneTakeoff,
+    },
+    {
+      name: "Hotels",
+      href: `/${locale}/agency/dashboard/hotels`,
+      icon: Building2,
+    },
+    {
+      name: "Cars",
+      href: `/${locale}/agency/dashboard/cars`,
+      icon: Car,
+    },
+    {
+      name: "Blogs",
+      href: `/${locale}/agency/dashboard/blogs`,
+      icon: BookOpen,
+    },
+    {
+      name: "Employees",
+      href: `/${locale}/agency/dashboard/employees`,
+      icon: Users,
+    },
+    {
+      name: "Bookings",
+      href: `/${locale}/agency/dashboard/bookings`,
+      icon: CalendarCheck,
+    },
+  ]
 
   // Fetch agency data
   useEffect(() => {
@@ -126,17 +131,21 @@ export function Sidebar() {
                   fill
                   className="object-cover"
                   onError={(e) => {
-                    // Fallback to Globe icon if image fails to load
+                    // Hide the image on error
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = `
-                      <div class="h-16 w-16 rounded-full bg-gray-800 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-white">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <line x1="2" y1="12" x2="22" y2="12"></line>
-                          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                        </svg>
-                      </div>
-                    `;
+                    // Show the fallback icon
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `
+                        <div class="h-16 w-16 rounded-full bg-gray-800 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-white">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                          </svg>
+                        </div>
+                      `;
+                    }
                   }}
                 />
               </div>
@@ -159,7 +168,7 @@ export function Sidebar() {
             )}
             <div className="mt-3">
               <Link 
-                href="/agency/profile" 
+                href={`/${locale}/agency/profile`} 
                 className="text-sm text-yellow-400 hover:text-yellow-300 flex items-center justify-center"
               >
                 <UserCircle className="h-4 w-4 mr-1" />
@@ -196,7 +205,7 @@ export function Sidebar() {
             </li>
             <li className="mt-auto">
               <Link
-                href="/agency/settings"
+                href={`/${locale}/agency/settings`}
                 className="text-gray-400 hover:text-white hover:bg-gray-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
               >
                 <Settings className="h-6 w-6 shrink-0" aria-hidden="true" />

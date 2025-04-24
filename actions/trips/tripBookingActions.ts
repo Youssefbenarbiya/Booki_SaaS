@@ -28,10 +28,10 @@ export async function createBooking({
   convertedPricePerSeat,
   paymentCurrency,
   paymentMethod,
-}: CreateBookingParams & { 
-  pricePerSeat: number,
-  convertedPricePerSeat?: number,
-  paymentCurrency?: string,
+}: CreateBookingParams & {
+  pricePerSeat: number
+  convertedPricePerSeat?: number
+  paymentCurrency?: string
   paymentMethod?: string
 }) {
   try {
@@ -55,9 +55,15 @@ export async function createBooking({
     // Use the converted price for calculating total if provided
     const effectivePricePerSeat = convertedPricePerSeat || pricePerSeat
     const totalPrice = seatsBooked * effectivePricePerSeat
-    
-    console.log(`Creating booking with price per seat: ${effectivePricePerSeat} ${paymentCurrency || trip.currency}`)
-    console.log(`Total price: ${totalPrice} ${paymentCurrency || trip.currency}`)
+
+    console.log(
+      `Creating booking with price per seat: ${effectivePricePerSeat} ${
+        paymentCurrency || trip.currency
+      }`
+    )
+    console.log(
+      `Total price: ${totalPrice} ${paymentCurrency || trip.currency}`
+    )
 
     const [booking] = await db
       .insert(tripBookings)
@@ -96,7 +102,8 @@ export async function createBookingWithPayment({
   seatsBooked,
   pricePerSeat,
   paymentMethod = "flouci", // Default to flouci if not specified
-}: CreateBookingParams & { pricePerSeat: number }) {
+  locale = "en", // Add locale parameter with default
+}: CreateBookingParams & { pricePerSeat: number; locale?: string }) {
   try {
     // Get trip to check details
     const trip = await db.query.trips.findFirst({
@@ -109,8 +116,10 @@ export async function createBookingWithPayment({
 
     // Get the trip's original currency from the database
     const tripCurrency = trip.currency || "TND" // Default to TND if not specified
-    
-    console.log(`Trip currency: ${tripCurrency}, Price per seat: ${pricePerSeat}`)
+
+    console.log(
+      `Trip currency: ${tripCurrency}, Price per seat: ${pricePerSeat}`
+    )
 
     // Calculate total price in the trip's original currency
     const totalPriceInOriginalCurrency = seatsBooked * pricePerSeat
@@ -119,9 +128,15 @@ export async function createBookingWithPayment({
     if (paymentMethod === "stripe") {
       try {
         // Convert price to USD for Stripe regardless of trip's currency
-        const pricePerSeatInUSD = await convertCurrency(pricePerSeat, tripCurrency, "USD")
-        console.log(`Converting from ${tripCurrency} to USD: ${pricePerSeat} -> ${pricePerSeatInUSD}`)
-        
+        const pricePerSeatInUSD = await convertCurrency(
+          pricePerSeat,
+          tripCurrency,
+          "USD"
+        )
+        console.log(
+          `Converting from ${tripCurrency} to USD: ${pricePerSeat} -> ${pricePerSeatInUSD}`
+        )
+
         // Create the initial booking with the CONVERTED USD price
         const booking = await createBooking({
           tripId,
@@ -137,8 +152,10 @@ export async function createBookingWithPayment({
           throw new Error("Failed to create booking")
         }
 
-        console.log(`Booking created: #${booking.id}, processing payment via Stripe in USD`)
-        
+        console.log(
+          `Booking created: #${booking.id}, processing payment via Stripe in USD`
+        )
+
         // Create Stripe checkout session with USD
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
@@ -156,12 +173,13 @@ export async function createBookingWithPayment({
             },
           ],
           mode: "payment",
-          success_url: `${process.env.NEXT_PUBLIC_APP_URL}/trips/payment/success?bookingId=${booking.id}`,
-          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/trips/payment/failed`,
+          success_url: `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/trips/payment/success?bookingId=${booking.id}`,
+          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/trips/payment/failed`,
           metadata: {
             bookingId: booking.id.toString(),
             originalCurrency: tripCurrency,
             convertedFromPrice: pricePerSeat.toString(),
+            locale: locale, // Store locale in metadata
           },
         })
 
@@ -193,11 +211,21 @@ export async function createBookingWithPayment({
       }
     } else {
       // For Flouci, ensure the amount is in TND
-      const totalPriceInTND = await convertCurrency(totalPriceInOriginalCurrency, tripCurrency, "TND")
-      const pricePerSeatInTND = await convertCurrency(pricePerSeat, tripCurrency, "TND")
-      
-      console.log(`Converting from ${tripCurrency} to TND: ${pricePerSeat} -> ${pricePerSeatInTND}`)
-      
+      const totalPriceInTND = await convertCurrency(
+        totalPriceInOriginalCurrency,
+        tripCurrency,
+        "TND"
+      )
+      const pricePerSeatInTND = await convertCurrency(
+        pricePerSeat,
+        tripCurrency,
+        "TND"
+      )
+
+      console.log(
+        `Converting from ${tripCurrency} to TND: ${pricePerSeat} -> ${pricePerSeatInTND}`
+      )
+
       // Create the initial booking with the CONVERTED TND price
       const booking = await createBooking({
         tripId,
@@ -213,14 +241,17 @@ export async function createBookingWithPayment({
         throw new Error("Failed to create booking")
       }
 
-      console.log(`Booking created: #${booking.id}, processing payment via Flouci in TND`)
-      
+      console.log(
+        `Booking created: #${booking.id}, processing payment via Flouci in TND`
+      )
+
       // Format the amount to ensure it's accepted by the payment API
       const formattedAmount = parseFloat(totalPriceInTND.toFixed(2))
 
       const paymentData = await generateTripPaymentLink({
         amount: formattedAmount,
         bookingId: booking.id,
+        locale: locale, // Pass locale to payment link generator
       })
 
       if (!paymentData || !paymentData.paymentId) {

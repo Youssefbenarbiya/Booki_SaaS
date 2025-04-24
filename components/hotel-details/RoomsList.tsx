@@ -3,6 +3,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { formatPrice } from "@/lib/utils"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { useParams } from "next/navigation"
 
 interface RoomsListProps {
   rooms: Array<{
@@ -17,13 +18,18 @@ interface RoomsListProps {
     images: string[] | null
     amenities: string[] | null
     hotelId: string
+    locale?: string
   }>
 }
 
 export default function RoomsList({ rooms }: RoomsListProps) {
+  // Use the params to get the current locale
+  const params = useParams()
+  const fallbackLocale = (params.locale as string) || "en"
+
   // Use the currency context for conversion
   const { currency, convertPrice } = useCurrency()
-  
+
   if (!rooms.length) {
     return (
       <div className="mt-8 p-6 bg-gray-50 rounded-lg">
@@ -39,10 +45,16 @@ export default function RoomsList({ rooms }: RoomsListProps) {
         {rooms.map((room) => {
           // Get the room's base currency or default to TND
           const roomCurrency = room.currency || "TND"
-          
+
           // Convert the price to the selected currency
-          const convertedPrice = convertPrice(Number(room.pricePerNightAdult), roomCurrency)
-          
+          const convertedPrice = convertPrice(
+            Number(room.pricePerNightAdult),
+            roomCurrency
+          )
+
+          // Get the locale from the room data or use from URL params
+          const locale = room.locale || fallbackLocale
+
           return (
             <div
               key={room.id}
@@ -100,7 +112,7 @@ export default function RoomsList({ rooms }: RoomsListProps) {
 
                   <div className="mt-4 flex justify-end">
                     <Link
-                      href={`/hotels/${room.hotelId}/rooms/${room.id}/book`}
+                      href={`/${locale}/hotels/${room.hotelId}/rooms/${room.id}/book`}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                     >
                       Book Now
@@ -109,7 +121,7 @@ export default function RoomsList({ rooms }: RoomsListProps) {
                 </div>
               </div>
             </div>
-          );
+          )
         })}
       </div>
     </div>

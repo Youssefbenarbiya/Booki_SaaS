@@ -24,6 +24,7 @@ interface BookCarParams {
   totalPrice: number
   customerInfo?: CustomerInfo
   paymentMethod?: "flouci" | "stripe"
+  locale?: string // Add locale parameter
 }
 
 interface BookingResult {
@@ -40,6 +41,7 @@ export async function bookCar({
   totalPrice,
   customerInfo,
   paymentMethod = "flouci", // Default to flouci if not specified
+  locale = "en", // Default to English
 }: BookCarParams): Promise<BookingResult> {
   try {
     if (!userId) {
@@ -54,23 +56,31 @@ export async function bookCar({
 
     // Get car to determine its currency
     const car = await db.query.cars.findFirst({
-      where: eq(cars.id, carId)
-    });
+      where: eq(cars.id, carId),
+    })
 
     if (!car) {
       return { success: false, error: "Car not found" }
     }
 
     // Get the original currency of the car
-    const carCurrency = car.currency || "TND";
-    
-    console.log(`Car currency: ${carCurrency}, Original total price: ${totalPrice}`);
+    const carCurrency = car.currency || "TND"
+
+    console.log(
+      `Car currency: ${carCurrency}, Original total price: ${totalPrice}`
+    )
 
     // Handle payment based on selected method
     if (paymentMethod === "stripe") {
       // Convert price to USD for Stripe
-      const totalPriceInUSD = await convertCurrency(totalPrice, carCurrency, "USD");
-      console.log(`Converting car price from ${carCurrency} to USD: ${totalPrice} -> ${totalPriceInUSD}`);
+      const totalPriceInUSD = await convertCurrency(
+        totalPrice,
+        carCurrency,
+        "USD"
+      )
+      console.log(
+        `Converting car price from ${carCurrency} to USD: ${totalPrice} -> ${totalPriceInUSD}`
+      )
 
       // Create booking with the USD price
       const bookingResults = await db
@@ -98,7 +108,9 @@ export async function bookCar({
         .returning()
 
       const newBooking = bookingResults[0]
-      console.log(`Car booking created: #${newBooking.id}, processing payment via Stripe in USD`);
+      console.log(
+        `Car booking created: #${newBooking.id}, processing payment via Stripe in USD`
+      )
 
       try {
         const session = await stripe.checkout.sessions.create({
@@ -117,13 +129,14 @@ export async function bookCar({
             },
           ],
           mode: "payment",
-          success_url: `${process.env.NEXT_PUBLIC_APP_URL}/cars/payment/success?bookingId=${newBooking.id}`,
-          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cars/payment/failed`,
+          success_url: `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/cars/payment/success?bookingId=${newBooking.id}`,
+          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/${locale}/cars/payment/failed`,
           metadata: {
             bookingId: newBooking.id.toString(),
             bookingType: "car",
             originalCurrency: carCurrency,
             convertedFromPrice: totalPrice.toString(),
+            locale: locale, // Store locale in metadata
           },
         })
 
@@ -144,8 +157,14 @@ export async function bookCar({
       }
     } else {
       // Convert to TND for Flouci
-      const totalPriceInTND = await convertCurrency(totalPrice, carCurrency, "TND");
-      console.log(`Converting car price from ${carCurrency} to TND: ${totalPrice} -> ${totalPriceInTND}`);
+      const totalPriceInTND = await convertCurrency(
+        totalPrice,
+        carCurrency,
+        "TND"
+      )
+      console.log(
+        `Converting car price from ${carCurrency} to TND: ${totalPrice} -> ${totalPriceInTND}`
+      )
 
       // Create booking with the TND price
       const bookingResults = await db
@@ -173,11 +192,14 @@ export async function bookCar({
         .returning()
 
       const newBooking = bookingResults[0]
-      console.log(`Car booking created: #${newBooking.id}, processing payment via Flouci in TND`);
+      console.log(
+        `Car booking created: #${newBooking.id}, processing payment via Flouci in TND`
+      )
 
       const { paymentLink, paymentId } = await generateCarPaymentLink({
         amount: totalPriceInTND,
         bookingId: newBooking.id,
+        locale: locale, // Pass locale to payment link generator
       })
 
       await db

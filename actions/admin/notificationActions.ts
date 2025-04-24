@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use server"
 
 import db from "@/db/drizzle"
@@ -9,19 +10,12 @@ export async function sendTripStatusNotification(
   status: "approved" | "rejected"
 ) {
   try {
-    console.log(
-      `Sending notification for trip ID: ${tripId} with status: ${status}`
-    )
-
     // Get trip details
     const tripRecord = await db.query.trips.findFirst({
       where: eq(trips.id, tripId),
     })
 
-    console.log("Trip record:", JSON.stringify(tripRecord, null, 2))
-
     if (!tripRecord) {
-      console.error(`Trip not found with ID: ${tripId}`)
       return { success: false, message: "Trip not found" }
     }
 
@@ -29,16 +23,11 @@ export async function sendTripStatusNotification(
     const agencyId = tripRecord.agencyId
 
     if (!agencyId) {
-      console.error(
-        `No agency ID found for trip ID: ${tripId}. This trip may have been created without an agency association.`
-      )
       return {
         success: false,
         message: "No agency associated with trip. Unable to send notification.",
       }
     }
-
-    console.log(`Using agency ID: ${agencyId} for notification`)
 
     const title = status === "approved" ? "Trip Approved" : "Trip Rejected"
 
@@ -49,7 +38,7 @@ export async function sendTripStatusNotification(
 
     // Create notification with explicit values for all required fields
     try {
-      const insertResult = await db.insert(notifications).values({
+      await db.insert(notifications).values({
         userId: agencyId,
         title,
         message,
@@ -60,14 +49,11 @@ export async function sendTripStatusNotification(
         read: false,
       })
 
-      console.log("Notification insert result:", insertResult)
       return { success: true }
     } catch (insertError) {
-      console.error("Failed to insert notification:", insertError)
       throw insertError // Re-throw to be caught by outer catch block
     }
   } catch (error) {
-    console.error("Error in sendTripStatusNotification:", error)
     return { success: false, message: "Failed to send notification" }
   }
 }
@@ -77,22 +63,12 @@ export async function sendCarStatusNotification(
   status: "approved" | "rejected"
 ) {
   try {
-    console.log(
-      `[START] Sending notification for car ID: ${carId} with status: ${status}`
-    )
-
     // Get car details
     const carRecord = await db.query.cars.findFirst({
       where: eq(cars.id, carId),
     })
 
-    console.log("Car record found:", !!carRecord)
-    if (carRecord) {
-      console.log("Car agency ID:", carRecord.agencyId)
-    }
-
     if (!carRecord) {
-      console.error(`Car not found with ID: ${carId}`)
       return { success: false, message: "Car not found" }
     }
 
@@ -100,16 +76,11 @@ export async function sendCarStatusNotification(
     const agencyId = carRecord.agencyId
 
     if (!agencyId) {
-      console.error(
-        `No agency ID found for car ID: ${carId}. This car may have been created without an agency association.`
-      )
       return {
         success: false,
         message: "No agency associated with car. Unable to send notification.",
       }
     }
-
-    console.log(`Using agency ID: ${agencyId} for car notification`)
 
     const title = status === "approved" ? "Car Approved" : "Car Rejected"
 
@@ -118,11 +89,9 @@ export async function sendCarStatusNotification(
         ? `Your car "${carRecord.brand} ${carRecord.model}" has been approved and is now available for booking.`
         : `Your car "${carRecord.brand} ${carRecord.model}" has been rejected. Please review and update your listing or contact support for more information.`
 
-    console.log(`Preparing to insert car notification with title: "${title}"`)
-
     // Create notification with explicit values for all required fields
     try {
-      const insertResult = await db.insert(notifications).values({
+      await db.insert(notifications).values({
         userId: agencyId,
         title,
         message,
@@ -133,15 +102,11 @@ export async function sendCarStatusNotification(
         read: false,
       })
 
-      console.log("Car notification insert result:", insertResult)
-      console.log(`[SUCCESS] Car notification sent for car ID: ${carId}`)
       return { success: true }
     } catch (insertError) {
-      console.error("Failed to insert car notification:", insertError)
       throw insertError // Re-throw to be caught by outer catch block
     }
   } catch (error) {
-    console.error("Error in sendCarStatusNotification:", error)
     return { success: false, message: "Failed to send car notification" }
   }
 }
@@ -151,22 +116,12 @@ export async function sendHotelStatusNotification(
   status: "approved" | "rejected"
 ) {
   try {
-    console.log(
-      `[START] Sending notification for hotel ID: ${hotelId} with status: ${status}`
-    )
-
     // Get hotel details - handle the ID properly based on its type in the schema
     const hotelRecord = await db.query.hotel.findFirst({
       where: eq(hotel.id, String(hotelId)), // Converting to string is correct since hotel.id is varchar
     })
 
-    console.log("Hotel record found:", !!hotelRecord)
-    if (hotelRecord) {
-      console.log("Hotel agency ID:", hotelRecord.agencyId)
-    }
-
     if (!hotelRecord) {
-      console.error(`Hotel not found with ID: ${hotelId}`)
       return { success: false, message: "Hotel not found" }
     }
 
@@ -174,17 +129,12 @@ export async function sendHotelStatusNotification(
     const agencyId = hotelRecord.agencyId
 
     if (!agencyId) {
-      console.error(
-        `No agency ID found for hotel ID: ${hotelId}. This hotel may have been created without an agency association.`
-      )
       return {
         success: false,
         message:
           "No agency associated with hotel. Unable to send notification.",
       }
     }
-
-    console.log(`Using agency ID: ${agencyId} for hotel notification`)
 
     const title = status === "approved" ? "Hotel Approved" : "Hotel Rejected"
 
@@ -193,11 +143,9 @@ export async function sendHotelStatusNotification(
         ? `Your hotel "${hotelRecord.name}" has been approved and is now available for booking.`
         : `Your hotel "${hotelRecord.name}" has been rejected. Please review and update your listing or contact support for more information.`
 
-    console.log(`Preparing to insert hotel notification with title: "${title}"`)
-
     // Create notification with explicit values for all required fields
     try {
-      const insertResult = await db.insert(notifications).values({
+      await db.insert(notifications).values({
         userId: agencyId,
         title,
         message,
@@ -210,15 +158,11 @@ export async function sendHotelStatusNotification(
         read: false,
       })
 
-      console.log("Hotel notification insert result:", insertResult)
-      console.log(`[SUCCESS] Hotel notification sent for hotel ID: ${hotelId}`)
       return { success: true }
     } catch (insertError) {
-      console.error("Failed to insert hotel notification:", insertError)
       throw insertError // Re-throw to be caught by outer catch block
     }
   } catch (error) {
-    console.error("Error in sendHotelStatusNotification:", error)
     return { success: false, message: "Failed to send hotel notification" }
   }
 }
@@ -228,22 +172,12 @@ export async function sendBlogStatusNotification(
   status: "approved" | "rejected"
 ) {
   try {
-    console.log(
-      `[START] Sending notification for blog ID: ${blogId} with status: ${status}`
-    )
-
     // Get blog details
     const blogRecord = await db.query.blogs.findFirst({
       where: eq(blogs.id, blogId),
     })
 
-    console.log("Blog record found:", !!blogRecord)
-    if (blogRecord) {
-      console.log("Blog agency ID:", blogRecord.agencyId)
-    }
-
     if (!blogRecord) {
-      console.error(`Blog not found with ID: ${blogId}`)
       return { success: false, message: "Blog not found" }
     }
 
@@ -251,16 +185,11 @@ export async function sendBlogStatusNotification(
     const agencyId = blogRecord.agencyId
 
     if (!agencyId) {
-      console.error(
-        `No agency ID found for blog ID: ${blogId}. This blog may have been created without an agency association.`
-      )
       return {
         success: false,
         message: "No agency associated with blog. Unable to send notification.",
       }
     }
-
-    console.log(`Using agency ID: ${agencyId} for blog notification`)
 
     const title = status === "approved" ? "Blog Approved" : "Blog Rejected"
 
@@ -271,11 +200,9 @@ export async function sendBlogStatusNotification(
           }.`
         : `Your blog post "${blogRecord.title}" has been rejected. Please review and update your content or contact support for more information.`
 
-    console.log(`Preparing to insert blog notification with title: "${title}"`)
-
     // Create notification with explicit values for all required fields
     try {
-      const insertResult = await db.insert(notifications).values({
+      await db.insert(notifications).values({
         userId: agencyId,
         title,
         message,
@@ -286,15 +213,11 @@ export async function sendBlogStatusNotification(
         read: false,
       })
 
-      console.log("Blog notification insert result:", insertResult)
-      console.log(`[SUCCESS] Blog notification sent for blog ID: ${blogId}`)
       return { success: true }
     } catch (insertError) {
-      console.error("Failed to insert blog notification:", insertError)
       throw insertError // Re-throw to be caught by outer catch block
     }
   } catch (error) {
-    console.error("Error in sendBlogStatusNotification:", error)
     return { success: false, message: "Failed to send blog notification" }
   }
 }

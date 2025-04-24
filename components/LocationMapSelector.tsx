@@ -1,11 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet"
-import "leaflet/dist/leaflet.css"
-import L from "leaflet"
-import { Search } from "lucide-react"
+import { useState, useEffect, useRef } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  useMap,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { Search } from "lucide-react";
 
 // Fix Leaflet icon issue in Next.js
 const defaultIcon = L.icon({
@@ -14,19 +20,30 @@ const defaultIcon = L.icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
-})
+});
 
 // Ensure Leaflet uses the default icon
-L.Marker.prototype.options.icon = defaultIcon
+L.Marker.prototype.options.icon = defaultIcon;
 
 interface LocationMapSelectorProps {
-  initialLatitude?: number
-  initialLongitude?: number
-  onLocationSelected: (lat: number, lng: number) => void
-  height?: string
-  enableSearch?: boolean
-  readOnly?: boolean
-  enableNavigation?: boolean
+  initialLatitude?: number;
+  initialLongitude?: number;
+  onLocationSelected: (lat: number, lng: number) => void;
+  height?: string;
+  enableSearch?: boolean;
+  readOnly?: boolean;
+  enableNavigation?: boolean;
+}
+
+// Component to handle map centering when position changes
+function ChangeMapView({ position }: { position: [number, number] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.flyTo(position, map.getZoom());
+  }, [map, position]);
+
+  return null;
 }
 
 function MapMarker({
@@ -34,20 +51,23 @@ function MapMarker({
   onPositionChange,
   readOnly = false,
 }: {
-  position: [number, number]
-  onPositionChange: (position: [number, number]) => void
-  readOnly?: boolean
+  position: [number, number];
+  onPositionChange: (position: [number, number]) => void;
+  readOnly?: boolean;
 }) {
+  const map = useMap();
+
   // Handle map clicks and update the marker only if not in read-only mode
   useMapEvents({
     click: (e) => {
       if (!readOnly) {
-        onPositionChange([e.latlng.lat, e.latlng.lng])
+        onPositionChange([e.latlng.lat, e.latlng.lng]);
+        map.flyTo(e.latlng, map.getZoom());
       }
     },
-  })
+  });
 
-  return position ? <Marker position={position} /> : null
+  return position ? <Marker position={position} /> : null;
 }
 
 export default function LocationMapSelector({
@@ -60,81 +80,81 @@ export default function LocationMapSelector({
   enableNavigation = true,
 }: LocationMapSelectorProps) {
   // Default position if none provided
-  const defaultPosition: [number, number] = [51.505, -0.09] // London as default
+  const defaultPosition: [number, number] = [51.505, -0.09]; // London as default
 
   // Use provided coordinates or default
   const [position, setPosition] = useState<[number, number]>(
     initialLatitude && initialLongitude
       ? [initialLatitude, initialLongitude]
       : defaultPosition
-  )
+  );
 
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   // Flag to track if position change is from user interaction (not from props)
-  const isUserInteraction = useRef(false)
+  const isUserInteraction = useRef(false);
 
   // Handle position changes from user interactions (map click or search)
   const handlePositionChange = (newPosition: [number, number]) => {
     if (!readOnly) {
-      isUserInteraction.current = true
-      setPosition(newPosition)
+      isUserInteraction.current = true;
+      setPosition(newPosition);
     }
-  }
+  };
 
   // Only notify parent when position changes from user interaction
   useEffect(() => {
     if (isUserInteraction.current) {
-      onLocationSelected(position[0], position[1])
-      isUserInteraction.current = false
+      onLocationSelected(position[0], position[1]);
+      isUserInteraction.current = false;
     }
-  }, [position, onLocationSelected])
+  }, [position, onLocationSelected]);
 
   // Update position if initialLatitude/Longitude props change
   useEffect(() => {
     if (initialLatitude && initialLongitude) {
       // Don't trigger the onLocationSelected callback here
-      setPosition([initialLatitude, initialLongitude])
+      setPosition([initialLatitude, initialLongitude]);
     }
-  }, [initialLatitude, initialLongitude])
+  }, [initialLatitude, initialLongitude]);
 
   // Search for address using OpenStreetMap Nominatim API
   const searchAddress = async () => {
-    if (!searchQuery || readOnly) return
+    if (!searchQuery || readOnly) return;
 
-    setIsSearching(true)
+    setIsSearching(true);
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           searchQuery
         )}`
-      )
-      const data = await response.json()
-      setSearchResults(data)
+      );
+      const data = await response.json();
+      setSearchResults(data);
     } catch (error) {
-      console.error("Error searching for address:", error)
+      console.error("Error searching for address:", error);
     } finally {
-      setIsSearching(false)
+      setIsSearching(false);
     }
-  }
+  };
 
   // Select a search result
   const selectSearchResult = (result: any) => {
-    if (readOnly) return
+    if (readOnly) return;
 
     const newPosition: [number, number] = [
       parseFloat(result.lat),
       parseFloat(result.lon),
-    ]
-    handlePositionChange(newPosition)
-    setSearchResults([])
-    setSearchQuery("")
-  }
+    ];
+    handlePositionChange(newPosition);
+    setSearchResults([]);
+    setSearchQuery("");
+  };
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-2 " >
       {enableSearch && !readOnly && (
         <div className="relative">
           <div className="flex gap-2">
@@ -144,6 +164,12 @@ export default function LocationMapSelector({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for address or location"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  searchAddress();
+                }
+              }}
             />
             <button
               onClick={searchAddress}
@@ -174,7 +200,7 @@ export default function LocationMapSelector({
       )}
 
       <div
-        style={{ height, width: "100%" }}
+        style={{ height, width: "100%", marginTop: "50px" }}
         className="rounded-md overflow-hidden border border-input"
       >
         <MapContainer
@@ -196,6 +222,7 @@ export default function LocationMapSelector({
             onPositionChange={handlePositionChange}
             readOnly={readOnly}
           />
+          <ChangeMapView position={position} />
         </MapContainer>
       </div>
       {!readOnly && (
@@ -205,5 +232,5 @@ export default function LocationMapSelector({
         </div>
       )}
     </div>
-  )
+  );
 }

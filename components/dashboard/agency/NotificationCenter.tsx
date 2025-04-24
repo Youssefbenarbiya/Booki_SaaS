@@ -165,7 +165,9 @@ export default function NotificationCenter({
     <div className="relative" ref={dropdownRef}>
       <Button
         variant="ghost"
-        className={`relative p-2 ${hasNewNotifications ? "animate-pulse" : ""}`}
+        className={`relative p-2 mt-6 ${
+          hasNewNotifications ? "animate-pulse" : ""
+        }`}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
       >

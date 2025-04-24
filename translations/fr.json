@@ -1,0 +1,126 @@
+{
+  "404": {
+    "not-found": "Oups! page non trouvée",
+    "bhome": "Retour à l'accueil"
+  },
+  "admin": {
+    "panel": "Panneau d'Administration",
+    "dashboard": "Tableau de Bord",
+    "verifyOffers": "Vérifier les Offres",
+    "agencies": "Agences",
+    "users": "Utilisateurs"
+  },
+  "signIn": {
+    "title": "Connexion",
+    "subtitle": "Connectez-vous pour accéder à votre compte Booki",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "passwordPlaceholder": "••••••••••••",
+    "rememberMe": "Se souvenir de moi",
+    "forgotPassword": "Mot de passe oublié?",
+    "loginButton": "Se connecter",
+    "noAccount": "Vous n'avez pas de compte?",
+    "register": "S'inscrire",
+    "orLoginWith": "Ou connectez-vous avec",
+    "errors": {
+      "email": {
+        "required": "L'e-mail est requis",
+        "invalid": "Format d'e-mail invalide"
+      },
+      "password": {
+        "required": "Le mot de passe est requis",
+        "tooShort": "Le mot de passe doit contenir au moins 8 caractères",
+        "tooLong": "Le mot de passe ne peut pas dépasser 32 caractères"
+      },
+      "auth": {
+        "invalid": "E-mail ou mot de passe invalide",
+        "generic": "Une erreur s'est produite. Veuillez réessayer."
+      }
+    }
+  },
+  "signUp": {
+    "title": "Inscription",
+    "subtitle": "Créez votre compte Booki",
+    "namePlaceholder": "John Doe",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "phonePlaceholder": "Numéro de téléphone",
+    "passwordPlaceholder": "••••••••••••",
+    "confirmPasswordPlaceholder": "Confirmer le mot de passe",
+    "isAgency": "Je m'inscris en tant qu'agence de voyage",
+    "agencyNamePlaceholder": "Nom de l'agence",
+    "termsText": "J'accepte les",
+    "termsLink": "Conditions Générales",
+    "registerButton": "S'inscrire",
+    "alreadyHaveAccount": "Vous avez déjà un compte?",
+    "loginLink": "Se connecter",
+    "orRegisterWith": "Ou inscrivez-vous avec",
+    "chooseRegistration": "Choisissez comment vous souhaitez vous inscrire",
+    "customerAccount": "Compte Client",
+    "agencyAccount": "Compte Agence",
+    "customerFeature1": "Réservez des voyages, hébergements et voitures",
+    "customerFeature2": "Enregistrez vos destinations préférées",
+    "customerFeature3": "Suivez l'historique de vos réservations",
+    "agencyFeature1": "Gérer et lister vos offres",
+    "agencyFeature2": "Gérer les réservations et les employés",
+    "agencyFeature3": "Tableau de bord analytique",
+    "backToSelection": "Retour à la sélection",
+    "registerAs": "S'inscrire en tant que",
+    "anAgency": "une Agence",
+    "aCustomer": "un Client",
+    "name": "Nom",
+    "email": "Email",
+    "phoneNumber": "Numéro de téléphone",
+    "phoneNumberPlaceholder": "+216 4567890",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "agencyName": "Nom de l'agence",
+    "agencyNameError": "Le nom de l'agence est requis et doit comporter au moins 3 caractères",
+    "agreeToTerms": "J'accepte tous les",
+    "terms": "Termes",
+    "and": "et",
+    "privacyPolicies": "Politiques de confidentialité",
+    "processing": "Traitement en cours...",
+    "orSignUpWith": "Ou inscrivez-vous avec",
+    "accountCreated": "Compte créé",
+    "verificationEmail": "Votre compte a été créé. Vérifiez votre email pour un lien de vérification.",
+    "agencyAccountCreated": "Compte agence créé",
+    "agencyVerificationEmail": "Votre compte agence a été créé. Vérifiez votre email pour un lien de vérification.",
+    "agencySetupFailed": "Configuration de l'agence échouée",
+    "accountCreatedAgencyFailed": "Votre compte a été créé mais nous n'avons pas pu configurer votre agence. Veuillez contacter le support.",
+    "accountCreationFailed": "Création de compte échouée",
+    "somethingWentWrong": "Une erreur s'est produite",
+    "errors": {
+      "name": {
+        "required": "Le nom est requis",
+        "tooShort": "Le nom doit comporter au moins 1 caractère",
+        "tooLong": "Le nom ne doit pas dépasser 50 caractères"
+      },
+      "email": {
+        "required": "L'e-mail est requis",
+        "invalid": "Format d'e-mail invalide"
+      },
+      "password": {
+        "required": "Le mot de passe est requis",
+        "tooShort": "Le mot de passe doit contenir au moins 8 caractères",
+        "tooLong": "Le mot de passe ne peut pas dépasser 32 caractères"
+      },
+      "confirmPassword": {
+        "required": "Veuillez confirmer votre mot de passe",
+        "tooShort": "La confirmation doit contenir au moins 8 caractères",
+        "tooLong": "La confirmation ne peut pas dépasser 32 caractères",
+        "mismatch": "Les mots de passe ne correspondent pas"
+      },
+      "phoneNumber": {
+        "required": "Le numéro de téléphone est requis",
+        "tooShort": "Le numéro de téléphone doit comporter au moins 8 chiffres",
+        "tooLong": "Le numéro de téléphone ne doit pas dépasser 15 chiffres",
+        "invalid": "Le numéro de téléphone doit être dans un format valide (ex : +1234567890)"
+      },
+      "agencyName": {
+        "required": "Le nom de l'agence est requis et doit comporter au moins 3 caractères"
+      },
+      "auth": {
+        "generic": "Un problème est survenu lors de l'inscription. Veuillez réessayer."
+      }
+    }
+  }
+}
