@@ -70,7 +70,7 @@ export function BlogApprovalActions({
   return (
     <div className="flex space-x-2">
       <Button
-        variant="default"
+        className="bg-green-600 hover:bg-green-700 text-white"
         size="sm"
         onClick={handleApprove}
         disabled={isApproving || isRejecting}

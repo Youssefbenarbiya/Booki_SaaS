@@ -121,7 +121,14 @@ export const columns: ColumnDef<TripType>[] = [
     cell: ({ row }) => {
       const isAvailable = row.getValue("isAvailable") as boolean
       return (
-        <Badge variant={isAvailable ? "default" : "destructive"}>
+        <Badge
+          variant={isAvailable ? "default" : "destructive"}
+          className={
+            isAvailable
+              ? "bg-green-100 text-green-800 hover:bg-green-200"
+              : "bg-red-100 text-red-800 hover:bg-red-200"
+          }
+        >
           {isAvailable ? "Available" : "Not Available"}
         </Badge>
       )
@@ -131,24 +138,39 @@ export const columns: ColumnDef<TripType>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.original.status || (row.original.isAvailable ? "active" : "inactive")
-      
-      let badgeVariant: "default" | "outline" | "secondary" | "destructive" = "default"
+      const status =
+        row.original.status ||
+        (row.original.isAvailable ? "active" : "inactive")
+
+      let badgeVariant: "default" | "outline" | "secondary" | "destructive" =
+        "default"
       let statusText = status || "Unknown"
-      
+      let customClass = ""
+
       if (status === "pending") {
         badgeVariant = "secondary"
         statusText = "Pending"
+        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
       } else if (status === "active") {
         badgeVariant = "default"
         statusText = "Active"
+        customClass = "bg-green-100 text-green-800 hover:bg-green-200"
       } else if (status === "inactive") {
         badgeVariant = "outline"
         statusText = "Inactive"
+        customClass = "bg-gray-100 text-gray-800 hover:bg-gray-200"
+      } else if (status === "approved") {
+        badgeVariant = "default"
+        statusText = "Approved"
+        customClass = "bg-green-100 text-green-800 hover:bg-green-200"
+      } else if (status === "rejected") {
+        badgeVariant = "destructive"
+        statusText = "Rejected"
+        customClass = "bg-red-100 text-red-800 hover:bg-red-200"
       }
-      
+
       return (
-        <Badge variant={badgeVariant}>
+        <Badge variant={badgeVariant} className={customClass}>
           {statusText}
         </Badge>
       )

@@ -118,17 +118,26 @@ export const columns: ColumnDef<Blog>[] = [
     header: "Approval Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as string
+
+      let badgeVariant: "default" | "outline" | "secondary" | "destructive" =
+        "secondary"
+      const statusText = status.charAt(0).toUpperCase() + status.slice(1)
+      let customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+
+      if (status === "approved") {
+        badgeVariant = "default"
+        customClass = "bg-green-100 text-green-800 hover:bg-green-200"
+      } else if (status === "rejected") {
+        badgeVariant = "destructive"
+        customClass = "bg-red-100 text-red-800 hover:bg-red-200"
+      } else if (status === "pending") {
+        badgeVariant = "secondary"
+        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+      }
+
       return (
-        <Badge
-          variant={
-            status === "approved"
-              ? "default"
-              : status === "pending"
-              ? "outline"
-              : "destructive"
-          }
-        >
-          {status.charAt(0).toUpperCase() + status.slice(1)}
+        <Badge variant={badgeVariant} className={customClass}>
+          {statusText}
         </Badge>
       )
     },
@@ -139,9 +148,16 @@ export const columns: ColumnDef<Blog>[] = [
     cell: ({ row }) => {
       const isPublished = row.getValue("published")
       return isPublished ? (
-        <Badge>Published</Badge>
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+          Published
+        </Badge>
       ) : (
-        <Badge variant="outline">Draft</Badge>
+        <Badge
+          variant="outline"
+          className="bg-gray-100 text-gray-800 hover:bg-gray-200"
+        >
+          Draft
+        </Badge>
       )
     },
   },
