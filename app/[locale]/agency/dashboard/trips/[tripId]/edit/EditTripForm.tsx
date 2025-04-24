@@ -24,7 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { format, startOfDay } from "date-fns";
+import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import {
   Popover,
@@ -43,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Locale } from "@/i18n/routing";
+import type { Locale } from "@/i18n/routing";
 
 // Define currency type to fix linting issues
 type Currency = {
@@ -219,7 +219,7 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       setHasDiscount(true);
       setDiscountPercentage(trip.discountPercentage || 0);
       setOriginalPrice(trip.originalPrice);
-      setPriceAfterDiscount(trip.priceAfterDiscount || trip.originalPrice);
+      setPriceAfterDiscount(trip.priceAfterDiscount || originalPrice);
       setCustomPercentage(![10, 20, 30].includes(trip.discountPercentage || 0));
     } else {
       setHasDiscount(false);
@@ -308,7 +308,8 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       }
 
       // Automatically set isAvailable to false if capacity is 0
-      const isAvailable = Number(data.capacity) === 0 ? false : data.isAvailable;
+      const isAvailable =
+        Number(data.capacity) === 0 ? false : data.isAvailable;
 
       // Build final data for update
       const formattedData = {
@@ -346,11 +347,9 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
     currencies.find((c: Currency) => c.code === watchedCurrency)?.symbol || "$";
 
   return (
-    <div className="max-w-3xl mx-auto my-8 px-4">
+    <div className="max-w-5xl mx-auto my-8 px-4">
       <Card>
-        <CardHeader className="bg-indigo-600 text-white">
-          <CardTitle>Edit Trip</CardTitle>
-        </CardHeader>
+        
         <CardContent className="p-6">
           <form
             onSubmit={handleSubmit((data) =>
