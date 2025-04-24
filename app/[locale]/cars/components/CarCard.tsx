@@ -1,80 +1,80 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-"use client"
+"use client";
 
-import type React from "react"
-import { Heart } from "lucide-react"
-import Image from "next/image"
-import { useRouter, useParams } from "next/navigation"
-import { useFavorite } from "@/lib/hooks/useFavorite"
-import { useCurrency } from "@/lib/contexts/CurrencyContext"
-import { formatPrice } from "@/lib/utils"
+import type React from "react";
+import { Heart } from "lucide-react";
+import Image from "next/image";
+import { useRouter, useParams } from "next/navigation";
+import { useFavorite } from "@/lib/hooks/useFavorite";
+import { useCurrency } from "@/lib/contexts/CurrencyContext";
+import { formatPrice } from "@/lib/utils";
 
 export interface Car {
-  id: number
-  model: string
-  brand: string
-  year: number
-  plateNumber: string
-  color: string
-  originalPrice: number
-  discountPercentage?: number
-  priceAfterDiscount?: number
-  images: string[]
-  isAvailable: boolean
-  seats: number
-  category: string
-  location: string
-  currency?: string
-  createdAt: Date
-  updatedAt: Date | null
+  id: number;
+  model: string;
+  brand: string;
+  year: number;
+  plateNumber: string;
+  color: string;
+  originalPrice: number;
+  discountPercentage?: number;
+  priceAfterDiscount?: number;
+  images: string[];
+  isAvailable: boolean;
+  seats: number;
+  category: string;
+  location: string;
+  currency?: string;
+  createdAt: Date;
+  updatedAt: Date | null;
 }
 
 interface CarCardProps {
-  car: Car
-  viewMode: "grid" | "list"
+  car: Car;
+  viewMode: "grid" | "list";
 }
 
 export function CarCard({ car, viewMode }: CarCardProps) {
-  const router = useRouter()
-  const { locale } = useParams()
-  const { isFavorite, toggleFavorite, isLoading } = useFavorite(car.id, "car")
+  const router = useRouter();
+  const { locale } = useParams();
+  const { isFavorite, toggleFavorite, isLoading } = useFavorite(car.id, "car");
   const {
     currency,
     convertPrice,
     rates,
     isLoading: currencyLoading,
-  } = useCurrency()
+  } = useCurrency();
 
   const handleCardClick = () => {
-    router.push(`/${locale}/cars/${car.id}/booking`)
-  }
+    router.push(`/${locale}/cars/${car.id}`);
+  };
 
   const handleHeartClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    toggleFavorite()
-  }
+    e.stopPropagation();
+    toggleFavorite();
+  };
 
   // Price calculations - explicitly use values from database
-  const originalPrice = Number(car.originalPrice) || 0
+  const originalPrice = Number(car.originalPrice) || 0;
   const discountPercentage = car.discountPercentage
     ? Number(car.discountPercentage)
-    : 0
+    : 0;
   const priceAfterDiscount = car.priceAfterDiscount
     ? Number(car.priceAfterDiscount)
-    : originalPrice
+    : originalPrice;
 
   // Get the car's currency or default to TND (since that's the DB default)
-  const carCurrency = car.currency || "TND"
+  const carCurrency = car.currency || "TND";
 
   // Determine if there's a discount
   const hasDiscount =
-    discountPercentage > 0 && priceAfterDiscount < originalPrice
+    discountPercentage > 0 && priceAfterDiscount < originalPrice;
 
   // Convert prices to selected currency
-  const convertedOriginalPrice = convertPrice(originalPrice, carCurrency)
+  const convertedOriginalPrice = convertPrice(originalPrice, carCurrency);
   const convertedDiscountedPrice = hasDiscount
     ? convertPrice(priceAfterDiscount, carCurrency)
-    : null
+    : null;
 
   // Enhanced debugging for currency conversion
   console.log(`Car ${car.id} conversion info:`, {
@@ -96,7 +96,7 @@ export function CarCard({ car, viewMode }: CarCardProps) {
     })} → ${formatPrice(convertedOriginalPrice, { currency })}`,
     actualNumeric: `${originalPrice} → ${convertedOriginalPrice.toFixed(2)}`,
     conversionFactor: (convertedOriginalPrice / originalPrice).toFixed(4),
-  })
+  });
 
   // Enhanced PriceDisplay component to show all pricing information
   const PriceDisplay = () => (
@@ -133,7 +133,7 @@ export function CarCard({ car, viewMode }: CarCardProps) {
 
       <span className="text-xs text-gray-500">/day</span>
     </div>
-  )
+  );
 
   // Add a discount badge to the car image section for list view
   if (viewMode === "list") {
@@ -191,7 +191,7 @@ export function CarCard({ car, viewMode }: CarCardProps) {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -245,5 +245,5 @@ export function CarCard({ car, viewMode }: CarCardProps) {
         </button>
       </div>
     </div>
-  )
+  );
 }
