@@ -61,7 +61,7 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
             `/${currentLocale}/admin/users`
           )}`}
         >
-          <span>users</span>
+          <span>{t("users")}</span>
         </Link>
       </nav>
     </div>

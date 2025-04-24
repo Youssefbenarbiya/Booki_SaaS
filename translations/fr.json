@@ -7,7 +7,8 @@
     "panel": "Panneau d'Administration",
     "dashboard": "Tableau de Bord",
     "verifyOffers": "Vérifier les Offres",
-    "agencies": "Agences"
+    "agencies": "Agences",
+    "users": "Utilisateurs"
   },
   "signIn": {
     "title": "Connexion",
