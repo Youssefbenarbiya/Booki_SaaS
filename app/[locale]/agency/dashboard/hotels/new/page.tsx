@@ -1,32 +1,32 @@
-"use client"
+"use client";
 
-import { useTransition, useState } from "react"
-import { useFieldArray, useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { hotelSchema, type HotelInput } from "@/lib/validations/hotelSchema"
-import { useRouter, useParams } from "next/navigation"
-import { createHotel } from "@/actions/hotels&rooms/hotelActions"
-import { ImageUploadSection } from "@/components/ImageUploadSection"
-import { fileToFormData } from "@/lib/utils"
-import { uploadImages } from "@/actions/uploadActions"
-import { Building, BedDouble, Plus, Trash2, MapPin } from "lucide-react"
-import dynamic from "next/dynamic"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { useTransition, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { hotelSchema, type HotelInput } from "@/lib/validations/hotelSchema";
+import { useRouter, useParams } from "next/navigation";
+import { createHotel } from "@/actions/hotels&rooms/hotelActions";
+import { ImageUploadSection } from "@/components/ImageUploadSection";
+import { fileToFormData } from "@/lib/utils";
+import { uploadImages } from "@/actions/uploadActions";
+import { Building, BedDouble, Plus, Trash2, MapPin } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const LocationMapSelector = dynamic(
   () => import("@/components/LocationMapSelector"),
   { ssr: false }
-)
+);
 
 // Available amenities for hotels and rooms
 const HOTEL_AMENITIES = [
@@ -38,7 +38,7 @@ const HOTEL_AMENITIES = [
   "Air Conditioning",
   "Restaurant",
   "Pet Friendly",
-]
+];
 
 const ROOM_AMENITIES = [
   "Air Conditioning",
@@ -48,13 +48,13 @@ const ROOM_AMENITIES = [
   "Safe",
   "Bathtub",
   "Shower",
-]
+];
 
 export default function NewHotelPage() {
-  const router = useRouter()
-  const params = useParams()
-  const locale = params.locale as string
-  const [isPending, startTransition] = useTransition()
+  const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
@@ -79,70 +79,71 @@ export default function NewHotelPage() {
         },
       ],
     },
-  })
+  });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: "rooms",
-  })
+  });
 
   // Get current values for latitude and longitude
-  const latitude = watch("latitude")
-  const longitude = watch("longitude")
+  const latitude = watch("latitude");
+  const longitude = watch("longitude");
 
   // State for hotel images
-  const [hotelImages, setHotelImages] = useState<File[]>([])
-  const [hotelImagePreviews, setHotelImagePreviews] = useState<string[]>([])
-  const [hotelUploadError, setHotelUploadError] = useState<string>("")
+  const [hotelImages, setHotelImages] = useState<File[]>([]);
+  const [hotelImagePreviews, setHotelImagePreviews] = useState<string[]>([]);
+  const [hotelUploadError, setHotelUploadError] = useState<string>("");
 
   // Initialize room images state with one empty array for the default room
-  const [roomImages, setRoomImages] = useState<File[][]>([[]])
-  const [roomImagePreviews, setRoomImagePreviews] = useState<string[][]>([[]])
-  const [roomUploadErrors, setRoomUploadErrors] = useState<string[]>([""])
+  const [roomImages, setRoomImages] = useState<File[][]>([[]]);
+  const [roomImagePreviews, setRoomImagePreviews] = useState<string[][]>([[]]);
+  const [roomUploadErrors, setRoomUploadErrors] = useState<string[]>([""]);
 
   // Handle location selection
   const handleLocationSelected = (lat: number, lng: number) => {
-    setValue("latitude", lat)
-    setValue("longitude", lng)
-  }
+    setValue("latitude", lat);
+    setValue("longitude", lng);
+    console.log(`Map location selected: ${lat}, ${lng}`);
+  };
 
   async function onSubmit(data: HotelInput) {
     try {
       // Upload hotel images first
-      let hotelImageUrls: string[] = []
+      let hotelImageUrls: string[] = [];
       if (hotelImages.length > 0) {
         try {
           hotelImageUrls = await Promise.all(
             hotelImages.map(async (file) => {
-              const formData = await fileToFormData(file)
-              return uploadImages(formData)
+              const formData = await fileToFormData(file);
+              return uploadImages(formData);
             })
-          )
+          );
         } catch (error) {
-          console.error("Error uploading hotel images:", error)
-          setHotelUploadError("Failed to upload hotel images")
-          return
+          console.error("Error uploading hotel images:", error);
+          setHotelUploadError("Failed to upload hotel images");
+          return;
         }
       }
 
       // Upload room images
       const roomImageUrlsPromises = roomImages.map(async (roomImageArray) => {
-        if (!Array.isArray(roomImageArray) || !roomImageArray.length) return []
+        if (!Array.isArray(roomImageArray) || !roomImageArray.length) return [];
 
         try {
           return await Promise.all(
             roomImageArray.map(async (file) => {
-              const formData = await fileToFormData(file)
-              return uploadImages(formData)
+              const formData = await fileToFormData(file);
+              return uploadImages(formData);
             })
-          )
+          );
         } catch (error) {
-          console.error("Error uploading room images:", error)
-          throw error
+          console.error("Error uploading room images:", error);
+          throw error;
         }
-      })
+      });
 
-      const roomImageUrls = await Promise.all(roomImageUrlsPromises)
+      const roomImageUrls = await Promise.all(roomImageUrlsPromises);
 
       // Prepare final data with image URLs
       const formattedData = {
@@ -153,18 +154,18 @@ export default function NewHotelPage() {
           ...room,
           images: roomImageUrls[index] || [],
         })),
-      }
+      };
 
       // Create hotel with all data
-      await createHotel(formattedData)
-      router.push(`/${locale}/agency/dashboard/hotels`)
-      router.refresh()
+      await createHotel(formattedData);
+      router.push(`/${locale}/agency/dashboard/hotels`);
+      router.refresh();
     } catch (error) {
-      console.error("Error creating hotel:", error)
+      console.error("Error creating hotel:", error);
       if (error instanceof Error) {
-        setHotelUploadError(error.message)
+        setHotelUploadError(error.message);
       } else {
-        setHotelUploadError("Failed to create hotel")
+        setHotelUploadError("Failed to create hotel");
       }
     }
   }
@@ -272,14 +273,14 @@ export default function NewHotelPage() {
                         id={`amenity-${amenity}`}
                         value={amenity}
                         onCheckedChange={(checked) => {
-                          const amenities = watch("amenities") || []
+                          const amenities = watch("amenities") || [];
                           if (checked) {
-                            setValue("amenities", [...amenities, amenity])
+                            setValue("amenities", [...amenities, amenity]);
                           } else {
                             setValue(
                               "amenities",
                               amenities.filter((a) => a !== amenity)
-                            )
+                            );
                           }
                         }}
                       />
@@ -351,10 +352,10 @@ export default function NewHotelPage() {
                     pricePerNightChild: 0,
                     currency: "TND",
                     roomType: "double",
-                  })
-                  setRoomImages((prev) => [...prev, []])
-                  setRoomImagePreviews((prev) => [...prev, []])
-                  setRoomUploadErrors((prev) => [...prev, ""])
+                  });
+                  setRoomImages((prev) => [...prev, []]);
+                  setRoomImagePreviews((prev) => [...prev, []]);
+                  setRoomUploadErrors((prev) => [...prev, ""]);
                 }}
                 className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
@@ -374,26 +375,26 @@ export default function NewHotelPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        remove(index)
+                        remove(index);
                         setRoomImages((prev) => {
-                          const newImages = [...prev]
-                          newImages.splice(index, 1)
-                          return newImages
-                        })
+                          const newImages = [...prev];
+                          newImages.splice(index, 1);
+                          return newImages;
+                        });
                         setRoomImagePreviews((prev) => {
-                          const newPreviews = [...prev]
+                          const newPreviews = [...prev];
                           // Cleanup URLs before removing
                           newPreviews[index]?.forEach((url) =>
                             URL.revokeObjectURL(url)
-                          )
-                          newPreviews.splice(index, 1)
-                          return newPreviews
-                        })
+                          );
+                          newPreviews.splice(index, 1);
+                          return newPreviews;
+                        });
                         setRoomUploadErrors((prev) => {
-                          const newErrors = [...prev]
-                          newErrors.splice(index, 1)
-                          return newErrors
-                        })
+                          const newErrors = [...prev];
+                          newErrors.splice(index, 1);
+                          return newErrors;
+                        });
                       }}
                       className="btn btn-sm btn-error"
                     >
@@ -551,17 +552,17 @@ export default function NewHotelPage() {
                               value={amenity}
                               onCheckedChange={(checked) => {
                                 const amenities =
-                                  watch(`rooms.${index}.amenities`) || []
+                                  watch(`rooms.${index}.amenities`) || [];
                                 if (checked) {
                                   setValue(`rooms.${index}.amenities`, [
                                     ...amenities,
                                     amenity,
-                                  ])
+                                  ]);
                                 } else {
                                   setValue(
                                     `rooms.${index}.amenities`,
                                     amenities.filter((a) => a !== amenity)
-                                  )
+                                  );
                                 }
                               }}
                             />
@@ -583,32 +584,32 @@ export default function NewHotelPage() {
                         images={roomImages[index] || []}
                         setImages={(action) => {
                           setRoomImages((prev) => {
-                            const newRoomImages = [...prev]
-                            const current = newRoomImages[index] || []
+                            const newRoomImages = [...prev];
+                            const current = newRoomImages[index] || [];
                             newRoomImages[index] =
                               typeof action === "function"
                                 ? action(current)
-                                : action
-                            return newRoomImages
-                          })
+                                : action;
+                            return newRoomImages;
+                          });
                         }}
                         previewUrls={roomImagePreviews[index] || []}
                         setPreviewUrls={(action) => {
                           setRoomImagePreviews((prev) => {
-                            const newRoomPreviews = [...prev]
-                            const current = newRoomPreviews[index] || []
+                            const newRoomPreviews = [...prev];
+                            const current = newRoomPreviews[index] || [];
                             newRoomPreviews[index] =
                               typeof action === "function"
                                 ? action(current)
-                                : action
-                            return newRoomPreviews
-                          })
+                                : action;
+                            return newRoomPreviews;
+                          });
                         }}
                         uploadError={roomUploadErrors[index] || ""}
                         setUploadError={(error) => {
-                          const newErrors = [...roomUploadErrors]
-                          newErrors[index] = error
-                          setRoomUploadErrors(newErrors)
+                          const newErrors = [...roomUploadErrors];
+                          newErrors[index] = error;
+                          setRoomUploadErrors(newErrors);
                         }}
                       />
                     </div>
@@ -644,5 +645,5 @@ export default function NewHotelPage() {
         </div>
       </form>
     </div>
-  )
+  );
 }
