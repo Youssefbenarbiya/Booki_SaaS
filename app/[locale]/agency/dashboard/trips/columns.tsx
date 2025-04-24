@@ -32,6 +32,7 @@ export type TripType = {
   discountPercentage?: number | null
   priceAfterDiscount?: string | null
   isAvailable: boolean
+  status?: string
   images: { imageUrl: string }[]
   createdAt: Date | null
   updatedAt: Date | null
@@ -116,12 +117,39 @@ export const columns: ColumnDef<TripType>[] = [
   },
   {
     accessorKey: "isAvailable",
-    header: "Status",
+    header: "Availability",
     cell: ({ row }) => {
       const isAvailable = row.getValue("isAvailable") as boolean
       return (
         <Badge variant={isAvailable ? "default" : "destructive"}>
           {isAvailable ? "Available" : "Not Available"}
+        </Badge>
+      )
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status || (row.original.isAvailable ? "active" : "inactive")
+      
+      let badgeVariant: "default" | "outline" | "secondary" | "destructive" = "default"
+      let statusText = status || "Unknown"
+      
+      if (status === "pending") {
+        badgeVariant = "secondary"
+        statusText = "Pending"
+      } else if (status === "active") {
+        badgeVariant = "default"
+        statusText = "Active"
+      } else if (status === "inactive") {
+        badgeVariant = "outline"
+        statusText = "Inactive"
+      }
+      
+      return (
+        <Badge variant={badgeVariant}>
+          {statusText}
         </Badge>
       )
     },

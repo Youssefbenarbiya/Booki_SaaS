@@ -32,6 +32,7 @@ export const hotelSchema = z.object({
   rating: z.number().int().min(1).max(5),
   amenities: z.array(z.string()),
   images: z.array(z.string()).max(10).optional(),
+  status: z.enum(["pending", "approved", "rejected"]).default("pending"),
   rooms: z.array(roomSchema),
 })
 

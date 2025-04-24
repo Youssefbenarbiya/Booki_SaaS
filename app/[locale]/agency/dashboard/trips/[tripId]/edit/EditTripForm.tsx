@@ -307,6 +307,9 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         setCurrency(data.currency);
       }
 
+      // Automatically set isAvailable to false if capacity is 0
+      const isAvailable = Number(data.capacity) === 0 ? false : data.isAvailable;
+
       // Build final data for update
       const formattedData = {
         ...data,
@@ -325,6 +328,8 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         endDate: endDate || new Date(),
         // Ensure we store the currency
         currency: data.currency || "USD",
+        // Use the computed isAvailable value
+        isAvailable: isAvailable,
       };
 
       // Run your update action
@@ -747,7 +752,18 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
               </div>
 
               <div className="md:col-span-2 flex items-center space-x-2">
-                <Checkbox id="isAvailable" {...register("isAvailable")} />
+                <Controller
+                  name="isAvailable"
+                  control={control}
+                  defaultValue={trip.isAvailable}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="isAvailable"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
                 <Label htmlFor="isAvailable">Available for Booking</Label>
               </div>
             </div>

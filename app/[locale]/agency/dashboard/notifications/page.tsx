@@ -86,7 +86,7 @@ export default async function NotificationsPage() {
     title: string
     items: typeof notifications
   }) => (
-    <div className="mb-10">
+    <div className="mb-10 ">
       <h2 className="text-lg font-semibold mb-4">{title}</h2>
       {items.length === 0 ? (
         <p className="text-gray-500">No notifications</p>
@@ -155,7 +155,7 @@ export default async function NotificationsPage() {
   )
 
   return (
-    <div className="py-8">
+    <div className="py-8 ">
       <h1 className="text-3xl font-bold mb-8">Notifications</h1>
 
       {notifications.length === 0 ? (

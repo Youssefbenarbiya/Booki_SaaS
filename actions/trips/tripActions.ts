@@ -88,6 +88,9 @@ export async function createTrip(data: TripInput) {
 
     console.log(`Creating trip with agency ID: ${agencyId}`)
 
+    // Ensure isAvailable is false if capacity is 0
+    const isAvailable = validatedData.capacity === 0 ? false : validatedData.isAvailable;
+
     // Create trip with proper agency ID and createdBy
     const [trip] = await db
       .insert(trips)
@@ -102,7 +105,7 @@ export async function createTrip(data: TripInput) {
         priceAfterDiscount:
           validatedData.priceAfterDiscount?.toString() || undefined,
         capacity: validatedData.capacity,
-        isAvailable: validatedData.isAvailable,
+        isAvailable: isAvailable,
         agencyId: agencyId, // Use the agencyId from our helper
         createdBy: session.user.id, // Track who created it
         currency: validatedData.currency || "USD",
@@ -193,6 +196,9 @@ export async function updateTrip(id: number, data: TripInput) {
   try {
     const validatedData = tripSchema.parse(data)
 
+    // Ensure isAvailable is false if capacity is 0
+    const isAvailable = validatedData.capacity === 0 ? false : validatedData.isAvailable;
+
     // Update trip with explicit null values for discount fields when they're undefined
     const [trip] = await db
       .update(trips)
@@ -207,7 +213,7 @@ export async function updateTrip(id: number, data: TripInput) {
         priceAfterDiscount:
           validatedData.priceAfterDiscount?.toString() ?? null,
         capacity: validatedData.capacity,
-        isAvailable: validatedData.isAvailable,
+        isAvailable: isAvailable,
         currency: validatedData.currency || "USD",
       })
       .where(eq(trips.id, id))

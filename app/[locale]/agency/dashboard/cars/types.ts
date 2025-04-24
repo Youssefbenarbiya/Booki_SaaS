@@ -19,4 +19,4 @@ export interface CarType {
   location: string
 }
 
-export type CarFormValues = Omit<CarType, "id" | "createdAt" | "updatedAt" | "status">
+export type CarFormValues = Omit<CarType, "id" | "createdAt" | "updatedAt">
