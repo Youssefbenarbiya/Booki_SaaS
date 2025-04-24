@@ -1,31 +1,31 @@
-import { Button } from "@/components/ui/button"
-import { BlogsTable } from "./blogs-table"
-import { columns } from "./columns"
-import Link from "next/link"
-import { Plus } from "lucide-react"
-import { headers } from "next/headers"
-import { auth } from "@/auth"
-import { getBlogs } from "@/actions/blogs/blogActions"
-import { Locale } from "@/i18n/routing"
+import { Button } from "@/components/ui/button";
+import { BlogsTable } from "./blogs-table";
+import { columns, type Blog } from "./columns";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { headers } from "next/headers";
+import { auth } from "@/auth";
+import { getBlogs } from "@/actions/blogs/blogActions";
+import { Locale } from "@/i18n/routing";
 
 interface BlogsPageProps {
   params: {
-    locale: Locale
-  }
+    locale: Locale;
+  };
 }
 
 export default async function BlogsPage({ params }: BlogsPageProps) {
-  const { locale } = params
+  const { locale } = params;
 
   // Get the current session using the provided method
   const session = await auth.api.getSession({
     headers: await headers(),
-  })
-  const userId = session?.user?.id
+  });
+  const userId = session?.user?.id;
 
   // Get blogs specific to this user's agency
   // Note: In createBlog function, blogs.agencyId is set to agency.userId
-  const { blogs } = await getBlogs(userId)
+  const { blogs } = await getBlogs(userId);
 
   return (
     <div className="space-y-4">
@@ -39,7 +39,7 @@ export default async function BlogsPage({ params }: BlogsPageProps) {
         </Button>
       </div>
 
-      <BlogsTable columns={columns} data={blogs} />
+      <BlogsTable columns={columns} data={blogs as Blog[]} />
     </div>
-  )
+  );
 }
