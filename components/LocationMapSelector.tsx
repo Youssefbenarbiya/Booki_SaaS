@@ -175,7 +175,7 @@ export default function LocationMapSelector({
 
       <div
         style={{ height, width: "100%" }}
-        className="rounded-md overflow-hidden border border-input"
+        className="rounded-md overflow-hidden border border-input mt-[50px]"
       >
         <MapContainer
           center={position}

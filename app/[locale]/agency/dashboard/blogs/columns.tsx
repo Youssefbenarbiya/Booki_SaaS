@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,12 +10,106 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { deleteBlog } from "@/actions/blogs/blogActions"
 import { useParams } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
+
+// BlogActions component to handle the delete blog functionality
+function BlogActions({ blog }: { blog: Blog }) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const params = useParams()
+  const locale = params.locale as string
+  const { toast } = useToast()
+  const router = useRouter()
+
+  const handleDeleteBlog = async () => {
+    try {
+      await deleteBlog(blog.id)
+      toast({
+        title: "Blog deleted",
+        description: "The blog has been successfully deleted",
+        variant: "destructive",
+      })
+      setIsDeleteDialogOpen(false)
+      router.refresh()
+    } catch (error) {
+      console.error("Error deleting blog:", error)
+      toast({
+        variant: "destructive",
+        title: "Action failed",
+        description: "Failed to delete the blog. Please try again.",
+      })
+      setIsDeleteDialogOpen(false)
+    }
+  }
+
+  return (
+    <>
+      <DropdownMenuItem asChild>
+        <Link href={`/${locale}/blog/${blog.id}`} target="_blank">
+          <Eye className="mr-2 h-4 w-4" />
+          <span>View</span>
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href={`/${locale}/agency/dashboard/blogs/${blog.id}`}>
+          <Edit className="mr-2 h-4 w-4" />
+          <span>Edit</span>
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        className="text-red-600"
+        onClick={() => setIsDeleteDialogOpen(true)}
+      >
+        <Trash className="mr-2 h-4 w-4" />
+        <span>Delete</span>
+      </DropdownMenuItem>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setIsDeleteDialogOpen(false)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Blog</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this blog? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteBlog}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Blog
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
 
 export type Blog = {
   id: number
@@ -205,9 +300,6 @@ export const columns: ColumnDef<Blog>[] = [
     id: "actions",
     cell: ({ row }) => {
       const blog = row.original
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const params = useParams()
-      const locale = params.locale as string
 
       return (
         <DropdownMenu>
@@ -218,31 +310,7 @@ export const columns: ColumnDef<Blog>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/${locale}/blog/${blog.id}`} target="_blank">
-                <Eye className="mr-2 h-4 w-4" />
-                <span>View</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/${locale}/agency/dashboard/blogs/${blog.id}`}>
-                <Edit className="mr-2 h-4 w-4" />
-                <span>Edit</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-red-600"
-              onClick={() => {
-                if (
-                  window.confirm("Are you sure you want to delete this blog?")
-                ) {
-                  deleteBlog(blog.id)
-                }
-              }}
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              <span>Delete</span>
-            </DropdownMenuItem>
+            <BlogActions blog={blog} />
           </DropdownMenuContent>
         </DropdownMenu>
       )
