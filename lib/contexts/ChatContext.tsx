@@ -106,7 +106,11 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
               setMessages((prev) => [...prev, data.data])
             } else if (data.type === 'history') {
               console.log('Received message history:', data.messages);
-              setMessages(data.messages)
+              // Sort messages by creation date
+              const sortedMessages = [...data.messages].sort((a, b) => 
+                new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+              );
+              setMessages(sortedMessages)
             } else if (data.type === 'error') {
               console.error('Received error from server:', data.data?.error || data.message);
               setError(data.data?.error || data.message)

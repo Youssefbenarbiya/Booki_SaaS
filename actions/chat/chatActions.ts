@@ -1,9 +1,9 @@
 "use server"
 
-import { db } from "@/db"
 import { chatMessages } from "@/db/schema"
 import { eq, and, desc, or, count } from "drizzle-orm"
 import { ChatMessage } from "@/lib/types/chat"
+import db from "@/db/drizzle"
 
 /**
  * Save a chat message to the database

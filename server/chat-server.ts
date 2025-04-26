@@ -8,6 +8,7 @@ import {
   PostConnection, 
   WebSocketMessage 
 } from "@/lib/types/chat"
+import { saveChatMessage, getChatMessages } from "@/actions/chat/chatActions"
 
 // Store active connections
 const connections = new Map<string, ChatConnection>()
@@ -124,6 +125,24 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
       postConnection.customerConnection = connection
     }
     
+    // Load and send previous messages history
+    try {
+      const result = await getChatMessages(postId, postType, userId);
+      
+      if (result.success && result.messages && result.messages.length > 0) {
+        console.log(`Sending ${result.messages.length} historical messages to user ${userId}`);
+        
+        ws.send(JSON.stringify({
+          type: "history",
+          messages: result.messages
+        }));
+      } else {
+        console.log(`No message history found for post ${postId} (${postType})`);
+      }
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+    }
+    
     // Send confirmation
     ws.send(JSON.stringify({
       type: "connection",
@@ -165,12 +184,10 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             senderId: userId,
             receiverId: "", // Will be set based on role below
             sender: "user",
+            type: "text",
             createdAt: new Date().toISOString(),
             isRead: false
           }
-          
-          // Save message to database
-          await saveMessageToDatabase(completeMessage)
           
           // Find the post connection
           const postConnectionKey = `${messagePostType}:${messagePostId}`
@@ -178,24 +195,76 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           
           if (!postConnection) {
             console.log("No post connection found for key:", postConnectionKey)
-            // Still send back to sender for confirmation
+            // Cannot proceed without knowing the recipient
             ws.send(JSON.stringify({
-              type: "message",
-              data: completeMessage
+              type: "error",
+              data: { error: "Cannot find recipient for this message" }
             }))
             return
           }
           
           // Determine recipient based on sender role
+          let recipientId = ""
           let recipientConnection: ChatConnection | undefined
           
           if (userRole === "agency") {
+            // Agency is sending to customer
             recipientConnection = postConnection.customerConnection
-            completeMessage.receiverId = postConnection.customerConnection?.userId || ""
+            recipientId = postConnection.customerConnection?.userId || ""
           } else {
+            // Customer is sending to agency
             recipientConnection = postConnection.agencyConnection
-            completeMessage.receiverId = postConnection.agencyConnection?.userId || ""
+            recipientId = postConnection.agencyConnection?.userId || ""
           }
+          
+          // Validate recipient ID
+          if (!recipientId) {
+            console.error("No valid recipient found:", { 
+              userRole, 
+              hasAgencyConnection: !!postConnection.agencyConnection,
+              hasCustomerConnection: !!postConnection.customerConnection,
+              postId,
+              postType,
+              userId
+            })
+            
+            // Look for a known admin user ID
+            // This is a temporary solution for development
+            if (userRole === "customer") {
+              // Customer sending to non-existent agency - use sender's ID as temp workaround
+              recipientId = userId;
+              console.log("Using sender ID as fallback recipient for testing:", recipientId);
+            } else {
+              // Agency sending to non-existent customer - use sender's ID as temp workaround
+              recipientId = userId;
+              console.log("Using sender ID as fallback recipient for testing:", recipientId);
+            }
+            
+            ws.send(JSON.stringify({
+              type: "warning",
+              data: { warning: "Recipient not found. Message will be stored but might not be delivered." }
+            }));
+          }
+          
+          // Set the recipient ID
+          completeMessage.receiverId = recipientId;
+          
+          console.log("Saving message with recipient:", recipientId);
+          
+          // Save message to database
+          const saveResult = await saveMessageToDatabase(completeMessage)
+          
+          if (!saveResult.success) {
+            console.error("Failed to save message to database:", saveResult.error);
+            ws.send(JSON.stringify({
+              type: "error",
+              data: { error: "Failed to save message" }
+            }));
+            return;
+          }
+          
+          // Use the saved message with DB ID
+          const savedMessage = saveResult.message;
           
           // Send message to recipient if connected
           if (recipientConnection) {
@@ -203,7 +272,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             if (recipientSocket.readyState === WSWebSocket.OPEN) {
               recipientSocket.send(JSON.stringify({
                 type: "message",
-                data: completeMessage
+                data: savedMessage
               }))
             }
           }
@@ -211,7 +280,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           // Also send confirmation back to sender
           ws.send(JSON.stringify({
             type: "message",
-            data: completeMessage
+            data: savedMessage
           }))
         }
       } catch (error) {
@@ -256,12 +325,16 @@ wss.on("error", (error) => {
 // Helper function to save message to database
 async function saveMessageToDatabase(message: ChatMessage) {
   try {
-    // Implementation would go here
-    console.log("Saving message:", message)
-    return true
+    // Use the server action to save the message to the database
+    const result = await saveChatMessage(message);
+    console.log("Message saved to database:", result);
+    return result;
   } catch (error) {
-    console.error("Error saving message:", error)
-    return false
+    console.error("Error saving message:", error);
+    return { 
+      success: false, 
+      error: "Failed to save message to database" 
+    };
   }
 }
 
