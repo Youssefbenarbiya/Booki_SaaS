@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Form,
@@ -17,9 +18,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { authClient } from "@/auth-client"
 import { useToast } from "@/hooks/use-toast"
-import { forgotPasswordSchema } from "@/lib/validations/zod"
+import { forgotPasswordSchema } from "@/lib/validations/signin"
 
 export default function ForgotPassword() {
+  const params = useParams()
+  const locale = params.locale as string
   const { toast } = useToast()
   const [isPending, setIsPending] = useState(false)
 
@@ -32,25 +35,36 @@ export default function ForgotPassword() {
 
   const onSubmit = async (data: z.infer<typeof forgotPasswordSchema>) => {
     setIsPending(true)
-    const { error } = await authClient.forgetPassword({
-      email: data.email,
-      redirectTo: "/reset-password",
-    })
+    try {
+      const { error } = await authClient.forgetPassword({
+        email: data.email,
+        redirectTo: `/${locale}/reset-password`,
+      })
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Success",
+          description:
+            "If an account exists with this email, you will receive a password reset link.",
+        })
+        form.reset()
+      }
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       })
-    } else {
-      toast({
-        title: "Success",
-        description:
-          "If an account exists with this email, you will receive a password reset link.",
-      })
+      console.error("Forgot password error:", error)
+    } finally {
+      setIsPending(false)
     }
-    setIsPending(false)
   }
 
   return (

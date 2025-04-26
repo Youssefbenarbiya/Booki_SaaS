@@ -4,6 +4,7 @@ import db from "@/db/drizzle"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalActions"
+import Image from "next/image"
 
 export default async function TripDetailsPage({
   params,
@@ -95,12 +96,15 @@ export default async function TripDetailsPage({
                 {images.map((image) => (
                   <div
                     key={image.id}
-                    className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg"
+                    className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg relative"
                   >
-                    <img
+                    <Image
                       src={image.imageUrl}
-                      alt={trip.name}
-                      className="w-full h-48 object-cover"
+                      alt={`Image of ${trip.name}`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover"
+                      priority={image.id === images[0]?.id} // Prioritize loading the first image
                     />
                   </div>
                 ))}

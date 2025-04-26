@@ -15,11 +15,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { resetPasswordSchema } from "@/lib/validations/zod"
 import LoadingButton from "@/components/loading-button"
 import { authClient } from "@/auth-client"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { resetPasswordSchema } from "@/lib/validations/signin"
 
 function ResetPasswordContent() {
   const router = useRouter()

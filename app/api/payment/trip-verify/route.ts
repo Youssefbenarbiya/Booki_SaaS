@@ -1,4 +1,3 @@
-import { updateTripBookingPaymentStatus } from "@/actions/trips/tripBookingActions"
 import { verifyTripPayment } from "@/services/tripPaymentFlouci"
 import { NextRequest, NextResponse } from "next/server"
 import db from "@/db/drizzle"

@@ -1,13 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { ChevronRight, MapPin, Calendar, Car, Bed, Users, CreditCard } from "lucide-react"
 
 interface ChatResultsProps {
@@ -44,7 +42,6 @@ export function ChatResults({ data, onLoadMore }: ChatResultsProps) {
 
 // Hotel Results Component
 function HotelResults({ hotels, onLoadMore }: { hotels: any[], onLoadMore: () => Promise<void> }) {
-  const router = useRouter();
   
   return (
     <div className="space-y-3">
@@ -121,7 +118,6 @@ function HotelResults({ hotels, onLoadMore }: { hotels: any[], onLoadMore: () =>
 
 // Trip Results Component
 function TripResults({ trips, onLoadMore }: { trips: any[], onLoadMore: () => Promise<void> }) {
-  const router = useRouter();
   
   return (
     <div className="space-y-3">
@@ -184,7 +180,6 @@ function TripResults({ trips, onLoadMore }: { trips: any[], onLoadMore: () => Pr
 
 // Car Results Component
 function CarResults({ cars, onLoadMore }: { cars: any[], onLoadMore: () => Promise<void> }) {
-  const router = useRouter();
   
   return (
     <div className="space-y-3">
@@ -262,7 +257,6 @@ function CarResults({ cars, onLoadMore }: { cars: any[], onLoadMore: () => Promi
 
 // Room Results Component
 function RoomResults({ rooms, onLoadMore }: { rooms: any[], onLoadMore: () => Promise<void> }) {
-  const router = useRouter();
   
   return (
     <div className="space-y-3">
@@ -322,7 +316,6 @@ function RoomResults({ rooms, onLoadMore }: { rooms: any[], onLoadMore: () => Pr
 
 // Booking Results Component
 function BookingResults({ bookings, onLoadMore }: { bookings: any[], onLoadMore: () => Promise<void> }) {
-  const router = useRouter();
   
   const getBookingDetailLink = (booking: any) => {
     if (booking.type === 'hotel') {

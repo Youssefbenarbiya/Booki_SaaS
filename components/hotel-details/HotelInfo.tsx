@@ -1,6 +1,6 @@
 "use client"
 
-import { MapPin, Star, Map } from "lucide-react"
+import { MapPin, Star } from "lucide-react"
 import HotelLocationMap from "../HotelLocationMap"
 import { useState } from "react"
 import MapModal from "./MapModal"

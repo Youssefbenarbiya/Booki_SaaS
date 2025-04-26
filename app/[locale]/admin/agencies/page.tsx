@@ -21,9 +21,9 @@ export default async function AgenciesPage({
   searchParams: Promise<{
     [key: string]: string | string[] | undefined
   }>
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = params
+  const { locale } = await params
   const sp = await searchParams
   const search = (sp?.search as string) || ""
 
