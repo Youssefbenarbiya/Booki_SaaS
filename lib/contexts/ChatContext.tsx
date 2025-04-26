@@ -9,7 +9,7 @@ export interface ChatContextType {
   connected: boolean
   loading: boolean
   error: string | null
-  sendMessage: (content: string) => void
+  sendMessage: (postId: string, postType: string, content: string) => void
   connectToChat: (postId: string, postType: string) => void
   disconnectFromChat: () => void
   markAsRead: (messageId: string) => void
@@ -17,7 +17,12 @@ export interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
-export const ChatProvider = ({ children }: { children: ReactNode }) => {
+interface ChatProviderProps {
+  children: ReactNode
+  onError?: (error: string) => void
+}
+
+export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [socket, setSocket] = useState<WebSocket | null>(null)
   const [connected, setConnected] = useState(false)
@@ -26,8 +31,26 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null)
   const session = useSession()
 
+  // Watch for errors and call onError prop when needed
+  useEffect(() => {
+    if (error && onError) {
+      onError(error);
+    }
+  }, [error, onError]);
+
   const connectToChat = useCallback(
     (postId: string, postType: string) => {
+      // If already connected to this chat, do nothing
+      if (connected && currentRoomId === `${postId}-${postType}`) {
+        return;
+      }
+      
+      // Disconnect from any existing connection first
+      if (socket) {
+        socket.close();
+        setSocket(null);
+      }
+      
       if (!session.data?.user?.id) {
         setError("You must be logged in to chat")
         return
@@ -37,24 +60,54 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setError(null)
       
       try {
-        const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/chat?userId=${session.data.user.id}&postId=${postId}&postType=${postType}`
+        // For development mode, always use localhost:3001 if no env variable
+        const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+        const wsUrl = `${baseWsUrl}/?userId=${session.data.user.id}&postId=${postId}&postType=${postType}&token=development-token`
+        
+        console.log(`Connecting to WebSocket at: ${wsUrl}`);
         const ws = new WebSocket(wsUrl)
         
+        // Set a connection timeout
+        const connectionTimeout = setTimeout(() => {
+          if (!connected) {
+            console.error('WebSocket connection timeout');
+            setError('Connection timeout. Please try again.');
+            setLoading(false);
+            if (ws.readyState !== WebSocket.CLOSED) {
+              ws.close();
+            }
+          }
+        }, 10000);
+        
         ws.onopen = () => {
+          console.log('WebSocket connection opened');
+          clearTimeout(connectionTimeout);
           setConnected(true)
           setLoading(false)
           setCurrentRoomId(`${postId}-${postType}`)
         }
         
         ws.onmessage = (event) => {
-          const data = JSON.parse(event.data)
-          
-          if (data.type === 'message') {
-            setMessages((prev) => [...prev, data.message])
-          } else if (data.type === 'history') {
-            setMessages(data.messages)
-          } else if (data.type === 'error') {
-            setError(data.message)
+          try {
+            console.log('Received WebSocket message:', event.data);
+            const data = JSON.parse(event.data)
+            
+            if (data.type === 'message') {
+              console.log('Received chat message:', data.data);
+              setMessages((prev) => [...prev, data.data])
+            } else if (data.type === 'history') {
+              console.log('Received message history:', data.messages);
+              setMessages(data.messages)
+            } else if (data.type === 'error') {
+              console.error('Received error from server:', data.data?.error || data.message);
+              setError(data.data?.error || data.message)
+            } else if (data.type === 'connection') {
+              console.log('Received connection confirmation:', data.data);
+            } else {
+              console.log('Received unknown message type:', data.type);
+            }
+          } catch (err) {
+            console.error('Error parsing WebSocket message:', err);
           }
         }
         
@@ -62,9 +115,11 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           console.error('WebSocket error:', error)
           setError('Failed to connect to chat server')
           setLoading(false)
+          setConnected(false)
         }
         
         ws.onclose = () => {
+          console.log('WebSocket connection closed');
           setConnected(false)
           setSocket(null)
         }
@@ -76,7 +131,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false)
       }
     },
-    [session]
+    [session, socket, connected, currentRoomId]
   )
 
   const disconnectFromChat = useCallback(() => {
@@ -90,7 +145,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   }, [socket])
 
   const sendMessage = useCallback(
-    (content: string) => {
+    (postId: string, postType: string, content: string) => {
       if (!socket || !connected) {
         setError('Not connected to chat')
         return
@@ -100,6 +155,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         const message = {
           type: 'message',
           content,
+          postId,
+          postType,
           userId: session.data?.user?.id,
           roomId: currentRoomId,
         }

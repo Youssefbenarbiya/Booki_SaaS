@@ -4,9 +4,6 @@ import {
   useState,
   useEffect,
   useRef,
-  forwardRef,
-  ForwardRefRenderFunction,
-  useImperativeHandle,
 } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -31,19 +28,12 @@ interface ChatWidgetProps {
   agencyLogo?: string | null
 }
 
-export interface ChatWidgetRef {
-  openChat: (postId: string, postType: string) => void
-}
-
-const ChatWidgetComponent: ForwardRefRenderFunction<
-  ChatWidgetRef,
-  ChatWidgetProps
-> = ({ postId, postType, agencyName, agencyLogo }, ref) => {
+export default function ChatWidget({ postId, postType, agencyName, agencyLogo }: ChatWidgetProps) {
   const [message, setMessage] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [processedMessageIds, setProcessedMessageIds] = useState<Set<string>>(
-    new Set()
-  )
+  const processedMessageIds = useRef<Set<string>>(new Set())
+  const isFirstMount = useRef(true)
+  
   const {
     messages,
     connected,
@@ -55,73 +45,70 @@ const ChatWidgetComponent: ForwardRefRenderFunction<
     markAsRead,
   } = useChat()
 
-  // Properly expose methods via ref using useImperativeHandle
-  useImperativeHandle(
-    ref,
-    () => ({
-      openChat: (newPostId: string, newPostType: string) => {
-        connectToChat(newPostId, newPostType)
-      },
-    }),
-    [connectToChat]
-  )
-
+  // Connect to chat on mount only
   useEffect(() => {
-    // Connect to chat when component mounts
-    connectToChat(postId, postType)
-
+    // Only connect on first mount
+    if (isFirstMount.current) {
+      console.log("Connecting to chat:", postId, postType);
+      connectToChat(postId, postType);
+      isFirstMount.current = false;
+    }
+    
     // Disconnect when component unmounts
     return () => {
-      disconnectFromChat()
-    }
-  }, [postId, postType, connectToChat, disconnectFromChat])
+      disconnectFromChat();
+    };
+  }, []);
 
-  // Fixed: Mark unread messages as read with protection against infinite loops
+  // Process unread messages - separated from messages dependency
   useEffect(() => {
-    const unreadMessages = messages.filter(
-      (msg) =>
-        !msg.isRead && msg.sender !== "user" && !processedMessageIds.has(msg.id)
-    )
+    // Debounce function to avoid too many state updates
+    const processUnreadMessages = () => {
+      const unreadMessages = messages.filter(
+        (msg) => 
+          msg.id && 
+          !msg.isRead && 
+          msg.sender !== "user" && 
+          !processedMessageIds.current.has(msg.id)
+      );
 
-    if (unreadMessages.length > 0) {
-      // Create a new set of processed IDs by copying the old one
-      const newProcessedIds = new Set(processedMessageIds)
+      if (unreadMessages.length > 0) {
+        unreadMessages.forEach((msg) => {
+          if (msg.id) {
+            markAsRead(msg.id);
+            processedMessageIds.current.add(msg.id);
+          }
+        });
+      }
+    };
 
-      // Mark messages as read and update our processed IDs
-      unreadMessages.forEach((msg) => {
-        markAsRead(msg.id)
-        newProcessedIds.add(msg.id)
-      })
-
-      // Update the set of processed message IDs
-      setProcessedMessageIds(newProcessedIds)
-    }
-  }, [messages, markAsRead, processedMessageIds])
+    const timeoutId = setTimeout(processUnreadMessages, 300);
+    return () => clearTimeout(timeoutId);
+  }, [messages, markAsRead]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
 
   const handleSend = () => {
-    if (!message.trim()) return
-
-    sendMessage(message.trim())
-    setMessage("")
-  }
+    if (!message.trim()) return;
+    sendMessage(postId, postType, message.trim());
+    setMessage("");
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
+      e.preventDefault();
+      handleSend();
     }
-  }
+  };
 
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg border-primary/10">
       <CardHeader className="p-4 border-b">
         <CardTitle className="text-lg flex items-center gap-2">
-          <span>Chat</span>
+          <span>Chat with {agencyName || "Support"}</span>
           {connected ? (
             <Badge
               variant="outline"
@@ -153,8 +140,8 @@ const ChatWidgetComponent: ForwardRefRenderFunction<
           </div>
         ) : (
           <div className="space-y-4">
-            {messages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} />
+            {messages.map((msg, index) => (
+              <MessageBubble key={msg.id || index} message={msg} />
             ))}
             <div ref={messagesEndRef} />
           </div>
@@ -184,11 +171,6 @@ const ChatWidgetComponent: ForwardRefRenderFunction<
   )
 }
 
-export const ChatWidget = forwardRef(ChatWidgetComponent)
-ChatWidget.displayName = "ChatWidget"
-
-export default ChatWidget
-
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.sender === "user"
 
@@ -211,7 +193,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             {message.content}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(message.createdAt), {
+            {message.createdAt && formatDistanceToNow(new Date(message.createdAt), {
               addSuffix: true,
             })}
           </div>

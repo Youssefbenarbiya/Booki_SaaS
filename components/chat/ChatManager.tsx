@@ -27,15 +27,17 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   const {
     messages,
     sendMessage,
-    isConnected,
-    isLoading,
+    connected,
+    loading,
     error,
     connectToChat,
     disconnectFromChat,
   } = useChat()
 
-  const [conversations, setConversations] = useState<ChatConversation[]>(initialConversations)
-  const [selectedConversation, setSelectedConversation] = useState<ChatConversation | null>(null)
+  const [conversations, setConversations] =
+    useState<ChatConversation[]>(initialConversations)
+  const [selectedConversation, setSelectedConversation] =
+    useState<ChatConversation | null>(null)
   const [messageText, setMessageText] = useState("")
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
 
@@ -93,7 +95,9 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                   onClick={() => handleSelectConversation(conv)}
                 >
                   <div className="flex justify-between">
-                    <h3 className="font-medium text-sm truncate">{conv.postName}</h3>
+                    <h3 className="font-medium text-sm truncate">
+                      {conv.postName}
+                    </h3>
                     {conv.unreadCount > 0 && (
                       <span className="bg-primary text-white rounded-full px-2 py-0.5 text-xs">
                         {conv.unreadCount}
@@ -106,9 +110,12 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                         {conv.lastMessage.content}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {formatDistanceToNow(new Date(conv.lastMessage.createdAt!), {
-                          addSuffix: true,
-                        })}
+                        {formatDistanceToNow(
+                          new Date(conv.lastMessage.createdAt!),
+                          {
+                            addSuffix: true,
+                          }
+                        )}
                       </p>
                     </>
                   )}
@@ -135,7 +142,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
 
             {/* Messages */}
             <div className="flex-1 p-3 overflow-y-auto bg-gray-50">
-              {isLoading || isFetchingMessages ? (
+              {loading || isFetchingMessages ? (
                 <div className="flex justify-center items-center h-full">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
@@ -151,7 +158,9 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                     return (
                       <div
                         key={message.id || index}
-                        className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}
+                        className={`flex ${
+                          isSentByMe ? "justify-end" : "justify-start"
+                        }`}
                       >
                         <div
                           className={`max-w-[85%] rounded-lg p-3 ${
@@ -160,16 +169,21 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                               : "bg-white border border-gray-200 rounded-bl-none"
                           }`}
                         >
-                          <p className="text-sm break-words">{message.content}</p>
+                          <p className="text-sm break-words">
+                            {message.content}
+                          </p>
                           <p
                             className={`text-xs mt-1 ${
                               isSentByMe ? "text-primary-50" : "text-gray-500"
                             }`}
                           >
                             {message.createdAt
-                              ? formatDistanceToNow(new Date(message.createdAt), {
-                                  addSuffix: true,
-                                })
+                              ? formatDistanceToNow(
+                                  new Date(message.createdAt),
+                                  {
+                                    addSuffix: true,
+                                  }
+                                )
                               : "Just now"}
                           </p>
                         </div>
@@ -199,11 +213,11 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                   }}
                   placeholder="Type a message..."
                   className="min-h-[40px] resize-none"
-                  disabled={!isConnected || isLoading}
+                  disabled={!connected || loading}
                 />
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!isConnected || isLoading || !messageText.trim()}
+                  disabled={!connected || loading || !messageText.trim()}
                   className="h-10 w-10 p-0"
                 >
                   <Send className="h-4 w-4" />
@@ -229,4 +243,4 @@ export default function ChatManager(props: ChatManagerProps) {
       <ChatManagerContent {...props} />
     </ChatProvider>
   )
-} 
+}

@@ -4,6 +4,10 @@ export type MessageType = "text" | "image" | "notification"
 
 // Message data structure
 export interface ChatMessage {
+  receiverId: string
+  postType: any
+  senderId: string
+  postId: any
   id: string
   content: string
   sender: string

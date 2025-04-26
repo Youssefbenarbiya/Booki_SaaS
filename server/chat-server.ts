@@ -16,13 +16,19 @@ const postConnections = new Map<string, PostConnection>()
 // Create Hono app
 const app = new Hono()
 
-// Create WebSocket server
-const wss = new WebSocketServer({ noServer: true })
+// Create WebSocket server with path options
+const wss = new WebSocketServer({ 
+  noServer: true,
+  path: '/' // Accept connections at root path
+})
 
 // Handle WebSocket connection
 wss.on("connection", async (ws: WSWebSocket, req) => {
   try {
+    // Extract query parameters from URL
     const url = new URL(req.url || "", `http://${req.headers.host}`)
+    console.log("Connection URL:", url.toString());
+    
     const sessionToken = url.searchParams.get("token")
     const userId = url.searchParams.get("userId")
     const postId = url.searchParams.get("postId")
@@ -32,11 +38,14 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
       userId,
       postId,
       postType,
-      hasToken: !!sessionToken
+      hasToken: !!sessionToken,
+      url: req.url,
+      headers: req.headers
     })
     
     // Validate session
-    if (!sessionToken || !userId || !postId || !postType) {
+    if (!userId || !postId || !postType) {
+      console.error("Invalid connection parameters:", { userId, postId, postType });
       ws.send(JSON.stringify({
         type: "error",
         data: { error: "Invalid connection parameters" }
@@ -236,7 +245,11 @@ const server = serve({
 
 // Handle WebSocket upgrade
 server.on("upgrade", (request, socket, head) => {
+  console.log("Received upgrade request:", request.url);
+  
+  // Handle the upgrade regardless of the path
   wss.handleUpgrade(request, socket, head, (ws) => {
+    console.log("WebSocket connection upgraded successfully");
     wss.emit("connection", ws, request)
   })
 })

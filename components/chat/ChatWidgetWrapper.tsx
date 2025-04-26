@@ -1,35 +1,31 @@
 "use client"
 
-import { forwardRef } from "react"
 import { ChatProvider } from "@/lib/contexts/ChatContext"
-import ChatWidget, { ChatWidgetRef } from "./ChatWidget"
-
-// Re-export the ChatWidgetRef interface
-export type { ChatWidgetRef }
+import ChatWidget from "./ChatWidget"
 
 interface ChatWidgetWrapperProps {
   postId: string
   postType: "trip" | "car" | "hotel" | "room"
   agencyName?: string
   agencyLogo?: string | null
+  onError?: (error: string) => void
 }
 
-const ChatWidgetWrapper = forwardRef<ChatWidgetRef, ChatWidgetWrapperProps>(
-  ({ postId, postType, agencyName, agencyLogo }, ref) => {
-    return (
-      <ChatProvider>
-        <ChatWidget
-          ref={ref}
-          postId={postId}
-          postType={postType}
-          agencyName={agencyName}
-          agencyLogo={agencyLogo}
-        />
-      </ChatProvider>
-    )
-  }
-)
-
-ChatWidgetWrapper.displayName = "ChatWidgetWrapper"
-
-export default ChatWidgetWrapper
+export default function ChatWidgetWrapper({
+  postId,
+  postType,
+  agencyName,
+  agencyLogo,
+  onError
+}: ChatWidgetWrapperProps) {
+  return (
+    <ChatProvider onError={onError}>
+      <ChatWidget
+        postId={postId}
+        postType={postType}
+        agencyName={agencyName}
+        agencyLogo={agencyLogo}
+      />
+    </ChatProvider>
+  )
+}

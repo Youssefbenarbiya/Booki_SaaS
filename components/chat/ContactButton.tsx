@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useRef, } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import ChatWidgetWrapper, {
-  ChatWidgetRef,
-} from "@/components/chat/ChatWidgetWrapper"
+import ChatWidgetWrapper from "@/components/chat/ChatWidgetWrapper"
 import { useSession } from "@/auth-client"
 import { toast } from "sonner"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Terminal } from "lucide-react"
 
 interface ContactButtonProps {
   postId: string
@@ -21,9 +21,10 @@ export function ContactButton({
   agencyName,
   agencyLogo,
 }: ContactButtonProps) {
-  const chatRef = useRef<ChatWidgetRef>(null)
   const { data: session } = useSession()
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [showServerAlert, setShowServerAlert] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string>("")
 
   const handleContactClick = () => {
     if (!session?.user) {
@@ -31,14 +32,12 @@ export function ContactButton({
       return
     }
 
-    setIsChatOpen(true)
+    setIsChatOpen((prev) => !prev)
+  }
 
-    // Use setTimeout to ensure state update happens before we try to access the ref
-    setTimeout(() => {
-      if (chatRef.current) {
-        chatRef.current.openChat(postId, postType)
-      }
-    }, 0)
+  const handleChatError = (error: string) => {
+    setShowServerAlert(true)
+    setErrorMessage(error)
   }
 
   return (
@@ -49,17 +48,29 @@ export function ContactButton({
         onClick={handleContactClick}
         className="w-full sm:w-auto"
       >
-        Contact Host
+        {isChatOpen ? "Close Chat" : "Contact Host"}
       </Button>
 
+      {showServerAlert && (
+        <Alert variant="destructive" className="mt-4">
+          <Terminal className="h-4 w-4" />
+          <AlertDescription>
+            {errorMessage || "Chat server is not running. Please start the chat server with:"}
+            {!errorMessage && <code className="ml-2 p-1 bg-muted rounded">bun run server/run-chat-server.ts</code>}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {isChatOpen && (
-        <ChatWidgetWrapper
-          ref={chatRef}
-          postId={postId}
-          postType={postType}
-          agencyName={agencyName}
-          agencyLogo={agencyLogo}
-        />
+        <div className="mt-4">
+          <ChatWidgetWrapper
+            postId={postId}
+            postType={postType}
+            agencyName={agencyName}
+            agencyLogo={agencyLogo}
+            onError={handleChatError}
+          />
+        </div>
       )}
     </>
   )

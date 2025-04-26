@@ -4,7 +4,9 @@
 
 import server from "./chat-server"
 
-console.log("Chat server is running...")
+console.log("Chat server started!")
+console.log("Server is listening for WebSocket connections on ws://localhost:3001")
+console.log("Press CTRL+C to stop the server")
 
 // Add signal handling for graceful shutdown
 process.on("SIGINT", () => {
