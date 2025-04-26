@@ -9,6 +9,9 @@ import {
   WebSocketMessage 
 } from "@/lib/types/chat"
 import { saveChatMessage, getChatMessages } from "@/actions/chat/chatActions"
+import db from "@/db/drizzle"
+import { trips, cars, hotel, room } from "@/db/schema"
+import { eq } from "drizzle-orm"
 
 // Store active connections
 const connections = new Map<string, ChatConnection>()
@@ -77,7 +80,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
     // In production, you would verify the token
     const sessionValidation = { 
       valid: true,
-      role: userId.includes("agency") ? "agency" : "customer",
+      role: userId.includes("agency") ? "agency owner" : "customer",
       agencyId: userId.includes("agency") ? userId : undefined
     }
     
@@ -90,7 +93,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
       return
     }
     
-    const userRole = sessionValidation.role as "customer" | "agency"
+    const userRole = sessionValidation.role as "customer" | "agency owner"
     const agencyId = sessionValidation.agencyId
     
     console.log("User authenticated:", { userId, userRole })
@@ -119,7 +122,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
     }
     
     // Associate user with post connection based on role
-    if (userRole === "agency") {
+    if (userRole === "agency owner") {
       postConnection.agencyConnection = connection
     } else {
       postConnection.customerConnection = connection
@@ -207,14 +210,70 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           let recipientId = ""
           let recipientConnection: ChatConnection | undefined
           
-          if (userRole === "agency") {
+          if (userRole === "agency owner") {
             // Agency is sending to customer
             recipientConnection = postConnection.customerConnection
             recipientId = postConnection.customerConnection?.userId || ""
           } else {
-            // Customer is sending to agency
-            recipientConnection = postConnection.agencyConnection
-            recipientId = postConnection.agencyConnection?.userId || ""
+            // Customer is sending to agency - need to find the agency that owns this listing
+            try {
+              // Look up the agency ID from the database based on the postType and postId
+              let agencyIdForPost = "";
+              
+              if (messagePostType === "trip") {
+                const trip = await db.query.trips.findFirst({
+                  where: eq(trips.id, parseInt(messagePostId)),
+                  columns: { agencyId: true }
+                });
+                agencyIdForPost = trip?.agencyId || "";
+                console.log("Found agency for trip:", agencyIdForPost);
+              } else if (messagePostType === "car") {
+                const car = await db.query.cars.findFirst({
+                  where: eq(cars.id, parseInt(messagePostId)),
+                  columns: { agencyId: true }
+                });
+                agencyIdForPost = car?.agencyId || "";
+                console.log("Found agency for car:", agencyIdForPost);
+              } else if (messagePostType === "hotel") {
+                const hotelData = await db.query.hotel.findFirst({
+                  where: eq(hotel.id, messagePostId),
+                  columns: { agencyId: true }
+                });
+                agencyIdForPost = hotelData?.agencyId || "";
+                console.log("Found agency for hotel:", agencyIdForPost);
+              } else if (messagePostType === "room") {
+                // For rooms, find the hotel first, then get the agency
+                const roomData = await db.query.room.findFirst({
+                  where: eq(room.id, messagePostId),
+                  columns: { hotelId: true }
+                });
+                
+                if (roomData?.hotelId) {
+                  const hotelData = await db.query.hotel.findFirst({
+                    where: eq(hotel.id, roomData.hotelId),
+                    columns: { agencyId: true }
+                  });
+                  if (hotelData?.agencyId) {
+                    recipientId = hotelData.agencyId;
+                    console.log("Fallback: Found agency for room via hotel:", recipientId);
+                  }
+                }
+              }
+              
+              // If we found an agency ID from the database, use it
+              if (agencyIdForPost) {
+                recipientId = agencyIdForPost;
+              } else {
+                // Fallback to the connected agency (for backward compatibility)
+                recipientConnection = postConnection.agencyConnection;
+                recipientId = postConnection.agencyConnection?.userId || "";
+              }
+            } catch (error) {
+              console.error("Error finding agency for post:", error);
+              // Fallback to the connected agency
+              recipientConnection = postConnection.agencyConnection;
+              recipientId = postConnection.agencyConnection?.userId || "";
+            }
           }
           
           // Validate recipient ID
@@ -228,21 +287,79 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
               userId
             })
             
-            // Look for a known admin user ID
-            // This is a temporary solution for development
-            if (userRole === "customer") {
-              // Customer sending to non-existent agency - use sender's ID as temp workaround
-              recipientId = userId;
-              console.log("Using sender ID as fallback recipient for testing:", recipientId);
-            } else {
-              // Agency sending to non-existent customer - use sender's ID as temp workaround
-              recipientId = userId;
-              console.log("Using sender ID as fallback recipient for testing:", recipientId);
+            // Try to create a fallback based on the post information
+            try {
+              if (userRole === "customer") {
+                // For a customer sending a message, try to find the correct agency from database
+                if (messagePostType === "trip") {
+                  const trip = await db.query.trips.findFirst({
+                    where: eq(trips.id, parseInt(messagePostId)),
+                    columns: { agencyId: true }
+                  });
+                  if (trip?.agencyId) {
+                    recipientId = trip.agencyId;
+                    console.log("Fallback: Found agency for trip:", recipientId);
+                  }
+                } else if (messagePostType === "car") {
+                  const car = await db.query.cars.findFirst({
+                    where: eq(cars.id, parseInt(messagePostId)),
+                    columns: { agencyId: true }
+                  });
+                  if (car?.agencyId) {
+                    recipientId = car.agencyId;
+                    console.log("Fallback: Found agency for car:", recipientId);
+                  }
+                } else if (messagePostType === "hotel") {
+                  const hotelData = await db.query.hotel.findFirst({
+                    where: eq(hotel.id, messagePostId),
+                    columns: { agencyId: true }
+                  });
+                  if (hotelData?.agencyId) {
+                    recipientId = hotelData.agencyId;
+                    console.log("Fallback: Found agency for hotel:", recipientId);
+                  }
+                } else if (messagePostType === "room") {
+                  // For rooms, find the hotel first, then get the agency
+                  const roomData = await db.query.room.findFirst({
+                    where: eq(room.id, messagePostId),
+                    columns: { hotelId: true }
+                  });
+                  
+                  if (roomData?.hotelId) {
+                    const hotelData = await db.query.hotel.findFirst({
+                      where: eq(hotel.id, roomData.hotelId),
+                      columns: { agencyId: true }
+                    });
+                    if (hotelData?.agencyId) {
+                      recipientId = hotelData.agencyId;
+                      console.log("Fallback: Found agency for room via hotel:", recipientId);
+                    }
+                  }
+                }
+                
+                // If still no recipient, use a fallback pattern that makes debugging easier
+                if (!recipientId) {
+                  recipientId = `unknown_agency_for_${messagePostType}_${messagePostId}`;
+                  console.log("Using generic fallback agency ID:", recipientId);
+                }
+              } else {
+                // For agency sending to customer, we need to find a customer from booking history
+                // This would be a more advanced implementation
+                // For now, use a fallback pattern
+                recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`;
+                console.log("Using generic fallback customer ID:", recipientId);
+              }
+            } catch (error) {
+              console.error("Error in fallback recipient search:", error);
+              // Last resort fallback
+              recipientId = userRole === "customer" 
+                ? `fallback_agency_${Date.now()}` 
+                : `fallback_customer_${Date.now()}`;
             }
             
             ws.send(JSON.stringify({
               type: "warning",
-              data: { warning: "Recipient not found. Message will be stored but might not be delivered." }
+              data: { warning: "Recipient not found. Message will be stored but might not be delivered immediately." }
             }));
           }
           
@@ -299,7 +416,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
       
       // Update post connection
       if (postConnection) {
-        if (userRole === "agency") {
+        if (userRole === "agency owner") {
           postConnection.agencyConnection = undefined
         } else {
           postConnection.customerConnection = undefined

@@ -20,7 +20,7 @@ export interface ChatMessage {
 export interface ChatConnection {
   userId: string
   socket: WebSocket
-  userRole: "customer" | "agency"
+  userRole: "customer" | "agency owner"
   agencyId?: string
 }
 
