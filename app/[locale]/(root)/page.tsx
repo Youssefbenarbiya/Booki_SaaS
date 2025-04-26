@@ -5,7 +5,7 @@ import { SearchForm } from "./search-form"
 import TopVacations from "@/components/home/topVacations"
 import TopDestinations from "@/components/home/topDestinations"
 import { SearchResults } from "./search-results"
-import { ChatScript } from "@/components/chat/ChatScript"
+import { ChatScript } from "@/components/chatbot/ChatScript"
 
 interface SearchParams {
   type?: string

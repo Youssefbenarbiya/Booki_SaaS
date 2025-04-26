@@ -22,6 +22,9 @@ import { useCurrency } from "@/lib/contexts/CurrencyContext";
 import { useState, useEffect } from "react";
 import React from "react";
 import AgencyInfo from "@/components/common/AgencyInfo";
+import dynamic from "next/dynamic";
+import { ContactButton } from "@/components/chat/ContactButton";
+
 
 interface TripParams {
   tripId: string;
@@ -193,9 +196,14 @@ export default function TripDetailsPage({ params }: TripPageProps) {
                   Book Now
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="w-full">
-                Contact Host
-              </Button>
+              
+              {/* Contact Button that opens chat */}
+              <ContactButton 
+                postId={tripId}
+                postType="trip"
+                agencyName={trip.agency?.agencyName || "Agency"}
+                agencyLogo={trip.agency?.logo || null}
+              />
             </div>
 
             <div className="mt-4 text-xs text-gray-500 text-center">

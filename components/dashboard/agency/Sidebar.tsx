@@ -71,6 +71,11 @@ export function Sidebar({ locale }: SidebarProps) {
       href: `/${locale}/agency/dashboard/bookings`,
       icon: CalendarCheck,
     },
+      {
+      name: "Messages",
+      href: `/${locale}/agency/dashboard/messages`,
+      icon: CalendarCheck,
+    },
   ]
 
   // Fetch agency data

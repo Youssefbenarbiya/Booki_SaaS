@@ -8,7 +8,7 @@ import { CurrencyProvider } from "@/lib/contexts/CurrencyContext"
 import { NextIntlClientProvider } from "next-intl"
 import { Locale, routing } from "@/i18n/routing"
 import { notFound } from "next/navigation"
-import { ChatScript } from "@/components/chat/ChatScript"
+import { ChatScript } from "@/components/chatbot/ChatScript"
 
 async function getMessages(locale: string) {
   try {

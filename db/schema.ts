@@ -552,3 +552,32 @@ export const agencyEmployeesRelations = relations(agencyEmployees, ({ one }) => 
     references: [agencies.userId],
   }),
 }))
+
+// Chat messages table
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  postId: varchar("post_id", { length: 100 }).notNull(),
+  postType: varchar("post_type", { length: 20 }).notNull(), // 'trip', 'car', 'hotel', 'room'
+  senderId: text("sender_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  receiverId: text("receiver_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  type: varchar("type", { length: 20 }).notNull().default("text"), // 'text', 'image', 'notification'
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+// Chat messages relations
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  sender: one(user, {
+    fields: [chatMessages.senderId],
+    references: [user.id],
+  }),
+  receiver: one(user, {
+    fields: [chatMessages.receiverId],
+    references: [user.id],
+  }),
+}))

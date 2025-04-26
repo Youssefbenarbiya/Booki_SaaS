@@ -54,7 +54,7 @@ function ResetPasswordContent() {
         title: "Success",
         description: "Password reset successful. Login to continue.",
       })
-      router.push("/en/en/sign-in")
+      router.push("/en/sign-in")
     }
     setIsPending(false)
   }
