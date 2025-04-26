@@ -12,7 +12,7 @@ export default async function AgencyMessagesPage({
   const session = await auth.api.getSession({ headers: await headers() })
 
   // Check if user is authenticated and is an agency
-  if (!session?.user || session.user.role !== "agency") {
+  if (!session?.user || session.user.role !== "agency owner") {
     redirect(`/${params.locale}/login?callbackUrl=/${params.locale}/agency/dashboard/messages`)
   }
 

@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { serve } from "@hono/node-server"
 import { WebSocketServer, WebSocket as WSWebSocket } from "ws"
+import http from "http"
 import { 
   ChatMessage, 
   ChatConnection, 
@@ -13,21 +14,30 @@ const connections = new Map<string, ChatConnection>()
 // Store post-specific connections
 const postConnections = new Map<string, PostConnection>()
 
-// Create Hono app
-const app = new Hono()
+// Create HTTP server for the WebSocket server to attach to
+const wsHttpServer = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('WebSocket server running');
+});
 
-// Create WebSocket server with path options
+// Create a WebSocket server attached to the HTTP server
 const wss = new WebSocketServer({ 
-  noServer: true,
-  path: '/' // Accept connections at root path
-})
+  server: wsHttpServer,
+  perMessageDeflate: false,
+  clientTracking: true
+});
+
+// Create Hono app for the API endpoints
+const app = new Hono();
 
 // Handle WebSocket connection
 wss.on("connection", async (ws: WSWebSocket, req) => {
+  console.log("New WebSocket connection received")
+  
   try {
     // Extract query parameters from URL
     const url = new URL(req.url || "", `http://${req.headers.host}`)
-    console.log("Connection URL:", url.toString());
+    console.log("Connection URL:", url.toString())
     
     const sessionToken = url.searchParams.get("token")
     const userId = url.searchParams.get("userId")
@@ -39,9 +49,17 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
       postId,
       postType,
       hasToken: !!sessionToken,
-      url: req.url,
-      headers: req.headers
     })
+    
+    // Send a welcome message to confirm connection
+    ws.send(JSON.stringify({
+      type: "connection",
+      data: { 
+        status: "connected",
+        message: "WebSocket connection established",
+        time: new Date().toISOString()
+      }
+    }))
     
     // Validate session
     if (!userId || !postId || !postType) {
@@ -115,31 +133,56 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
     // Handle messages
     ws.on("message", async (message) => {
       try {
-        const parsedMessage = JSON.parse(message.toString()) as WebSocketMessage
+        console.log("Received message:", message.toString())
+        
+        const parsedMessage = JSON.parse(message.toString()) 
         
         if (parsedMessage.type === "message") {
-          const chatMessage = parsedMessage.data as ChatMessage
+          // Extract message data - could be nested in data or directly in the message
+          const chatMessage = parsedMessage.data || parsedMessage
+          
+          console.log("Processing chat message:", chatMessage)
           
           // Validate message
-          if (!chatMessage.postId || !chatMessage.content) {
+          if (!chatMessage.content) {
             ws.send(JSON.stringify({
               type: "error",
-              data: { error: "Invalid message format" }
+              data: { error: "Message content is required" }
             }))
             return
           }
           
-          // Add sender information
-          chatMessage.senderId = userId
+          // Use postId and postType from the connection if not in the message
+          const messagePostId = chatMessage.postId || postId
+          const messagePostType = chatMessage.postType || postType
           
-          // Save message to database (implement this function)
-          await saveMessageToDatabase(chatMessage)
+          // Create a complete message with all required fields
+          const completeMessage: ChatMessage = {
+            id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            content: chatMessage.content,
+            postId: messagePostId,
+            postType: messagePostType,
+            senderId: userId,
+            receiverId: "", // Will be set based on role below
+            sender: "user",
+            createdAt: new Date().toISOString(),
+            isRead: false
+          }
+          
+          // Save message to database
+          await saveMessageToDatabase(completeMessage)
           
           // Find the post connection
-          const postConnectionKey = `${chatMessage.postType}:${chatMessage.postId}`
+          const postConnectionKey = `${messagePostType}:${messagePostId}`
           const postConnection = postConnections.get(postConnectionKey)
           
           if (!postConnection) {
+            console.log("No post connection found for key:", postConnectionKey)
+            // Still send back to sender for confirmation
+            ws.send(JSON.stringify({
+              type: "message",
+              data: completeMessage
+            }))
             return
           }
           
@@ -148,10 +191,10 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           
           if (userRole === "agency") {
             recipientConnection = postConnection.customerConnection
-            chatMessage.receiverId = postConnection.customerConnection?.userId || ""
+            completeMessage.receiverId = postConnection.customerConnection?.userId || ""
           } else {
             recipientConnection = postConnection.agencyConnection
-            chatMessage.receiverId = postConnection.agencyConnection?.userId || ""
+            completeMessage.receiverId = postConnection.agencyConnection?.userId || ""
           }
           
           // Send message to recipient if connected
@@ -160,7 +203,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             if (recipientSocket.readyState === WSWebSocket.OPEN) {
               recipientSocket.send(JSON.stringify({
                 type: "message",
-                data: chatMessage
+                data: completeMessage
               }))
             }
           }
@@ -168,7 +211,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           // Also send confirmation back to sender
           ws.send(JSON.stringify({
             type: "message",
-            data: chatMessage
+            data: completeMessage
           }))
         }
       } catch (error) {
@@ -182,6 +225,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
     
     // Handle disconnect
     ws.on("close", () => {
+      console.log("WebSocket connection closed for user:", userId)
       connections.delete(userId)
       
       // Update post connection
@@ -204,23 +248,15 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
   }
 })
 
+// WebSocket server error handling
+wss.on("error", (error) => {
+  console.error("WebSocket server error:", error);
+});
+
 // Helper function to save message to database
 async function saveMessageToDatabase(message: ChatMessage) {
   try {
     // Implementation would go here
-    // Example:
-    // await db.insert(chatMessages).values({
-    //   postId: message.postId,
-    //   postType: message.postType,
-    //   senderId: message.senderId, 
-    //   receiverId: message.receiverId,
-    //   content: message.content,
-    //   type: message.type,
-    //   createdAt: new Date(),
-    //   isRead: false
-    // })
-    
-    // For now, just log the message
     console.log("Saving message:", message)
     return true
   } catch (error) {
@@ -229,29 +265,42 @@ async function saveMessageToDatabase(message: ChatMessage) {
   }
 }
 
-// Create HTTP server
+// Create HTTP API server
 app.get("/", (c) => {
-  return c.text("Chat server is running")
+  return c.text("Chat API server is running. WebSocket server is available on ws://localhost:3001")
 })
 
-// Start the server
-const port = process.env.CHAT_SERVER_PORT || 3001
-console.log(`Starting chat server on port ${port}`)
-
-const server = serve({
-  fetch: app.fetch,
-  port: parseInt(port.toString())
-})
-
-// Handle WebSocket upgrade
-server.on("upgrade", (request, socket, head) => {
-  console.log("Received upgrade request:", request.url);
+// Create and start the servers
+const startServers = () => {
+  // Start WebSocket HTTP server
+  wsHttpServer.listen(3001, () => {
+    console.log("WebSocket server listening on port 3001");
+  });
   
-  // Handle the upgrade regardless of the path
-  wss.handleUpgrade(request, socket, head, (ws) => {
-    console.log("WebSocket connection upgraded successfully");
-    wss.emit("connection", ws, request)
-  })
-})
+  // Start API HTTP server
+  const apiServer = serve({
+    fetch: app.fetch,
+    port: 3002
+  });
+  
+  console.log("API server listening on port 3002");
+  
+  // Handle shutdown
+  process.on("SIGINT", () => {
+    console.log("Shutting down servers...");
+    wsHttpServer.close();
+    apiServer.close();
+    process.exit(0);
+  });
+  
+  process.on("SIGTERM", () => {
+    console.log("Shutting down servers...");
+    wsHttpServer.close();
+    apiServer.close();
+    process.exit(0);
+  });
+  
+  return { wsHttpServer, apiServer };
+};
 
-export default server 
+export { startServers }; 

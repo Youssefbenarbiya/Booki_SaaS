@@ -62,25 +62,34 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
       try {
         // For development mode, always use localhost:3001 if no env variable
         const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
-        const wsUrl = `${baseWsUrl}/?userId=${session.data.user.id}&postId=${postId}&postType=${postType}&token=development-token`
+        
+        // Connect directly to the WebSocket server port
+        let wsUrl = `${baseWsUrl}?userId=${session.data.user.id}&postId=${postId}&postType=${postType}&token=development-token`;
         
         console.log(`Connecting to WebSocket at: ${wsUrl}`);
-        const ws = new WebSocket(wsUrl)
+        
+        const ws = new WebSocket(wsUrl);
         
         // Set a connection timeout
         const connectionTimeout = setTimeout(() => {
           if (!connected) {
-            console.error('WebSocket connection timeout');
+            console.log('WebSocket connection timeout');
             setError('Connection timeout. Please try again.');
             setLoading(false);
-            if (ws.readyState !== WebSocket.CLOSED) {
+            
+            if (ws && ws.readyState !== WebSocket.CLOSED) {
               ws.close();
+            }
+            
+            // If onError callback is provided, call it
+            if (onError) {
+              onError('Connection timeout. Please try again.');
             }
           }
         }, 10000);
         
         ws.onopen = () => {
-          console.log('WebSocket connection opened');
+          console.log('WebSocket connection opened successfully');
           clearTimeout(connectionTimeout);
           setConnected(true)
           setLoading(false)
@@ -131,7 +140,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
         setLoading(false)
       }
     },
-    [session, socket, connected, currentRoomId]
+    [session, socket, connected, currentRoomId, onError]
   )
 
   const disconnectFromChat = useCallback(() => {

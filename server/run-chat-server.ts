@@ -2,11 +2,15 @@
 
 // This script runs the WebSocket chat server as a standalone process
 
-import server from "./chat-server"
+import { startServers } from "./chat-server"
+
+console.log("Starting chat servers...")
+const servers = startServers();
 
 console.log("Chat server started!")
-console.log("Server is listening for WebSocket connections on ws://localhost:3001")
-console.log("Press CTRL+C to stop the server")
+console.log("WebSocket server is running on ws://localhost:3001")
+console.log("HTTP API server is running on http://localhost:3002")
+console.log("Press CTRL+C to stop the servers")
 
 // Add signal handling for graceful shutdown
 process.on("SIGINT", () => {
