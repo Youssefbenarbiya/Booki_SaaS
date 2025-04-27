@@ -1,18 +1,9 @@
 "use client"
 
-import {
-  useState,
-  useEffect,
-  useRef,
-} from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Card,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useChat } from "@/lib/contexts/ChatContext"
 import { ChatMessage } from "@/lib/types/chat"
 import { Send } from "lucide-react"
@@ -28,13 +19,18 @@ interface ChatWidgetProps {
   agencyLogo?: string | null
 }
 
-export default function ChatWidget({ postId, postType, agencyName, agencyLogo }: ChatWidgetProps) {
+export default function ChatWidget({
+  postId,
+  postType,
+  agencyName,
+  agencyLogo,
+}: ChatWidgetProps) {
   const [message, setMessage] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const processedMessageIds = useRef<Set<string>>(new Set())
   const isFirstMount = useRef(true)
   const chatConnectionRef = useRef({ postId, postType })
-  
+
   const {
     messages,
     connected,
@@ -50,64 +46,68 @@ export default function ChatWidget({ postId, postType, agencyName, agencyLogo }:
   useEffect(() => {
     // Only connect on first mount
     if (isFirstMount.current) {
-      console.log("Connecting to chat:", postId, postType);
-      connectToChat(postId, postType);
-      isFirstMount.current = false;
-      
+      console.log("Connecting to chat:", postId, postType)
+      connectToChat(postId, postType)
+      isFirstMount.current = false
+
       // Store the connection info
-      chatConnectionRef.current = { postId, postType };
+      chatConnectionRef.current = { postId, postType }
     }
-    
+
     // Disconnect when component unmounts
     return () => {
-      disconnectFromChat();
-    };
-  // Empty dependency array to run once on mount, disconnectFromChat is stable
-  }, []);
+      disconnectFromChat()
+    }
+    // Empty dependency array to run once on mount, disconnectFromChat is stable
+  }, [])
 
   // Process unread messages - separated from messages dependency
   useEffect(() => {
     // Debounce function to avoid too many state updates
     const processUnreadMessages = () => {
       const unreadMessages = messages.filter(
-        (msg) => 
-          msg.id && 
-          !msg.isRead && 
-          msg.sender !== "user" && 
+        (msg) =>
+          msg.id &&
+          !msg.isRead &&
+          msg.sender !== "user" &&
           !processedMessageIds.current.has(msg.id)
-      );
+      )
 
       if (unreadMessages.length > 0) {
         unreadMessages.forEach((msg) => {
           if (msg.id) {
-            markAsRead(msg.id);
-            processedMessageIds.current.add(msg.id);
+            markAsRead(msg.id)
+            processedMessageIds.current.add(msg.id)
           }
-        });
+        })
       }
-    };
+    }
 
-    const timeoutId = setTimeout(processUnreadMessages, 300);
-    return () => clearTimeout(timeoutId);
-  }, [messages, markAsRead]);
+    const timeoutId = setTimeout(processUnreadMessages, 300)
+    return () => clearTimeout(timeoutId)
+  }, [messages, markAsRead])
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages.length])
 
   const handleSend = () => {
-    if (!message.trim()) return;
-    sendMessage(chatConnectionRef.current.postId, chatConnectionRef.current.postType, message.trim());
-    setMessage("");
-  };
+    if (!message.trim()) return
+    sendMessage(
+      chatConnectionRef.current.postId,
+      chatConnectionRef.current.postType,
+      message.trim()
+    )
+    setMessage("")
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      e.preventDefault()
+      handleSend()
     }
-  };
+  }
 
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg border-primary/10">
@@ -198,9 +198,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             {message.content}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
-            {message.createdAt && formatDistanceToNow(new Date(message.createdAt), {
-              addSuffix: true,
-            })}
+            {message.createdAt &&
+              formatDistanceToNow(new Date(message.createdAt), {
+                addSuffix: true,
+              })}
           </div>
         </div>
 

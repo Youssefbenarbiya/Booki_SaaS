@@ -42,35 +42,35 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
 
   // Store selected conversation in a ref to avoid dependency cycles
-  const selectedConversationRef = useRef<ChatConversation | null>(null);
-  
+  const selectedConversationRef = useRef<ChatConversation | null>(null)
+
   // Connect to the chat when a conversation is selected
   useEffect(() => {
     if (selectedConversation) {
-      selectedConversationRef.current = selectedConversation;
-      connectToChat(selectedConversation.postId, selectedConversation.postType);
+      selectedConversationRef.current = selectedConversation
+      connectToChat(selectedConversation.postId, selectedConversation.postType)
     } else {
-      selectedConversationRef.current = null;
-      disconnectFromChat();
+      selectedConversationRef.current = null
+      disconnectFromChat()
     }
-  }, [selectedConversation]);  // Don't include connectToChat or disconnectFromChat as dependencies
+  }, [selectedConversation]) // Don't include connectToChat or disconnectFromChat as dependencies
 
   // Select a conversation
   const handleSelectConversation = (conversation: ChatConversation) => {
-    setSelectedConversation(conversation);
+    setSelectedConversation(conversation)
     // Mark messages as read (would implement server action for this)
   }
 
   // Send a message to the current conversation
   const handleSendMessage = async () => {
-    if (!selectedConversationRef.current || !messageText.trim()) return;
+    if (!selectedConversationRef.current || !messageText.trim()) return
 
     await sendMessage(
       selectedConversationRef.current.postId,
       selectedConversationRef.current.postType,
       messageText
-    );
-    setMessageText("");
+    )
+    setMessageText("")
   }
 
   return (
