@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useSession } from "@/auth-client"
 import { ChatProvider } from "@/lib/contexts/ChatContext"
 import { useChat } from "@/lib/contexts/ChatContext"
@@ -41,31 +41,36 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   const [messageText, setMessageText] = useState("")
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
 
+  // Store selected conversation in a ref to avoid dependency cycles
+  const selectedConversationRef = useRef<ChatConversation | null>(null);
+  
   // Connect to the chat when a conversation is selected
   useEffect(() => {
     if (selectedConversation) {
-      connectToChat(selectedConversation.postId, selectedConversation.postType)
+      selectedConversationRef.current = selectedConversation;
+      connectToChat(selectedConversation.postId, selectedConversation.postType);
     } else {
-      disconnectFromChat()
+      selectedConversationRef.current = null;
+      disconnectFromChat();
     }
-  }, [selectedConversation, connectToChat, disconnectFromChat])
+  }, [selectedConversation]);  // Don't include connectToChat or disconnectFromChat as dependencies
 
   // Select a conversation
   const handleSelectConversation = (conversation: ChatConversation) => {
-    setSelectedConversation(conversation)
+    setSelectedConversation(conversation);
     // Mark messages as read (would implement server action for this)
   }
 
   // Send a message to the current conversation
   const handleSendMessage = async () => {
-    if (!selectedConversation || !messageText.trim()) return
+    if (!selectedConversationRef.current || !messageText.trim()) return;
 
     await sendMessage(
-      selectedConversation.postId,
-      selectedConversation.postType,
+      selectedConversationRef.current.postId,
+      selectedConversationRef.current.postType,
       messageText
-    )
-    setMessageText("")
+    );
+    setMessageText("");
   }
 
   return (

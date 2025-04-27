@@ -12,7 +12,7 @@ interface DashboardLayoutProps {
 }
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard",
+  title: "Agency Dashboard",
   description: "Admin dashboard for managing the application",
 }
 
@@ -23,12 +23,12 @@ export default async function DashboardLayout({
     headers: await headers(),
   })
 
-if (
-  !session ||
-  (session.user.role !== "agency owner" && session.user.role !== "employee")
-) {
-  return <NotAllowed />
-}
+  if (
+    !session ||
+    (session.user.role !== "agency owner" && session.user.role !== "employee")
+  ) {
+    return <NotAllowed />
+  }
 
   // Get initial notifications
   const { notifications, unreadCount } = await getAgencyNotifications(5)
@@ -37,7 +37,10 @@ if (
     type: (["error", "info", "success", "warning"].includes(notification.type)
       ? notification.type
       : "info") as "error" | "info" | "success" | "warning",
-    userId: typeof notification.userId === 'string' ? Number(notification.userId) : notification.userId,
+    userId:
+      typeof notification.userId === "string"
+        ? Number(notification.userId)
+        : notification.userId,
   }))
 
   return (

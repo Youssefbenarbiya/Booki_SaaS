@@ -33,6 +33,7 @@ export default function ChatWidget({ postId, postType, agencyName, agencyLogo }:
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const processedMessageIds = useRef<Set<string>>(new Set())
   const isFirstMount = useRef(true)
+  const chatConnectionRef = useRef({ postId, postType })
   
   const {
     messages,
@@ -52,12 +53,16 @@ export default function ChatWidget({ postId, postType, agencyName, agencyLogo }:
       console.log("Connecting to chat:", postId, postType);
       connectToChat(postId, postType);
       isFirstMount.current = false;
+      
+      // Store the connection info
+      chatConnectionRef.current = { postId, postType };
     }
     
     // Disconnect when component unmounts
     return () => {
       disconnectFromChat();
     };
+  // Empty dependency array to run once on mount, disconnectFromChat is stable
   }, []);
 
   // Process unread messages - separated from messages dependency
@@ -93,7 +98,7 @@ export default function ChatWidget({ postId, postType, agencyName, agencyLogo }:
 
   const handleSend = () => {
     if (!message.trim()) return;
-    sendMessage(postId, postType, message.trim());
+    sendMessage(chatConnectionRef.current.postId, chatConnectionRef.current.postType, message.trim());
     setMessage("");
   };
 

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react"
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react"
 import { useSession } from "@/auth-client"
 import { ChatMessage } from "@/lib/types/chat"
 
@@ -31,6 +31,20 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null)
   const session = useSession()
 
+  // Use refs for values that shouldn't trigger dependency changes
+  const socketRef = useRef<WebSocket | null>(null)
+  const connectedRef = useRef(false)
+  const currentRoomIdRef = useRef<string | null>(null)
+  const onErrorRef = useRef<((error: string) => void) | undefined>(onError)
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    socketRef.current = socket;
+    connectedRef.current = connected;
+    currentRoomIdRef.current = currentRoomId;
+    onErrorRef.current = onError;
+  }, [socket, connected, currentRoomId, onError]);
+
   // Watch for errors and call onError prop when needed
   useEffect(() => {
     if (error && onError) {
@@ -40,17 +54,17 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
 
   const connectToChat = useCallback(
     (postId: string, postType: string) => {
-      // If already connected to this chat, do nothing
-      if (connected && currentRoomId === `${postId}-${postType}`) {
+      // Use refs instead of state values to avoid dependency cycle
+      if (connectedRef.current && currentRoomIdRef.current === `${postId}-${postType}`) {
         return;
       }
       
       // Disconnect from any existing connection first
-      if (socket) {
-        socket.close();
-        setSocket(null);
+      if (socketRef.current) {
+        socketRef.current.close();
       }
       
+      // Check if user is logged in
       if (!session.data?.user?.id) {
         setError("You must be logged in to chat")
         return
@@ -69,10 +83,11 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
         console.log(`Connecting to WebSocket at: ${wsUrl}`);
         
         const ws = new WebSocket(wsUrl);
+        socketRef.current = ws;
         
         // Set a connection timeout
         const connectionTimeout = setTimeout(() => {
-          if (!connected) {
+          if (!connectedRef.current && socketRef.current === ws) {
             console.log('WebSocket connection timeout');
             setError('Connection timeout. Please try again.');
             setLoading(false);
@@ -82,8 +97,8 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
             }
             
             // If onError callback is provided, call it
-            if (onError) {
-              onError('Connection timeout. Please try again.');
+            if (onErrorRef.current) {
+              onErrorRef.current('Connection timeout. Please try again.');
             }
           }
         }, 10000);
@@ -94,6 +109,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
           setConnected(true)
           setLoading(false)
           setCurrentRoomId(`${postId}-${postType}`)
+          setSocket(ws)
         }
         
         ws.onmessage = (event) => {
@@ -133,33 +149,35 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
         
         ws.onclose = () => {
           console.log('WebSocket connection closed');
-          setConnected(false)
-          setSocket(null)
+          // Only update state if this is the current socket
+          if (socketRef.current === ws) {
+            setConnected(false)
+            setSocket(null)
+          }
         }
-        
-        setSocket(ws)
       } catch (err) {
         console.error('Error connecting to chat:', err)
         setError('Failed to connect to chat server')
         setLoading(false)
       }
     },
-    [session, socket, connected, currentRoomId, onError]
+    // Only depend on session to prevent unnecessary recreation
+    [session]
   )
 
   const disconnectFromChat = useCallback(() => {
-    if (socket) {
-      socket.close()
+    if (socketRef.current) {
+      socketRef.current.close();
       setSocket(null)
       setConnected(false)
       setCurrentRoomId(null)
       setMessages([])
     }
-  }, [socket])
+  }, [])
 
   const sendMessage = useCallback(
     (postId: string, postType: string, content: string) => {
-      if (!socket || !connected) {
+      if (!socketRef.current || !connectedRef.current) {
         setError('Not connected to chat')
         return
       }
@@ -171,21 +189,21 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
           postId,
           postType,
           userId: session.data?.user?.id,
-          roomId: currentRoomId,
+          roomId: currentRoomIdRef.current,
         }
         
-        socket.send(JSON.stringify(message))
+        socketRef.current.send(JSON.stringify(message))
       } catch (err) {
         console.error('Error sending message:', err)
         setError('Failed to send message')
       }
     },
-    [socket, connected, session.data?.user?.id, currentRoomId]
+    [session]
   )
 
   const markAsRead = useCallback(
     (messageId: string) => {
-      if (!socket || !connected) {
+      if (!socketRef.current || !connectedRef.current) {
         return
       }
       
@@ -196,7 +214,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
           userId: session.data?.user?.id,
         }
         
-        socket.send(JSON.stringify(readRequest))
+        socketRef.current.send(JSON.stringify(readRequest))
         
         // Optimistically update UI
         setMessages((prev) =>
@@ -208,16 +226,16 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
         console.error('Error marking message as read:', err)
       }
     },
-    [socket, connected, session.data?.user?.id]
+    [session]
   )
 
   useEffect(() => {
     return () => {
-      if (socket) {
-        socket.close()
+      if (socketRef.current) {
+        socketRef.current.close()
       }
     }
-  }, [socket])
+  }, [])
 
   const value = {
     messages,
@@ -239,4 +257,4 @@ export const useChat = (): ChatContextType => {
     throw new Error('useChat must be used within a ChatProvider')
   }
   return context
-} 
+}
