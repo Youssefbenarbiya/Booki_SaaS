@@ -11,6 +11,7 @@ import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Badge } from "../ui/badge"
 import { ScrollArea } from "../ui/scroll-area"
+import { useSession } from "@/auth-client"
 
 interface ChatWidgetProps {
   postId: string
@@ -30,6 +31,7 @@ export default function ChatWidget({
   const processedMessageIds = useRef<Set<string>>(new Set())
   const isFirstMount = useRef(true)
   const chatConnectionRef = useRef({ postId, postType })
+  const customerIdRef = useRef<string | null>(null)
 
   const {
     messages,
@@ -42,28 +44,29 @@ export default function ChatWidget({
     markAsRead,
   } = useChat()
 
-  // Connect to chat on mount only
+  const session = useSession()
+
   useEffect(() => {
-    // Only connect on first mount
+    if (session?.data?.user?.id) {
+      customerIdRef.current = session.data.user.id
+    }
+  }, [session?.data?.user?.id])
+
+  useEffect(() => {
     if (isFirstMount.current) {
       console.log("Connecting to chat:", postId, postType)
       connectToChat(postId, postType)
       isFirstMount.current = false
 
-      // Store the connection info
       chatConnectionRef.current = { postId, postType }
     }
 
-    // Disconnect when component unmounts
     return () => {
       disconnectFromChat()
     }
-    // Empty dependency array to run once on mount, disconnectFromChat is stable
   }, [])
 
-  // Process unread messages - separated from messages dependency
   useEffect(() => {
-    // Debounce function to avoid too many state updates
     const processUnreadMessages = () => {
       const unreadMessages = messages.filter(
         (msg) =>
@@ -87,7 +90,6 @@ export default function ChatWidget({
     return () => clearTimeout(timeoutId)
   }, [messages, markAsRead])
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages.length])
@@ -146,7 +148,12 @@ export default function ChatWidget({
         ) : (
           <div className="space-y-4">
             {messages.map((msg, index) => (
-              <MessageBubble key={msg.id || index} message={msg} />
+              <MessageBubble 
+                key={msg.id || index} 
+                message={msg} 
+                agencyLogo={agencyLogo}
+                customerId={customerIdRef.current}
+              />
             ))}
             <div ref={messagesEndRef} />
           </div>
@@ -176,23 +183,49 @@ export default function ChatWidget({
   )
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
-  const isUser = message.sender === "user"
-
+function MessageBubble({ 
+  message, 
+  agencyLogo,
+  customerId
+}: { 
+  message: ChatMessage; 
+  agencyLogo?: string | null;
+  customerId?: string | null;
+}) {
+  // In customer chat view:
+  // - Messages FROM the agency should appear on the right
+  // - Customer's own messages should appear on the left
+  
+  // Determine if message is from the customer (self) or from the agency
+  const isCustomer = customerId && message.senderId === customerId;
+  const isFromAgency = 
+    // Basic agency identification checks
+    message.senderId?.includes("agency") || 
+    message.senderId?.startsWith("AGN-") ||
+    message.sender === "agency" ||
+    (message as any)?.isFromAgency === true ||
+    // If we know who the customer is, anything not from them is from the agency
+    (customerId && message.senderId !== customerId);
+  
+  // For a customer interface, we want to show:
+  // - Agency messages on the right (blue/primary color)
+  // - Customer's own messages on the left (gray/muted color)
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+    <div className={`flex ${isFromAgency ? "justify-end" : "justify-start"}`}>
       <div className="flex items-start gap-2 max-w-[80%]">
-        {!isUser && (
+        {!isFromAgency && (
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/images/avatar-host.png" alt="Host" />
-            <AvatarFallback>H</AvatarFallback>
+            <AvatarImage src="/images/avatar-user.png" alt="You" />
+            <AvatarFallback>U</AvatarFallback>
           </Avatar>
         )}
 
         <div>
           <div
             className={`p-3 rounded-lg ${
-              isUser ? "bg-primary text-primary-foreground" : "bg-muted"
+              isFromAgency 
+                ? "bg-primary text-primary-foreground rounded-br-none" 
+                : "bg-muted rounded-bl-none"
             }`}
           >
             {message.content}
@@ -205,10 +238,13 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           </div>
         </div>
 
-        {isUser && (
+        {isFromAgency && (
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/images/avatar-user.png" alt="You" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage 
+              src={agencyLogo || "/images/avatar-host.png"} 
+              alt="Agency" 
+            />
+            <AvatarFallback>A</AvatarFallback>
           </Avatar>
         )}
       </div>
