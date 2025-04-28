@@ -3,8 +3,8 @@ import ChatManager from "@/components/chat/ChatManager"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 import db from "@/db/drizzle"
-import { chatMessages } from "@/db/schema"
-import { desc, eq, sql, or } from "drizzle-orm"
+import { chatMessages, agencies, agencyEmployees } from "@/db/schema"
+import { desc, eq, sql, or, and, inArray } from "drizzle-orm"
 
 export default async function AgencyMessagesPage({
   params,
@@ -23,11 +23,28 @@ export default async function AgencyMessagesPage({
   const agencyId = session.user.id
   
   try {
-    // Get messages where agency is either sender or receiver using OR
+    // Get the agency data
+    const agencyData = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, agencyId)
+    });
+    
+    if (!agencyData) {
+      throw new Error("Agency not found");
+    }
+    
+    // Get all user IDs associated with this agency (owner + employees)
+    const employees = await db.query.agencyEmployees.findMany({
+      where: eq(agencyEmployees.agencyId, agencyId),
+      columns: { employeeId: true }
+    });
+    
+    const agencyUserIds = [agencyId, ...employees.map(emp => emp.employeeId)];
+    
+    // Get messages where any agency member is either sender or receiver
     const allMessages = await db.query.chatMessages.findMany({
       where: or(
-        eq(chatMessages.senderId, agencyId),
-        eq(chatMessages.receiverId, agencyId)
+        inArray(chatMessages.senderId, agencyUserIds),
+        inArray(chatMessages.receiverId, agencyUserIds)
       ),
       orderBy: [desc(chatMessages.createdAt)],
       limit: 100 // Increased limit to get more messages
@@ -46,9 +63,9 @@ export default async function AgencyMessagesPage({
           postType: message.postType,
           postName: `${message.postType.charAt(0).toUpperCase() + message.postType.slice(1)} #${message.postId}`,
           lastMessage: message,
-          unreadCount: message.receiverId === agencyId && !message.isRead ? 1 : 0
+          unreadCount: agencyUserIds.includes(message.receiverId) && !message.isRead ? 1 : 0
         });
-      } else if (message.receiverId === agencyId && !message.isRead) {
+      } else if (agencyUserIds.includes(message.receiverId) && !message.isRead) {
         // Increment unread count for existing conversation
         const conv = conversationMap.get(key);
         conv.unreadCount = (conv.unreadCount || 0) + 1;

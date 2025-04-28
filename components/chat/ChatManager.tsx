@@ -160,9 +160,14 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                 <div className="space-y-3">
                   {messages.map((message, index) => {
                     const isSentByMe = message.senderId === session?.user?.id
+                    // Ensure we have a truly unique key by combining id with other unique properties
+                    const messageKey = message.id ? 
+                      `${message.id}-${message.senderId}-${Date.now()}` : 
+                      `temp-${index}-${Date.now()}`
+                    
                     return (
                       <div
-                        key={message.id || index}
+                        key={messageKey}
                         className={`flex ${
                           isSentByMe ? "justify-end" : "justify-start"
                         }`}

@@ -1,7 +1,7 @@
 "use server"
 
-import { chatMessages } from "@/db/schema"
-import { eq, and, desc, or, count } from "drizzle-orm"
+import { chatMessages, agencies, agencyEmployees } from "@/db/schema"
+import { eq, and, desc, or, count, inArray } from "drizzle-orm"
 import { ChatMessage } from "@/lib/types/chat"
 import db from "@/db/drizzle"
 
@@ -28,27 +28,77 @@ export async function saveChatMessage(message: ChatMessage) {
 }
 
 /**
+ * Get all user IDs associated with an agency
+ * @param agencyId The agency user ID
+ * @returns Array of user IDs (agency owner + employees)
+ */
+async function getAgencyUserIds(agencyId: string): Promise<string[]> {
+  try {
+    // Get agency employees first
+    const employees = await db.query.agencyEmployees.findMany({
+      where: eq(agencyEmployees.agencyId, agencyId),
+      columns: { employeeId: true }
+    });
+    
+    const employeeIds = employees.map(emp => emp.employeeId);
+    
+    // Add the agency owner's ID
+    return [agencyId, ...employeeIds];
+  } catch (error) {
+    console.error("Error fetching agency user IDs:", error);
+    return [agencyId]; // Fall back to just the agency owner ID
+  }
+}
+
+/**
  * Get chat messages for a specific post
  */
 export async function getChatMessages(postId: string, postType: string, userId: string) {
   try {
-    const result = await db.query.chatMessages.findMany({
-      where: and(
+    // Check if user is an agency member
+    const agency = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, userId),
+      columns: { userId: true }
+    });
+    
+    // Create query conditions
+    let conditions;
+    
+    if (agency) {
+      // For agency users, get all agency user IDs to show all messages
+      // This includes the agency owner and all employees
+      const agencyUserIds = await getAgencyUserIds(agency.userId);
+      
+      conditions = and(
         eq(chatMessages.postId, postId),
         eq(chatMessages.postType, postType),
-        // User must be either sender or receiver to see messages
-        // This ensures privacy
+        or(
+          // Messages sent by any agency member
+          inArray(chatMessages.senderId, agencyUserIds),
+          // Messages received by any agency member
+          inArray(chatMessages.receiverId, agencyUserIds)
+        )
+      );
+    } else {
+      // For regular customers, only show their messages
+      conditions = and(
+        eq(chatMessages.postId, postId),
+        eq(chatMessages.postType, postType),
         or(
           eq(chatMessages.senderId, userId),
           eq(chatMessages.receiverId, userId)
         )
-      ),
+      );
+    }
+    
+    const result = await db.query.chatMessages.findMany({
+      where: conditions,
       orderBy: [desc(chatMessages.createdAt)],
       with: {
         sender: true,
         receiver: true,
       },
-    })
+    });
 
     return { success: true, messages: result }
   } catch (error) {
@@ -66,16 +116,37 @@ export async function markMessagesAsRead(
   receiverId: string
 ) {
   try {
+    // Check if user is an agency member
+    const agency = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, receiverId),
+      columns: { userId: true }
+    });
+    
+    let updateConditions;
+    
+    if (agency) {
+      // For agency users, get all agency user IDs
+      const agencyUserIds = await getAgencyUserIds(agency.userId);
+      
+      updateConditions = and(
+        eq(chatMessages.postId, postId),
+        eq(chatMessages.postType, postType),
+        inArray(chatMessages.receiverId, agencyUserIds),
+        eq(chatMessages.isRead, false)
+      );
+    } else {
+      // For regular customers
+      updateConditions = and(
+        eq(chatMessages.postId, postId),
+        eq(chatMessages.postType, postType),
+        eq(chatMessages.receiverId, receiverId),
+        eq(chatMessages.isRead, false)
+      );
+    }
+    
     await db.update(chatMessages)
       .set({ isRead: true })
-      .where(
-        and(
-          eq(chatMessages.postId, postId),
-          eq(chatMessages.postType, postType),
-          eq(chatMessages.receiverId, receiverId),
-          eq(chatMessages.isRead, false)
-        )
-      )
+      .where(updateConditions);
 
     return { success: true }
   } catch (error) {
@@ -89,14 +160,33 @@ export async function markMessagesAsRead(
  */
 export async function getUnreadMessageCount(userId: string) {
   try {
+    // Check if user is an agency member
+    const agency = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, userId),
+      columns: { userId: true }
+    });
+    
+    let countConditions;
+    
+    if (agency) {
+      // For agency users, get all agency user IDs
+      const agencyUserIds = await getAgencyUserIds(agency.userId);
+      
+      countConditions = and(
+        inArray(chatMessages.receiverId, agencyUserIds),
+        eq(chatMessages.isRead, false)
+      );
+    } else {
+      // For regular customers
+      countConditions = and(
+        eq(chatMessages.receiverId, userId),
+        eq(chatMessages.isRead, false)
+      );
+    }
+    
     const result = await db.select({ count: count() })
       .from(chatMessages)
-      .where(
-        and(
-          eq(chatMessages.receiverId, userId),
-          eq(chatMessages.isRead, false)
-        )
-      )
+      .where(countConditions);
 
     return { 
       success: true, 

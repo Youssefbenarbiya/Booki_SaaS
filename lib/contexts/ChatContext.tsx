@@ -131,7 +131,18 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
 
             if (data.type === "message") {
               console.log("Received chat message:", data.data)
-              setMessages((prev) => [...prev, data.data])
+              
+              // Check if this message is already in our state to prevent duplicates
+              // Use the message ID to identify duplicates
+              setMessages((prev) => {
+                // Skip if we already have this message
+                if (data.data.id && prev.some(msg => msg.id === data.data.id)) {
+                  console.log("Skipping duplicate message:", data.data.id)
+                  return prev
+                }
+                
+                return [...prev, data.data]
+              })
             } else if (data.type === "history") {
               console.log("Received message history:", data.messages)
               // Sort messages by creation date

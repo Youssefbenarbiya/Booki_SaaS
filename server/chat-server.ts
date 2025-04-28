@@ -10,7 +10,7 @@ import {
 } from "@/lib/types/chat"
 import { saveChatMessage, getChatMessages } from "@/actions/chat/chatActions"
 import db from "@/db/drizzle"
-import { trips, cars, hotel, room } from "@/db/schema"
+import { trips, cars, hotel, room, agencies } from "@/db/schema"
 import { eq } from "drizzle-orm"
 
 // Store active connections
@@ -33,6 +33,36 @@ const wss = new WebSocketServer({
 
 // Create Hono app for the API endpoints
 const app = new Hono();
+
+// Helper function to get agency unique ID from user ID
+async function getAgencyUniqueId(userId: string): Promise<string | null> {
+  try {
+    const agencyData = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, userId),
+      columns: { agencyUniqueId: true }
+    });
+    
+    return agencyData?.agencyUniqueId || null;
+  } catch (error) {
+    console.error("Error fetching agency unique ID:", error);
+    return null;
+  }
+}
+
+// Helper function to get agency user ID from unique ID
+async function getAgencyUserIdFromUniqueId(uniqueId: string): Promise<string | null> {
+  try {
+    const agencyData = await db.query.agencies.findFirst({
+      where: eq(agencies.agencyUniqueId, uniqueId),
+      columns: { userId: true }
+    });
+    
+    return agencyData?.userId || null;
+  } catch (error) {
+    console.error("Error fetching agency user ID:", error);
+    return null;
+  }
+}
 
 // Handle WebSocket connection
 wss.on("connection", async (ws: WSWebSocket, req) => {
@@ -185,7 +215,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             postId: messagePostId,
             postType: messagePostType,
             senderId: userId,
-            receiverId: "", // Will be set based on role below
+            receiverId: "", // Will be set below
             sender: "user",
             type: "text",
             createdAt: new Date().toISOString(),
@@ -206,80 +236,159 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             return
           }
           
-          // Determine recipient based on sender role
+          // Determine if sender is from an agency (has agencyId)
+          const senderAgencyUniqueId = await getAgencyUniqueId(userId)
+          const isSenderFromAgency = !!senderAgencyUniqueId
+          
+          // Determine recipient based on sender type
           let recipientId = ""
           let recipientConnection: ChatConnection | undefined
-          
-          if (userRole === "agency owner") {
-            // Agency is sending to customer
-            recipientConnection = postConnection.customerConnection
-            recipientId = postConnection.customerConnection?.userId || ""
+
+          if (isSenderFromAgency) {
+            // Sender is from agency - send to the customer
+            
+            // Reset recipientId to ensure we're not using a stale value
+            recipientId = "";
+            
+            // First priority: Check message history to find the original customer
+            try {
+              // Get complete message history for this conversation
+              console.log("Looking for customer in message history for:", messagePostId, messagePostType);
+              const history = await getChatMessages(messagePostId, messagePostType, userId);
+              
+              if (history.success && history.messages && history.messages.length > 0) {
+                // Sort messages by creation date (oldest first) to find the conversation starter
+                const sortedMessages = [...history.messages].sort(
+                  (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                );
+                
+                console.log(`Found ${sortedMessages.length} messages in history to search for customer`);
+                
+                // APPROACH 1: Find the initiator of the conversation (usually the customer)
+                const firstMessage = sortedMessages[0];
+                if (firstMessage && firstMessage.senderId !== userId) {
+                  recipientId = firstMessage.senderId;
+                  console.log("Found conversation initiator as recipient:", recipientId);
+                }
+                
+                // If we didn't find a valid recipient yet, try another approach
+                if (!recipientId || recipientId === userId) {
+                  // APPROACH 2: Find any message from a non-agency user
+                  const customerMessage = sortedMessages.find(msg => {
+                    return msg.senderId !== userId && !msg.senderId.includes('agency');
+                  });
+                  
+                  if (customerMessage) {
+                    recipientId = customerMessage.senderId;
+                    console.log("Found customer sender as recipient:", recipientId);
+                  }
+                }
+                
+                // If we still don't have a recipient, try a third approach
+                if (!recipientId || recipientId === userId) {
+                  // APPROACH 3: Find any message where this agency was the recipient
+                  const receivedMessage = sortedMessages.find(msg => 
+                    msg.receiverId === userId && msg.senderId !== userId
+                  );
+                  
+                  if (receivedMessage) {
+                    recipientId = receivedMessage.senderId;
+                    console.log("Found customer from received message:", recipientId);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Error finding customer from history:", error);
+            }
+            
+            // Second priority: Try the active connection if history search failed
+            if (!recipientId || recipientId === userId) {
+              if (postConnection.customerConnection) {
+                recipientId = postConnection.customerConnection.userId;
+                recipientConnection = postConnection.customerConnection;
+                console.log("Using active customer connection:", recipientId);
+              }
+            }
+            
+            // Final validation - NEVER send a message to ourselves
+            if (!recipientId || recipientId === userId) {
+              console.error("WARNING: Failed to find valid recipient - preventing self-message");
+              ws.send(JSON.stringify({
+                type: "error",
+                data: { error: "Could not determine the recipient for your message" }
+              }));
+              return; // Abort the message send
+            }
           } else {
-            // Customer is sending to agency - need to find the agency that owns this listing
+            // Sender is a customer - send to the agency that owns this listing
             try {
               // Look up the agency ID from the database based on the postType and postId
-              let agencyIdForPost = "";
+              let agencyIdForPost = ""
               
               if (messagePostType === "trip") {
                 const trip = await db.query.trips.findFirst({
                   where: eq(trips.id, parseInt(messagePostId)),
                   columns: { agencyId: true }
-                });
-                agencyIdForPost = trip?.agencyId || "";
-                console.log("Found agency for trip:", agencyIdForPost);
+                })
+                agencyIdForPost = trip?.agencyId || ""
               } else if (messagePostType === "car") {
                 const car = await db.query.cars.findFirst({
                   where: eq(cars.id, parseInt(messagePostId)),
                   columns: { agencyId: true }
-                });
-                agencyIdForPost = car?.agencyId || "";
-                console.log("Found agency for car:", agencyIdForPost);
+                })
+                agencyIdForPost = car?.agencyId || ""
               } else if (messagePostType === "hotel") {
                 const hotelData = await db.query.hotel.findFirst({
                   where: eq(hotel.id, messagePostId),
                   columns: { agencyId: true }
-                });
-                agencyIdForPost = hotelData?.agencyId || "";
-                console.log("Found agency for hotel:", agencyIdForPost);
+                })
+                agencyIdForPost = hotelData?.agencyId || ""
               } else if (messagePostType === "room") {
                 // For rooms, find the hotel first, then get the agency
                 const roomData = await db.query.room.findFirst({
                   where: eq(room.id, messagePostId),
                   columns: { hotelId: true }
-                });
+                })
                 
                 if (roomData?.hotelId) {
                   const hotelData = await db.query.hotel.findFirst({
                     where: eq(hotel.id, roomData.hotelId),
                     columns: { agencyId: true }
-                  });
-                  if (hotelData?.agencyId) {
-                    recipientId = hotelData.agencyId;
-                    console.log("Fallback: Found agency for room via hotel:", recipientId);
-                  }
+                  })
+                  agencyIdForPost = hotelData?.agencyId || ""
                 }
               }
               
-              // If we found an agency ID from the database, use it
               if (agencyIdForPost) {
-                recipientId = agencyIdForPost;
+                // Get the agency's unique ID for logic purposes
+                const agencyUniqueId = await getAgencyUniqueId(agencyIdForPost);
+                
+                if (agencyUniqueId) {
+                  // Log that we're using agency unique ID for routing
+                  console.log("Using agency unique ID for routing:", agencyUniqueId);
+                  // But use the agency's userId as the actual receiverId in the database
+                  recipientId = agencyIdForPost;
+                } else {
+                  // Fallback to the agency's user ID if unique ID not found
+                  recipientId = agencyIdForPost;
+                }
               } else {
-                // Fallback to the connected agency (for backward compatibility)
-                recipientConnection = postConnection.agencyConnection;
-                recipientId = postConnection.agencyConnection?.userId || "";
+                // Fallback to the connected agency
+                recipientConnection = postConnection.agencyConnection
+                recipientId = postConnection.agencyConnection?.userId || ""
               }
             } catch (error) {
-              console.error("Error finding agency for post:", error);
+              console.error("Error finding agency for post:", error)
               // Fallback to the connected agency
-              recipientConnection = postConnection.agencyConnection;
-              recipientId = postConnection.agencyConnection?.userId || "";
+              recipientConnection = postConnection.agencyConnection
+              recipientId = postConnection.agencyConnection?.userId || ""
             }
           }
           
           // Validate recipient ID
           if (!recipientId) {
             console.error("No valid recipient found:", { 
-              userRole, 
+              isSenderFromAgency,
               hasAgencyConnection: !!postConnection.agencyConnection,
               hasCustomerConnection: !!postConnection.customerConnection,
               postId,
@@ -289,7 +398,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             
             // Try to create a fallback based on the post information
             try {
-              if (userRole === "customer") {
+              if (!isSenderFromAgency) {
                 // For a customer sending a message, try to find the correct agency from database
                 if (messagePostType === "trip") {
                   const trip = await db.query.trips.findFirst({
@@ -297,8 +406,13 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                     columns: { agencyId: true }
                   });
                   if (trip?.agencyId) {
+                    // We found the agency, use its user ID for the receiverId
                     recipientId = trip.agencyId;
-                    console.log("Fallback: Found agency for trip:", recipientId);
+                    // But log that we're using the unique ID for routing purposes
+                    const agencyUniqueId = await getAgencyUniqueId(trip.agencyId);
+                    if (agencyUniqueId) {
+                      console.log("Using agency unique ID for routing:", agencyUniqueId);
+                    }
                   }
                 } else if (messagePostType === "car") {
                   const car = await db.query.cars.findFirst({
@@ -306,8 +420,13 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                     columns: { agencyId: true }
                   });
                   if (car?.agencyId) {
+                    // We found the agency, use its user ID for the receiverId
                     recipientId = car.agencyId;
-                    console.log("Fallback: Found agency for car:", recipientId);
+                    // But log that we're using the unique ID for routing purposes
+                    const agencyUniqueId = await getAgencyUniqueId(car.agencyId);
+                    if (agencyUniqueId) {
+                      console.log("Using agency unique ID for routing:", agencyUniqueId);
+                    }
                   }
                 } else if (messagePostType === "hotel") {
                   const hotelData = await db.query.hotel.findFirst({
@@ -315,8 +434,13 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                     columns: { agencyId: true }
                   });
                   if (hotelData?.agencyId) {
+                    // We found the agency, use its user ID for the receiverId
                     recipientId = hotelData.agencyId;
-                    console.log("Fallback: Found agency for hotel:", recipientId);
+                    // But log that we're using the unique ID for routing purposes
+                    const agencyUniqueId = await getAgencyUniqueId(hotelData.agencyId);
+                    if (agencyUniqueId) {
+                      console.log("Using agency unique ID for routing:", agencyUniqueId);
+                    }
                   }
                 } else if (messagePostType === "room") {
                   // For rooms, find the hotel first, then get the agency
@@ -331,8 +455,13 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                       columns: { agencyId: true }
                     });
                     if (hotelData?.agencyId) {
+                      // We found the agency, use its user ID for the receiverId
                       recipientId = hotelData.agencyId;
-                      console.log("Fallback: Found agency for room via hotel:", recipientId);
+                      // But log that we're using the unique ID for routing purposes
+                      const agencyUniqueId = await getAgencyUniqueId(hotelData.agencyId);
+                      if (agencyUniqueId) {
+                        console.log("Using agency unique ID for routing:", agencyUniqueId);
+                      }
                     }
                   }
                 }
@@ -343,18 +472,35 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                   console.log("Using generic fallback agency ID:", recipientId);
                 }
               } else {
-                // For agency sending to customer, we need to find a customer from booking history
-                // This would be a more advanced implementation
-                // For now, use a fallback pattern
-                recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`;
-                console.log("Using generic fallback customer ID:", recipientId);
+                // For agency sending to customer, try to find a customer from message history
+                try {
+                  // Look for the first message in this conversation from a non-agency user
+                  const history = await getChatMessages(messagePostId, messagePostType, userId)
+                  if (history.success && history.messages && history.messages.length > 0) {
+                    // Find the first customer message in this conversation
+                    const customerMessage = history.messages.find(msg => {
+                      // A customer won't have an agency unique ID in sender or receiver
+                      return !msg.senderId.includes("agency") && msg.senderId !== userId
+                    })
+                    
+                    if (customerMessage) {
+                      recipientId = customerMessage.senderId
+                      console.log("Found customer recipient from message history:", recipientId)
+                    } else {
+                      recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`;
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error finding customer from history:", error)
+                  recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`;
+                }
               }
             } catch (error) {
               console.error("Error in fallback recipient search:", error);
               // Last resort fallback
-              recipientId = userRole === "customer" 
-                ? `fallback_agency_${Date.now()}` 
-                : `fallback_customer_${Date.now()}`;
+              recipientId = isSenderFromAgency 
+                ? `fallback_customer_${Date.now()}` 
+                : `fallback_agency_${Date.now()}`;
             }
             
             ws.send(JSON.stringify({
