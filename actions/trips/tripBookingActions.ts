@@ -72,7 +72,7 @@ export async function createBooking({
         userId: userId,
         seatsBooked: seatsBooked,
         totalPrice: sql`${totalPrice}::decimal`,
-        status: "pending", // Start as pending until payment is confirmed
+        status: "confirmed", 
         bookingDate: new Date(),
         paymentCurrency: paymentCurrency || trip.currency, // Store the payment currency
         originalCurrency: trip.currency, // Store the original currency for reference

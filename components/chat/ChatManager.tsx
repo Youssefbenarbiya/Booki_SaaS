@@ -1,14 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "@/auth-client"
 import { ChatProvider } from "@/lib/contexts/ChatContext"
 import { useChat } from "@/lib/contexts/ChatContext"
 import { Button } from "@/components/ui/button"
-import { Loader2, MessageSquare, Send } from "lucide-react"
+import { Loader2, MessageSquare, Send, User } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Textarea } from "@/components/ui/textarea"
 import { ChatMessage } from "@/lib/types/chat"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface ChatConversation {
   postId: string
@@ -16,6 +18,12 @@ interface ChatConversation {
   postName: string
   lastMessage: ChatMessage | null
   unreadCount: number
+}
+
+interface UserInfo {
+  id: string
+  name: string | null
+  image: string | null
 }
 
 interface ChatManagerProps {
@@ -40,6 +48,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
     useState<ChatConversation | null>(null)
   const [messageText, setMessageText] = useState("")
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
+  const [userCache, setUserCache] = useState<Record<string, UserInfo>>({})
 
   // Store selected conversation in a ref to avoid dependency cycles
   const selectedConversationRef = useRef<ChatConversation | null>(null)
@@ -54,6 +63,59 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       disconnectFromChat()
     }
   }, [selectedConversation]) // Don't include connectToChat or disconnectFromChat as dependencies
+
+  // Fetch user information for message senders
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const userIds = messages
+        .map((msg) => msg.senderId)
+        .filter((id) => id && !userCache[id])
+        .filter((id, index, self) => self.indexOf(id) === index) // Get unique IDs
+
+      if (userIds.length === 0) return
+
+      try {
+        // Use a more robust API fetching approach
+        for (const userId of userIds) {
+          // Store default fallback info immediately to avoid repeated failed requests
+          if (!userCache[userId]) {
+            setUserCache((prev) => ({
+              ...prev,
+              [userId]: {
+                id: userId,
+                name: userId === session?.user?.id ? session.user.name : "User",
+                image: userId === session?.user?.id ? session.user.image : null,
+              },
+            }))
+          }
+
+          try {
+            // Try to fetch user data from API
+            const response = await fetch(`/api/chat/users/${userId}`)
+            if (response.ok) {
+              const userData = await response.json()
+              setUserCache((prev) => ({
+                ...prev,
+                [userId]: {
+                  id: userId,
+                  name: userData.name || "User",
+                  image: userData.image || null,
+                },
+              }))
+            }
+          } catch (error) {
+            console.log(`User data not available for ${userId}, using fallback`)
+          }
+        }
+      } catch (error) {
+        console.error("Error handling user data:", error)
+      }
+    }
+
+    if (messages.length > 0) {
+      fetchUserInfo()
+    }
+  }, [messages, session])
 
   // Select a conversation
   const handleSelectConversation = (conversation: ChatConversation) => {
@@ -71,6 +133,17 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       messageText
     )
     setMessageText("")
+  }
+
+  // Get initials from name for avatar fallback
+  const getInitials = (name: string | null): string => {
+    if (!name || name === "User") return "U"
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   return (
@@ -157,46 +230,88 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                   <p>No messages in this conversation</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {messages.map((message, index) => {
                     const isSentByMe = message.senderId === session?.user?.id
-                    // Ensure we have a truly unique key by combining id with other unique properties
-                    const messageKey = message.id ? 
-                      `${message.id}-${message.senderId}-${Date.now()}` : 
-                      `temp-${index}-${Date.now()}`
-                    
+                    // Get sender information - use fallbacks for missing data
+                    const senderInfo = userCache[message.senderId] || {
+                      id: message.senderId,
+                      name: isSentByMe ? session?.user?.name || "Me" : "User",
+                      image: isSentByMe ? session?.user?.image : null,
+                    }
+
+                    // Ensure we have a truly unique key
+                    const messageKey = `${message.id || "temp"}-${index}-${
+                      message.senderId
+                    }`
+
                     return (
                       <div
                         key={messageKey}
                         className={`flex ${
                           isSentByMe ? "justify-end" : "justify-start"
-                        }`}
+                        } items-start gap-2`}
                       >
-                        <div
-                          className={`max-w-[85%] rounded-lg p-3 ${
-                            isSentByMe
-                              ? "bg-primary text-white rounded-br-none"
-                              : "bg-white border border-gray-200 rounded-bl-none"
-                          }`}
-                        >
-                          <p className="text-sm break-words">
-                            {message.content}
-                          </p>
-                          <p
-                            className={`text-xs mt-1 ${
-                              isSentByMe ? "text-primary-50" : "text-gray-500"
+                        {/* Avatar for received messages */}
+                        {!isSentByMe && (
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarImage
+                              src={senderInfo.image || undefined}
+                              alt={senderInfo.name || "User"}
+                            />
+                            <AvatarFallback className="bg-primary/20 text-xs">
+                              {getInitials(senderInfo.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+
+                        <div className="flex flex-col max-w-[75%]">
+                          {/* Always show sender name for received messages */}
+                          {!isSentByMe && (
+                            <span className="text-xs font-medium text-gray-700 mb-1 ml-1">
+                              {senderInfo.name || "User"}
+                            </span>
+                          )}
+
+                          <div
+                            className={`rounded-lg p-3 ${
+                              isSentByMe
+                                ? "bg-primary text-white rounded-tr-none"
+                                : "bg-white border border-gray-200 rounded-tl-none"
                             }`}
                           >
-                            {message.createdAt
-                              ? formatDistanceToNow(
-                                  new Date(message.createdAt),
-                                  {
-                                    addSuffix: true,
-                                  }
-                                )
-                              : "Just now"}
-                          </p>
+                            <p className="text-sm break-words">
+                              {message.content}
+                            </p>
+                            <p
+                              className={`text-xs mt-1 ${
+                                isSentByMe ? "text-primary-50" : "text-gray-500"
+                              }`}
+                            >
+                              {message.createdAt
+                                ? formatDistanceToNow(
+                                    new Date(message.createdAt),
+                                    {
+                                      addSuffix: true,
+                                    }
+                                  )
+                                : "Just now"}
+                            </p>
+                          </div>
                         </div>
+
+                        {/* Avatar for sent messages */}
+                        {isSentByMe && (
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarImage
+                              src={session?.user?.image || undefined}
+                              alt={session?.user?.name || "You"}
+                            />
+                            <AvatarFallback className="bg-primary/20 text-xs">
+                              {getInitials(session?.user?.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
                       </div>
                     )
                   })}

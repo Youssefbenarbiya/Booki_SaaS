@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { headers } from "next/headers"
 import db from "@/db/drizzle"
 import { chatMessages, agencies, agencyEmployees } from "@/db/schema"
-import { desc, eq, sql, or, and, inArray } from "drizzle-orm"
+import { desc, eq,  or,  inArray } from "drizzle-orm"
 
 export default async function AgencyMessagesPage({
   params,

@@ -115,7 +115,7 @@ export async function createRoomBooking({
           checkOut: checkOut.toISOString(),
           totalPrice: sql`${totalPriceInUSD}::decimal`,
           status: "confirmed", // initial status until payment is confirmed
-          paymentStatus: "pending",
+          paymentStatus: "confirmed",
           paymentMethod: "STRIPE_USD",
           paymentCurrency: "USD",
           originalPrice: `${finalTotalPrice}`,
@@ -228,7 +228,7 @@ export async function createRoomBooking({
           checkOut: checkOut.toISOString(),
           totalPrice: sql`${totalPriceInTND}::decimal`,
           status: "confirmed", // initial status until payment is confirmed
-          paymentStatus: "pending",
+          paymentStatus: "confirmed",
           paymentMethod: "FLOUCI_TND",
           paymentCurrency: "TND",
           originalPrice: `${finalTotalPrice}`,
