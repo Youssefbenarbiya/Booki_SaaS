@@ -51,6 +51,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
     error,
     connectToChat,
     disconnectFromChat,
+    clearMessages,
   } = useChat();
 
   const [conversations, setConversations] =
@@ -110,6 +111,17 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   useEffect(() => {
     if (selectedConversation) {
       selectedConversationRef.current = selectedConversation;
+
+      // If conversation has a customerId, set it before connecting
+      // This will ensure filtered messages
+      if (selectedConversation.customerId) {
+        console.log(
+          `Connecting to chat with customerId: ${selectedConversation.customerId}`
+        );
+      } else {
+        console.log("No customerId provided for conversation");
+      }
+
       connectToChat(
         selectedConversation.postId,
         selectedConversation.postType,
@@ -145,6 +157,12 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       selectedConversationRef.current = null;
       disconnectFromChat();
     }
+
+    // Cleanup function to disconnect when unmounting or changing conversations
+    return () => {
+      console.log("Cleaning up chat connection");
+      disconnectFromChat();
+    };
   }, [selectedConversation]); // Don't include connectToChat or disconnectFromChat as dependencies
 
   // Fetch user information for message senders
@@ -205,9 +223,49 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   }, [messages, session]);
 
   // Select a conversation
-  const handleSelectConversation = (conversation: ChatConversation) => {
-    setSelectedConversation(conversation);
-    // Mark messages as read (would implement server action for this)
+  const handleSelectConversation = async (conversation: ChatConversation) => {
+    try {
+      // First disconnect from any existing chat
+      disconnectFromChat();
+      clearMessages();
+
+      // Set selected conversation before connecting to chat
+      setSelectedConversation(conversation);
+
+      // If this conversation has customerId, ensure we're properly using it for filtering
+      if (conversation.customerId) {
+        console.log(
+          `Selected conversation with customer: ${conversation.customerId}`
+        );
+
+        // For agency users, try to fetch existing filtered messages first
+        if (
+          session?.user?.role === "agency owner" ||
+          session?.user?.role === "agency employee"
+        ) {
+          try {
+            console.log(
+              `Pre-fetching filtered messages for customer: ${conversation.customerId}`
+            );
+            setIsFetchingMessages(true);
+
+            // This pre-fetch helps trigger the server-side filtering
+            // The actual messages will be received via WebSocket
+            const response = await fetch(
+              `/api/chat?postId=${conversation.postId}&postType=${conversation.postType}&customerId=${conversation.customerId}`
+            );
+
+            setIsFetchingMessages(false);
+          } catch (error) {
+            console.error("Error pre-fetching messages:", error);
+            setIsFetchingMessages(false);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error selecting conversation:", error);
+      setIsFetchingMessages(false);
+    }
   };
 
   // Send a message to the current conversation
@@ -257,6 +315,84 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
 
     return "Customer";
   };
+
+  // Fetch filtered messages by API when needed (optional fallback)
+  const fetchFilteredMessages = async (
+    postId: string,
+    postType: string,
+    customerId: string
+  ) => {
+    try {
+      console.log(
+        `Manually fetching filtered messages for customer: ${customerId}`
+      );
+      setIsFetchingMessages(true);
+
+      const response = await fetch(
+        `/api/chat?postId=${postId}&postType=${postType}&customerId=${customerId}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+
+        if (data.messages) {
+          // Sort messages by creation date
+          const sortedMessages = [...data.messages].sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+
+          return sortedMessages;
+        }
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching filtered messages:", error);
+      return [];
+    } finally {
+      setIsFetchingMessages(false);
+    }
+  };
+
+  // Add a useEffect to handle the case when WebSocket fails to provide properly filtered messages
+  useEffect(() => {
+    if (selectedConversation?.customerId && messages.length > 0) {
+      // Check if we need to filter messages client-side as well
+      const userId = session?.user?.id;
+      const customerId = selectedConversation.customerId;
+
+      if (userId) {
+        const hasUnrelatedMessages = messages.some(
+          (msg) =>
+            (msg.senderId !== customerId && msg.receiverId !== customerId) ||
+            (msg.senderId !== userId && msg.receiverId !== userId)
+        );
+
+        if (hasUnrelatedMessages) {
+          // If we have messages unrelated to this customer, filter them out
+          console.log(
+            `Filtering out unrelated messages for customer: ${customerId}`
+          );
+
+          // Reconnect to get proper filtered messages
+          clearMessages(); // Clear messages first
+          connectToChat(
+            selectedConversation.postId,
+            selectedConversation.postType,
+            selectedConversation.customerId
+          );
+        }
+      }
+    }
+  }, [messages, selectedConversation, session, clearMessages, connectToChat]);
+
+  // Add a useEffect to provide customer context for new messages
+  useEffect(() => {
+    if (selectedConversation?.customerId && !loading && connected) {
+      // Keep track of the customer ID for any new messages being sent
+      selectedConversationRef.current = selectedConversation;
+    }
+  }, [selectedConversation, loading, connected]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">

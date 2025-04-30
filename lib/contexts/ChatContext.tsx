@@ -30,6 +30,7 @@ export interface ChatContextType {
   ) => void;
   disconnectFromChat: () => void;
   markAsRead: (messageId: string) => void;
+  clearMessages: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -46,12 +47,16 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
+    null
+  );
   const session = useSession();
 
   // Use refs for values that shouldn't trigger dependency changes
   const socketRef = useRef<WebSocket | null>(null);
   const connectedRef = useRef(false);
   const currentRoomIdRef = useRef<string | null>(null);
+  const currentCustomerIdRef = useRef<string | null>(null);
   const onErrorRef = useRef<((error: string) => void) | undefined>(onError);
 
   // Keep refs in sync with state
@@ -59,8 +64,9 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
     socketRef.current = socket;
     connectedRef.current = connected;
     currentRoomIdRef.current = currentRoomId;
+    currentCustomerIdRef.current = currentCustomerId;
     onErrorRef.current = onError;
-  }, [socket, connected, currentRoomId, onError]);
+  }, [socket, connected, currentRoomId, currentCustomerId, onError]);
 
   // Watch for errors and call onError prop when needed
   useEffect(() => {
@@ -78,6 +84,13 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
 
       if (connectedRef.current && currentRoomIdRef.current === roomIdKey) {
         return;
+      }
+
+      // Store the customerId for filtering messages
+      if (customerId) {
+        setCurrentCustomerId(customerId);
+      } else {
+        setCurrentCustomerId(null);
       }
 
       // Disconnect from any existing connection first
@@ -147,6 +160,21 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
             if (data.type === "message") {
               console.log("Received chat message:", data.data);
 
+              // Check if message is from/to current customer if we have one
+              if (currentCustomerIdRef.current) {
+                const msg = data.data;
+                const isBetweenSelectedCustomer =
+                  msg.senderId === currentCustomerIdRef.current ||
+                  msg.receiverId === currentCustomerIdRef.current;
+
+                if (!isBetweenSelectedCustomer) {
+                  console.log(
+                    "Filtering out message not related to selected customer"
+                  );
+                  return;
+                }
+              }
+
               // Check if this message is already in our state to prevent duplicates
               // Use the message ID to identify duplicates
               setMessages((prev) => {
@@ -169,7 +197,17 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
                   new Date(a.createdAt).getTime() -
                   new Date(b.createdAt).getTime()
               );
-              setMessages(sortedMessages);
+
+              // Filter messages by customerId if we have one
+              const filteredMessages = currentCustomerIdRef.current
+                ? sortedMessages.filter(
+                    (msg) =>
+                      msg.senderId === currentCustomerIdRef.current ||
+                      msg.receiverId === currentCustomerIdRef.current
+                  )
+                : sortedMessages;
+
+              setMessages(filteredMessages);
             } else if (data.type === "error") {
               console.error(
                 "Received error from server:",
@@ -217,6 +255,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
       setSocket(null);
       setConnected(false);
       setCurrentRoomId(null);
+      setCurrentCustomerId(null);
       setMessages([]);
     }
   }, []);
@@ -281,6 +320,11 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
     [session]
   );
 
+  // Add a clearMessages function
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (socketRef.current) {
@@ -298,6 +342,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
     connectToChat,
     disconnectFromChat,
     markAsRead,
+    clearMessages,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
