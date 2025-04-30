@@ -1,45 +1,58 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { redirect } from "next/navigation"
 import ChatManager from "@/components/chat/ChatManager"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 import db from "@/db/drizzle"
-import { chatMessages, agencies, agencyEmployees } from "@/db/schema"
-import { desc, eq,  or,  inArray } from "drizzle-orm"
-
+import {
+  chatMessages,
+  agencies,
+  agencyEmployees,
+  trips,
+  cars,
+  hotel,
+  room,
+} from "@/db/schema"
+import { desc, eq, inArray, or } from "drizzle-orm"
 export default async function AgencyMessagesPage({
   params,
 }: {
-  params: { locale: string }
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
 }) {
+  // Await params immediately:
+  const { locale } = await params
   // Get session from server
   const session = await auth.api.getSession({ headers: await headers() })
 
   // Check if user is authenticated and is an agency
   if (!session?.user || session.user.role !== "agency owner") {
-    redirect(`/${params.locale}/login?callbackUrl=/${params.locale}/agency/dashboard/messages`)
+    redirect(
+      `/${locale}/login?callbackUrl=/${locale}/agency/dashboard/messages`
+    )
   }
 
   // Fetch conversations for this agency
   const agencyId = session.user.id
-  
+
   try {
     // Get the agency data
     const agencyData = await db.query.agencies.findFirst({
-      where: eq(agencies.userId, agencyId)
-    });
-    
+      where: eq(agencies.userId, agencyId),
+    })
+
     if (!agencyData) {
-      throw new Error("Agency not found");
+      throw new Error("Agency not found")
     }
-    
+
     // Get all user IDs associated with this agency (owner + employees)
     const employees = await db.query.agencyEmployees.findMany({
       where: eq(agencyEmployees.agencyId, agencyId),
-      columns: { employeeId: true }
-    });
-    
-    const agencyUserIds = [agencyId, ...employees.map(emp => emp.employeeId)];
-    
+      columns: { employeeId: true },
+    })
+
+    const agencyUserIds = [agencyId, ...employees.map((emp) => emp.employeeId)]
+
     // Get messages where any agency member is either sender or receiver
     const allMessages = await db.query.chatMessages.findMany({
       where: or(
@@ -47,36 +60,105 @@ export default async function AgencyMessagesPage({
         inArray(chatMessages.receiverId, agencyUserIds)
       ),
       orderBy: [desc(chatMessages.createdAt)],
-      limit: 100 // Increased limit to get more messages
-    });
-    
+      limit: 100, // Increased limit to get more messages
+    })
+
     // Group by postId-postType combination to create conversations
-    const conversationMap = new Map();
-    
+    const conversationMap = new Map()
+
     for (const message of allMessages) {
-      const key = `${message.postType}-${message.postId}`;
-      
-      if (!conversationMap.has(key) || 
-          new Date(message.createdAt) > new Date(conversationMap.get(key).lastMessage.createdAt)) {
+      const key = `${message.postType}-${message.postId}`
+
+      if (
+        !conversationMap.has(key) ||
+        new Date(message.createdAt) >
+          new Date(conversationMap.get(key).lastMessage.createdAt)
+      ) {
         conversationMap.set(key, {
           postId: message.postId,
           postType: message.postType,
-          postName: `${message.postType.charAt(0).toUpperCase() + message.postType.slice(1)} #${message.postId}`,
+          postName: `${
+            message.postType.charAt(0).toUpperCase() + message.postType.slice(1)
+          } #${message.postId}`,
           lastMessage: message,
-          unreadCount: agencyUserIds.includes(message.receiverId) && !message.isRead ? 1 : 0
-        });
-      } else if (agencyUserIds.includes(message.receiverId) && !message.isRead) {
+          unreadCount:
+            agencyUserIds.includes(message.receiverId) && !message.isRead
+              ? 1
+              : 0,
+        })
+      } else if (
+        agencyUserIds.includes(message.receiverId) &&
+        !message.isRead
+      ) {
         // Increment unread count for existing conversation
-        const conv = conversationMap.get(key);
-        conv.unreadCount = (conv.unreadCount || 0) + 1;
-        conversationMap.set(key, conv);
+        const conv = conversationMap.get(key)
+        conv.unreadCount = (conv.unreadCount || 0) + 1
+        conversationMap.set(key, conv)
       }
     }
-    
+
     // Convert Map to array
-    const conversations = Array.from(conversationMap.values());
-    
-    console.log(`Found ${conversations.length} conversations for agency ${agencyId}`);
+    const conversations = Array.from(conversationMap.values())
+
+    // Try to enrich conversations with real names where possible
+    for (const conv of conversations) {
+      try {
+        let postDetails = null
+
+        switch (conv.postType) {
+          case "trip":
+            postDetails = await db.query.trips.findFirst({
+              where: eq(trips.id, parseInt(conv.postId)),
+              columns: { name: true },
+            })
+            if (postDetails?.name) {
+              conv.displayName = postDetails.name
+            }
+            break
+
+          case "car":
+            postDetails = await db.query.cars.findFirst({
+              where: eq(cars.id, parseInt(conv.postId)),
+              columns: { brand: true, model: true },
+            })
+            if (postDetails?.brand && postDetails?.model) {
+              conv.displayName = `${postDetails.brand} ${postDetails.model}`
+            }
+            break
+
+          case "hotel":
+            postDetails = await db.query.hotel.findFirst({
+              where: eq(hotel.id, conv.postId),
+              columns: { name: true },
+            })
+            if (postDetails?.name) {
+              conv.displayName = postDetails.name
+            }
+            break
+
+          case "room":
+            const roomDetails = await db.query.room.findFirst({
+              where: eq(room.id, conv.postId),
+              columns: { name: true, hotelId: true },
+              with: {
+                hotel: { columns: { name: true } },
+              },
+            })
+            if (roomDetails?.name && roomDetails?.hotel?.name) {
+              conv.displayName = `${roomDetails.name} at ${roomDetails.hotel.name}`
+            }
+            break
+        }
+      } catch (error) {
+        console.log(
+          `Could not fetch details for ${conv.postType} ${conv.postId}`
+        )
+      }
+    }
+
+    console.log(
+      `Found ${conversations.length} conversations for agency ${agencyId}`
+    )
 
     return (
       <div className="container mx-auto py-8 px-4">
@@ -85,7 +167,7 @@ export default async function AgencyMessagesPage({
           <p className="text-gray-500">
             Manage conversations with customers interested in your listings
           </p>
-          
+
           <div className="bg-white rounded-lg shadow p-4">
             <ChatManager initialConversations={conversations} />
           </div>
@@ -93,8 +175,8 @@ export default async function AgencyMessagesPage({
       </div>
     )
   } catch (error) {
-    console.error("Error fetching conversations:", error);
-    
+    console.error("Error fetching conversations:", error)
+
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="space-y-4">
@@ -102,7 +184,7 @@ export default async function AgencyMessagesPage({
           <p className="text-gray-500">
             Manage conversations with customers interested in your listings
           </p>
-          
+
           <div className="bg-white rounded-lg shadow p-4">
             <div className="p-4 bg-red-50 text-red-600 rounded-lg">
               Error loading conversations. Please try again later.

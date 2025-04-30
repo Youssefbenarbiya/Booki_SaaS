@@ -18,12 +18,19 @@ interface ChatConversation {
   postName: string
   lastMessage: ChatMessage | null
   unreadCount: number
+  displayName?: string // Added for actual post name
 }
 
 interface UserInfo {
   id: string
   name: string | null
   image: string | null
+}
+
+interface PostInfo {
+  id: string | number
+  name: string
+  type: string
 }
 
 interface ChatManagerProps {
@@ -49,15 +56,80 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   const [messageText, setMessageText] = useState("")
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
   const [userCache, setUserCache] = useState<Record<string, UserInfo>>({})
+  const [postCache, setPostCache] = useState<Record<string, PostInfo>>({})
 
   // Store selected conversation in a ref to avoid dependency cycles
   const selectedConversationRef = useRef<ChatConversation | null>(null)
+
+  // Load conversation details (offer names) when conversations are initialized
+  useEffect(() => {
+    async function loadPostDetails() {
+      for (const conv of initialConversations) {
+        const cacheKey = `${conv.postType}-${conv.postId}`
+        if (!postCache[cacheKey]) {
+          try {
+            const response = await fetch(
+              `/api/chat/posts?id=${conv.postId}&type=${conv.postType}`
+            )
+            if (response.ok) {
+              const postData = await response.json()
+              setPostCache((prev) => ({
+                ...prev,
+                [cacheKey]: postData,
+              }))
+
+              // Update conversation with display name
+              setConversations((prevConvs) =>
+                prevConvs.map((c) =>
+                  c.postId === conv.postId && c.postType === conv.postType
+                    ? { ...c, displayName: postData.name }
+                    : c
+                )
+              )
+            }
+          } catch (error) {
+            console.error(`Error fetching post details for ${cacheKey}:`, error)
+          }
+        }
+      }
+    }
+
+    if (initialConversations.length > 0) {
+      loadPostDetails()
+    }
+  }, [initialConversations])
 
   // Connect to the chat when a conversation is selected
   useEffect(() => {
     if (selectedConversation) {
       selectedConversationRef.current = selectedConversation
       connectToChat(selectedConversation.postId, selectedConversation.postType)
+
+      // Fetch post details if not already cached
+      const cacheKey = `${selectedConversation.postType}-${selectedConversation.postId}`
+      if (!postCache[cacheKey] && !selectedConversation.displayName) {
+        fetch(
+          `/api/chat/posts?id=${selectedConversation.postId}&type=${selectedConversation.postType}`
+        )
+          .then((res) => {
+            if (res.ok) return res.json()
+            throw new Error("Failed to fetch post details")
+          })
+          .then((data) => {
+            setPostCache((prev) => ({
+              ...prev,
+              [cacheKey]: data,
+            }))
+
+            // Update the selected conversation with the display name
+            setSelectedConversation((prev) =>
+              prev ? { ...prev, displayName: data.name } : null
+            )
+          })
+          .catch((err) => {
+            console.error("Error fetching post details:", err)
+          })
+      }
     } else {
       selectedConversationRef.current = null
       disconnectFromChat()
@@ -146,6 +218,21 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       .slice(0, 2)
   }
 
+  // Get display name for post
+  const getPostDisplayName = (conversation: ChatConversation): string => {
+    const cacheKey = `${conversation.postType}-${conversation.postId}`
+
+    if (conversation.displayName) {
+      return conversation.displayName
+    }
+
+    if (postCache[cacheKey]) {
+      return postCache[cacheKey].name
+    }
+
+    return conversation.postName // Fallback to generic name
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
       {/* Conversations List */}
@@ -174,7 +261,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                 >
                   <div className="flex justify-between">
                     <h3 className="font-medium text-sm truncate">
-                      {conv.postName}
+                      {getPostDisplayName(conv)}
                     </h3>
                     {conv.unreadCount > 0 && (
                       <span className="bg-primary text-white rounded-full px-2 py-0.5 text-xs">
@@ -182,6 +269,10 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                       </span>
                     )}
                   </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {conv.postType.charAt(0).toUpperCase() +
+                      conv.postType.slice(1)}
+                  </p>
                   {conv.lastMessage && (
                     <>
                       <p className="text-xs text-gray-600 mt-1 truncate">
@@ -211,7 +302,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
             {/* Chat Header */}
             <div className="p-3 bg-primary/10 border-b flex items-center">
               <h2 className="font-medium">
-                {selectedConversation.postName}
+                {getPostDisplayName(selectedConversation)}
                 <span className="text-xs text-gray-500 ml-2">
                   ({selectedConversation.postType})
                 </span>
