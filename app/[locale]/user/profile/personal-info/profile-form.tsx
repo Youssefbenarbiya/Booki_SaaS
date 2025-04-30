@@ -208,6 +208,11 @@ export function UpdateUserInfo({ session }: { session: Session }) {
         <div className="flex items-end mb-6">
           <div className="relative">
             <div className="rounded-full w-24 h-24 bg-gray-200 border-4 border-white overflow-hidden relative">
+              {isUploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-white" />
+                </div>
+              )}
               <Image
                 src={
                   imagePreview ||
@@ -220,8 +225,18 @@ export function UpdateUserInfo({ session }: { session: Session }) {
                 className="object-cover"
               />
             </div>
-            <label className="absolute bottom-0 right-0 bg-orange-600 rounded-full p-1 shadow cursor-pointer">
-              <Pen className="w-4 h-4 text-gray-700" />
+            <label
+              className={`absolute bottom-0 right-0 ${
+                isUploading ? "bg-gray-400" : "bg-orange-600"
+              } rounded-full p-1 shadow ${
+                isUploading ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
+            >
+              {isUploading ? (
+                <Loader2 className="w-4 h-4 text-white animate-spin" />
+              ) : (
+                <Pen className="w-4 h-4 text-gray-700" />
+              )}
               <input
                 type="file"
                 accept="image/*"
