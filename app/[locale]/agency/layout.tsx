@@ -8,7 +8,7 @@ import { Locale } from "@/i18n/routing"
 
 interface AgencyLayoutProps {
   children: ReactNode
-  params: { locale: Locale }
+  params: Promise<{ locale: Locale }> 
 }
 
 export const metadata: Metadata = {
@@ -23,7 +23,10 @@ export default async function AgencyLayout({
   children,
   params,
 }: AgencyLayoutProps) {
-  const { locale } = params
+  // 1) Await the params promise immediately
+  const { locale } = await params // ✔️ params resolved
+
+  // 2) Fetch auth/session as before
   const session = await auth.api.getSession({
     headers: await headers(),
   })
@@ -35,13 +38,11 @@ export default async function AgencyLayout({
     return <NotAllowed />
   }
 
+  // 3) Render with `locale`
   return (
     <div className="min-h-screen">
       <div className="flex h-screen">
-        {/* Sidebar */}
         <Sidebar locale={locale} />
-
-        {/* Main Content */}
         <div className="flex-1 lg:pl-72">
           <main className="overflow-y-auto max-h-screen">{children}</main>
         </div>

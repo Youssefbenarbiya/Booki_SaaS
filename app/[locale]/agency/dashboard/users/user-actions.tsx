@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Ban, Shield, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { banUser, unbanUser, setUserRole, deleteUser } from "../../../../actions/users/manageUsersActions"
 import type { User } from "./columns"
+import { banUser, deleteUser, setUserRole, unbanUser } from "@/actions/users/manageUsersActions"
 
 export function UserActions({ user }: { user: User }) {
   const router = useRouter()

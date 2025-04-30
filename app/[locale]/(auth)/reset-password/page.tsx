@@ -15,11 +15,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { resetPasswordSchema } from "@/lib/validations/zod"
 import LoadingButton from "@/components/loading-button"
 import { authClient } from "@/auth-client"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { resetPasswordSchema } from "@/lib/validations/signin"
 
 function ResetPasswordContent() {
   const router = useRouter()
@@ -54,7 +54,7 @@ function ResetPasswordContent() {
         title: "Success",
         description: "Password reset successful. Login to continue.",
       })
-      router.push("/en/en/sign-in")
+      router.push("/en/sign-in")
     }
     setIsPending(false)
   }

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// app/agency/dashboard/page.tsx
 import {
   Card,
   CardContent,

@@ -91,7 +91,7 @@ export default function SignIn() {
     if (rememberedEmail) {
       setValue("email", rememberedEmail);
     }
-  }, []);
+  }, [setValue]);
 
   const handleCredentialsSignIn = async (values: SignInSchemaType) => {
     await authClient.signIn.email(

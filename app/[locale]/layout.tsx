@@ -8,7 +8,7 @@ import { CurrencyProvider } from "@/lib/contexts/CurrencyContext"
 import { NextIntlClientProvider } from "next-intl"
 import { Locale, routing } from "@/i18n/routing"
 import { notFound } from "next/navigation"
-import { ChatScript } from "@/components/chat/ChatScript"
+import { ChatScript } from "@/components/chatbot/ChatScript"
 
 async function getMessages(locale: string) {
   try {
@@ -26,11 +26,13 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
   params,
-}: Readonly<{
+}: {
   children: React.ReactNode
-  params: { locale: Locale }
-}>) {
-  const { locale } = params
+  // Tell TS that params is async
+  params: Promise<{ locale: Locale }>
+}) {
+  // Await the promise before using it
+  const { locale } = await params
 
   // Validate the locale
   if (!routing.locales.includes(locale as Locale)) {

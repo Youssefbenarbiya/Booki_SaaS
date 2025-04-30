@@ -1,3 +1,5 @@
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server"
 
 import db from "@/db/drizzle"
@@ -10,7 +12,7 @@ import {
   carBookings,
   tripBookings,
 } from "@/db/schema"
-import { eq, and, gte, lte, like, ilike, or } from "drizzle-orm"
+import { eq, and, gte, lte, ilike, or } from "drizzle-orm"
 
 // Types for messages and responses
 export type MessageType = "bot" | "user"

@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import Image from "next/image"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Ban, CheckCircle, Users } from "lucide-react"
 import { getAgencyDetails, toggleUserBan } from "@/actions/admin/agencies"
@@ -152,10 +154,12 @@ export default async function AgencyDetailsPage({
                         <TableCell>
                           <div className="flex items-center">
                             {agency.user.image && (
-                              <img
+                              <Image
                                 src={agency.user.image}
                                 alt={agency.user.name}
                                 className="h-8 w-8 rounded-full mr-2"
+                                width={32}
+                                height={32}
                               />
                             )}
                             <div>
@@ -227,10 +231,12 @@ export default async function AgencyDetailsPage({
                             <TableCell>
                               <div className="flex items-center">
                                 {employee.image && (
-                                  <img
+                                  <Image
                                     src={employee.image}
                                     alt={employee.name}
                                     className="h-8 w-8 rounded-full mr-2"
+                                    width={32}
+                                    height={32}
                                   />
                                 )}
                                 <div className="font-medium">

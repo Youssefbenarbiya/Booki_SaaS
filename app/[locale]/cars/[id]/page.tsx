@@ -15,6 +15,9 @@ import {
   Users,
 } from "lucide-react";
 import AgencyInfo from "@/components/common/AgencyInfo";
+import dynamic from "next/dynamic";
+import { ContactButton } from "@/components/chat/ContactButton";
+
 
 export default async function CarDetailPage({
   params,
@@ -197,11 +200,21 @@ export default async function CarDetailPage({
               </Badge>
             </div>
 
-            <Link href={`/${locale}/cars/${car.id}/booking`} className="w-full">
-              <Button size="lg" className="w-full">
-                Book Now
-              </Button>
-            </Link>
+            <div className="flex flex-col space-y-3">
+              <Link href={`/${locale}/cars/${car.id}/booking`} className="w-full">
+                <Button size="lg" className="w-full">
+                  Book Now
+                </Button>
+              </Link>
+              
+              {/* Contact Button that opens chat */}
+              <ContactButton 
+                postId={id} 
+                postType="car" 
+                agencyName={car.agency?.agencyName || "Agency"}
+                agencyLogo={car.agency?.logo || undefined}
+              />
+            </div>
 
             <div className="mt-4 text-xs text-gray-500 text-center">
               You won&apos;t be charged yet
