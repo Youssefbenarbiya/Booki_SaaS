@@ -1,44 +1,48 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { useSession } from "@/auth-client"
-import { ChatProvider } from "@/lib/contexts/ChatContext"
-import { useChat } from "@/lib/contexts/ChatContext"
-import { Button } from "@/components/ui/button"
-import { Loader2, MessageSquare, Send, User } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
-import { Textarea } from "@/components/ui/textarea"
-import { ChatMessage } from "@/lib/types/chat"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useState, useEffect, useRef } from "react";
+import { useSession } from "@/auth-client";
+import { ChatProvider } from "@/lib/contexts/ChatContext";
+import { useChat } from "@/lib/contexts/ChatContext";
+import { Button } from "@/components/ui/button";
+import { Loader2, MessageSquare, Send, User } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
+import { ChatMessage } from "@/lib/types/chat";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ChatConversation {
-  postId: string
-  postType: "trip" | "car" | "hotel" | "room"
-  postName: string
-  lastMessage: ChatMessage | null
-  unreadCount: number
-  displayName?: string // Added for actual post name
+  postId: string;
+  postType: "trip" | "car" | "hotel" | "room";
+  postName: string;
+  lastMessage: ChatMessage | null;
+  unreadCount: number;
+  displayName?: string; // Added for actual post name
+  customerId?: string; // Added for customer id
+  customerName?: string; // Added for customer name
+  customerImage?: string; // Added for customer image
+  postDisplayName?: string; // Added for post display name
 }
 
 interface UserInfo {
-  id: string
-  name: string | null
-  image: string | null
+  id: string;
+  name: string | null;
+  image: string | null;
 }
 
 interface PostInfo {
-  id: string | number
-  name: string
-  type: string
+  id: string | number;
+  name: string;
+  type: string;
 }
 
 interface ChatManagerProps {
-  initialConversations?: ChatConversation[]
+  initialConversations?: ChatConversation[];
 }
 
 function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
-  const { data: session } = useSession()
+  const { data: session } = useSession();
   const {
     messages,
     sendMessage,
@@ -47,36 +51,36 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
     error,
     connectToChat,
     disconnectFromChat,
-  } = useChat()
+  } = useChat();
 
   const [conversations, setConversations] =
-    useState<ChatConversation[]>(initialConversations)
+    useState<ChatConversation[]>(initialConversations);
   const [selectedConversation, setSelectedConversation] =
-    useState<ChatConversation | null>(null)
-  const [messageText, setMessageText] = useState("")
-  const [isFetchingMessages, setIsFetchingMessages] = useState(false)
-  const [userCache, setUserCache] = useState<Record<string, UserInfo>>({})
-  const [postCache, setPostCache] = useState<Record<string, PostInfo>>({})
+    useState<ChatConversation | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const [isFetchingMessages, setIsFetchingMessages] = useState(false);
+  const [userCache, setUserCache] = useState<Record<string, UserInfo>>({});
+  const [postCache, setPostCache] = useState<Record<string, PostInfo>>({});
 
   // Store selected conversation in a ref to avoid dependency cycles
-  const selectedConversationRef = useRef<ChatConversation | null>(null)
+  const selectedConversationRef = useRef<ChatConversation | null>(null);
 
   // Load conversation details (offer names) when conversations are initialized
   useEffect(() => {
     async function loadPostDetails() {
       for (const conv of initialConversations) {
-        const cacheKey = `${conv.postType}-${conv.postId}`
+        const cacheKey = `${conv.postType}-${conv.postId}`;
         if (!postCache[cacheKey]) {
           try {
             const response = await fetch(
               `/api/chat/posts?id=${conv.postId}&type=${conv.postType}`
-            )
+            );
             if (response.ok) {
-              const postData = await response.json()
+              const postData = await response.json();
               setPostCache((prev) => ({
                 ...prev,
                 [cacheKey]: postData,
-              }))
+              }));
 
               // Update conversation with display name
               setConversations((prevConvs) =>
@@ -85,56 +89,63 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                     ? { ...c, displayName: postData.name }
                     : c
                 )
-              )
+              );
             }
           } catch (error) {
-            console.error(`Error fetching post details for ${cacheKey}:`, error)
+            console.error(
+              `Error fetching post details for ${cacheKey}:`,
+              error
+            );
           }
         }
       }
     }
 
     if (initialConversations.length > 0) {
-      loadPostDetails()
+      loadPostDetails();
     }
-  }, [initialConversations])
+  }, [initialConversations]);
 
   // Connect to the chat when a conversation is selected
   useEffect(() => {
     if (selectedConversation) {
-      selectedConversationRef.current = selectedConversation
-      connectToChat(selectedConversation.postId, selectedConversation.postType)
+      selectedConversationRef.current = selectedConversation;
+      connectToChat(
+        selectedConversation.postId,
+        selectedConversation.postType,
+        selectedConversation.customerId
+      );
 
       // Fetch post details if not already cached
-      const cacheKey = `${selectedConversation.postType}-${selectedConversation.postId}`
+      const cacheKey = `${selectedConversation.postType}-${selectedConversation.postId}`;
       if (!postCache[cacheKey] && !selectedConversation.displayName) {
         fetch(
           `/api/chat/posts?id=${selectedConversation.postId}&type=${selectedConversation.postType}`
         )
           .then((res) => {
-            if (res.ok) return res.json()
-            throw new Error("Failed to fetch post details")
+            if (res.ok) return res.json();
+            throw new Error("Failed to fetch post details");
           })
           .then((data) => {
             setPostCache((prev) => ({
               ...prev,
               [cacheKey]: data,
-            }))
+            }));
 
             // Update the selected conversation with the display name
             setSelectedConversation((prev) =>
               prev ? { ...prev, displayName: data.name } : null
-            )
+            );
           })
           .catch((err) => {
-            console.error("Error fetching post details:", err)
-          })
+            console.error("Error fetching post details:", err);
+          });
       }
     } else {
-      selectedConversationRef.current = null
-      disconnectFromChat()
+      selectedConversationRef.current = null;
+      disconnectFromChat();
     }
-  }, [selectedConversation]) // Don't include connectToChat or disconnectFromChat as dependencies
+  }, [selectedConversation]); // Don't include connectToChat or disconnectFromChat as dependencies
 
   // Fetch user information for message senders
   useEffect(() => {
@@ -142,9 +153,9 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       const userIds = messages
         .map((msg) => msg.senderId)
         .filter((id) => id && !userCache[id])
-        .filter((id, index, self) => self.indexOf(id) === index) // Get unique IDs
+        .filter((id, index, self) => self.indexOf(id) === index); // Get unique IDs
 
-      if (userIds.length === 0) return
+      if (userIds.length === 0) return;
 
       try {
         // Use a more robust API fetching approach
@@ -156,16 +167,18 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
               [userId]: {
                 id: userId,
                 name: userId === session?.user?.id ? session.user.name : "User",
-                image: (userId === session?.user?.id ? session.user.image : null) ?? null,
+                image:
+                  (userId === session?.user?.id ? session.user.image : null) ??
+                  null,
               },
-            }))
+            }));
           }
 
           try {
             // Try to fetch user data from API
-            const response = await fetch(`/api/chat/users/${userId}`)
+            const response = await fetch(`/api/chat/users/${userId}`);
             if (response.ok) {
-              const userData = await response.json()
+              const userData = await response.json();
               setUserCache((prev) => ({
                 ...prev,
                 [userId]: {
@@ -173,65 +186,77 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                   name: userData.name || "User",
                   image: userData.image ?? null,
                 },
-              }))
+              }));
             }
           } catch (error) {
-            console.log(`User data not available for ${userId}, using fallback`)
+            console.log(
+              `User data not available for ${userId}, using fallback`
+            );
           }
         }
       } catch (error) {
-        console.error("Error handling user data:", error)
+        console.error("Error handling user data:", error);
       }
-    }
+    };
 
     if (messages.length > 0) {
-      fetchUserInfo()
+      fetchUserInfo();
     }
-  }, [messages, session])
+  }, [messages, session]);
 
   // Select a conversation
   const handleSelectConversation = (conversation: ChatConversation) => {
-    setSelectedConversation(conversation)
+    setSelectedConversation(conversation);
     // Mark messages as read (would implement server action for this)
-  }
+  };
 
   // Send a message to the current conversation
   const handleSendMessage = async () => {
-    if (!selectedConversationRef.current || !messageText.trim()) return
+    if (!selectedConversationRef.current || !messageText.trim()) return;
 
     await sendMessage(
       selectedConversationRef.current.postId,
       selectedConversationRef.current.postType,
-      messageText
-    )
-    setMessageText("")
-  }
+      messageText,
+      selectedConversationRef.current.customerId
+    );
+    setMessageText("");
+  };
 
   // Get initials from name for avatar fallback
   const getInitials = (name: string | null): string => {
-    if (!name || name === "User") return "U"
+    if (!name || name === "User") return "U";
     return name
       .split(" ")
       .map((part) => part[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   // Get display name for post
   const getPostDisplayName = (conversation: ChatConversation): string => {
-    const cacheKey = `${conversation.postType}-${conversation.postId}`
+    const cacheKey = `${conversation.postType}-${conversation.postId}`;
 
     if (conversation.displayName) {
-      return conversation.displayName
+      return conversation.displayName;
     }
 
     if (postCache[cacheKey]) {
-      return postCache[cacheKey].name
+      return postCache[cacheKey].name;
     }
 
-    return conversation.postName // Fallback to generic name
-  }
+    return conversation.postName; // Fallback to generic name
+  };
+
+  // Get customer name
+  const getCustomerName = (conversation: ChatConversation): string => {
+    if (conversation.customerName) {
+      return conversation.customerName;
+    }
+
+    return "Customer";
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
@@ -250,44 +275,42 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
             <div className="divide-y">
               {conversations.map((conv) => (
                 <div
-                  key={`${conv.postType}-${conv.postId}`}
+                  key={`${conv.customerId}-${conv.postType}-${conv.postId}`}
                   className={`p-3 hover:bg-gray-50 cursor-pointer ${
                     selectedConversation?.postId === conv.postId &&
-                    selectedConversation?.postType === conv.postType
+                    selectedConversation?.postType === conv.postType &&
+                    selectedConversation?.customerId === conv.customerId
                       ? "bg-gray-100"
                       : ""
                   }`}
                   onClick={() => handleSelectConversation(conv)}
                 >
-                  <div className="flex justify-between">
-                    <h3 className="font-medium text-sm truncate">
-                      {getPostDisplayName(conv)}
-                    </h3>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarImage
+                          src={conv.customerImage || undefined}
+                          alt={getCustomerName(conv)}
+                        />
+                        <AvatarFallback className="bg-primary/20 text-xs">
+                          {getInitials(getCustomerName(conv))}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-medium text-sm truncate">
+                          {getCustomerName(conv)}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {conv.postDisplayName || conv.postName}
+                        </p>
+                      </div>
+                    </div>
                     {conv.unreadCount > 0 && (
                       <span className="bg-primary text-white rounded-full px-2 py-0.5 text-xs">
                         {conv.unreadCount}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {conv.postType.charAt(0).toUpperCase() +
-                      conv.postType.slice(1)}
-                  </p>
-                  {conv.lastMessage && (
-                    <>
-                      <p className="text-xs text-gray-600 mt-1 truncate">
-                        {conv.lastMessage.content}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {formatDistanceToNow(
-                          new Date(conv.lastMessage.createdAt!),
-                          {
-                            addSuffix: true,
-                          }
-                        )}
-                      </p>
-                    </>
-                  )}
                 </div>
               ))}
             </div>
@@ -296,17 +319,39 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       </div>
 
       {/* Chat Area */}
-      <div className="border rounded-lg overflow-hidden md:col-span-2 flex flex-col">
-        {selectedConversation ? (
+      <div className="border rounded-lg overflow-hidden col-span-1 md:col-span-2 flex flex-col">
+        {!selectedConversation ? (
+          <div className="flex flex-col items-center justify-center h-full p-4 text-center text-gray-500">
+            <MessageSquare className="h-12 w-12 mb-2 text-gray-300" />
+            <p>Select a conversation to start chatting</p>
+          </div>
+        ) : (
           <>
             {/* Chat Header */}
             <div className="p-3 bg-primary/10 border-b flex items-center">
-              <h2 className="font-medium">
-                {getPostDisplayName(selectedConversation)}
-                <span className="text-xs text-gray-500 ml-2">
-                  ({selectedConversation.postType})
-                </span>
-              </h2>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={selectedConversation.customerImage || undefined}
+                    alt={getCustomerName(selectedConversation)}
+                  />
+                  <AvatarFallback className="bg-primary/20 text-xs">
+                    {getInitials(getCustomerName(selectedConversation))}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="font-medium">
+                    {getCustomerName(selectedConversation)}
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    {selectedConversation.postDisplayName ||
+                      selectedConversation.postName}
+                    <span className="ml-1">
+                      ({selectedConversation.postType})
+                    </span>
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Messages */}
@@ -323,18 +368,22 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
               ) : (
                 <div className="space-y-4">
                   {messages.map((message, index) => {
-                    const isSentByMe = message.senderId === session?.user?.id
+                    const isSentByMe = message.senderId === session?.user?.id;
                     // Get sender information - use fallbacks for missing data
                     const senderInfo = userCache[message.senderId] || {
                       id: message.senderId,
-                      name: isSentByMe ? session?.user?.name || "Me" : "User",
-                      image: isSentByMe ? session?.user?.image : null,
-                    }
+                      name: isSentByMe
+                        ? session?.user?.name || "Me"
+                        : getCustomerName(selectedConversation),
+                      image: isSentByMe
+                        ? session?.user?.image
+                        : selectedConversation.customerImage,
+                    };
 
                     // Ensure we have a truly unique key
                     const messageKey = `${message.id || "temp"}-${index}-${
                       message.senderId
-                    }`
+                    }`;
 
                     return (
                       <div
@@ -404,7 +453,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                           </Avatar>
                         )}
                       </div>
-                    )
+                    );
                   })}
                 </div>
               )}
@@ -415,42 +464,36 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
               )}
             </div>
 
-            {/* Message Input */}
+            {/* Chat Input */}
             <div className="p-3 border-t">
               <div className="flex gap-2">
                 <Textarea
+                  placeholder="Type a message..."
+                  className="flex-1 resize-none"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSendMessage()
+                      e.preventDefault();
+                      handleSendMessage();
                     }
                   }}
-                  placeholder="Type a message..."
-                  className="min-h-[40px] resize-none"
-                  disabled={!connected || loading}
                 />
                 <Button
+                  size="icon"
                   onClick={handleSendMessage}
-                  disabled={!connected || loading || !messageText.trim()}
-                  className="h-10 w-10 p-0"
+                  disabled={!connected || !messageText.trim()}
+                  className="h-auto"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </>
-        ) : (
-          <div className="flex flex-col justify-center items-center h-full text-center text-gray-500 p-4">
-            <MessageSquare className="h-12 w-12 mb-3 text-gray-300" />
-            <h3 className="font-medium text-lg mb-1">Your Messages</h3>
-            <p className="text-sm">Select a conversation to view messages</p>
-          </div>
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export default function ChatManager(props: ChatManagerProps) {
@@ -458,5 +501,5 @@ export default function ChatManager(props: ChatManagerProps) {
     <ChatProvider>
       <ChatManagerContent {...props} />
     </ChatProvider>
-  )
+  );
 }
