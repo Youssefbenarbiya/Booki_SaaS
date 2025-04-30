@@ -156,7 +156,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
               [userId]: {
                 id: userId,
                 name: userId === session?.user?.id ? session.user.name : "User",
-                image: userId === session?.user?.id ? session.user.image : null,
+                image: (userId === session?.user?.id ? session.user.image : null) ?? null,
               },
             }))
           }
@@ -171,7 +171,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                 [userId]: {
                   id: userId,
                   name: userData.name || "User",
-                  image: userData.image || null,
+                  image: userData.image ?? null,
                 },
               }))
             }
