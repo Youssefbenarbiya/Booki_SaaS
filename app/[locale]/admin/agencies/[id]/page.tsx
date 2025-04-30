@@ -158,6 +158,8 @@ export default async function AgencyDetailsPage({
                                 src={agency.user.image}
                                 alt={agency.user.name}
                                 className="h-8 w-8 rounded-full mr-2"
+                                width={32}
+                                height={32}
                               />
                             )}
                             <div>
@@ -233,6 +235,8 @@ export default async function AgencyDetailsPage({
                                     src={employee.image}
                                     alt={employee.name}
                                     className="h-8 w-8 rounded-full mr-2"
+                                    width={32}
+                                    height={32}
                                   />
                                 )}
                                 <div className="font-medium">
