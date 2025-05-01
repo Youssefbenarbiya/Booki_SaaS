@@ -79,6 +79,7 @@ export async function getCarById(id: number) {
             user: true,
           },
         },
+        bookings: true, // Include bookings information
       },
     });
 
@@ -361,5 +362,66 @@ export async function getCarAvailability(carId: number) {
       error: "Failed to get car availability information",
       bookedDateRanges: [],
     };
+  }
+}
+
+export async function archiveCar(id: number) {
+  try {
+    // Check if car has any bookings
+    const car = await db.query.cars.findFirst({
+      where: eq(cars.id, id),
+      with: {
+        bookings: true,
+      },
+    });
+
+    if (!car) {
+      throw new Error("Car not found");
+    }
+
+    // If car has bookings, prevent archiving
+    if (car.bookings && car.bookings.length > 0) {
+      throw new Error(
+        "Cannot archive a car with existing bookings. Please contact the agency."
+      );
+    }
+
+    const [archivedCar] = await db
+      .update(cars)
+      .set({
+        isAvailable: false,
+        status: "archived",
+        updatedAt: new Date(),
+      })
+      .where(eq(cars.id, id))
+      .returning();
+
+    revalidatePath("/agency/dashboard/cars");
+    revalidatePath("/");
+    return { car: archivedCar };
+  } catch (error) {
+    console.error(`Failed to archive car with ID ${id}:`, error);
+    throw error;
+  }
+}
+
+export async function publishCar(id: number) {
+  try {
+    const [publishedCar] = await db
+      .update(cars)
+      .set({
+        isAvailable: true,
+        status: "pending", // Will need admin approval
+        updatedAt: new Date(),
+      })
+      .where(eq(cars.id, id))
+      .returning();
+
+    revalidatePath("/agency/dashboard/cars");
+    revalidatePath("/");
+    return { car: publishedCar };
+  } catch (error) {
+    console.error(`Failed to publish car with ID ${id}:`, error);
+    throw error;
   }
 }
