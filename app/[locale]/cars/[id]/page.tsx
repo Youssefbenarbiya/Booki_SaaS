@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import { getCarById } from "@/actions/cars/carActions";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatPrice } from "@/lib/utils";
+import { notFound } from "next/navigation"
+import Image from "next/image"
+import Link from "next/link"
+import { getCarById } from "@/actions/cars/carActions"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { formatPrice } from "@/lib/utils"
 import {
   Calendar,
   CarFront,
@@ -13,34 +13,32 @@ import {
   MapPin,
   Settings,
   Users,
-} from "lucide-react";
-import AgencyInfo from "@/components/common/AgencyInfo";
-import dynamic from "next/dynamic";
-import { ContactButton } from "@/components/chat/ContactButton";
-
+} from "lucide-react"
+import AgencyInfo from "@/components/common/AgencyInfo"
+import { ContactButton } from "@/components/chat/ContactButton"
 
 export default async function CarDetailPage({
   params,
 }: {
-  params: Promise<{ id: string; locale: string }>;
+  params: Promise<{ id: string; locale: string }>
 }) {
-  const { id, locale } = await params;
-  const carId = Number.parseInt(id, 10);
+  const { id, locale } = await params
+  const carId = Number.parseInt(id, 10)
 
-  const response = await getCarById(carId);
+  const response = await getCarById(carId)
 
   if (!response || !response.car) {
-    notFound();
+    notFound()
   }
 
-  const car = response.car;
+  const car = response.car
 
   // Calculate effective price (discounted or original)
-  const hasDiscount = car.discountPercentage && car.discountPercentage > 0;
+  const hasDiscount = car.discountPercentage && car.discountPercentage > 0
   const effectivePrice =
     hasDiscount && car.priceAfterDiscount
       ? Number(car.priceAfterDiscount)
-      : Number(car.originalPrice);
+      : Number(car.originalPrice)
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -201,16 +199,19 @@ export default async function CarDetailPage({
             </div>
 
             <div className="flex flex-col space-y-3">
-              <Link href={`/${locale}/cars/${car.id}/booking`} className="w-full">
+              <Link
+                href={`/${locale}/cars/${car.id}/booking`}
+                className="w-full"
+              >
                 <Button size="lg" className="w-full">
                   Book Now
                 </Button>
               </Link>
-              
+
               {/* Contact Button that opens chat */}
-              <ContactButton 
-                postId={id} 
-                postType="car" 
+              <ContactButton
+                postId={id}
+                postType="car"
                 agencyName={car.agency?.agencyName || "Agency"}
                 agencyLogo={car.agency?.logo || undefined}
               />
@@ -223,5 +224,5 @@ export default async function CarDetailPage({
         </div>
       </div>
     </div>
-  );
+  )
 }
