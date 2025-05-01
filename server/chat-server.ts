@@ -255,6 +255,8 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           const messageCustomerId = chatMessage.customerId || customerId;
           // Get the tempId if provided to enable client-side message replacement
           const tempId = chatMessage.tempId;
+          // Get userId from the message or from the connection parameters
+          const messageSenderId = chatMessage.userId || userId;
 
           // Create a complete message with all required fields
           const completeMessage: ChatMessage = {
@@ -262,13 +264,14 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             content: chatMessage.content,
             postId: messagePostId,
             postType: messagePostType,
-            senderId: userId,
+            senderId: messageSenderId,
             receiverId: "", // Will be set below
             sender: "user",
             type: "text",
             createdAt: new Date().toISOString(),
             isRead: false,
             tempId: tempId, // Include the tempId from the client for message replacement
+            customerId: messageCustomerId, // Include customerId if provided
           };
 
           // Find the post connection
@@ -794,9 +797,18 @@ wss.on("error", (error) => {
 // Helper function to save message to database
 async function saveMessageToDatabase(message: ChatMessage) {
   try {
+    // Extract the tempId before saving (it shouldn't go in the database)
+    const { tempId, _isPending, ...messageToSave } = message as any;
+    
     // Use the server action to save the message to the database
-    const result = await saveChatMessage(message);
+    const result = await saveChatMessage(messageToSave);
     console.log("Message saved to database:", result);
+    
+    // Add back the tempId to the result message for client-side message replacement
+    if (result.success && result.message && tempId) {
+      (result.message as any).tempId = tempId;
+    }
+    
     return result;
   } catch (error) {
     console.error("Error saving message:", error);

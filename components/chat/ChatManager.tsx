@@ -600,7 +600,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                           >
                             <p className="text-sm break-words">
                               {message.content}
-                              {isPending && <span className="ml-2 text-xs opacity-70">•••</span>}
+                              {isPending && <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">sending...</span>}
                             </p>
                             <p
                               className={`text-xs mt-1 ${
@@ -615,7 +615,6 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                                     }
                                   )
                                 : "Just now"}
-                              {isPending && <span className="ml-1">(sending...)</span>}
                             </p>
                           </div>
                         </div>

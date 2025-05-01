@@ -134,11 +134,18 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
           // Check if message is from/to current customer if we have one
           if (currentCustomerIdRef.current) {
             const msg = data.data;
-            const isBetweenSelectedCustomer =
-              msg.senderId === currentCustomerIdRef.current ||
-              msg.receiverId === currentCustomerIdRef.current ||
-              msg.senderId === session.data?.user?.id ||
-              msg.receiverId === session.data?.user?.id;
+            const clientUserId = session.data?.user?.id;
+            
+            // Special handling for customer filtering
+            // This method uses the in-memory customerId from the message or uses sender/receiver IDs
+            const isBetweenSelectedCustomer = 
+              // If customerId is in the message and matches our filter
+              (msg.customerId === currentCustomerIdRef.current) ||
+              // Or traditional sender/receiver matching
+              (msg.senderId === currentCustomerIdRef.current || 
+               msg.receiverId === currentCustomerIdRef.current ||
+               msg.senderId === clientUserId ||
+               msg.receiverId === clientUserId);
 
             if (!isBetweenSelectedCustomer) {
               console.log(
@@ -156,14 +163,30 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
             
             // Replace the temporary message with the real one
             setMessages((prev) => {
-              const updatedMessages = prev.map((msg) => {
-                if ((msg as ExtendedChatMessage).tempId === tempId) {
-                  // Remove the temporary flags
-                  const { _isPending, tempId, ...realMessage } = data.data;
-                  return { ...realMessage, id: data.data.id };
-                }
-                return msg;
-              });
+              console.log("Previous messages:", prev.length);
+              console.log("Looking for tempId:", tempId);
+              
+              const tempMsgIndex = prev.findIndex(msg => 
+                (msg as ExtendedChatMessage).tempId === tempId
+              );
+              
+              if (tempMsgIndex === -1) {
+                console.log("❌ Temporary message not found with tempId:", tempId);
+                // If we can't find the temp message, just add the new one
+                return [...prev, {...data.data, _isPending: false}];
+              }
+              
+              console.log("✅ Found temporary message at index:", tempMsgIndex);
+              
+              // Create a new array with the temporary message replaced
+              const updatedMessages = [...prev];
+              updatedMessages[tempMsgIndex] = {
+                ...data.data,
+                id: data.data.id,
+                _isPending: false
+              };
+              
+              console.log("Updated messages:", updatedMessages.length);
               return updatedMessages;
             });
             
@@ -208,11 +231,21 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
           // Filter messages by customerId if we have one
           const filteredMessages = currentCustomerIdRef.current
             ? sortedMessages.filter(
-                (msg) =>
-                  msg.senderId === currentCustomerIdRef.current ||
-                  msg.receiverId === currentCustomerIdRef.current ||
-                  msg.senderId === session.data?.user?.id ||
-                  msg.receiverId === session.data?.user?.id
+                (msg) => {
+                  const clientUserId = session.data?.user?.id;
+                  
+                  // Special handling for customer filtering
+                  // This uses either the in-memory customerId or falls back to sender/receiver matching
+                  return (
+                    // If customerId is in the message and matches our filter
+                    (msg.customerId === currentCustomerIdRef.current) ||
+                    // Or traditional sender/receiver matching
+                    (msg.senderId === currentCustomerIdRef.current || 
+                     msg.receiverId === currentCustomerIdRef.current ||
+                     msg.senderId === clientUserId ||
+                     msg.receiverId === clientUserId)
+                  );
+                }
               )
             : sortedMessages;
 
@@ -388,6 +421,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
 
       try {
         const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log("Creating temporary message with ID:", tempId);
         tempMessageIdsRef.current.add(tempId); // Track this temporary ID
         
         // Create a temporary message object for optimistic UI update
@@ -395,15 +429,15 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
           id: tempId,
           content,
           postId,
-          postType,
+          postType: postType as "trip" | "car" | "hotel" | "room",
           senderId: session.data?.user?.id || '',
-          receiverId: customerId || '',  // Will be properly set by server
+          receiverId: customerId || '',
           sender: 'user',
           type: 'text',
           createdAt: new Date().toISOString(),
           isRead: false,
           _isPending: true,
-          tempId: tempId  // Include tempId for matching with server response
+          tempId: tempId
         };
         
         // Add to messages state immediately for responsive UI
@@ -412,15 +446,18 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
         // Prepare the actual message to send
         const message = {
           type: "message",
-          content,
-          postId,
-          postType,
-          userId: session.data?.user?.id,
-          roomId: currentRoomIdRef.current,
-          customerId, // Include customerId if provided
-          tempId, // Send the temp ID so we can match it with the server response
+          data: {
+            content,
+            postId,
+            postType,
+            userId: session.data?.user?.id,
+            roomId: currentRoomIdRef.current,
+            customerId, // Include customerId if provided
+            tempId, // Send the temp ID so we can match it with the server response
+          }
         };
 
+        console.log("Sending message to server with tempId:", tempId);
         socketRef.current.send(JSON.stringify(message));
       } catch (err) {
         console.error("Error sending message:", err);

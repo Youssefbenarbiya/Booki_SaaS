@@ -263,14 +263,13 @@ function MessageBubble({
             }`}
           >
             {message.content}
-            {isPending && <span className="ml-2 text-xs opacity-70">•••</span>}
+            {isPending && <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">sending...</span>}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
             {message.createdAt &&
               formatDistanceToNow(new Date(message.createdAt), {
                 addSuffix: true,
               })}
-            {isPending && <span className="ml-1">(sending...)</span>}
           </div>
         </div>
 

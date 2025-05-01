@@ -10,17 +10,30 @@ import db from "@/db/drizzle"
  */
 export async function saveChatMessage(message: ChatMessage) {
   try {
+    console.log("Saving chat message to database:", message);
+    
+    // IMPORTANT: Remove customerId from database insert since the column doesn't exist yet
+    // We'll use in-memory filtering instead
+    const { customerId, ...messageToSave } = message as any;
+    
     const result = await db.insert(chatMessages).values({
-      postId: message.postId,
-      postType: message.postType,
-      senderId: message.senderId,
-      receiverId: message.receiverId,
-      content: message.content,
-      type: message.type || "text",
+      postId: messageToSave.postId,
+      postType: messageToSave.postType,
+      senderId: messageToSave.senderId,
+      receiverId: messageToSave.receiverId,
+      content: messageToSave.content,
+      type: messageToSave.type || "text",
       isRead: false,
     }).returning()
 
-    return { success: true, message: result[0] }
+    // Add customerId back to the returned message for client-side filtering
+    const savedMessage = result[0];
+    if (savedMessage && customerId) {
+      (savedMessage as any).customerId = customerId;
+    }
+
+    console.log("Successfully saved message, returning:", savedMessage);
+    return { success: true, message: savedMessage }
   } catch (error) {
     console.error("Error saving chat message:", error)
     return { success: false, error: "Failed to save message" }
