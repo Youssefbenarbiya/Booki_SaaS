@@ -1,4 +1,3 @@
-
 // WebSocket message types
 export type MessageType = "text" | "image" | "notification"
 
@@ -14,6 +13,7 @@ export interface ChatMessage {
   sender: string
   createdAt: string
   isRead: boolean
+  customerId?: string
 }
 
 // Connection data structure
