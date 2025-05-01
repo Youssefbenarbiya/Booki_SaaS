@@ -296,6 +296,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           if (isSenderFromAgency && messageCustomerId) {
             recipientId = messageCustomerId;
             console.log("Using provided customerId as recipient:", recipientId);
+            
+            // Try to find the customer's active connection
+            recipientConnection = connections.get(recipientId);
           } else if (isSenderFromAgency) {
             // Reset recipientId to ensure we're not using a stale value
             recipientId = "";
@@ -338,6 +341,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                     "Found conversation initiator as recipient:",
                     recipientId
                   );
+                  
+                  // Try to find the customer's connection
+                  recipientConnection = connections.get(recipientId);
                 }
 
                 // If we didn't find a valid recipient yet, try another approach
@@ -356,6 +362,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                       "Found customer sender as recipient:",
                       recipientId
                     );
+                    
+                    // Try to find the customer's connection
+                    recipientConnection = connections.get(recipientId);
                   }
                 }
 
@@ -373,6 +382,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                       "Found customer from received message:",
                       recipientId
                     );
+                    
+                    // Try to find the customer's connection
+                    recipientConnection = connections.get(recipientId);
                   }
                 }
               }
@@ -460,9 +472,15 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                   );
                   // But use the agency's userId as the actual receiverId in the database
                   recipientId = agencyIdForPost;
+                  
+                  // Try to find the agency's connection
+                  recipientConnection = connections.get(agencyIdForPost);
                 } else {
                   // Fallback to the agency's user ID if unique ID not found
                   recipientId = agencyIdForPost;
+                  
+                  // Try to find the agency's connection
+                  recipientConnection = connections.get(agencyIdForPost);
                 }
               } else {
                 // Fallback to the connected agency
@@ -510,6 +528,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                         agencyUniqueId
                       );
                     }
+                    
+                    // Try to find the agency's connection
+                    recipientConnection = connections.get(trip.agencyId);
                   }
                 } else if (messagePostType === "car") {
                   const car = await db.query.cars.findFirst({
@@ -529,6 +550,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                         agencyUniqueId
                       );
                     }
+                    
+                    // Try to find the agency's connection
+                    recipientConnection = connections.get(car.agencyId);
                   }
                 } else if (messagePostType === "hotel") {
                   const hotelData = await db.query.hotel.findFirst({
@@ -548,6 +572,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                         agencyUniqueId
                       );
                     }
+                    
+                    // Try to find the agency's connection
+                    recipientConnection = connections.get(hotelData.agencyId);
                   }
                 } else if (messagePostType === "room") {
                   // For rooms, find the hotel first, then get the agency
@@ -574,6 +601,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                           agencyUniqueId
                         );
                       }
+                      
+                      // Try to find the agency's connection
+                      recipientConnection = connections.get(hotelData.agencyId);
                     }
                   }
                 }
@@ -612,6 +642,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                         "Found customer recipient from message history:",
                         recipientId
                       );
+                      
+                      // Try to find the customer's connection
+                      recipientConnection = connections.get(customerMessage.senderId);
                     } else {
                       recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`;
                     }
@@ -670,13 +703,18 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             const recipientSocket =
               recipientConnection.socket as unknown as WSWebSocket;
             if (recipientSocket.readyState === WSWebSocket.OPEN) {
+              console.log("Sending message to recipient:", recipientId);
               recipientSocket.send(
                 JSON.stringify({
                   type: "message",
                   data: savedMessage,
                 })
               );
+            } else {
+              console.log("Recipient socket not open:", recipientId, recipientSocket.readyState);
             }
+          } else {
+            console.log("Recipient not connected:", recipientId);
           }
 
           // Also send confirmation back to sender
@@ -686,6 +724,20 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
               data: savedMessage,
             })
           );
+        } else if (parsedMessage.type === "markAsRead") {
+          // Handle read receipts
+          if (parsedMessage.messageId) {
+            // Update the database - mark message as read
+            // This is just a stub - implement actual marking as read
+            console.log("Marking message as read:", parsedMessage.messageId);
+            
+            // Notify both sender and recipient about the read status
+            // Find the message's sender and recipient
+            // This is simplified - you would look up the message in the database
+            
+            // Broadcast the read status to relevant connections
+            // This is just a placeholder for the concept
+          }
         }
       } catch (error) {
         console.error("Error processing message:", error);
