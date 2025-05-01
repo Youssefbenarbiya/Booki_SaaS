@@ -253,6 +253,10 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           const messagePostType = chatMessage.postType || postType;
           // Use customerId if provided in the message or in the connection
           const messageCustomerId = chatMessage.customerId || customerId;
+          // Get the tempId if provided to enable client-side message replacement
+          const tempId = chatMessage.tempId;
+          // Get userId from the message or from the connection parameters
+          const messageSenderId = chatMessage.userId || userId;
 
           // Create a complete message with all required fields
           const completeMessage: ChatMessage = {
@@ -260,12 +264,14 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             content: chatMessage.content,
             postId: messagePostId,
             postType: messagePostType,
-            senderId: userId,
+            senderId: messageSenderId,
             receiverId: "", // Will be set below
             sender: "user",
             type: "text",
             createdAt: new Date().toISOString(),
             isRead: false,
+            tempId: tempId, // Include the tempId from the client for message replacement
+            customerId: messageCustomerId, // Include customerId if provided
           };
 
           // Find the post connection
@@ -296,6 +302,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           if (isSenderFromAgency && messageCustomerId) {
             recipientId = messageCustomerId;
             console.log("Using provided customerId as recipient:", recipientId);
+            
+            // Try to find the customer's active connection
+            recipientConnection = connections.get(recipientId);
           } else if (isSenderFromAgency) {
             // Reset recipientId to ensure we're not using a stale value
             recipientId = "";
@@ -338,6 +347,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                     "Found conversation initiator as recipient:",
                     recipientId
                   );
+                  
+                  // Try to find the customer's connection
+                  recipientConnection = connections.get(recipientId);
                 }
 
                 // If we didn't find a valid recipient yet, try another approach
@@ -356,6 +368,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                       "Found customer sender as recipient:",
                       recipientId
                     );
+                    
+                    // Try to find the customer's connection
+                    recipientConnection = connections.get(recipientId);
                   }
                 }
 
@@ -373,6 +388,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                       "Found customer from received message:",
                       recipientId
                     );
+                    
+                    // Try to find the customer's connection
+                    recipientConnection = connections.get(recipientId);
                   }
                 }
               }
@@ -460,9 +478,15 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                   );
                   // But use the agency's userId as the actual receiverId in the database
                   recipientId = agencyIdForPost;
+                  
+                  // Try to find the agency's connection
+                  recipientConnection = connections.get(agencyIdForPost);
                 } else {
                   // Fallback to the agency's user ID if unique ID not found
                   recipientId = agencyIdForPost;
+                  
+                  // Try to find the agency's connection
+                  recipientConnection = connections.get(agencyIdForPost);
                 }
               } else {
                 // Fallback to the connected agency
@@ -510,6 +534,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                         agencyUniqueId
                       );
                     }
+                    
+                    // Try to find the agency's connection
+                    recipientConnection = connections.get(trip.agencyId);
                   }
                 } else if (messagePostType === "car") {
                   const car = await db.query.cars.findFirst({
@@ -529,6 +556,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                         agencyUniqueId
                       );
                     }
+                    
+                    // Try to find the agency's connection
+                    recipientConnection = connections.get(car.agencyId);
                   }
                 } else if (messagePostType === "hotel") {
                   const hotelData = await db.query.hotel.findFirst({
@@ -548,6 +578,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                         agencyUniqueId
                       );
                     }
+                    
+                    // Try to find the agency's connection
+                    recipientConnection = connections.get(hotelData.agencyId);
                   }
                 } else if (messagePostType === "room") {
                   // For rooms, find the hotel first, then get the agency
@@ -574,6 +607,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                           agencyUniqueId
                         );
                       }
+                      
+                      // Try to find the agency's connection
+                      recipientConnection = connections.get(hotelData.agencyId);
                     }
                   }
                 }
@@ -612,6 +648,9 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
                         "Found customer recipient from message history:",
                         recipientId
                       );
+                      
+                      // Try to find the customer's connection
+                      recipientConnection = connections.get(customerMessage.senderId);
                     } else {
                       recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`;
                     }
@@ -665,18 +704,28 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           // Use the saved message with DB ID
           const savedMessage = saveResult.message;
 
+          // Ensure tempId is preserved for client-side message replacement
+          if (tempId && savedMessage) {
+            (savedMessage as any).tempId = tempId;
+          }
+
           // Send message to recipient if connected
           if (recipientConnection) {
             const recipientSocket =
               recipientConnection.socket as unknown as WSWebSocket;
             if (recipientSocket.readyState === WSWebSocket.OPEN) {
+              console.log("Sending message to recipient:", recipientId);
               recipientSocket.send(
                 JSON.stringify({
                   type: "message",
                   data: savedMessage,
                 })
               );
+            } else {
+              console.log("Recipient socket not open:", recipientId, recipientSocket.readyState);
             }
+          } else {
+            console.log("Recipient not connected:", recipientId);
           }
 
           // Also send confirmation back to sender
@@ -686,6 +735,20 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
               data: savedMessage,
             })
           );
+        } else if (parsedMessage.type === "markAsRead") {
+          // Handle read receipts
+          if (parsedMessage.messageId) {
+            // Update the database - mark message as read
+            // This is just a stub - implement actual marking as read
+            console.log("Marking message as read:", parsedMessage.messageId);
+            
+            // Notify both sender and recipient about the read status
+            // Find the message's sender and recipient
+            // This is simplified - you would look up the message in the database
+            
+            // Broadcast the read status to relevant connections
+            // This is just a placeholder for the concept
+          }
         }
       } catch (error) {
         console.error("Error processing message:", error);
@@ -734,9 +797,18 @@ wss.on("error", (error) => {
 // Helper function to save message to database
 async function saveMessageToDatabase(message: ChatMessage) {
   try {
+    // Extract the tempId before saving (it shouldn't go in the database)
+    const { tempId, _isPending, ...messageToSave } = message as any;
+    
     // Use the server action to save the message to the database
-    const result = await saveChatMessage(message);
+    const result = await saveChatMessage(messageToSave);
     console.log("Message saved to database:", result);
+    
+    // Add back the tempId to the result message for client-side message replacement
+    if (result.success && result.message && tempId) {
+      (result.message as any).tempId = tempId;
+    }
+    
     return result;
   } catch (error) {
     console.error("Error saving message:", error);

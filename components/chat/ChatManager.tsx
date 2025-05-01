@@ -11,6 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatMessage } from "@/lib/types/chat";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface ChatConversation {
   postId: string;
@@ -62,9 +63,11 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   const [isFetchingMessages, setIsFetchingMessages] = useState(false);
   const [userCache, setUserCache] = useState<Record<string, UserInfo>>({});
   const [postCache, setPostCache] = useState<Record<string, PostInfo>>({});
+  const [reconnecting, setReconnecting] = useState(false);
 
   // Store selected conversation in a ref to avoid dependency cycles
   const selectedConversationRef = useRef<ChatConversation | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load conversation details (offer names) when conversations are initialized
   useEffect(() => {
@@ -106,6 +109,16 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       loadPostDetails();
     }
   }, [initialConversations]);
+
+  // Monitor connection status for reconnection handling
+  useEffect(() => {
+    if (!connected && !loading && selectedConversation) {
+      setReconnecting(true);
+      // The ChatContext will handle actual reconnection
+    } else if (connected) {
+      setReconnecting(false);
+    }
+  }, [connected, loading, selectedConversation]);
 
   // Connect to the chat when a conversation is selected
   useEffect(() => {
@@ -222,6 +235,18 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
     }
   }, [messages, session]);
 
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current && messages.length > 0) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'end'
+        });
+      });
+    }
+  }, [messages.length]);
+
   // Select a conversation
   const handleSelectConversation = async (conversation: ChatConversation) => {
     try {
@@ -279,6 +304,11 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       selectedConversationRef.current.customerId
     );
     setMessageText("");
+    
+    // Scroll to bottom after sending
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
   };
 
   // Get initials from name for avatar fallback
@@ -464,7 +494,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
         ) : (
           <>
             {/* Chat Header */}
-            <div className="p-3 bg-primary/10 border-b flex items-center">
+            <div className="p-3 bg-primary/10 border-b flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage
@@ -488,6 +518,15 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                   </p>
                 </div>
               </div>
+              {/* Connection status */}
+              {reconnecting && (
+                <Badge 
+                  variant="outline"
+                  className="bg-red-50 text-red-700 border-red-200 animate-pulse"
+                >
+                  Reconnecting...
+                </Badge>
+              )}
             </div>
 
             {/* Messages */}
@@ -515,6 +554,9 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                         ? session?.user?.image
                         : selectedConversation.customerImage,
                     };
+
+                    // Check for pending/optimistic status
+                    const isPending = (message as any)?._isPending === true;
 
                     // Ensure we have a truly unique key
                     const messageKey = `${message.id || "temp"}-${index}-${
@@ -552,12 +594,13 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                           <div
                             className={`rounded-lg p-3 ${
                               isSentByMe
-                                ? "bg-primary text-white rounded-tr-none"
+                                ? `${isPending ? "bg-primary/80" : "bg-primary"} text-white rounded-tr-none`
                                 : "bg-white border border-gray-200 rounded-tl-none"
                             }`}
                           >
                             <p className="text-sm break-words">
                               {message.content}
+                              {isPending && <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">sending...</span>}
                             </p>
                             <p
                               className={`text-xs mt-1 ${
@@ -591,6 +634,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                       </div>
                     );
                   })}
+                  <div ref={messagesEndRef} className="h-1" />
                 </div>
               )}
               {error && (

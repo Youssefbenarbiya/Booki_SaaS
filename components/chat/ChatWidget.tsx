@@ -32,6 +32,7 @@ export default function ChatWidget({
   const isFirstMount = useRef(true)
   const chatConnectionRef = useRef({ postId, postType })
   const customerIdRef = useRef<string | null>(null)
+  const [reconnecting, setReconnecting] = useState(false)
 
   const {
     messages,
@@ -62,9 +63,18 @@ export default function ChatWidget({
     }
 
     return () => {
+      console.log("Cleaning up chat connection")
       disconnectFromChat()
     }
-  }, [])
+  }, [postId, postType, connectToChat, disconnectFromChat])
+
+  useEffect(() => {
+    if (!connected && !loading && !isFirstMount.current) {
+      setReconnecting(true)
+    } else if (connected) {
+      setReconnecting(false)
+    }
+  }, [connected, loading])
 
   useEffect(() => {
     const processUnreadMessages = () => {
@@ -73,6 +83,7 @@ export default function ChatWidget({
           msg.id &&
           !msg.isRead &&
           msg.sender !== "user" &&
+          msg.senderId !== session?.data?.user?.id &&
           !processedMessageIds.current.has(msg.id)
       )
 
@@ -86,12 +97,25 @@ export default function ChatWidget({
       }
     }
 
-    const timeoutId = setTimeout(processUnreadMessages, 300)
-    return () => clearTimeout(timeoutId)
-  }, [messages, markAsRead])
+    if (connected && messages.length > 0) {
+      const timeoutId = setTimeout(processUnreadMessages, 300)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [messages, markAsRead, connected, session?.data?.user?.id])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'end'
+        })
+      }
+    }
+    
+    if (messages.length > 0) {
+      requestAnimationFrame(scrollToBottom)
+    }
   }, [messages.length])
 
   const handleSend = () => {
@@ -102,6 +126,10 @@ export default function ChatWidget({
       message.trim()
     )
     setMessage("")
+    
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }, 50)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -126,9 +154,12 @@ export default function ChatWidget({
           ) : (
             <Badge
               variant="outline"
-              className="bg-yellow-50 text-yellow-700 border-yellow-200"
+              className={reconnecting 
+                ? "bg-red-50 text-red-700 border-red-200 animate-pulse" 
+                : "bg-yellow-50 text-yellow-700 border-yellow-200"
+              }
             >
-              {loading ? "Connecting..." : "Disconnected"}
+              {loading ? "Connecting..." : reconnecting ? "Reconnecting..." : "Disconnected"}
             </Badge>
           )}
         </CardTitle>
@@ -149,13 +180,13 @@ export default function ChatWidget({
           <div className="space-y-4">
             {messages.map((msg, index) => (
               <MessageBubble 
-                key={msg.id || index} 
+                key={msg.id || `msg-${index}`} 
                 message={msg} 
                 agencyLogo={agencyLogo}
                 customerId={customerIdRef.current}
               />
             ))}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className="h-1" />
           </div>
         )}
       </ScrollArea>
@@ -207,6 +238,9 @@ function MessageBubble({
     // If we know who the customer is, anything not from them is from the agency
     (customerId && message.senderId !== customerId);
   
+  // Check for temporary/pending status from optimistic updates
+  const isPending = (message as any)?._isPending === true;
+  
   // For a customer interface, we want to show:
   // - Agency messages on the right (blue/primary color)
   // - Customer's own messages on the left (gray/muted color)
@@ -225,10 +259,11 @@ function MessageBubble({
             className={`p-3 rounded-lg ${
               isFromAgency 
                 ? "bg-primary text-primary-foreground rounded-br-none" 
-                : "bg-muted rounded-bl-none"
+                : `${isPending ? "bg-muted/70" : "bg-muted"} rounded-bl-none`
             }`}
           >
             {message.content}
+            {isPending && <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">sending...</span>}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
             {message.createdAt &&

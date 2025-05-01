@@ -1,19 +1,21 @@
-
 // WebSocket message types
 export type MessageType = "text" | "image" | "notification"
 
 // Message data structure
 export interface ChatMessage {
-  type: string
-  receiverId: string
-  postType: any
-  senderId: string
-  postId: any
   id: string
   content: string
-  sender: string
+  postId: string
+  postType: "trip" | "car" | "hotel" | "room"
+  senderId: string
+  receiverId: string
+  sender: "user" | "system" | "agency"
+  type: "text" | "image" | "notification"
   createdAt: string
   isRead: boolean
+  customerId?: string
+  _isPending?: boolean
+  tempId?: string
 }
 
 // Connection data structure
@@ -34,8 +36,10 @@ export interface PostConnection {
 
 // WebSocket message format
 export interface WebSocketMessage {
-  type: "message" | "connection" | "error" | "typing" | "read"
-  data: ChatMessage | { postId: string; postType: string } | { error: string }
+  type: string
+  data?: any
+  message?: string
+  messages?: ChatMessage[]
 }
 
 export interface ChatSession {
