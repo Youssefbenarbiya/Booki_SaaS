@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Trash } from "lucide-react"
-import { toast } from "sonner"
-import { useRouter, useParams } from "next/navigation"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ArchiveIcon } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter, useParams } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,32 +15,32 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { deleteTrip } from "@/actions/trips/tripActions"
+} from "@/components/ui/alert-dialog";
+import { archiveTrip } from "@/actions/trips/tripActions";
 
-interface DeleteTripButtonProps {
-  tripId: number
+interface ArchiveTripButtonProps {
+  tripId: number;
 }
 
-export default function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
-  const router = useRouter()
-  const params = useParams()
-  const locale = params.locale as string
-  const [open, setOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+export default function ArchiveTripButton({ tripId }: ArchiveTripButtonProps) {
+  const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  async function handleDelete() {
-    setIsLoading(true)
+  async function handleArchive() {
+    setIsLoading(true);
     try {
-      await deleteTrip(tripId)
-      toast.success("Trip deleted successfully")
-      setOpen(false)
-      router.refresh()
+      await archiveTrip(tripId);
+      toast.success("Trip archived successfully");
+      setOpen(false);
+      router.refresh();
     } catch (error) {
-      toast.error("Failed to delete trip")
-      console.error(error)
+      toast.error("Failed to archive trip");
+      console.error(error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -50,35 +50,36 @@ export default function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
         variant="ghost"
         size="sm"
         onClick={() => setOpen(true)}
-        className="h-8 text-red-600 hover:text-red-800 hover:bg-red-100"
+        className="h-8 text-amber-600 hover:text-amber-800 hover:bg-amber-100"
       >
-        <Trash className="h-4 w-4 mr-1" />
-        Delete
+        <ArchiveIcon className="h-4 w-4 mr-1" />
+        Archive
       </Button>
 
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Archive this trip?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              trip and remove it from our servers.
+              This will archive the trip and make it unavailable for booking.
+              You can restore it later if needed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction asChild>
               <Button
-                variant="destructive"
-                onClick={handleDelete}
+                variant="default"
+                onClick={handleArchive}
                 disabled={isLoading}
+                className="bg-amber-600 hover:bg-amber-700"
               >
-                {isLoading ? "Deleting..." : "Delete"}
+                {isLoading ? "Archiving..." : "Archive"}
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }

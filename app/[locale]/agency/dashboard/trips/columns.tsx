@@ -1,60 +1,63 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
-import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, Pencil, Eye } from "lucide-react"
-import { Button } from "@/components/ui/button"
+"use client";
+import { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, Pencil, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-import { Badge } from "@/components/ui/badge"
-import { useRouter, useParams } from "next/navigation"
-import Image from "next/image"
-import Link from "next/link"
+import { Badge } from "@/components/ui/badge";
+import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import ArchiveTripButton from "./ArchiveTripButton";
+import PublishTripButton from "./PublishTripButton";
+import { ArchiveIcon } from "lucide-react";
 
 // Helper function to format price with the correct currency
 const formatPriceWithCurrency = (price: string | number, currency?: string) => {
-  if (!price) return "-"
+  if (!price) return "-";
 
-  const numericPrice = typeof price === "string" ? parseFloat(price) : price
+  const numericPrice = typeof price === "string" ? parseFloat(price) : price;
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency || "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(numericPrice)
-}
+  }).format(numericPrice);
+};
 
 // Updated TripType to match the actual data structure
 export type TripType = {
-  id: number
-  name: string
-  destination: string
-  originalPrice: string
-  discountPercentage?: number | null
-  priceAfterDiscount?: string | null
-  isAvailable: boolean
-  status?: string
-  images: { imageUrl: string }[]
-  createdAt: Date | null
-  updatedAt: Date | null
-  description: string | null
-  startDate: string
-  endDate: string
-  userId?: number | null
-  categoryId?: number | null
-  agencyId?: number | null
-  locationId?: number | null
-  totalDays?: number | null
-  totalNights?: number | null
-  currency?: string
-  bookings?: any[]
-}
+  id: number;
+  name: string;
+  destination: string;
+  originalPrice: string;
+  discountPercentage?: number | null;
+  priceAfterDiscount?: string | null;
+  isAvailable: boolean;
+  status?: string;
+  images: { imageUrl: string }[];
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  description: string | null;
+  startDate: string;
+  endDate: string;
+  userId?: number | null;
+  categoryId?: number | null;
+  agencyId?: number | null;
+  locationId?: number | null;
+  totalDays?: number | null;
+  totalNights?: number | null;
+  currency?: string;
+  bookings?: any[];
+};
 
 export const columns: ColumnDef<TripType>[] = [
   {
     accessorKey: "images",
     header: "Photo",
     cell: ({ row }) => {
-      const images = row.original.images
+      const images = row.original.images;
       return images && images.length > 0 ? (
         <Image
           src={images[0].imageUrl}
@@ -65,7 +68,7 @@ export const columns: ColumnDef<TripType>[] = [
         />
       ) : (
         <span>No Photo</span>
-      )
+      );
     },
   },
   {
@@ -88,19 +91,19 @@ export const columns: ColumnDef<TripType>[] = [
     accessorKey: "originalPrice",
     header: "Original Price",
     cell: ({ row }) => {
-      const price = row.original.originalPrice
-      const currency = row.original.currency
-      return <div>{formatPriceWithCurrency(price, currency)}</div>
+      const price = row.original.originalPrice;
+      const currency = row.original.currency;
+      return <div>{formatPriceWithCurrency(price, currency)}</div>;
     },
   },
   {
     accessorKey: "discountPercentage",
     header: "Discount (%)",
     cell: ({ row }) => {
-      const discount = row.original.discountPercentage
+      const discount = row.original.discountPercentage;
       return discount !== undefined && discount !== null
         ? `${discount}%`
-        : "N/A"
+        : "N/A";
     },
   },
   {
@@ -110,16 +113,16 @@ export const columns: ColumnDef<TripType>[] = [
       // Use priceAfterDiscount if exists, otherwise fallback to originalPrice
       const finalPrice = row.original.priceAfterDiscount
         ? row.original.priceAfterDiscount
-        : row.original.originalPrice
-      const currency = row.original.currency
-      return <div>{formatPriceWithCurrency(finalPrice, currency)}</div>
+        : row.original.originalPrice;
+      const currency = row.original.currency;
+      return <div>{formatPriceWithCurrency(finalPrice, currency)}</div>;
     },
   },
   {
     accessorKey: "isAvailable",
     header: "Availability",
     cell: ({ row }) => {
-      const isAvailable = row.getValue("isAvailable") as boolean
+      const isAvailable = row.getValue("isAvailable") as boolean;
       return (
         <Badge
           variant={isAvailable ? "default" : "destructive"}
@@ -131,7 +134,7 @@ export const columns: ColumnDef<TripType>[] = [
         >
           {isAvailable ? "Available" : "Not Available"}
         </Badge>
-      )
+      );
     },
   },
   {
@@ -140,50 +143,56 @@ export const columns: ColumnDef<TripType>[] = [
     cell: ({ row }) => {
       const status =
         row.original.status ||
-        (row.original.isAvailable ? "active" : "inactive")
+        (row.original.isAvailable ? "active" : "inactive");
 
       let badgeVariant: "default" | "outline" | "secondary" | "destructive" =
-        "default"
-      let statusText = status || "Unknown"
-      let customClass = ""
+        "default";
+      let statusText = status || "Unknown";
+      let customClass = "";
 
       if (status === "pending") {
-        badgeVariant = "secondary"
-        statusText = "Pending"
-        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+        badgeVariant = "secondary";
+        statusText = "Pending";
+        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
       } else if (status === "active") {
-        badgeVariant = "default"
-        statusText = "Active"
-        customClass = "bg-green-100 text-green-800 hover:bg-green-200"
+        badgeVariant = "default";
+        statusText = "Active";
+        customClass = "bg-green-100 text-green-800 hover:bg-green-200";
       } else if (status === "inactive") {
-        badgeVariant = "outline"
-        statusText = "Inactive"
-        customClass = "bg-gray-100 text-gray-800 hover:bg-gray-200"
+        badgeVariant = "outline";
+        statusText = "Inactive";
+        customClass = "bg-gray-100 text-gray-800 hover:bg-gray-200";
       } else if (status === "approved") {
-        badgeVariant = "default"
-        statusText = "Approved"
-        customClass = "bg-green-100 text-green-800 hover:bg-green-200"
+        badgeVariant = "default";
+        statusText = "Approved";
+        customClass = "bg-green-100 text-green-800 hover:bg-green-200";
       } else if (status === "rejected") {
-        badgeVariant = "destructive"
-        statusText = "Rejected"
-        customClass = "bg-red-100 text-red-800 hover:bg-red-200"
+        badgeVariant = "destructive";
+        statusText = "Rejected";
+        customClass = "bg-red-100 text-red-800 hover:bg-red-200";
+      } else if (status === "archived") {
+        badgeVariant = "outline";
+        statusText = "Archived";
+        customClass = "bg-amber-100 text-amber-800 hover:bg-amber-200";
       }
 
       return (
         <Badge variant={badgeVariant} className={customClass}>
           {statusText}
         </Badge>
-      )
+      );
     },
   },
   {
     id: "actions",
     header: "Actions",
     cell: function Cell({ row }) {
-      const trip = row.original
-      const router = useRouter()
-      const params = useParams()
-      const locale = params.locale as string
+      const trip = row.original;
+      const router = useRouter();
+      const params = useParams();
+      const locale = params.locale as string;
+      const isArchived = trip.status === "archived";
+      const hasBookings = trip.bookings && trip.bookings.length > 0;
 
       return (
         <div className="flex items-center gap-2">
@@ -211,36 +220,24 @@ export const columns: ColumnDef<TripType>[] = [
             <Eye className="h-4 w-4" />
           </Button>
 
-          <Link
-            href={`/${locale}/agency/dashboard/trips/${trip.id}/delete`}
-            passHref
-          >
+          {isArchived ? (
+            <PublishTripButton tripId={trip.id} />
+          ) : hasBookings ? (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-100"
+              disabled
+              className="h-8 text-gray-400 cursor-not-allowed"
+              title="This trip has bookings and cannot be archived"
             >
-              <span className="sr-only">Delete</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-              </svg>
+              <ArchiveIcon className="h-4 w-4 mr-1" />
+              Archive
             </Button>
-          </Link>
+          ) : (
+            <ArchiveTripButton tripId={trip.id} />
+          )}
         </div>
-      )
+      );
     },
   },
-]
+];

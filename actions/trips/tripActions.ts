@@ -259,6 +259,68 @@ export async function updateTrip(id: number, data: TripInput) {
   }
 }
 
+export async function archiveTrip(id: number) {
+  try {
+    // Check if trip has any bookings
+    const trip = await db.query.trips.findFirst({
+      where: eq(trips.id, id),
+      with: {
+        bookings: true,
+      },
+    });
+
+    if (!trip) {
+      throw new Error("Trip not found");
+    }
+
+    // If trip has bookings, prevent archiving
+    if (trip.bookings && trip.bookings.length > 0) {
+      throw new Error(
+        "Cannot archive a trip with existing bookings. Please contact the agency."
+      );
+    }
+
+    const [archivedTrip] = await db
+      .update(trips)
+      .set({
+        isAvailable: false,
+        status: "archived",
+        updatedAt: new Date(),
+      })
+      .where(eq(trips.id, id))
+      .returning();
+
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return archivedTrip;
+  } catch (error) {
+    console.error("Error archiving trip:", error);
+    throw error;
+  }
+}
+
+export async function publishTrip(id: number) {
+  try {
+    const [publishedTrip] = await db
+      .update(trips)
+      .set({
+        isAvailable: true,
+        status: "pending", // Will need admin approval
+        updatedAt: new Date(),
+      })
+      .where(eq(trips.id, id))
+      .returning();
+
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return publishedTrip;
+  } catch (error) {
+    console.error("Error publishing trip:", error);
+    throw error;
+  }
+}
+
+// Keep the deleteTrip function for backward compatibility or admin purposes
 export async function deleteTrip(id: number) {
   try {
     const [deletedTrip] = await db
