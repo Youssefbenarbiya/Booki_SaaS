@@ -1,46 +1,72 @@
-import { notFound } from "next/navigation"
-import Image from "next/image"
-import Link from "next/link"
-import DeleteTripButton from "./DeleteTripButton"
-import { getTripById } from "@/actions/trips/tripActions"
-import { Locale } from "@/i18n/routing"
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import ArchiveTripButton from "../ArchiveTripButton";
+import PublishTripButton from "../PublishTripButton";
+import { getTripById } from "@/actions/trips/tripActions";
+import { Locale } from "@/i18n/routing";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ArchiveIcon } from "lucide-react";
 
 // Helper function to format price with the correct currency
 const formatPriceWithCurrency = (price: string | number, currency?: string) => {
-  if (!price) return "-"
+  if (!price) return "-";
 
-  const numericPrice = typeof price === "string" ? parseFloat(price) : price
+  const numericPrice = typeof price === "string" ? parseFloat(price) : price;
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency || "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(numericPrice)
-}
+  }).format(numericPrice);
+};
 
 interface TripDetailsPageProps {
   params: {
-    tripId: string
-    locale: Locale
-  }
+    tripId: string;
+    locale: Locale;
+  };
 }
 
 export default async function TripDetailsPage({
   params,
 }: TripDetailsPageProps) {
-  const { tripId, locale } = params
-  const trip = await getTripById(parseInt(tripId))
+  const { tripId, locale } = params;
+  const trip = await getTripById(parseInt(tripId));
 
   if (!trip) {
-    notFound()
+    notFound();
   }
+
+  const isArchived = trip.status === "archived";
+  const hasBookings = trip.bookings && trip.bookings.length > 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Trip Details</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900">Trip Details</h1>
+          {trip.status && (
+            <Badge
+              className={`ml-2 ${
+                trip.status === "approved"
+                  ? "bg-green-100 text-green-800"
+                  : trip.status === "rejected"
+                  ? "bg-red-100 text-red-800"
+                  : trip.status === "pending"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : trip.status === "archived"
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+            </Badge>
+          )}
+        </div>
         <div className="flex flex-wrap gap-3 mt-4 sm:mt-0">
           <Link
             href={`/${locale}/agency/dashboard/trips`}
@@ -54,7 +80,22 @@ export default async function TripDetailsPage({
           >
             Edit Trip
           </Link>
-          <DeleteTripButton tripId={trip.id} />
+          {isArchived ? (
+            <PublishTripButton tripId={trip.id} />
+          ) : hasBookings ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled
+              className="text-gray-400 cursor-not-allowed px-4 py-2"
+              title="This trip has bookings and cannot be archived"
+            >
+              <ArchiveIcon className="h-4 w-4 mr-1" />
+              Archive
+            </Button>
+          ) : (
+            <ArchiveTripButton tripId={trip.id} />
+          )}
         </div>
       </div>
 
@@ -201,5 +242,5 @@ export default async function TripDetailsPage({
         </div>
       </div>
     </div>
-  )
+  );
 }
