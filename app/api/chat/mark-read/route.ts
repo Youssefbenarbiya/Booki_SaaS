@@ -1,41 +1,44 @@
-import { markMessagesAsRead } from "@/actions/chat/chatActions";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import db from "@/db/drizzle";
+import { chatMessages } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // Get user session
-    const session = await auth.api.getSession();
-
-    // Check if user is authenticated
+    // Verify that the requestor is authenticated
+    const session = await auth.api.getSession({ request });
     if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Parse request body
     const { postId, postType, receiverId } = await request.json();
 
     // Validate required fields
-    if (!postId || !postType) {
-      return Response.json(
+    if (!postId || !postType || !receiverId) {
+      return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Use the userId from session by default, or the provided receiverId
-    const userId = receiverId || session.user.id;
-
     // Mark messages as read
-    const result = await markMessagesAsRead(postId, postType, userId);
+    await db
+      .update(chatMessages)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(chatMessages.postId, postId),
+          eq(chatMessages.postType, postType),
+          eq(chatMessages.receiverId, receiverId),
+          eq(chatMessages.isRead, false)
+        )
+      );
 
-    if (result.success) {
-      return Response.json({ success: true }, { status: 200 });
-    } else {
-      throw new Error(result.error);
-    }
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error marking messages as read:", error);
-    return Response.json(
+    return NextResponse.json(
       { error: "Failed to mark messages as read" },
       { status: 500 }
     );

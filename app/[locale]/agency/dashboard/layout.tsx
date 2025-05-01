@@ -1,37 +1,37 @@
 // app/agency/dashboard/layout.tsx
-import type { Metadata } from "next"
-import { headers } from "next/headers"
-import { auth } from "@/auth"
-import NotAllowed from "@/components/not-allowed"
-import { ReactNode } from "react"
-import { getAgencyNotifications } from "@/actions/agency/notificationActions"
-import NotificationCenter from "@/components/dashboard/agency/NotificationCenter"
+import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { auth } from "@/auth";
+import NotAllowed from "@/components/not-allowed";
+import { ReactNode } from "react";
+import { getAgencyNotifications } from "@/actions/agency/notificationActions";
+import NotificationCenter from "@/components/dashboard/agency/NotificationCenter";
 
 interface DashboardLayoutProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export const metadata: Metadata = {
   title: "Agency Dashboard",
   description: "Admin dashboard for managing the application",
-}
+};
 
 export default async function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const session = await auth.api.getSession({
     headers: await headers(),
-  })
+  });
 
   if (
     !session ||
     (session.user.role !== "agency owner" && session.user.role !== "employee")
   ) {
-    return <NotAllowed />
+    return <NotAllowed />;
   }
 
   // Get initial notifications
-  const { notifications, unreadCount } = await getAgencyNotifications(5)
+  const { notifications, unreadCount } = await getAgencyNotifications(5);
   const typedNotifications = notifications.map((notification) => ({
     ...notification,
     type: (["error", "info", "success", "warning"].includes(notification.type)
@@ -41,7 +41,7 @@ export default async function DashboardLayout({
       typeof notification.userId === "string"
         ? Number(notification.userId)
         : notification.userId,
-  }))
+  }));
 
   return (
     <>
@@ -62,5 +62,5 @@ export default async function DashboardLayout({
         {children}
       </main>
     </>
-  )
+  );
 }
