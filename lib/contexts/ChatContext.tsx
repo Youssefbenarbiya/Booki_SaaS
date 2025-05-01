@@ -33,6 +33,12 @@ export interface ChatContextType {
   clearMessages: () => void;
 }
 
+// Extend ChatMessage type to include pending status
+interface ExtendedChatMessage extends ChatMessage {
+  _isPending?: boolean;
+  tempId?: string;
+}
+
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 interface ChatProviderProps {
@@ -41,7 +47,7 @@ interface ChatProviderProps {
 }
 
 export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,9 +64,10 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
   const currentRoomIdRef = useRef<string | null>(null);
   const currentCustomerIdRef = useRef<string | null>(null);
   const onErrorRef = useRef<((error: string) => void) | undefined>(onError);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const messageIdTracker = useRef<Set<string>>(new Set());
+  const tempMessageIdsRef = useRef<Set<string>>(new Set());
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -129,7 +136,9 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
             const msg = data.data;
             const isBetweenSelectedCustomer =
               msg.senderId === currentCustomerIdRef.current ||
-              msg.receiverId === currentCustomerIdRef.current;
+              msg.receiverId === currentCustomerIdRef.current ||
+              msg.senderId === session.data?.user?.id ||
+              msg.receiverId === session.data?.user?.id;
 
             if (!isBetweenSelectedCustomer) {
               console.log(
@@ -137,6 +146,30 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
               );
               return;
             }
+          }
+
+          // Check if this message is replacing a temporary message
+          const tempId = data.data.tempId || undefined;
+          
+          if (tempId && tempMessageIdsRef.current.has(tempId)) {
+            console.log(`Replacing temporary message ${tempId} with real message ${data.data.id}`);
+            
+            // Replace the temporary message with the real one
+            setMessages((prev) => {
+              const updatedMessages = prev.map((msg) => {
+                if ((msg as ExtendedChatMessage).tempId === tempId) {
+                  // Remove the temporary flags
+                  const { _isPending, tempId, ...realMessage } = data.data;
+                  return { ...realMessage, id: data.data.id };
+                }
+                return msg;
+              });
+              return updatedMessages;
+            });
+            
+            tempMessageIdsRef.current.delete(tempId);
+            messageIdTracker.current.add(data.data.id);
+            return;
           }
 
           // Check for duplicate message with improved tracking
@@ -161,7 +194,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
             }
           }
 
-          // Add new message to state with optimistic UI update
+          // Add new message to state
           setMessages((prev) => [...prev, data.data]);
         } else if (data.type === "history") {
           console.log("Received message history:", data.messages);
@@ -177,7 +210,9 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
             ? sortedMessages.filter(
                 (msg) =>
                   msg.senderId === currentCustomerIdRef.current ||
-                  msg.receiverId === currentCustomerIdRef.current
+                  msg.receiverId === currentCustomerIdRef.current ||
+                  msg.senderId === session.data?.user?.id ||
+                  msg.receiverId === session.data?.user?.id
               )
             : sortedMessages;
 
@@ -188,6 +223,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
             }
           });
 
+          // Set messages WITHOUT appending to previous state
           setMessages(filteredMessages);
         } else if (data.type === "error") {
           console.error(
@@ -230,7 +266,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
     };
 
     return ws;
-  }, []);
+  }, [session.data?.user?.id]);
 
   // Helper function to schedule reconnection
   const scheduleReconnection = useCallback((url: string, roomIdKey: string) => {
@@ -273,6 +309,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
 
       // Reset the message ID tracker when connecting to a new chat
       messageIdTracker.current.clear();
+      tempMessageIdsRef.current.clear();
 
       // Store the customerId for filtering messages
       if (customerId) {
@@ -333,6 +370,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
       setCurrentCustomerId(null);
       setMessages([]);
       messageIdTracker.current.clear();
+      tempMessageIdsRef.current.clear();
     }
   }, []);
 
@@ -350,21 +388,22 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
 
       try {
         const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        tempMessageIdsRef.current.add(tempId); // Track this temporary ID
         
         // Create a temporary message object for optimistic UI update
-        const tempMessage: ChatMessage = {
+        const tempMessage: ExtendedChatMessage = {
           id: tempId,
           content,
           postId,
           postType,
           senderId: session.data?.user?.id || '',
-          receiverId: '',  // Will be set by server
+          receiverId: customerId || '',  // Will be properly set by server
           sender: 'user',
           type: 'text',
           createdAt: new Date().toISOString(),
           isRead: false,
-          // Add temporary flag to identify this as a pending message
-          _isPending: true
+          _isPending: true,
+          tempId: tempId  // Include tempId for matching with server response
         };
         
         // Add to messages state immediately for responsive UI
@@ -423,6 +462,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
   const clearMessages = useCallback(() => {
     setMessages([]);
     messageIdTracker.current.clear();
+    tempMessageIdsRef.current.clear();
   }, []);
 
   // Clean up on component unmount

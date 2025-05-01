@@ -253,6 +253,8 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
           const messagePostType = chatMessage.postType || postType;
           // Use customerId if provided in the message or in the connection
           const messageCustomerId = chatMessage.customerId || customerId;
+          // Get the tempId if provided to enable client-side message replacement
+          const tempId = chatMessage.tempId;
 
           // Create a complete message with all required fields
           const completeMessage: ChatMessage = {
@@ -266,6 +268,7 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
             type: "text",
             createdAt: new Date().toISOString(),
             isRead: false,
+            tempId: tempId, // Include the tempId from the client for message replacement
           };
 
           // Find the post connection
@@ -697,6 +700,11 @@ wss.on("connection", async (ws: WSWebSocket, req) => {
 
           // Use the saved message with DB ID
           const savedMessage = saveResult.message;
+
+          // Ensure tempId is preserved for client-side message replacement
+          if (tempId && savedMessage) {
+            (savedMessage as any).tempId = tempId;
+          }
 
           // Send message to recipient if connected
           if (recipientConnection) {
