@@ -239,9 +239,9 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   useEffect(() => {
     if (messagesEndRef.current && messages.length > 0) {
       requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'end'
+        messagesEndRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
         });
       });
     }
@@ -254,8 +254,36 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       disconnectFromChat();
       clearMessages();
 
+      // Reset unread count for the selected conversation
+      setConversations((prevConversations) =>
+        prevConversations.map((conv) =>
+          conv.postId === conversation.postId &&
+          conv.postType === conversation.postType &&
+          conv.customerId === conversation.customerId
+            ? { ...conv, unreadCount: 0 }
+            : conv
+        )
+      );
+
       // Set selected conversation before connecting to chat
       setSelectedConversation(conversation);
+
+      // Mark messages as read in the database
+      try {
+        await fetch("/api/chat/mark-read", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            postId: conversation.postId,
+            postType: conversation.postType,
+            receiverId: session?.user?.id,
+          }),
+        });
+      } catch (error) {
+        console.error("Error marking messages as read:", error);
+      }
 
       // If this conversation has customerId, ensure we're properly using it for filtering
       if (conversation.customerId) {
@@ -304,7 +332,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       selectedConversationRef.current.customerId
     );
     setMessageText("");
-    
+
     // Scroll to bottom after sending
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -520,7 +548,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
               </div>
               {/* Connection status */}
               {reconnecting && (
-                <Badge 
+                <Badge
                   variant="outline"
                   className="bg-red-50 text-red-700 border-red-200 animate-pulse"
                 >
@@ -594,13 +622,19 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                           <div
                             className={`rounded-lg p-3 ${
                               isSentByMe
-                                ? `${isPending ? "bg-primary/80" : "bg-primary"} text-white rounded-tr-none`
+                                ? `${
+                                    isPending ? "bg-primary/80" : "bg-primary"
+                                  } text-white rounded-tr-none`
                                 : "bg-white border border-gray-200 rounded-tl-none"
                             }`}
                           >
                             <p className="text-sm break-words">
                               {message.content}
-                              {isPending && <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">sending...</span>}
+                              {isPending && (
+                                <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">
+                                  sending...
+                                </span>
+                              )}
                             </p>
                             <p
                               className={`text-xs mt-1 ${
