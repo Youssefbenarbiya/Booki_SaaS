@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, Eye, Pencil } from "lucide-react"
+import { ArrowUpDown, Eye, Pencil, ArchiveIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
-import DeleteHotelButton from "./DeleteHotelButton"
+import ArchiveHotelButton from "./ArchiveHotelButton"
+import PublishHotelButton from "./PublishHotelButton"
 
 // Define the Hotel type based on the page content
 export type HotelType = {
@@ -23,6 +24,8 @@ export type HotelType = {
   status: string
   agencyId: string | null
   rooms: any[]
+  hasBookings?: boolean
+  bookings?: any[]
 }
 
 export const columns: ColumnDef<HotelType>[] = [
@@ -96,6 +99,10 @@ export const columns: ColumnDef<HotelType>[] = [
         badgeVariant = "secondary";
         statusText = "Pending";
         customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+      } else if (status === "archived") {
+        badgeVariant = "outline";
+        statusText = "Archived";
+        customClass = "bg-amber-100 text-amber-800 hover:bg-amber-200";
       }
       
       return (
@@ -125,6 +132,8 @@ export const columns: ColumnDef<HotelType>[] = [
       const router = useRouter()
       const params = useParams()
       const locale = params.locale as string
+      const isArchived = hotel.status === "archived";
+      const hasBookings = hotel.hasBookings || (hotel.bookings && hotel.bookings.length > 0);
 
       return (
         <div className="flex items-center gap-2">
@@ -152,7 +161,26 @@ export const columns: ColumnDef<HotelType>[] = [
             <Eye className="h-4 w-4" />
           </Button>
 
-          <DeleteHotelButton hotelId={hotel.id} />
+          {isArchived ? (
+            <PublishHotelButton hotelId={hotel.id} />
+          ) : hasBookings ? (
+            <div className="relative group">
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled
+                className="h-8 text-gray-400 cursor-not-allowed opacity-60"
+              >
+                <ArchiveIcon className="h-4 w-4 mr-1" />
+                Archive
+              </Button>
+              <div className="absolute z-50 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 right-0 bottom-full mb-2 w-48">
+                This hotel has active bookings and cannot be archived. Cancel all bookings first.
+              </div>
+            </div>
+          ) : (
+            <ArchiveHotelButton hotelId={hotel.id} />
+          )}
         </div>
       )
     },
