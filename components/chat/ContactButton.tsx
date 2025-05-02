@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import ChatWidgetWrapper from "@/components/chat/ChatWidgetWrapper"
 import { useSession } from "@/auth-client"
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Terminal } from "lucide-react"
+import { Terminal, MessageCircle } from "lucide-react"
 
 interface ContactButtonProps {
   postId: string
@@ -43,11 +43,12 @@ export function ContactButton({
   return (
     <>
       <Button
-        variant="outline"
+        variant="default"
         size="lg"
         onClick={handleContactClick}
-        className="w-full sm:w-auto"
+        className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
       >
+        <MessageCircle className="h-5 w-5" />
         {isChatOpen ? "Close Chat" : "Contact Host"}
       </Button>
 
@@ -55,8 +56,13 @@ export function ContactButton({
         <Alert variant="destructive" className="mt-4">
           <Terminal className="h-4 w-4" />
           <AlertDescription>
-            {errorMessage || "Chat server is not running. Please start the chat server with:"}
-            {!errorMessage && <code className="ml-2 p-1 bg-muted rounded">bun run server/run-chat-server.ts</code>}
+            {errorMessage ||
+              "Chat server is not running. Please start the chat server with:"}
+            {!errorMessage && (
+              <code className="ml-2 p-1 bg-muted rounded">
+                bun run server/run-chat-server.ts
+              </code>
+            )}
           </AlertDescription>
         </Alert>
       )}

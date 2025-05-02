@@ -44,6 +44,16 @@ export async function bookCar({
   locale = "en", // Default to English
 }: BookCarParams): Promise<BookingResult> {
   try {
+    console.log("Booking car with params:", {
+      carId,
+      userId,
+      startDate,
+      endDate,
+      totalPrice,
+      paymentMethod,
+      locale,
+    })
+
     if (!userId) {
       return { success: false, error: "User ID is required" }
     }
@@ -214,7 +224,11 @@ export async function bookCar({
     }
   } catch (error) {
     console.error("Failed to book car:", error)
-    return { success: false, error: "Booking failed - please try again" }
+    // Return more detailed error information
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown booking error",
+    }
   }
 }
 

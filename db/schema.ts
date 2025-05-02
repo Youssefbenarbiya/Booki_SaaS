@@ -155,7 +155,10 @@ export const tripBookings = pgTable("trip_bookings", {
   paymentDate: timestamp("payment_date"),
   paymentCurrency: varchar("payment_currency", { length: 10 }),
   originalCurrency: varchar("original_currency", { length: 10 }),
-  originalPricePerSeat: decimal("original_price_per_seat", { precision: 10, scale: 2 }),
+  originalPricePerSeat: decimal("original_price_per_seat", {
+    precision: 10,
+    scale: 2,
+  }),
 })
 
 // Trip Relations
@@ -359,8 +362,12 @@ export const cars = pgTable("cars", {
 // Car Bookings table
 export const carBookings = pgTable("car_bookings", {
   id: serial("id").primaryKey(),
-  car_id: integer("car_id").notNull(),
-  user_id: text("user_id").notNull(),
+  car_id: integer("car_id")
+    .notNull()
+    .references(() => cars.id, { onDelete: "cascade" }),
+  user_id: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   start_date: timestamp("start_date").notNull(),
   end_date: timestamp("end_date").notNull(),
   total_price: numeric("total_price").notNull(),
@@ -394,6 +401,10 @@ export const carBookingsRelations = relations(carBookings, ({ one }) => ({
   car: one(cars, {
     fields: [carBookings.car_id],
     references: [cars.id],
+  }),
+  user: one(user, {
+    fields: [carBookings.user_id],
+    references: [user.id],
   }),
 }))
 
@@ -542,16 +553,19 @@ export const agencyEmployees = pgTable("agency_employees", {
 })
 
 // Add relations for agencyEmployees
-export const agencyEmployeesRelations = relations(agencyEmployees, ({ one }) => ({
-  employee: one(user, {
-    fields: [agencyEmployees.employeeId],
-    references: [user.id],
-  }),
-  agency: one(agencies, {
-    fields: [agencyEmployees.agencyId],
-    references: [agencies.userId],
-  }),
-}))
+export const agencyEmployeesRelations = relations(
+  agencyEmployees,
+  ({ one }) => ({
+    employee: one(user, {
+      fields: [agencyEmployees.employeeId],
+      references: [user.id],
+    }),
+    agency: one(agencies, {
+      fields: [agencyEmployees.agencyId],
+      references: [agencies.userId],
+    }),
+  })
+)
 
 // Chat messages table
 export const chatMessages = pgTable("chat_messages", {

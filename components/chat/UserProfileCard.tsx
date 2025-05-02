@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Mail, Phone, MapPin, X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   getUserData,
@@ -113,9 +112,9 @@ export default function UserProfileCard({
     return (
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="flex justify-between items-center">
-          <DialogTitle className="text-xl font-semibold">
+          <CardTitle className="text-xl font-semibold">
             Customer Profile
-          </DialogTitle>
+          </CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -138,9 +137,9 @@ export default function UserProfileCard({
     return (
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="flex justify-between items-center">
-          <DialogTitle className="text-xl font-semibold">
+          <CardTitle className="text-xl font-semibold">
             Customer Profile
-          </DialogTitle>
+          </CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -171,9 +170,9 @@ export default function UserProfileCard({
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg">
       <CardHeader className="flex justify-between items-center border-b pb-4">
-        <DialogTitle className="text-xl font-semibold">
+        <CardTitle className="text-xl font-semibold">
           Customer Profile
-        </DialogTitle>
+        </CardTitle>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>

@@ -125,6 +125,13 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
     return convertPrice(effectivePrice, carCurrency)
   }, [car, effectivePrice, convertPrice])
 
+  // Calculate the price in the car's original currency (for payment processing)
+  const priceInOriginalCurrency = useMemo(() => {
+    const days = totalDays
+    if (!car || isNaN(days) || !effectivePrice) return 0
+    return parseFloat((days * effectivePrice).toFixed(2))
+  }, [effectivePrice, totalDays, car])
+
   const totalPrice = useMemo(() => {
     const days = totalDays
     if (!car || isNaN(days) || !convertedEffectivePrice) return 0
@@ -216,40 +223,45 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
       try {
         setIsSubmitting(true)
 
-        // Calculate the total price in the car's original currency
-        const carCurrency = car.currency || "TND"
-        const priceInOriginalCurrency = effectivePrice * totalDays
-
-        console.log(
-          `Booking car with original price: ${priceInOriginalCurrency} ${carCurrency}`
-        )
-        console.log(
-          `Car details: ID=${car.id}, Currency=${carCurrency}, Original Price=${car.originalPrice}, Effective Price=${effectivePrice}`
-        )
+        // Add more detailed logging
+        console.log("Submitting booking with data:", {
+          carId: numericCarId,
+          userId: session.user.id,
+          startDate: dateRange.from,
+          endDate: dateRange.to,
+          totalPrice: priceInOriginalCurrency,
+          paymentMethod: selectedPaymentMethod,
+        })
 
         const result = await bookCar({
           carId: numericCarId,
           userId: session.user.id,
           startDate: dateRange.from,
           endDate: dateRange.to,
-          totalPrice: priceInOriginalCurrency, // Use the price in the car's original currency
+          totalPrice: priceInOriginalCurrency,
           customerInfo: data,
           paymentMethod: selectedPaymentMethod,
-          locale: locale, // Pass locale to server action
+          locale: locale,
         })
+
+        console.log("Booking result:", result) // Add this log to see the result
 
         if (result.success) {
           if (selectedPaymentMethod === "stripe" && result.booking?.url) {
+            console.log("Redirecting to Stripe:", result.booking.url)
             window.location.href = result.booking.url
           } else if (
             selectedPaymentMethod === "flouci" &&
             result.booking?.paymentLink
           ) {
+            console.log("Redirecting to Flouci:", result.booking.paymentLink)
             window.location.href = result.booking.paymentLink
           } else {
+            console.error("Invalid payment response:", result)
             toast.error("Invalid payment response")
           }
         } else {
+          console.error("Booking failed:", result.error)
           toast.error(result.error || "Booking failed")
         }
       } catch (error) {
@@ -269,6 +281,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
       session,
       selectedPaymentMethod,
       locale,
+      priceInOriginalCurrency, // Add this to the dependency array
     ]
   )
 
@@ -451,8 +464,8 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
                         I agree to the terms and conditions of rental
                       </FormLabel>
                       <FormDescription>
-                        By agreeing, you confirm you&apos;ve read our terms including
-                        the cancellation policy.
+                        By agreeing, you confirm you&apos;ve read our terms
+                        including the cancellation policy.
                       </FormDescription>
                     </div>
                     <FormMessage />

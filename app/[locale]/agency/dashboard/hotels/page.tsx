@@ -5,13 +5,14 @@ import { columns, HotelType } from "./columns"
 import { Locale } from "@/i18n/routing"
 
 interface HotelsPageProps {
-  params: {
+  params: Promise<{
     locale: Locale
-  }
+  }>
 }
 
 export default async function HotelsPage({ params }: HotelsPageProps) {
-  const { locale } = params
+  const { locale } = await params
+
   const hotels = await getHotels()
 
   return (
@@ -27,7 +28,7 @@ export default async function HotelsPage({ params }: HotelsPageProps) {
         </Link>
       </div>
 
-      {/* Hotels Table - replacing the previous list view */}
+      {/* Hotels Table */}
       <HotelsTable columns={columns} data={hotels as HotelType[]} />
     </div>
   )

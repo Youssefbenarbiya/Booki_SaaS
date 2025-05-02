@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import ArchiveTripButton from "./ArchiveTripButton";
 import PublishTripButton from "./PublishTripButton";
 import { ArchiveIcon } from "lucide-react";
