@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Metadata } from "next"
-import { getBookingDetails } from "@/actions/bookings"
-import { headers } from "next/headers"
-import { auth } from "@/auth"
-import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { Metadata } from "next";
+import { getBookingDetails } from "@/actions/bookings";
+import { headers } from "next/headers";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -12,8 +12,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Calendar,
   Clock,
@@ -25,161 +25,199 @@ import {
   Mail,
   CreditCard,
   AlertCircle,
-} from "lucide-react"
-import { format } from "date-fns"
-import Image from "next/image"
-import Link from "next/link"
-import { Separator } from "@/components/ui/separator"
-import { cancelBooking, BookingType } from "@/actions/bookings"
+  MapPin,
+  Info,
+} from "lucide-react";
+import { format } from "date-fns";
+import Image from "next/image";
+import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
+import { cancelBooking, BookingType } from "@/actions/bookings";
 
 // Update type definitions for different booking types
 type CarBooking = {
-  status: string
-  id: number
-  user_id: string
-  start_date: Date
-  end_date: Date
-  total_price: string
+  status: string;
+  id: number;
+  user_id: string;
+  start_date: Date;
+  end_date: Date;
+  total_price: string;
   car: {
-    brand: string
-    model: string
-    year: string
-    color: string
-    images: string[]
-    plateNumber: string
-    originalPrice: string
-    discountPercentage: number
-  }
-  drivingLicense?: string
-  fullName?: string
-  phone?: string
-  email?: string
-  paymentStatus?: string
-  paymentMethod?: string
-  paymentDate?: Date
-}
+    brand: string;
+    model: string;
+    year: string;
+    color: string;
+    images: string[];
+    plateNumber: string;
+    originalPrice: string;
+    discountPercentage: number;
+  };
+  drivingLicense?: string;
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paymentDate?: Date;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    image: string;
+    phoneNumber?: string;
+    address?: string;
+  };
+};
 
 type TripBooking = {
-  status: string
-  id: number
-  userId: string
-  tripId: number
-  seatsBooked: number
-  totalPrice: string
-  bookingDate: Date | null
-  paymentId: string | null
-  paymentStatus: string | null
-  paymentMethod: string | null
-  paymentDate: Date | null
+  status: string;
+  id: number;
+  userId: string;
+  tripId: number;
+  seatsBooked: number;
+  totalPrice: string;
+  bookingDate: Date | null;
+  paymentId: string | null;
+  paymentStatus: string | null;
+  paymentMethod: string | null;
+  paymentDate: Date | null;
   trip: {
-    name: string
-    destination: string
-    startDate: Date
-    endDate: Date
-    images: { imageUrl: string }[]
+    name: string;
+    destination: string;
+    startDate: Date;
+    endDate: Date;
+    images: { imageUrl: string }[];
     activities: {
-      id: number
-      activityName: string
-      description: string
-      scheduledDate?: Date
-    }[]
-    originalPrice: string
-    discountPercentage: number
-  }
-}
+      id: number;
+      activityName: string;
+      description: string;
+      scheduledDate?: Date;
+    }[];
+    originalPrice: string;
+    discountPercentage: number;
+  };
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    image: string;
+    phoneNumber?: string;
+    address?: string;
+  };
+};
 
 type HotelBooking = {
-  status: string
-  id: number
-  userId: string
-  checkIn: Date
-  checkOut: Date
-  totalPrice: string
-  paymentStatus?: string
-  paymentMethod?: string
-  paymentDate?: Date
+  status: string;
+  id: number;
+  userId: string;
+  checkIn: Date;
+  checkOut: Date;
+  totalPrice: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paymentDate?: Date;
   room: {
-    name: string
-    roomType: string
-    capacity: number
-    pricePerNightAdult: string
+    name: string;
+    roomType: string;
+    capacity: number;
+    pricePerNightAdult: string;
     hotel: {
-      name: string
-      address: string
-      city: string
-      images: string[]
-    }
-  }
-}
+      name: string;
+      address: string;
+      city: string;
+      images: string[];
+    };
+  };
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    image: string;
+    phoneNumber?: string;
+    address?: string;
+  };
+};
 
-type Booking = CarBooking | TripBooking | HotelBooking
+type Booking = CarBooking | TripBooking | HotelBooking;
 
 // Add type guard functions
 function isCarBooking(booking: Booking): booking is CarBooking {
-  return "car" in booking
+  return "car" in booking;
 }
 
 function isTripBooking(booking: Booking): booking is TripBooking {
-  return "trip" in booking
+  return "trip" in booking;
 }
 
 function isHotelBooking(booking: Booking): booking is HotelBooking {
-  return "room" in booking
+  return "room" in booking;
 }
 
 export async function generateMetadata({
   params,
 }: {
-  params: { type: string; id: string }
+  params: { type: string; id: string };
 }): Promise<Metadata> {
-  const type = params.type as BookingType
+  const type = params.type as BookingType;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const id = parseInt(params.id)
+  const id = parseInt(params.id);
 
   const typeTitles = {
     car: "Car Booking",
     trip: "Trip Booking",
     hotel: "Hotel Booking",
-  }
+  };
 
   return {
     title: `${typeTitles[type] || "Booking"} Details`,
     description: "View your booking details",
-  }
+  };
 }
 
 export default async function BookingDetailsPage({
   params,
 }: {
-  params: { type: string; id: string; locale: string }
+  params: { type: string; id: string; locale: string };
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
-  })
+  });
 
   if (!session?.user) {
-    redirect(`/${params.locale}/sign-in`)
+    redirect(`/${params.locale}/sign-in`);
   }
 
-  const type = params.type as BookingType
-  const id = parseInt(params.id)
+  const type = params.type as BookingType;
+  const id = parseInt(params.id);
 
   if (!["car", "trip", "hotel"].includes(type) || isNaN(id)) {
-    redirect(`/${params.locale}/bookings`)
+    redirect(`/${params.locale}/bookings`);
   }
 
-  const booking = (await getBookingDetails(type, id)) as unknown as Booking
+  const booking = (await getBookingDetails(type, id)) as unknown as Booking;
 
   if (!booking) {
-    redirect(`/${params.locale}/bookings`)
+    redirect(`/${params.locale}/bookings`);
   }
 
   const handleCancelBooking = async () => {
-    "use server"
+    "use server";
 
-    await cancelBooking(type, id)
-    redirect(`/${params.locale}/agency/dashboard/bookings`)
-  }
+    await cancelBooking(type, id);
+    redirect(`/${params.locale}/agency/dashboard/bookings`);
+  };
+
+  // Extract user info from the booking
+  const user = booking.user;
+  const userEmail = isCarBooking(booking)
+    ? booking.email || user?.email
+    : user?.email;
+  const userName = isCarBooking(booking)
+    ? booking.fullName || user?.name
+    : user?.name;
+  const userPhone = isCarBooking(booking)
+    ? booking.phone || user?.phoneNumber
+    : user?.phoneNumber;
 
   return (
     <div className="container py-10">
@@ -215,6 +253,68 @@ export default async function BookingDetailsPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          {/* Customer Profile Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Customer Profile</CardTitle>
+              <CardDescription>
+                Information about the customer who made this booking
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                  {user?.image ? (
+                    <Image
+                      src={user.image}
+                      alt={userName || "Customer"}
+                      width={64}
+                      height={64}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <User className="h-8 w-8 text-gray-400" />
+                  )}
+                </div>
+                <div className="space-y-3 flex-1">
+                  <div>
+                    <h3 className="font-medium text-lg">
+                      {userName || "Customer name not provided"}
+                    </h3>
+                    <div className="flex flex-col gap-2 mt-3">
+                      {userEmail && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">{userEmail}</span>
+                        </div>
+                      )}
+                      {userPhone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">{userPhone}</span>
+                        </div>
+                      )}
+                      {user?.address && (
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
+                          <span className="text-sm">{user.address}</span>
+                        </div>
+                      )}
+                      {isCarBooking(booking) && booking.drivingLicense && (
+                        <div className="flex items-center gap-2">
+                          <Info className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">
+                            Driving License: {booking.drivingLicense}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Main Booking Information */}
           <Card>
             <CardHeader>
@@ -383,41 +483,6 @@ export default async function BookingDetailsPage({
                 )}
             </CardContent>
           </Card>
-
-          {/* Additional Info for Car Bookings */}
-          {isCarBooking(booking) && booking.drivingLicense && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Rental Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <DetailsItem
-                    icon={<User className="h-4 w-4" />}
-                    label="Full Name"
-                    value={booking.fullName || session.user.name || ""}
-                  />
-                  {booking.phone && (
-                    <DetailsItem
-                      icon={<Phone className="h-4 w-4" />}
-                      label="Phone Number"
-                      value={booking.phone}
-                    />
-                  )}
-                  <DetailsItem
-                    icon={<Mail className="h-4 w-4" />}
-                    label="Email"
-                    value={booking.email || session.user.email || ""}
-                  />
-                  <DetailsItem
-                    icon={<User className="h-4 w-4" />}
-                    label="Driving License"
-                    value={booking.drivingLicense}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Payment Summary */}
@@ -543,15 +608,15 @@ export default async function BookingDetailsPage({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function StatusBadge({ status }: { status: string }) {
   const statusMap: Record<
     string,
     {
-      variant: "default" | "secondary" | "destructive" | "outline" | "success"
-      icon: React.ReactNode
+      variant: "default" | "secondary" | "destructive" | "outline" | "success";
+      icon: React.ReactNode;
     }
   > = {
     pending: { variant: "outline", icon: <Clock className="h-3 w-3 mr-1" /> },
@@ -561,19 +626,19 @@ function StatusBadge({ status }: { status: string }) {
       variant: "destructive",
       icon: <AlertCircle className="h-3 w-3 mr-1" />,
     },
-  }
+  };
 
   const { variant, icon } = statusMap[status.toLowerCase()] || {
     variant: "outline",
     icon: null,
-  }
+  };
 
   return (
     <Badge variant={variant as any} className="flex items-center">
       {icon}
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </Badge>
-  )
+  );
 }
 
 function DetailsItem({
@@ -581,9 +646,9 @@ function DetailsItem({
   label,
   value,
 }: {
-  icon: React.ReactNode
-  label: string
-  value: string | number
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
 }) {
   return (
     <div className="flex items-start gap-2">
@@ -593,5 +658,5 @@ function DetailsItem({
         <p className="text-sm">{value}</p>
       </div>
     </div>
-  )
+  );
 }

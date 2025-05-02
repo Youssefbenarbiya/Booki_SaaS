@@ -6,12 +6,20 @@ import { useSession } from "@/auth-client";
 import { ChatProvider } from "@/lib/contexts/ChatContext";
 import { useChat } from "@/lib/contexts/ChatContext";
 import { Button } from "@/components/ui/button";
-import { Loader2, MessageSquare, Send, User } from "lucide-react";
+import { Loader2, MessageSquare, Send, User, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatMessage } from "@/lib/types/chat";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import UserProfileCard from "./UserProfileCard";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
 interface ChatConversation {
   postId: string;
@@ -64,6 +72,8 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   const [userCache, setUserCache] = useState<Record<string, UserInfo>>({});
   const [postCache, setPostCache] = useState<Record<string, PostInfo>>({});
   const [reconnecting, setReconnecting] = useState(false);
+  const [viewingProfileId, setViewingProfileId] = useState<string | null>(null);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
   // Store selected conversation in a ref to avoid dependency cycles
   const selectedConversationRef = useRef<ChatConversation | null>(null);
@@ -239,9 +249,9 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   useEffect(() => {
     if (messagesEndRef.current && messages.length > 0) {
       requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'end'
+        messagesEndRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
         });
       });
     }
@@ -254,8 +264,36 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       disconnectFromChat();
       clearMessages();
 
+      // Reset unread count for the selected conversation
+      setConversations((prevConversations) =>
+        prevConversations.map((conv) =>
+          conv.postId === conversation.postId &&
+          conv.postType === conversation.postType &&
+          conv.customerId === conversation.customerId
+            ? { ...conv, unreadCount: 0 }
+            : conv
+        )
+      );
+
       // Set selected conversation before connecting to chat
       setSelectedConversation(conversation);
+
+      // Mark messages as read in the database
+      try {
+        await fetch("/api/chat/mark-read", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            postId: conversation.postId,
+            postType: conversation.postType,
+            receiverId: session?.user?.id,
+          }),
+        });
+      } catch (error) {
+        console.error("Error marking messages as read:", error);
+      }
 
       // If this conversation has customerId, ensure we're properly using it for filtering
       if (conversation.customerId) {
@@ -304,7 +342,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
       selectedConversationRef.current.customerId
     );
     setMessageText("");
-    
+
     // Scroll to bottom after sending
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -424,44 +462,120 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
     }
   }, [selectedConversation, loading, connected]);
 
+  // Show user profile
+  const handleViewUserProfile = (userId: string) => {
+    if (!userId || userId === "undefined" || userId === "null") {
+      console.error("Invalid userId provided:", userId);
+      return;
+    }
+
+    console.log("Viewing user profile for userId:", userId);
+    setViewingProfileId(userId);
+    setIsProfileDialogOpen(true);
+  };
+
+  // Close user profile
+  const handleCloseUserProfile = () => {
+    setIsProfileDialogOpen(false);
+    setViewingProfileId(null);
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
-      {/* Conversations List */}
-      <div className="border rounded-lg overflow-hidden">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative h-full">
+      {/* Conversations Sidebar */}
+      <div className="border rounded-lg overflow-hidden col-span-1 h-[70vh] flex flex-col">
         <div className="p-3 bg-primary/10 border-b">
           <h2 className="font-medium">Conversations</h2>
         </div>
-        <div className="overflow-y-auto h-[calc(100%-3rem)]">
+        <div className="flex-1 overflow-y-auto p-2">
           {conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full p-4 text-center text-gray-500">
-              <MessageSquare className="h-8 w-8 mb-2 text-gray-300" />
+            <div className="flex items-center justify-center h-full text-gray-500">
               <p>No conversations yet</p>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="space-y-2">
               {conversations.map((conv) => (
                 <div
-                  key={`${conv.customerId}-${conv.postType}-${conv.postId}`}
-                  className={`p-3 hover:bg-gray-50 cursor-pointer ${
+                  key={`${conv.postType}-${conv.postId}-${
+                    conv.customerId || ""
+                  }`}
+                  className={`p-2 rounded-md cursor-pointer ${
                     selectedConversation?.postId === conv.postId &&
                     selectedConversation?.postType === conv.postType &&
                     selectedConversation?.customerId === conv.customerId
-                      ? "bg-gray-100"
-                      : ""
+                      ? "bg-primary/10"
+                      : "hover:bg-gray-100"
                   }`}
                   onClick={() => handleSelectConversation(conv)}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarImage
-                          src={conv.customerImage || undefined}
-                          alt={getCustomerName(conv)}
-                        />
-                        <AvatarFallback className="bg-primary/20 text-xs">
-                          {getInitials(getCustomerName(conv))}
-                        </AvatarFallback>
-                      </Avatar>
+                      <Dialog
+                        open={
+                          isProfileDialogOpen &&
+                          viewingProfileId === conv.customerId
+                        }
+                        onOpenChange={setIsProfileDialogOpen}
+                      >
+                        <DialogTrigger asChild>
+                          <Avatar
+                            className="h-8 w-8 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/20"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const customerId = conv.customerId || "";
+                              if (!customerId) {
+                                console.error(
+                                  "No customer ID available for this conversation"
+                                );
+                                return;
+                              }
+                              handleViewUserProfile(customerId);
+                            }}
+                          >
+                            <AvatarImage
+                              src={conv.customerImage || undefined}
+                              alt={getCustomerName(conv)}
+                            />
+                            <AvatarFallback className="bg-primary/20 text-xs">
+                              {getInitials(getCustomerName(conv))}
+                            </AvatarFallback>
+                          </Avatar>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          {viewingProfileId && (
+                            <UserProfileCard
+                              userId={viewingProfileId}
+                              onClose={handleCloseUserProfile}
+                              fallback={
+                                <Card className="w-full max-w-md mx-auto">
+                                  <CardHeader className="flex justify-between items-center">
+                                    <DialogTitle className="text-xl font-semibold">
+                                      Customer
+                                    </DialogTitle>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={handleCloseUserProfile}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </CardHeader>
+                                  <CardContent className="flex flex-col items-center text-center">
+                                    <Avatar className="h-20 w-20 mb-4">
+                                      <AvatarFallback className="bg-primary/10 text-lg">
+                                        {getInitials("User")}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <p className="text-sm text-muted-foreground mb-2">
+                                      Limited profile information available
+                                    </p>
+                                  </CardContent>
+                                </Card>
+                              }
+                            />
+                          )}
+                        </DialogContent>
+                      </Dialog>
                       <div>
                         <h3 className="font-medium text-sm truncate">
                           {getCustomerName(conv)}
@@ -496,15 +610,72 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
             {/* Chat Header */}
             <div className="p-3 bg-primary/10 border-b flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={selectedConversation.customerImage || undefined}
-                    alt={getCustomerName(selectedConversation)}
-                  />
-                  <AvatarFallback className="bg-primary/20 text-xs">
-                    {getInitials(getCustomerName(selectedConversation))}
-                  </AvatarFallback>
-                </Avatar>
+                <Dialog
+                  open={
+                    isProfileDialogOpen &&
+                    viewingProfileId === selectedConversation.customerId
+                  }
+                  onOpenChange={setIsProfileDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Avatar
+                      className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary/20"
+                      onClick={() => {
+                        const customerId =
+                          selectedConversation.customerId || "";
+                        if (!customerId) {
+                          console.error(
+                            "No customer ID available for this conversation"
+                          );
+                          return;
+                        }
+                        handleViewUserProfile(customerId);
+                      }}
+                    >
+                      <AvatarImage
+                        src={selectedConversation.customerImage || undefined}
+                        alt={getCustomerName(selectedConversation)}
+                      />
+                      <AvatarFallback className="bg-primary/20 text-xs">
+                        {getInitials(getCustomerName(selectedConversation))}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    {viewingProfileId && (
+                      <UserProfileCard
+                        userId={viewingProfileId}
+                        onClose={handleCloseUserProfile}
+                        fallback={
+                          <Card className="w-full max-w-md mx-auto">
+                            <CardHeader className="flex justify-between items-center">
+                              <DialogTitle className="text-xl font-semibold">
+                                Customer
+                              </DialogTitle>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleCloseUserProfile}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-center text-center">
+                              <Avatar className="h-20 w-20 mb-4">
+                                <AvatarFallback className="bg-primary/10 text-lg">
+                                  {getInitials("User")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                Limited profile information available
+                              </p>
+                            </CardContent>
+                          </Card>
+                        }
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
                 <div>
                   <h2 className="font-medium">
                     {getCustomerName(selectedConversation)}
@@ -520,7 +691,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
               </div>
               {/* Connection status */}
               {reconnecting && (
-                <Badge 
+                <Badge
                   variant="outline"
                   className="bg-red-50 text-red-700 border-red-200 animate-pulse"
                 >
@@ -530,144 +701,165 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 p-3 overflow-y-auto bg-gray-50">
+            <div className="flex-1 overflow-y-auto px-4 py-2 h-[calc(100vh-15rem)]">
               {loading || isFetchingMessages ? (
-                <div className="flex justify-center items-center h-full">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex flex-col justify-center items-center h-full text-center text-gray-500">
-                  <MessageSquare className="h-8 w-8 mb-2 text-gray-300" />
-                  <p>No messages in this conversation</p>
+                <div className="flex flex-col items-center justify-center h-full p-4 text-center text-gray-500">
+                  <p>No messages yet</p>
+                  <p className="text-sm">Start a conversation</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {messages.map((message, index) => {
-                    const isSentByMe = message.senderId === session?.user?.id;
-                    // Get sender information - use fallbacks for missing data
-                    const senderInfo = userCache[message.senderId] || {
+                  {messages.map((message) => {
+                    const isOutgoing = message.senderId === session?.user?.id;
+                    const sender = userCache[message.senderId] || {
                       id: message.senderId,
-                      name: isSentByMe
-                        ? session?.user?.name || "Me"
-                        : getCustomerName(selectedConversation),
-                      image: isSentByMe
-                        ? session?.user?.image
-                        : selectedConversation.customerImage,
+                      name: "Unknown",
+                      image: null,
                     };
-
-                    // Check for pending/optimistic status
-                    const isPending = (message as any)?._isPending === true;
-
-                    // Ensure we have a truly unique key
-                    const messageKey = `${message.id || "temp"}-${index}-${
-                      message.senderId
-                    }`;
 
                     return (
                       <div
-                        key={messageKey}
+                        key={message.id}
                         className={`flex ${
-                          isSentByMe ? "justify-end" : "justify-start"
-                        } items-start gap-2`}
+                          isOutgoing ? "justify-end" : "justify-start"
+                        }`}
                       >
-                        {/* Avatar for received messages */}
-                        {!isSentByMe && (
-                          <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarImage
-                              src={senderInfo.image || undefined}
-                              alt={senderInfo.name || "User"}
-                            />
-                            <AvatarFallback className="bg-primary/20 text-xs">
-                              {getInitials(senderInfo.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-
-                        <div className="flex flex-col max-w-[75%]">
-                          {/* Always show sender name for received messages */}
-                          {!isSentByMe && (
-                            <span className="text-xs font-medium text-gray-700 mb-1 ml-1">
-                              {senderInfo.name || "User"}
-                            </span>
+                        <div
+                          className={`flex items-start gap-2 max-w-[80%] ${
+                            isOutgoing ? "flex-row-reverse" : ""
+                          }`}
+                        >
+                          {!isOutgoing && (
+                            <Dialog
+                              open={
+                                isProfileDialogOpen &&
+                                viewingProfileId === message.senderId
+                              }
+                              onOpenChange={setIsProfileDialogOpen}
+                            >
+                              <DialogTrigger asChild>
+                                <Avatar
+                                  className="h-8 w-8 mt-1 cursor-pointer hover:ring-2 hover:ring-primary/20"
+                                  onClick={() => {
+                                    if (!message.senderId) {
+                                      console.error(
+                                        "No sender ID available for this message"
+                                      );
+                                      return;
+                                    }
+                                    handleViewUserProfile(message.senderId);
+                                  }}
+                                >
+                                  <AvatarImage
+                                    src={sender.image || undefined}
+                                    alt={sender.name || "User"}
+                                  />
+                                  <AvatarFallback className="bg-primary/20 text-xs">
+                                    {getInitials(sender.name || "User")}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md">
+                                {viewingProfileId && (
+                                  <UserProfileCard
+                                    userId={viewingProfileId}
+                                    onClose={handleCloseUserProfile}
+                                    fallback={
+                                      <Card className="w-full max-w-md mx-auto">
+                                        <CardHeader className="flex justify-between items-center">
+                                          <DialogTitle className="text-xl font-semibold">
+                                            Customer
+                                          </DialogTitle>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={handleCloseUserProfile}
+                                          >
+                                            <X className="h-4 w-4" />
+                                          </Button>
+                                        </CardHeader>
+                                        <CardContent className="flex flex-col items-center text-center">
+                                          <Avatar className="h-20 w-20 mb-4">
+                                            <AvatarFallback className="bg-primary/10 text-lg">
+                                              {getInitials("User")}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <p className="text-sm text-muted-foreground mb-2">
+                                            Limited profile information
+                                            available
+                                          </p>
+                                        </CardContent>
+                                      </Card>
+                                    }
+                                  />
+                                )}
+                              </DialogContent>
+                            </Dialog>
                           )}
 
-                          <div
-                            className={`rounded-lg p-3 ${
-                              isSentByMe
-                                ? `${isPending ? "bg-primary/80" : "bg-primary"} text-white rounded-tr-none`
-                                : "bg-white border border-gray-200 rounded-tl-none"
-                            }`}
-                          >
-                            <p className="text-sm break-words">
-                              {message.content}
-                              {isPending && <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">sending...</span>}
-                            </p>
+                          <div>
+                            <div
+                              className={`rounded-lg px-4 py-2 inline-block ${
+                                isOutgoing
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                              }`}
+                            >
+                              <p className="whitespace-pre-wrap break-words">
+                                {message.content}
+                              </p>
+                            </div>
                             <p
-                              className={`text-xs mt-1 ${
-                                isSentByMe ? "text-primary-50" : "text-gray-500"
+                              className={`text-xs text-gray-500 mt-1 ${
+                                isOutgoing ? "text-right" : ""
                               }`}
                             >
                               {message.createdAt
                                 ? formatDistanceToNow(
                                     new Date(message.createdAt),
-                                    {
-                                      addSuffix: true,
-                                    }
+                                    { addSuffix: true }
                                   )
-                                : "Just now"}
+                                : ""}
                             </p>
                           </div>
                         </div>
-
-                        {/* Avatar for sent messages */}
-                        {isSentByMe && (
-                          <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarImage
-                              src={session?.user?.image || undefined}
-                              alt={session?.user?.name || "You"}
-                            />
-                            <AvatarFallback className="bg-primary/20 text-xs">
-                              {getInitials(session?.user?.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
                       </div>
                     );
                   })}
-                  <div ref={messagesEndRef} className="h-1" />
-                </div>
-              )}
-              {error && (
-                <div className="bg-red-50 text-red-600 p-2 rounded text-sm">
-                  {error}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
 
-            {/* Chat Input */}
-            <div className="p-3 border-t">
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Type a message..."
-                  className="flex-1 resize-none"
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                />
-                <Button
-                  size="icon"
-                  onClick={handleSendMessage}
-                  disabled={!connected || !messageText.trim()}
-                  className="h-auto"
-                >
+            {/* Message Input */}
+            <div className="p-3 border-t flex gap-2">
+              <Textarea
+                placeholder="Type a message..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                className="min-h-[40px] max-h-[120px]"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!connected || messageText.trim() === ""}
+                className="flex-shrink-0 h-10"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
                   <Send className="h-4 w-4" />
-                </Button>
-              </div>
+                )}
+              </Button>
             </div>
           </>
         )}
