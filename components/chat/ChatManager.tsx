@@ -14,11 +14,10 @@ import { ChatMessage } from "@/lib/types/chat";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import UserProfileCard from "./UserProfileCard";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
@@ -74,7 +73,7 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
   const [postCache, setPostCache] = useState<Record<string, PostInfo>>({});
   const [reconnecting, setReconnecting] = useState(false);
   const [viewingProfileId, setViewingProfileId] = useState<string | null>(null);
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Store selected conversation in a ref to avoid dependency cycles
   const selectedConversationRef = useRef<ChatConversation | null>(null);
@@ -472,12 +471,12 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
 
     console.log("Viewing user profile for userId:", userId);
     setViewingProfileId(userId);
-    setIsProfileDialogOpen(true);
+    setIsProfileOpen(true);
   };
 
   // Close user profile
   const handleCloseUserProfile = () => {
-    setIsProfileDialogOpen(false);
+    setIsProfileOpen(false);
     setViewingProfileId(null);
   };
 
@@ -511,14 +510,8 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <Dialog
-                        open={
-                          isProfileDialogOpen &&
-                          viewingProfileId === conv.customerId
-                        }
-                        onOpenChange={setIsProfileDialogOpen}
-                      >
-                        <DialogTrigger asChild>
+                      <Popover>
+                        <PopoverTrigger asChild>
                           <Avatar
                             className="h-8 w-8 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/20"
                             onClick={(e) => {
@@ -541,42 +534,47 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                               {getInitials(getCustomerName(conv))}
                             </AvatarFallback>
                           </Avatar>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                          {viewingProfileId && (
-                            <UserProfileCard
-                              userId={viewingProfileId}
-                              onClose={handleCloseUserProfile}
-                              fallback={
-                                <Card className="w-full max-w-md mx-auto">
-                                  <CardHeader className="flex justify-between items-center">
-                                    <DialogTitle className="text-xl font-semibold">
-                                      Customer
-                                    </DialogTitle>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={handleCloseUserProfile}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </CardHeader>
-                                  <CardContent className="flex flex-col items-center text-center">
-                                    <Avatar className="h-20 w-20 mb-4">
-                                      <AvatarFallback className="bg-primary/10 text-lg">
-                                        {getInitials("User")}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <p className="text-sm text-muted-foreground mb-2">
-                                      Limited profile information available
-                                    </p>
-                                  </CardContent>
-                                </Card>
-                              }
-                            />
-                          )}
-                        </DialogContent>
-                      </Dialog>
+                        </PopoverTrigger>
+                        {viewingProfileId === conv.customerId && (
+                          <PopoverContent
+                            className="p-0 w-[350px] md:w-[400px]"
+                            align="start"
+                          >
+                            {viewingProfileId && (
+                              <UserProfileCard
+                                userId={viewingProfileId}
+                                onClose={handleCloseUserProfile}
+                                fallback={
+                                  <Card className="w-full">
+                                    <CardHeader className="flex justify-between items-center">
+                                      <h3 className="text-xl font-semibold">
+                                        Customer
+                                      </h3>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleCloseUserProfile}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-col items-center text-center">
+                                      <Avatar className="h-20 w-20 mb-4">
+                                        <AvatarFallback className="bg-primary/10 text-lg">
+                                          {getInitials("User")}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <p className="text-sm text-muted-foreground mb-2">
+                                        Limited profile information available
+                                      </p>
+                                    </CardContent>
+                                  </Card>
+                                }
+                              />
+                            )}
+                          </PopoverContent>
+                        )}
+                      </Popover>
                       <div>
                         <h3 className="font-medium text-sm truncate">
                           {getCustomerName(conv)}
@@ -611,14 +609,8 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
             {/* Chat Header */}
             <div className="p-3 bg-primary/10 border-b flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Dialog
-                  open={
-                    isProfileDialogOpen &&
-                    viewingProfileId === selectedConversation.customerId
-                  }
-                  onOpenChange={setIsProfileDialogOpen}
-                >
-                  <DialogTrigger asChild>
+                <Popover>
+                  <PopoverTrigger asChild>
                     <Avatar
                       className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary/20"
                       onClick={() => {
@@ -641,42 +633,47 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                         {getInitials(getCustomerName(selectedConversation))}
                       </AvatarFallback>
                     </Avatar>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    {viewingProfileId && (
-                      <UserProfileCard
-                        userId={viewingProfileId}
-                        onClose={handleCloseUserProfile}
-                        fallback={
-                          <Card className="w-full max-w-md mx-auto">
-                            <CardHeader className="flex justify-between items-center">
-                              <DialogTitle className="text-xl font-semibold">
-                                Customer
-                              </DialogTitle>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleCloseUserProfile}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </CardHeader>
-                            <CardContent className="flex flex-col items-center text-center">
-                              <Avatar className="h-20 w-20 mb-4">
-                                <AvatarFallback className="bg-primary/10 text-lg">
-                                  {getInitials("User")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                Limited profile information available
-                              </p>
-                            </CardContent>
-                          </Card>
-                        }
-                      />
-                    )}
-                  </DialogContent>
-                </Dialog>
+                  </PopoverTrigger>
+                  {viewingProfileId === selectedConversation.customerId && (
+                    <PopoverContent
+                      className="p-0 w-[350px] md:w-[400px]"
+                      align="start"
+                    >
+                      {viewingProfileId && (
+                        <UserProfileCard
+                          userId={viewingProfileId}
+                          onClose={handleCloseUserProfile}
+                          fallback={
+                            <Card className="w-full">
+                              <CardHeader className="flex justify-between items-center">
+                                <h3 className="text-xl font-semibold">
+                                  Customer
+                                </h3>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={handleCloseUserProfile}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </CardHeader>
+                              <CardContent className="flex flex-col items-center text-center">
+                                <Avatar className="h-20 w-20 mb-4">
+                                  <AvatarFallback className="bg-primary/10 text-lg">
+                                    {getInitials("User")}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  Limited profile information available
+                                </p>
+                              </CardContent>
+                            </Card>
+                          }
+                        />
+                      )}
+                    </PopoverContent>
+                  )}
+                </Popover>
                 <div>
                   <h2 className="font-medium">
                     {getCustomerName(selectedConversation)}
@@ -735,14 +732,8 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                           }`}
                         >
                           {!isOutgoing && (
-                            <Dialog
-                              open={
-                                isProfileDialogOpen &&
-                                viewingProfileId === message.senderId
-                              }
-                              onOpenChange={setIsProfileDialogOpen}
-                            >
-                              <DialogTrigger asChild>
+                            <Popover>
+                              <PopoverTrigger asChild>
                                 <Avatar
                                   className="h-8 w-8 mt-1 cursor-pointer hover:ring-2 hover:ring-primary/20"
                                   onClick={() => {
@@ -763,43 +754,48 @@ function ChatManagerContent({ initialConversations = [] }: ChatManagerProps) {
                                     {getInitials(sender.name || "User")}
                                   </AvatarFallback>
                                 </Avatar>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-md">
-                                {viewingProfileId && (
-                                  <UserProfileCard
-                                    userId={viewingProfileId}
-                                    onClose={handleCloseUserProfile}
-                                    fallback={
-                                      <Card className="w-full max-w-md mx-auto">
-                                        <CardHeader className="flex justify-between items-center">
-                                          <DialogTitle className="text-xl font-semibold">
-                                            Customer
-                                          </DialogTitle>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={handleCloseUserProfile}
-                                          >
-                                            <X className="h-4 w-4" />
-                                          </Button>
-                                        </CardHeader>
-                                        <CardContent className="flex flex-col items-center text-center">
-                                          <Avatar className="h-20 w-20 mb-4">
-                                            <AvatarFallback className="bg-primary/10 text-lg">
-                                              {getInitials("User")}
-                                            </AvatarFallback>
-                                          </Avatar>
-                                          <p className="text-sm text-muted-foreground mb-2">
-                                            Limited profile information
-                                            available
-                                          </p>
-                                        </CardContent>
-                                      </Card>
-                                    }
-                                  />
-                                )}
-                              </DialogContent>
-                            </Dialog>
+                              </PopoverTrigger>
+                              {viewingProfileId === message.senderId && (
+                                <PopoverContent
+                                  className="p-0 w-[350px] md:w-[400px]"
+                                  align="start"
+                                >
+                                  {viewingProfileId && (
+                                    <UserProfileCard
+                                      userId={viewingProfileId}
+                                      onClose={handleCloseUserProfile}
+                                      fallback={
+                                        <Card className="w-full">
+                                          <CardHeader className="flex justify-between items-center">
+                                            <h3 className="text-xl font-semibold">
+                                              Customer
+                                            </h3>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={handleCloseUserProfile}
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </Button>
+                                          </CardHeader>
+                                          <CardContent className="flex flex-col items-center text-center">
+                                            <Avatar className="h-20 w-20 mb-4">
+                                              <AvatarFallback className="bg-primary/10 text-lg">
+                                                {getInitials("User")}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <p className="text-sm text-muted-foreground mb-2">
+                                              Limited profile information
+                                              available
+                                            </p>
+                                          </CardContent>
+                                        </Card>
+                                      }
+                                    />
+                                  )}
+                                </PopoverContent>
+                              )}
+                            </Popover>
                           )}
 
                           <div>
