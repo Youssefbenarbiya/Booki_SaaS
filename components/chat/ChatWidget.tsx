@@ -1,24 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useChat } from "@/lib/contexts/ChatContext"
-import { ChatMessage } from "@/lib/types/chat"
-import { Send } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-import { Badge } from "../ui/badge"
-import { ScrollArea } from "../ui/scroll-area"
-import { useSession } from "@/auth-client"
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChat } from "@/lib/contexts/ChatContext";
+import { ChatMessage } from "@/lib/types/chat";
+import { Send } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Badge } from "../ui/badge";
+import { ScrollArea } from "../ui/scroll-area";
+import { useSession } from "@/auth-client";
 
 interface ChatWidgetProps {
-  postId: string
-  postType: string
-  agencyName?: string
-  agencyLogo?: string | null
+  postId: string;
+  postType: string;
+  agencyName?: string;
+  agencyLogo?: string | null;
 }
 
 export default function ChatWidget({
@@ -27,13 +27,13 @@ export default function ChatWidget({
   agencyName,
   agencyLogo,
 }: ChatWidgetProps) {
-  const [message, setMessage] = useState("")
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const processedMessageIds = useRef<Set<string>>(new Set())
-  const isFirstMount = useRef(true)
-  const chatConnectionRef = useRef({ postId, postType })
-  const customerIdRef = useRef<string | null>(null)
-  const [reconnecting, setReconnecting] = useState(false)
+  const [message, setMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const processedMessageIds = useRef<Set<string>>(new Set());
+  const isFirstMount = useRef(true);
+  const chatConnectionRef = useRef({ postId, postType });
+  const customerIdRef = useRef<string | null>(null);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const {
     messages,
@@ -44,38 +44,39 @@ export default function ChatWidget({
     connectToChat,
     disconnectFromChat,
     markAsRead,
-  } = useChat()
+  } = useChat();
 
-  const session = useSession()
+  const session = useSession();
+  const userImage = session.data?.user?.image || null;
 
   useEffect(() => {
     if (session?.data?.user?.id) {
-      customerIdRef.current = session.data.user.id
+      customerIdRef.current = session.data.user.id;
     }
-  }, [session?.data?.user?.id])
+  }, [session?.data?.user?.id]);
 
   useEffect(() => {
     if (isFirstMount.current) {
-      console.log("Connecting to chat:", postId, postType)
-      connectToChat(postId, postType)
-      isFirstMount.current = false
+      console.log("Connecting to chat:", postId, postType);
+      connectToChat(postId, postType);
+      isFirstMount.current = false;
 
-      chatConnectionRef.current = { postId, postType }
+      chatConnectionRef.current = { postId, postType };
     }
 
     return () => {
-      console.log("Cleaning up chat connection")
-      disconnectFromChat()
-    }
-  }, [postId, postType, connectToChat, disconnectFromChat])
+      console.log("Cleaning up chat connection");
+      disconnectFromChat();
+    };
+  }, [postId, postType, connectToChat, disconnectFromChat]);
 
   useEffect(() => {
     if (!connected && !loading && !isFirstMount.current) {
-      setReconnecting(true)
+      setReconnecting(true);
     } else if (connected) {
-      setReconnecting(false)
+      setReconnecting(false);
     }
-  }, [connected, loading])
+  }, [connected, loading]);
 
   useEffect(() => {
     const processUnreadMessages = () => {
@@ -86,59 +87,59 @@ export default function ChatWidget({
           msg.sender !== "user" &&
           msg.senderId !== session?.data?.user?.id &&
           !processedMessageIds.current.has(msg.id)
-      )
+      );
 
       if (unreadMessages.length > 0) {
         unreadMessages.forEach((msg) => {
           if (msg.id) {
-            markAsRead(msg.id)
-            processedMessageIds.current.add(msg.id)
+            markAsRead(msg.id);
+            processedMessageIds.current.add(msg.id);
           }
-        })
+        });
       }
-    }
+    };
 
     if (connected && messages.length > 0) {
-      const timeoutId = setTimeout(processUnreadMessages, 300)
-      return () => clearTimeout(timeoutId)
+      const timeoutId = setTimeout(processUnreadMessages, 300);
+      return () => clearTimeout(timeoutId);
     }
-  }, [messages, markAsRead, connected, session?.data?.user?.id])
+  }, [messages, markAsRead, connected, session?.data?.user?.id]);
 
   useEffect(() => {
     const scrollToBottom = () => {
       if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'end'
-        })
+        messagesEndRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
       }
-    }
-    
+    };
+
     if (messages.length > 0) {
-      requestAnimationFrame(scrollToBottom)
+      requestAnimationFrame(scrollToBottom);
     }
-  }, [messages.length])
+  }, [messages.length]);
 
   const handleSend = () => {
-    if (!message.trim()) return
+    if (!message.trim()) return;
     sendMessage(
       chatConnectionRef.current.postId,
       chatConnectionRef.current.postType,
       message.trim()
-    )
-    setMessage("")
-    
+    );
+    setMessage("");
+
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-    }, 50)
-  }
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
+      e.preventDefault();
+      handleSend();
     }
-  }
+  };
 
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg border-primary/10">
@@ -155,12 +156,17 @@ export default function ChatWidget({
           ) : (
             <Badge
               variant="outline"
-              className={reconnecting 
-                ? "bg-red-50 text-red-700 border-red-200 animate-pulse" 
-                : "bg-yellow-50 text-yellow-700 border-yellow-200"
+              className={
+                reconnecting
+                  ? "bg-red-50 text-red-700 border-red-200 animate-pulse"
+                  : "bg-yellow-50 text-yellow-700 border-yellow-200"
               }
             >
-              {loading ? "Connecting..." : reconnecting ? "Reconnecting..." : "Disconnected"}
+              {loading
+                ? "Connecting..."
+                : reconnecting
+                ? "Reconnecting..."
+                : "Disconnected"}
             </Badge>
           )}
         </CardTitle>
@@ -180,11 +186,12 @@ export default function ChatWidget({
         ) : (
           <div className="space-y-4">
             {messages.map((msg, index) => (
-              <MessageBubble 
-                key={msg.id || `msg-${index}`} 
-                message={msg} 
+              <MessageBubble
+                key={msg.id || `msg-${index}`}
+                message={msg}
                 agencyLogo={agencyLogo}
                 customerId={customerIdRef.current}
+                userImage={userImage}
               />
             ))}
             <div ref={messagesEndRef} className="h-1" />
@@ -212,54 +219,66 @@ export default function ChatWidget({
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }
 
-function MessageBubble({ 
-  message, 
+function MessageBubble({
+  message,
   agencyLogo,
-  customerId
-}: { 
-  message: ChatMessage; 
+  customerId,
+  userImage,
+}: {
+  message: ChatMessage;
   agencyLogo?: string | null;
   customerId?: string | null;
+  userImage?: string | null;
 }) {
- 
-  const isFromAgency = 
-    // Basic agency identification checks
-    message.senderId?.includes("agency") || 
+  const isFromAgency =
+    message.senderId?.includes("agency") ||
     message.senderId?.startsWith("AGN-") ||
     message.sender === "agency" ||
     (message as any)?.isFromAgency === true ||
-    // If we know who the customer is, anything not from them is from the agency
     (customerId && message.senderId !== customerId);
-  
-  // Check for temporary/pending status from optimistic updates
+
   const isPending = (message as any)?._isPending === true;
-  
-  // For a customer interface, we want to show:
-  // - Agency messages on the right (blue/primary color)
-  // - Customer's own messages on the left (gray/muted color)
+
+  // Function to get initials for avatar fallback
+  const getInitials = (name: string | null): string => {
+    if (!name || name === "User") return "U";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <div className={`flex ${isFromAgency ? "justify-end" : "justify-start"}`}>
       <div className="flex items-start gap-2 max-w-[80%]">
         {!isFromAgency && (
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="/images/avatar-user.png" alt="You" />
-            <AvatarFallback>U</AvatarFallback>
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={userImage || undefined} alt="You" />
+            <AvatarFallback className="bg-primary/20">
+              {getInitials("User")}
+            </AvatarFallback>
           </Avatar>
         )}
 
         <div>
           <div
             className={`p-3 rounded-lg ${
-              isFromAgency 
-                ? "bg-primary text-primary-foreground rounded-br-none" 
+              isFromAgency
+                ? "bg-primary text-primary-foreground rounded-br-none"
                 : `${isPending ? "bg-muted/70" : "bg-muted"} rounded-bl-none`
             }`}
           >
             {message.content}
-            {isPending && <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">sending...</span>}
+            {isPending && (
+              <span className="ml-2 text-xs opacity-70 inline-block animate-pulse">
+                sending...
+              </span>
+            )}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
             {message.createdAt &&
@@ -270,15 +289,15 @@ function MessageBubble({
         </div>
 
         {isFromAgency && (
-          <Avatar className="h-8 w-8">
-            <AvatarImage 
-              src={agencyLogo || "/images/avatar-host.png"} 
-              alt="Agency" 
+          <Avatar className="h-10 w-10">
+            <AvatarImage
+              src={agencyLogo || "/images/avatar-host.png"}
+              alt="Agency"
             />
-            <AvatarFallback>A</AvatarFallback>
+            <AvatarFallback className="bg-primary/20">A</AvatarFallback>
           </Avatar>
         )}
       </div>
     </div>
-  )
+  );
 }
