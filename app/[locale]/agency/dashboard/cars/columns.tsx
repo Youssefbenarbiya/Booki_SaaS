@@ -1,13 +1,11 @@
 "use client";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Pencil, Trash, Eye, ArchiveIcon } from "lucide-react";
+import { ArrowUpDown, Pencil, Eye,  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
 import { CarType } from "./types";
 import { useRouter, useParams } from "next/navigation";
-import { deleteCar } from "@/actions/cars/carActions";
-import { toast } from "sonner";
 import Image from "next/image";
 import ArchiveCarButton from "./ArchiveCarButton";
 import PublishCarButton from "./PublishCarButton";
