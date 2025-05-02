@@ -7,9 +7,10 @@ import {
   roomAvailability,
   user,
   agencyEmployees,
+  roomBookings,
 } from "@/db/schema"
 import { hotelSchema, type HotelInput } from "@/lib/validations/hotelSchema"
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 
@@ -213,6 +214,40 @@ export async function deleteHotel(hotelId: string) {
   }
 }
 
+export async function archiveHotel(hotelId: string) {
+  try {
+    const [archivedHotel] = await db
+      .update(hotel)
+      .set({
+        status: "archived",
+        updatedAt: new Date(),
+      })
+      .where(eq(hotel.id, hotelId))
+      .returning()
+    return archivedHotel
+  } catch (error) {
+    console.error("Error archiving hotel:", error)
+    throw error
+  }
+}
+
+export async function publishHotel(hotelId: string) {
+  try {
+    const [publishedHotel] = await db
+      .update(hotel)
+      .set({
+        status: "pending", // Reset to pending for admin review
+        updatedAt: new Date(),
+      })
+      .where(eq(hotel.id, hotelId))
+      .returning()
+    return publishedHotel
+  } catch (error) {
+    console.error("Error publishing hotel:", error)
+    throw error
+  }
+}
+
 export async function getHotels() {
   try {
     // Get the current user's session
@@ -229,12 +264,37 @@ export async function getHotels() {
     const agencyId = await getAgencyId(session.user.id)
 
     // Get hotels belonging to the user's agency
-    return await db.query.hotel.findMany({
+    const hotels = await db.query.hotel.findMany({
       where: eq(hotel.agencyId, agencyId),
       with: {
         rooms: true,
       },
     })
+    
+    // Check each hotel for bookings
+    const hotelsWithBookingInfo = await Promise.all(
+      hotels.map(async (hotel) => {
+        // Get all room IDs for this hotel
+        const roomIds = hotel.rooms.map(room => room.id)
+        
+        if (roomIds.length === 0) {
+          return { ...hotel, hasBookings: false, bookings: [] }
+        }
+        
+        // Check if any bookings exist for these rooms
+        const bookings = await db.query.roomBookings.findMany({
+          where: inArray(roomBookings.roomId, roomIds),
+        })
+        
+        return {
+          ...hotel,
+          hasBookings: bookings.length > 0,
+          bookings: bookings,
+        }
+      })
+    )
+    
+    return hotelsWithBookingInfo
   } catch (error) {
     console.error("Error getting hotels:", error)
     throw error
@@ -243,8 +303,8 @@ export async function getHotels() {
 
 export async function getHotelById(hotelId: string) {
   try {
-    const result = await db.query.hotel.findFirst({
-      where: (hotels) => eq(hotels.id, hotelId),
+    const hotelData = await db.query.hotel.findFirst({
+      where: eq(hotel.id, hotelId),
       with: {
         rooms: {
           with: {
@@ -253,9 +313,26 @@ export async function getHotelById(hotelId: string) {
         },
       },
     })
-    return result
+
+    if (!hotelData) {
+      return null
+    }
+
+    // Get all room IDs for this hotel
+    const roomIds = hotelData.rooms.map(room => room.id)
+    
+    // Check if any bookings exist for these rooms
+    const bookings = await db.query.roomBookings.findMany({
+      where: inArray(roomBookings.roomId, roomIds),
+    })
+    
+    return {
+      ...hotelData,
+      hasBookings: bookings.length > 0,
+      bookings: bookings,
+    }
   } catch (error) {
-    console.error("Error getting hotel:", error)
+    console.error("Error getting hotel by ID:", error)
     throw error
   }
 }
