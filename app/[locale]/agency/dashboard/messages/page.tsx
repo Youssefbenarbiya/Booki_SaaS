@@ -29,30 +29,31 @@ export default async function AgencyMessagesPage({
 
   if (result.success) {
     console.log(
-      `Found ${result.conversations?.length || 0} conversations for agency ${agencyId}`
+      `Found ${
+        result.conversations?.length || 0
+      } conversations for agency ${agencyId}`
     )
 
     return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold">Messages</h1>
-          <p className="text-gray-500">
-            Manage conversations with customers interested in your listings
-          </p>
+      <div className="container mx-auto pt-0 pb-8 px-4">
+        <div className="space-y-2">
+         
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <ChatManager initialConversations={result.conversations?.map(conv => ({
-              ...conv,
-              postType: conv.postType as "trip" | "hotel" | "room" | "car"
-            }))} />
+          <div className="bg-white rounded-lg shadow p-4 max-h-[70vh] overflow-y-auto">
+            <ChatManager
+              initialConversations={result.conversations?.map((conv) => ({
+                ...conv,
+                postType: conv.postType as "trip" | "hotel" | "room" | "car",
+              }))}
+            />
           </div>
         </div>
       </div>
     )
   } else {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="space-y-4">
+      <div className="container mx-auto pt-0 pb-8 px-4">
+        <div className="space-y-2">
           <h1 className="text-2xl font-bold">Messages</h1>
           <p className="text-gray-500">
             Manage conversations with customers interested in your listings
