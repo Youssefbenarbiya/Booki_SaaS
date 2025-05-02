@@ -37,9 +37,7 @@ export default async function AgencyMessagesPage({
     return (
       <div className="container mx-auto pt-0 pb-8 px-4">
         <div className="space-y-2">
-         
-
-          <div className="bg-white rounded-lg shadow p-4 max-h-[70vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow p-4 max-h-[80vh] overflow-y-auto">
             <ChatManager
               initialConversations={result.conversations?.map((conv) => ({
                 ...conv,
