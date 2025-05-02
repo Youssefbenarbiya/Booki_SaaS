@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { getCarById } from "@/actions/cars/carActions"
@@ -16,6 +15,9 @@ import {
 } from "lucide-react"
 import AgencyInfo from "@/components/common/AgencyInfo"
 import { ContactButton } from "@/components/chat/ContactButton"
+import SignInRedirectMessage from "../../(auth)/sign-in/SignInRedirectMessage"
+import { headers } from "next/headers"
+import { auth } from "@/auth"
 
 export default async function CarDetailPage({
   params,
@@ -25,11 +27,19 @@ export default async function CarDetailPage({
   const { id, locale } = await params
   const carId = Number.parseInt(id, 10)
 
-  const response = await getCarById(carId)
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
 
-  if (!response || !response.car) {
-    notFound()
+  if (!session || !session.user) {
+    return (
+      <SignInRedirectMessage
+        callbackUrl={`/${locale}/sign-in?callbackUrl=/${locale}/cars/${carId}`}
+      />
+    )
   }
+
+  const response = await getCarById(carId)
 
   const car = response.car
 
