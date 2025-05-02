@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation"
 import HotelHeader from "@/components/hotel-details/HotelHeader"
 import HotelGallery from "@/components/hotel-details/HotelGallery"
-import HotelInfo from "@/components/hotel-details/HotelInfo"
 import db from "@/db/drizzle"
 import RoomsList from "@/components/hotel-details/RoomsList"
 import { getHotelById } from "@/actions/hotels&rooms/getHotelById"
 import AgencyInfo from "@/components/common/AgencyInfo"
 import { ContactButton } from "@/components/chat/ContactButton"
+import ClientHotelInfo from "@/components/hotel-details/ClientHotelInfo"
 
 export async function generateStaticParams() {
   const hotels = await db.query.hotel.findMany()
@@ -51,7 +51,7 @@ export default async function HotelPage({
       </div>
       <HotelGallery images={hotelData.images} hotelName={hotelData.name} />
 
-      <HotelInfo
+      <ClientHotelInfo
         hotel={{
           name: hotelData.name,
           rating: hotelData.rating || 5,
@@ -60,8 +60,8 @@ export default async function HotelPage({
           country: hotelData.country || "",
           description: hotelData.description || "",
           amenities: hotelData.amenities,
-          latitude: hotelData.latitude ?? undefined,
-          longitude: hotelData.longitude ?? undefined,
+          latitude: hotelData.latitude ? Number(hotelData.latitude) : undefined,
+          longitude: hotelData.longitude ? Number(hotelData.longitude) : undefined,
         }}
       />
 
