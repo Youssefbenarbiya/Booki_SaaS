@@ -6,14 +6,15 @@ import { notFound } from "next/navigation"
 import { Locale } from "@/i18n/routing"
 
 interface EditHotelPageProps {
-  params: {
+  params: Promise<{
     hotelId: string
     locale: Locale
-  }
+  }>
 }
 
+
 export default async function EditHotelPage({ params }: EditHotelPageProps) {
-  const { hotelId, locale } = params
+  const { hotelId, locale } = await params
 
   const hotel = await getHotelById(hotelId)
 

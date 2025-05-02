@@ -1,17 +1,15 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
 
 interface AgencyInfoProps {
-  agencyName: string;
-  agencyLogo?: string | null;
-  className?: string;
-  size?: "sm" | "md" | "lg";
-  showContactButton?: boolean;
-  locale: string;
+  agencyName: string
+  agencyLogo?: string | null
+  className?: string
+  size?: "sm" | "md" | "lg"
+  showContactButton?: boolean
+  locale: string
 }
 
 export default function AgencyInfo({
@@ -19,20 +17,18 @@ export default function AgencyInfo({
   agencyLogo,
   className,
   size = "md",
-  showContactButton = true,
-  locale,
 }: AgencyInfoProps) {
   const avatarSizes = {
     sm: "h-8 w-8",
     md: "h-10 w-10",
     lg: "h-12 w-12",
-  };
+  }
 
   const textSizes = {
     sm: "text-xs",
     md: "text-sm",
     lg: "text-base",
-  };
+  }
 
   return (
     <div className={cn("flex items-center gap-3", className)}>
@@ -56,15 +52,6 @@ export default function AgencyInfo({
           Verified Agency
         </p>
       </div>
-      {showContactButton && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto text-orange-500 border-orange-500 hover:bg-orange-50 hover:text-orange-600"
-        >
-          <Link href={`/${locale}/contact`}>Contact</Link>
-        </Button>
-      )}
     </div>
-  );
+  )
 }

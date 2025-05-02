@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -223,12 +224,7 @@ function MessageBubble({
   agencyLogo?: string | null;
   customerId?: string | null;
 }) {
-  // In customer chat view:
-  // - Messages FROM the agency should appear on the right
-  // - Customer's own messages should appear on the left
-  
-  // Determine if message is from the customer (self) or from the agency
-  const isCustomer = customerId && message.senderId === customerId;
+ 
   const isFromAgency = 
     // Basic agency identification checks
     message.senderId?.includes("agency") || 

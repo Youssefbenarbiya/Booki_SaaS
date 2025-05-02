@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ArchiveIcon } from "lucide-react"
 import { toast } from "sonner"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,8 +23,6 @@ interface ArchiveHotelButtonProps {
 
 export default function ArchiveHotelButton({ hotelId }: ArchiveHotelButtonProps) {
   const router = useRouter()
-  const params = useParams()
-  const locale = params.locale as string
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 

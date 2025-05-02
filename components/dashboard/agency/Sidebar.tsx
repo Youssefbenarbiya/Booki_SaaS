@@ -132,6 +132,7 @@ export function Sidebar({ locale }: SidebarProps) {
                   src={agencyData.logo}
                   alt={agencyData.name || "Agency Logo"}
                   fill
+                  sizes="4rem"
                   className="object-cover"
                 />
               </div>
@@ -141,6 +142,7 @@ export function Sidebar({ locale }: SidebarProps) {
                   src="/images/default-logo.png"
                   alt="Default Agency Logo"
                   fill
+                  sizes="4rem"
                   className="object-cover"
                   onError={(e) => {
                     // Hide the image on error

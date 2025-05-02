@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react"
 import { useEffect, useState } from "react"
-import SimpleMap from "../SimpleMap"
+import SimpleMap from "./SimpleMap"
 
 interface SimpleMapModalProps {
   isOpen: boolean
