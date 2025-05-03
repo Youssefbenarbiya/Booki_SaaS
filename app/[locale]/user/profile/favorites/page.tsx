@@ -41,7 +41,18 @@ export default function FavoritesPage() {
         // Use type assertions to help TypeScript understand the data structure
         setFavoriteTrips((data.trips || []) as Trip[])
         setFavoriteHotels((data.hotels || []) as Hotel[])
-        setFavoriteCars((data.cars || []) as Car[])
+
+        // Transform car data to match Car type
+        const formattedCars = (data.cars || []).map((car) => ({
+          ...car,
+          originalPrice: Number(car.originalPrice),
+          priceAfterDiscount: car.priceAfterDiscount
+            ? Number(car.priceAfterDiscount)
+            : undefined,
+          createdAt: car.createdAt ? car.createdAt.toISOString() : undefined,
+          updatedAt: car.updatedAt ? car.updatedAt.toISOString() : undefined,
+        }))
+        setFavoriteCars(formattedCars as unknown as Car[])
       } catch (error) {
         console.error("Error fetching favorites:", error)
       } finally {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server"
 import db from "@/db/drizzle"
 import { trips, hotel, room, cars } from "@/db/schema"
@@ -16,12 +17,19 @@ export async function GET(request: Request) {
       )
     }
 
-    let postDetails = null
+    // Define a type for consistent post details
+    type PostDetails = {
+      id: string | number
+      name: string
+      [key: string]: any
+    }
+
+    let postDetails: PostDetails | null = null
 
     // Fetch details based on post type
     switch (postType) {
       case "trip":
-        postDetails = await db.query.trips.findFirst({
+        const tripData = await db.query.trips.findFirst({
           where: eq(trips.id, parseInt(postId)),
           columns: {
             id: true,
@@ -29,10 +37,13 @@ export async function GET(request: Request) {
             destination: true,
           },
         })
+        if (tripData) {
+          postDetails = tripData as PostDetails
+        }
         break
 
       case "hotel":
-        postDetails = await db.query.hotel.findFirst({
+        const hotelData = await db.query.hotel.findFirst({
           where: eq(hotel.id, postId),
           columns: {
             id: true,
@@ -40,6 +51,9 @@ export async function GET(request: Request) {
             city: true,
           },
         })
+        if (hotelData) {
+          postDetails = hotelData as PostDetails
+        }
         break
 
       case "room":
@@ -69,7 +83,7 @@ export async function GET(request: Request) {
         break
 
       case "car":
-        postDetails = await db.query.cars.findFirst({
+        const carData = await db.query.cars.findFirst({
           where: eq(cars.id, parseInt(postId)),
           columns: {
             id: true,
@@ -78,8 +92,13 @@ export async function GET(request: Request) {
           },
         })
 
-        if (postDetails) {
-          postDetails.name = `${postDetails.brand} ${postDetails.model}`
+        if (carData) {
+          postDetails = {
+            id: carData.id,
+            name: `${carData.brand} ${carData.model}`,
+            brand: carData.brand,
+            model: carData.model,
+          }
         }
         break
 

@@ -1,33 +1,35 @@
-import Image from "next/image";
-import { getBlogById, getRelatedBlogs } from "@/actions/blogs/blogActions";
-import { notFound } from "next/navigation";
-import { Metadata } from "next";
-import { format } from "date-fns";
-import Link from "next/link";
+import Image from "next/image"
+import { getBlogById, getRelatedBlogs } from "@/actions/blogs/blogActions"
+import { notFound } from "next/navigation"
+import { Metadata } from "next"
+import { format } from "date-fns"
+import Link from "next/link"
 
 // UI Components
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 type BlogPageProps = {
   params: Promise<{
-    id: string;
-  }>;
-};
+    id: string
+  }>
+}
 
-export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const { blog } = await getBlogById(parseInt(id));
-  
+export async function generateMetadata({
+  params,
+}: BlogPageProps): Promise<Metadata> {
+  const { id } = await params
+  const { blog } = await getBlogById(parseInt(id))
+
   if (!blog) {
     return {
       title: "Blog Not Found",
       description: "The requested blog could not be found.",
-    };
+    }
   }
-  
+
   return {
     title: blog.title,
     description: blog.excerpt || `Read ${blog.title} on Booki`,
@@ -36,21 +38,22 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
       description: blog.excerpt || `Read ${blog.title} on Booki`,
       images: blog.featuredImage ? [blog.featuredImage] : [],
     },
-  };
+  }
 }
 
 export default async function BlogPage({ params }: BlogPageProps) {
-  const id = parseInt(params.id);
-  const { blog } = await getBlogById(id);
-  const { blogs: relatedBlogs } = await getRelatedBlogs(id, 3);
-  
+  const { id } = await params
+  const numericId = parseInt(id)
+  const { blog } = await getBlogById(numericId)
+  const { blogs: relatedBlogs } = await getRelatedBlogs(numericId, 3)
+
   if (!blog) {
-    notFound();
+    notFound()
   }
-  
-  const publishDate = blog.publishedAt 
-    ? format(new Date(blog.publishedAt), "MMMM dd, yyyy") 
-    : format(new Date(blog.createdAt || new Date()), "MMMM dd, yyyy");
+
+  const publishDate = blog.publishedAt
+    ? format(new Date(blog.publishedAt), "MMMM dd, yyyy")
+    : format(new Date(blog.createdAt || new Date()), "MMMM dd, yyyy")
 
   return (
     <div className="container max-w-5xl mx-auto py-8 px-4 md:px-6">
@@ -163,5 +166,5 @@ export default async function BlogPage({ params }: BlogPageProps) {
         </div>
       )}
     </div>
-  );
+  )
 }
