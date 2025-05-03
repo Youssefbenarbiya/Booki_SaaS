@@ -27,6 +27,7 @@ export default async function CarsPage({ params }: CarsPageProps) {
       car.discountPercentage !== null ? car.discountPercentage : undefined,
     isAvailable: car.isAvailable ?? false,
     createdAt: car.createdAt ? car.createdAt.toISOString() : undefined,
+    updatedAt: car.updatedAt ? car.updatedAt.toISOString() : undefined,
   }))
 
   return (
