@@ -1,7 +1,6 @@
 import Link from "next/link"
-import { Facebook, Instagram, Twitter } from "lucide-react"
+import { Facebook, Instagram, X } from "lucide-react"
 import Image from "next/image"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import FooterGallery from "./footerGalory"
@@ -29,7 +28,7 @@ export function Footer() {
                 <span className="sr-only">Facebook</span>
               </Link>
               <Link href="#" className="text-white hover:text-orange-500">
-                <Twitter className="h-6 w-6" />
+                <X className="h-6 w-6" />
                 <span className="sr-only">Twitter</span>
               </Link>
               <Link href="#" className="text-white hover:text-orange-500">
