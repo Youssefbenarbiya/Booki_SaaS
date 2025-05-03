@@ -1,47 +1,47 @@
-import { notFound } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import ArchiveTripButton from "../ArchiveTripButton";
-import PublishTripButton from "../PublishTripButton";
-import { getTripById } from "@/actions/trips/tripActions";
-import { Locale } from "@/i18n/routing";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArchiveIcon } from "lucide-react";
+import { notFound } from "next/navigation"
+import Image from "next/image"
+import Link from "next/link"
+import ArchiveTripButton from "../ArchiveTripButton"
+import PublishTripButton from "../PublishTripButton"
+import { getTripById } from "@/actions/trips/tripActions"
+import { Locale } from "@/i18n/routing"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { ArchiveIcon } from "lucide-react"
 
 // Helper function to format price with the correct currency
 const formatPriceWithCurrency = (price: string | number, currency?: string) => {
-  if (!price) return "-";
+  if (!price) return "-"
 
-  const numericPrice = typeof price === "string" ? parseFloat(price) : price;
+  const numericPrice = typeof price === "string" ? parseFloat(price) : price
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency || "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(numericPrice);
-};
+  }).format(numericPrice)
+}
 
 interface TripDetailsPageProps {
-  params: {
-    tripId: string;
-    locale: Locale;
-  };
+  params: Promise<{
+    tripId: string
+    locale: Locale
+  }>
 }
 
 export default async function TripDetailsPage({
   params,
 }: TripDetailsPageProps) {
-  const { tripId, locale } = params;
-  const trip = await getTripById(parseInt(tripId));
+  const { tripId, locale } = await params
+  const trip = await getTripById(parseInt(tripId))
 
   if (!trip) {
-    notFound();
+    notFound()
   }
 
-  const isArchived = trip.status === "archived";
-  const hasBookings = trip.bookings && trip.bookings.length > 0;
+  const isArchived = trip.status === "archived"
+  const hasBookings = trip.bookings && trip.bookings.length > 0
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
@@ -242,5 +242,5 @@ export default async function TripDetailsPage({
         </div>
       </div>
     </div>
-  );
+  )
 }

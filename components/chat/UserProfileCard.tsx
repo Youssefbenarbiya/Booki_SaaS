@@ -1,86 +1,87 @@
-"use client";
+/* eslint-disable react-hooks/exhaustive-deps */
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Mail, Phone, MapPin, X, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Mail, Phone, MapPin, X, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 import {
   getUserData,
   UserData as ServerUserData,
-} from "@/actions/users/getUserData";
+} from "@/actions/users/getUserData"
 
 interface UserProfileCardProps {
-  userId: string;
-  onClose: () => void;
-  fallback?: React.ReactNode;
+  userId: string
+  onClose: () => void
+  fallback?: React.ReactNode
 }
 
-type UserData = ServerUserData;
+type UserData = ServerUserData
 
 export default function UserProfileCard({
   userId,
   onClose,
   fallback,
 }: UserProfileCardProps) {
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const { toast } = useToast();
+  const [userData, setUserData] = useState<UserData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
+  const { toast } = useToast()
 
   const fetchUserData = async () => {
     if (!userId || userId === "undefined" || userId === "null") {
-      setError("Invalid user ID");
-      setLoading(false);
-      return;
+      setError("Invalid user ID")
+      setLoading(false)
+      return
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
       console.log(
         `Fetching user data for ID: ${userId} (attempt ${retryCount + 1})`
-      );
+      )
 
       // Call the server action instead of using fetch API
-      const result = await getUserData(userId);
+      const result = await getUserData(userId)
 
       if (!result.success || !result.data) {
         // Create a more user-friendly error message
-        const errorMessage = result.error || "Failed to load user data";
-        console.error(`Error response from server action:`, result);
+        const errorMessage = result.error || "Failed to load user data"
+        console.error(`Error response from server action:`, result)
 
         // Handle specific error types
         if (errorMessage.includes("Headers is required")) {
-          throw new Error("Session error: Please try refreshing the page.");
+          throw new Error("Session error: Please try refreshing the page.")
         } else if (errorMessage.includes("User not found")) {
-          throw new Error(`User with ID ${userId} was not found.`);
+          throw new Error(`User with ID ${userId} was not found.`)
         } else if (errorMessage.includes("Unauthorized")) {
-          throw new Error("You are not authorized to view this profile.");
+          throw new Error("You are not authorized to view this profile.")
         } else {
-          throw new Error(errorMessage);
+          throw new Error(errorMessage)
         }
       }
 
-      setUserData(result.data);
-      setLoading(false);
+      setUserData(result.data)
+      setLoading(false)
     } catch (err) {
-      console.error("Error fetching user data:", err);
+      console.error("Error fetching user data:", err)
       setError(
         err instanceof Error ? err.message : "Could not load user profile"
-      );
-      setLoading(false);
+      )
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
     if (userId) {
-      fetchUserData();
+      fetchUserData()
     }
-  }, [userId]);
+  }, [userId])
 
   // Get initials for avatar fallback
   const getInitials = (name: string): string => {
@@ -89,24 +90,24 @@ export default function UserProfileCard({
       .map((part) => part[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2);
-  };
+      .slice(0, 2)
+  }
 
   const handleRetry = async () => {
-    const newRetryCount = retryCount + 1;
-    setRetryCount(newRetryCount);
+    const newRetryCount = retryCount + 1
+    setRetryCount(newRetryCount)
 
     toast({
       title: "Retrying",
       description: `Attempt ${newRetryCount}: Loading user profile...`,
       duration: 3000,
-    });
+    })
 
     // Add a brief delay to ensure any session cookies/headers can be refreshed
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
-    fetchUserData();
-  };
+    fetchUserData()
+  }
 
   if (loading) {
     return (
@@ -125,15 +126,15 @@ export default function UserProfileCard({
           <div className="h-4 w-32 bg-gray-200 animate-pulse mt-2" />
         </CardContent>
       </Card>
-    );
+    )
   }
 
   if (error || !userData) {
     // Show fallback after 3 retry attempts
     if (retryCount >= 3 && fallback) {
-      return <>{fallback}</>;
+      return <>{fallback}</>
     }
-    
+
     return (
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="flex justify-between items-center">
@@ -164,7 +165,7 @@ export default function UserProfileCard({
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -222,5 +223,5 @@ export default function UserProfileCard({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

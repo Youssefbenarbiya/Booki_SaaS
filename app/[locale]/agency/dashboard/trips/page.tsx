@@ -5,13 +5,13 @@ import { columns, TripType } from "./columns"
 import { Locale } from "@/i18n/routing"
 
 interface TripsPageProps {
-  params: {
+  params: Promise<{
     locale: Locale
-  }
+  }>
 }
 
 export default async function TripsPage({ params }: TripsPageProps) {
-  const { locale } = params
+  const { locale } = await params
   const trips = await getTrips()
 
   return (

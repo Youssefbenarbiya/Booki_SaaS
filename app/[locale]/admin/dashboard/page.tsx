@@ -31,9 +31,9 @@ import { Progress } from "@/components/ui/progress"
 export default async function AdminDashboard({
   params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = params
+  const { locale } = await params
   const stats = await getDashboardStats()
   const recentActivities = await getRecentActivities()
   const bookingStats = await getBookingStatistics()

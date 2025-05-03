@@ -9,9 +9,9 @@ import Image from "next/image"
 export default async function VerifyBlogsPage({
   params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = params
+  const { locale } = await params
 
   // Get all pending blogs
   const pendingBlogs = await db.query.blogs.findMany({

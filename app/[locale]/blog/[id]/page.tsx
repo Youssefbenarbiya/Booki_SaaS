@@ -12,13 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 type BlogPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
-  const { blog } = await getBlogById(parseInt(params.id));
+  const { id } = await params;
+  const { blog } = await getBlogById(parseInt(id));
   
   if (!blog) {
     return {

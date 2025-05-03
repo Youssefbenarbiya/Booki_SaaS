@@ -9,13 +9,13 @@ import { getBlogs } from "@/actions/blogs/blogActions";
 import { Locale } from "@/i18n/routing";
 
 interface BlogsPageProps {
-  params: {
+  params: Promise<{
     locale: Locale;
-  };
+  }>;
 }
 
 export default async function BlogsPage({ params }: BlogsPageProps) {
-  const { locale } = params;
+  const { locale } = await params
 
   // Get the current session using the provided method
   const session = await auth.api.getSession({

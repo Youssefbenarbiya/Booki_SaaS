@@ -7,14 +7,14 @@ import { headers } from "next/headers"
 import { Locale } from "@/i18n/routing"
 
 interface BlogEditPageProps {
-  params: {
+  params: Promise<{
     id: string
     locale: Locale
-  }
+  }>
 }
 
 export default async function BlogEditPage({ params }: BlogEditPageProps) {
-  const { id: blogId, locale } = params
+  const { id: blogId, locale } = await params
 
   // Ensure params is correctly typed
   if (!blogId) {

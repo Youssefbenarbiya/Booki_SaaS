@@ -6,14 +6,14 @@ import { CurrencyProvider } from "@/lib/contexts/CurrencyContext"
 import { Locale } from "@/i18n/routing"
 
 interface EditTripPageProps {
-  params: {
+  params: Promise<{
     tripId: string
     locale: Locale
-  }
+  }>
 }
 
 export default async function EditTripPage({ params }: EditTripPageProps) {
-  const { tripId, locale } = params
+  const { tripId, locale } = await params
   const trip = await getTripById(parseInt(tripId))
 
   if (!trip) {
@@ -53,7 +53,6 @@ export default async function EditTripPage({ params }: EditTripPageProps) {
 
   return (
     <div className="p-6">
-     
       <CurrencyProvider>
         <EditTripForm trip={transformedTrip} locale={locale} />
       </CurrencyProvider>

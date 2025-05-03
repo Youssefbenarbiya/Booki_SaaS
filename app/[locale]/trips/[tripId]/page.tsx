@@ -22,7 +22,6 @@ import { useCurrency } from "@/lib/contexts/CurrencyContext";
 import { useState, useEffect } from "react";
 import React from "react";
 import AgencyInfo from "@/components/common/AgencyInfo";
-import dynamic from "next/dynamic";
 import { ContactButton } from "@/components/chat/ContactButton";
 
 
@@ -32,7 +31,6 @@ interface TripParams {
 }
 
 interface TripPageProps {
-  // The type of params is explicitly a Promise that resolves to TripParams.
   params: Promise<TripParams>;
 }
 

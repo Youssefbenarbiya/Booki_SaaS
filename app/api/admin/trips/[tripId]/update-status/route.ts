@@ -7,14 +7,13 @@ import { eq } from "drizzle-orm"
 
 export async function POST(
   request: Request,
-  { params }: { params: { tripId: string } }
+  { params }: { params: Promise<{ tripId: string }> } 
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    })
+    // Await headers() since it's now async
+    const hdrs = await headers()
+    const session = await auth.api.getSession({ headers: hdrs })
 
-    // Check if user is authorized (admin role)
     if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
@@ -22,10 +21,7 @@ export async function POST(
       )
     }
 
-    // Get request body
-    const body = await request.json()
-    const { status } = body
-
+    const { status } = await request.json()
     if (!status || !["approved", "rejected"].includes(status)) {
       return NextResponse.json(
         { success: false, message: "Invalid status" },
@@ -33,10 +29,9 @@ export async function POST(
       )
     }
 
-    // Properly handle params in async function
-    const tripId = params.tripId
-    const parsedTripId = parseInt(tripId, 10)
-
+    // Await params promise and extract tripId
+    const { tripId: tripIdStr } = await params
+    const parsedTripId = parseInt(tripIdStr, 10)
     if (isNaN(parsedTripId)) {
       return NextResponse.json(
         { success: false, message: "Invalid trip ID" },
@@ -44,11 +39,9 @@ export async function POST(
       )
     }
 
-    // Check if trip exists
     const trip = await db.query.trips.findFirst({
       where: eq(trips.id, parsedTripId),
     })
-
     if (!trip) {
       return NextResponse.json(
         { success: false, message: "Trip not found" },
@@ -56,22 +49,14 @@ export async function POST(
       )
     }
 
-    // Update trip status
-    try {
-      await db.update(trips).set({ status }).where(eq(trips.id, parsedTripId))
-      console.log(`Trip ${parsedTripId} status updated to ${status}`)
+    // Perform the update
+    await db.update(trips).set({ status }).where(eq(trips.id, parsedTripId))
 
-      return NextResponse.json(
-        { success: true, message: `Trip ${status} successfully` },
-        { status: 200 }
-      )
-    } catch (updateError) {
-      console.error("Error updating trip status:", updateError)
-      return NextResponse.json(
-        { success: false, message: "Database error while updating trip" },
-        { status: 500 }
-      )
-    }
+    console.log(`Trip ${parsedTripId} status updated to ${status}`)
+    return NextResponse.json(
+      { success: true, message: `Trip ${status} successfully` },
+      { status: 200 }
+    )
   } catch (error) {
     console.error("Error updating trip status:", error)
     return NextResponse.json(

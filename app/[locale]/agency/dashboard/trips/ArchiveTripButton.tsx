@@ -1,10 +1,11 @@
-"use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client"
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { ArchiveIcon } from "lucide-react";
-import { toast } from "sonner";
-import { useRouter, useParams } from "next/navigation";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { ArchiveIcon } from "lucide-react"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,54 +15,52 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { archiveTrip, getTripById } from "@/actions/trips/tripActions";
+} from "@/components/ui/alert-dialog"
+import { archiveTrip, getTripById } from "@/actions/trips/tripActions"
 
 interface ArchiveTripButtonProps {
-  tripId: number;
+  tripId: number
 }
 
 export default function ArchiveTripButton({ tripId }: ArchiveTripButtonProps) {
-  const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasBookings, setHasBookings] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [hasBookings, setHasBookings] = useState(false)
+  const [isChecking, setIsChecking] = useState(false)
 
   // Check if the trip has bookings when opening the dialog
   async function checkBookings() {
-    setIsChecking(true);
+    setIsChecking(true)
     try {
-      const trip = await getTripById(tripId);
+      const trip = await getTripById(tripId)
       if (trip?.bookings && trip.bookings.length > 0) {
-        setHasBookings(true);
-        toast.error("This trip has bookings and cannot be archived");
+        setHasBookings(true)
+        toast.error("This trip has bookings and cannot be archived")
       } else {
-        setHasBookings(false);
-        setOpen(true);
+        setHasBookings(false)
+        setOpen(true)
       }
     } catch (error) {
-      console.error("Error checking bookings:", error);
-      toast.error("Failed to check trip bookings");
+      console.error("Error checking bookings:", error)
+      toast.error("Failed to check trip bookings")
     } finally {
-      setIsChecking(false);
+      setIsChecking(false)
     }
   }
 
   async function handleArchive() {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      await archiveTrip(tripId);
-      toast.success("Trip archived successfully");
-      setOpen(false);
-      router.refresh();
+      await archiveTrip(tripId)
+      toast.success("Trip archived successfully")
+      setOpen(false)
+      router.refresh()
     } catch (error) {
-      toast.error("Failed to archive trip");
-      console.error(error);
+      toast.error("Failed to archive trip")
+      console.error(error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
@@ -103,5 +102,5 @@ export default function ArchiveTripButton({ tripId }: ArchiveTripButtonProps) {
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
+  )
 }

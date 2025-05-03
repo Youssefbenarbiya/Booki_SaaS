@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArchiveIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -23,14 +24,11 @@ interface ArchiveCarButtonProps {
 
 export default function ArchiveCarButton({ carId }: ArchiveCarButtonProps) {
   const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasBookings, setHasBookings] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
-  // Check if the car has bookings when opening the dialog
   async function checkBookings() {
     setIsChecking(true);
     try {

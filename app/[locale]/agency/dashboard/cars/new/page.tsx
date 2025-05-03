@@ -2,13 +2,13 @@ import { CarForm } from "./car-form"
 import { Locale } from "@/i18n/routing"
 
 interface NewCarPageProps {
-  params: {
+  params: Promise<{
     locale: Locale
-  }
+  }>
 }
 
-export default function NewCarPage({ params }: NewCarPageProps) {
-  const { locale } = params
+export default async function NewCarPage({ params }: NewCarPageProps) {
+  const { locale } = await params
 
   return (
     <div className="space-y-4">

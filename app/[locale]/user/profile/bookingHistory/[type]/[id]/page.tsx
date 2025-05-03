@@ -1,25 +1,14 @@
 import { auth } from "@/auth"
-import { Metadata } from "next"
 import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { getBookingDetail } from "@/actions/users/getBookingDetail"
 import BookingDetailClient from "./BookingDetail"
-export async function generateMetadata({
-  params: initialParams,
-}: {
-  params: { type: string; id: string }
-}): Promise<Metadata> {
-  // Await the params before using them.
-  const { type, id } = await initialParams
-  return {
-    title: `${type.charAt(0).toUpperCase() + type.slice(1)} Booking #${id}`,
-  }
-}
+
 
 export default async function BookingDetailPage({
   params: initialParams,
 }: {
-  params: { type: string; id: string }
+  params: Promise<{ type: string; id: string }>
 }) {
   // Await the params before accessing their properties.
   const { type, id } = await initialParams

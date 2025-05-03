@@ -7,13 +7,13 @@ import { getCars } from "@/actions/cars/carActions"
 import { Locale } from "@/i18n/routing"
 
 interface CarsPageProps {
-  params: {
+  params: Promise<{
     locale: Locale
-  }
+  }>
 }
 
 export default async function CarsPage({ params }: CarsPageProps) {
-  const { locale } = params
+  const { locale } = await params
   const { cars } = await getCars()
 
   // Transform the cars data so that price fields are numbers
@@ -23,6 +23,10 @@ export default async function CarsPage({ params }: CarsPageProps) {
     priceAfterDiscount: car.priceAfterDiscount
       ? Number(car.priceAfterDiscount)
       : undefined,
+    discountPercentage:
+      car.discountPercentage !== null ? car.discountPercentage : undefined,
+    isAvailable: car.isAvailable ?? false,
+    createdAt: car.createdAt ? car.createdAt.toISOString() : undefined,
   }))
 
   return (

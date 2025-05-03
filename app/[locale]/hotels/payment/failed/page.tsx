@@ -6,19 +6,19 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 interface PaymentFailedPageProps {
-  params: { locale: string }
-  searchParams: {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<{
     bookingId?: string
     paymentMethod?: string
-  }
+  }>
 }
 
 export default async function PaymentFailedPage({
   params,
   searchParams,
 }: PaymentFailedPageProps) {
-  const { locale } = params
-  const { bookingId, paymentMethod = "flouci" } = searchParams
+  const { locale } = await params
+  const { bookingId, paymentMethod = "flouci" } = await searchParams
 
   if (!bookingId) {
     redirect(`/${locale}/dashboard/bookings`)

@@ -2,8 +2,16 @@
 "use server"
 
 import { eq } from "drizzle-orm"
-import { tripBookings, roomBookings, carBookings } from "@/db/schema"
+import {
+  tripBookings,
+  roomBookings,
+  carBookings,
+  tripActivities,
+} from "@/db/schema"
 import db from "@/db/drizzle"
+
+// Define the activity type to fix implicit any error
+type TripActivity = typeof tripActivities.$inferSelect
 
 export type BookingDetailType = {
   id: number
@@ -37,7 +45,8 @@ export async function getBookingDetail(
                 destination: true,
                 startDate: true,
                 endDate: true,
-                price: true,
+                originalPrice: true, // Changed from price to originalPrice
+                priceAfterDiscount: true, // Added priceAfterDiscount
                 capacity: true,
                 isAvailable: true,
               },
@@ -51,12 +60,18 @@ export async function getBookingDetail(
 
         if (!booking || booking.userId !== userId) return null
 
-        // Get trip activities
-        const activities = booking.trip.activities.map((activity) => ({
-          name: activity.activityName,
-          description: activity.description,
-          date: activity.scheduledDate,
-        }))
+        // Get trip activities with proper type annotation
+        const activities = booking.trip.activities.map(
+          (activity: TripActivity) => ({
+            name: activity.activityName,
+            description: activity.description,
+            date: activity.scheduledDate,
+          })
+        )
+
+        // Use priceAfterDiscount if available, otherwise use originalPrice
+        const price =
+          booking.trip.priceAfterDiscount || booking.trip.originalPrice
 
         return {
           id: booking.id,
@@ -73,6 +88,7 @@ export async function getBookingDetail(
             bookingDate: booking.bookingDate,
             participants: booking.seatsBooked,
             capacity: booking.trip.capacity,
+            price: price,
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
             activities: activities.length > 0 ? activities : undefined,
@@ -149,25 +165,15 @@ export async function getBookingDetail(
         const booking = await db.query.carBookings.findFirst({
           where: eq(carBookings.id, bookingId),
           with: {
-            car: {
-              columns: {
-                model: true,
-                brand: true,
-                year: true,
-                color: true,
-                plateNumber: true,
-                images: true,
-                price: true,
-              },
-            },
+            car: true,
           },
         })
 
         if (!booking || booking.user_id !== userId) return null
 
-        // Format location info
-        const pickupLocation = booking.pickup_location || "Not specified"
-        const dropoffLocation = booking.dropoff_location || "Same as pickup"
+        // Format location info - use proper property access
+        const pickupLocation = booking.address || "Not specified"
+        const dropoffLocation = booking.address || "Same as pickup"
 
         return {
           id: booking.id,
@@ -188,7 +194,7 @@ export async function getBookingDetail(
             drivingLicense: booking.drivingLicense,
             plateNumber: booking.car.plateNumber,
             dropoffLocation: dropoffLocation,
-            dailyRate: booking.car.price,
+            dailyRate: booking.car.originalPrice,
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
           },

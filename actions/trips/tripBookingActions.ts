@@ -15,7 +15,7 @@ interface CreateBookingParams {
   seatsBooked: number
   totalPrice?: number
   status?: string
-  paymentMethod?: "flouci" | "stripe"
+  paymentMethod?: "flouci" | "stripe" | "STRIPE_USD" | "FLOUCI_TND"
   convertedPricePerSeat?: number
   paymentCurrency?: string
 }
@@ -27,7 +27,6 @@ export async function createBooking({
   pricePerSeat,
   convertedPricePerSeat,
   paymentCurrency,
-  paymentMethod,
 }: CreateBookingParams & {
   pricePerSeat: number
   convertedPricePerSeat?: number

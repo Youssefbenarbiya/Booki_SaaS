@@ -207,6 +207,8 @@ export async function createRoomBooking({
           )
         }
       }
+      
+      return booking
     } else {
       // Flouci payment flow - convert price to TND
       const totalPriceInTND = await convertCurrency(
@@ -271,12 +273,10 @@ export async function createRoomBooking({
           paymentId: paymentData.paymentId,
         }
       }
+      
+      // Return booking if payment is not initiated
+      return booking
     }
-
-    // Revalidate pages if no payment initiation
-    revalidatePath(`/hotels/${booking.roomId}`)
-    revalidatePath("/dashboard/bookings")
-    return booking
   } catch (error) {
     console.error("Error creating room booking:", error)
     throw error
