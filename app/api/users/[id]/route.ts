@@ -6,17 +6,17 @@ import { eq } from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } 
 ) {
   try {
-    // Verify that the requestor is authenticated
+    // 1. Verify authenticated session
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = params.id
-    
+    // 2. Await params to extract the id
+    const { id: userId } = await params
     if (!userId) {
       return NextResponse.json(
         { error: "User ID is required" },
@@ -24,6 +24,7 @@ export async function GET(
       )
     }
 
+    // 3. Fetch user data
     const userData = await db.query.user.findFirst({
       where: eq(userTable.id, userId),
       columns: {
@@ -35,12 +36,8 @@ export async function GET(
         image: true,
       },
     })
-
     if (!userData) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     return NextResponse.json(userData)
@@ -51,4 +48,4 @@ export async function GET(
       { status: 500 }
     )
   }
-} 
+}

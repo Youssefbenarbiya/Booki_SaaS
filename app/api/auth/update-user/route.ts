@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { user } from "@/db/schema";
