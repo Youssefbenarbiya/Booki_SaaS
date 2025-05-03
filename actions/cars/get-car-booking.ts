@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { eq } from "drizzle-orm"
 import { carBookings, cars, user } from "@/db/schema"
 import db from "@/db/drizzle"
@@ -38,7 +39,10 @@ export async function getCarBookingDetails(bookingId: number) {
               year: result.cars.year,
               plateNumber: result.cars.plateNumber,
               color: result.cars.color,
-              price: result.cars.price,
+              originalPrice: result.cars.originalPrice,
+              discountPercentage: result.cars.discountPercentage,
+              priceAfterDiscount: result.cars.priceAfterDiscount,
+              currency: result.cars.currency,
               images: result.cars.images,
             }
           : null,

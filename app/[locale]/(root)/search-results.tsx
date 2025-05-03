@@ -26,7 +26,10 @@ interface Trip {
   destination: string
   startDate: string
   endDate: string
-  price: string
+  originalPrice: string
+  discountPercentage?: number | null
+  priceAfterDiscount?: string | null
+  currency?: string
   capacity: number
   isAvailable: boolean | null
   images: any[]
@@ -195,7 +198,7 @@ export function SearchResults({
     (filters: TripFilterOptions) => {
       // Apply filters to trips data
       const filtered = tripsData.filter((trip) => {
-        const price = Number(trip.price) || 0
+        const price = Number(trip.originalPrice) || 0
         const priceMatch =
           price >= filters.priceRange.min && price <= filters.priceRange.max
 

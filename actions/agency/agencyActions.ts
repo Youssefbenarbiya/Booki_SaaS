@@ -77,8 +77,6 @@ export async function updateAgencyProfile(data: {
           contactEmail: data.email,
           contactPhone: data.phone || null,
           address: data.address || null,
-          description: data.description || null,
-          website: data.website || null,
           logo: data.logo || null,
           updatedAt: new Date(),
         })
