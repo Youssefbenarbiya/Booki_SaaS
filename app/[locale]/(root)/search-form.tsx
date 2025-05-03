@@ -146,7 +146,7 @@ export function SearchForm({ type }: SearchFormProps) {
                     <Calendar className="h-5 w-5 text-gray-400 mr-2" />
                     <div>
                       <FormLabel className="text-xs text-gray-500">
-                        Check in
+                        Check in &nbsp;
                       </FormLabel>
                       <FormControl>
                         <Popover>
@@ -190,7 +190,7 @@ export function SearchForm({ type }: SearchFormProps) {
                     <Calendar className="h-5 w-5 text-gray-400 mr-2" />
                     <div>
                       <FormLabel className="text-xs text-gray-500">
-                        Check out
+                        Check out &nbsp;
                       </FormLabel>
                       <FormControl>
                         <Popover>
