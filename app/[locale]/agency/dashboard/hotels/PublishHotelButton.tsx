@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
-import { toast } from "sonner";
-import { useRouter, useParams } from "next/navigation";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { CheckCircle } from "lucide-react"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,32 +14,32 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { publishHotel } from "@/actions/hotels&rooms/hotelActions";
+} from "@/components/ui/alert-dialog"
+import { publishHotel } from "@/actions/hotels&rooms/hotelActions"
 
 interface PublishHotelButtonProps {
-  hotelId: string;
+  hotelId: string
 }
 
-export default function PublishHotelButton({ hotelId }: PublishHotelButtonProps) {
-  const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+export default function PublishHotelButton({
+  hotelId,
+}: PublishHotelButtonProps) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   async function handlePublish() {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      await publishHotel(hotelId);
-      toast.success("Hotel published successfully");
-      setOpen(false);
-      router.refresh();
+      await publishHotel(hotelId)
+      toast.success("Hotel published successfully")
+      setOpen(false)
+      router.refresh()
     } catch (error) {
-      toast.error("Failed to publish hotel");
-      console.error(error);
+      toast.error("Failed to publish hotel")
+      console.error(error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
@@ -60,8 +60,8 @@ export default function PublishHotelButton({ hotelId }: PublishHotelButtonProps)
           <AlertDialogHeader>
             <AlertDialogTitle>Publish this hotel?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will make the hotel available for booking. It will be reviewed
-              by an admin before it is fully approved.
+              This will make the hotel available for booking. It will be
+              reviewed by an admin before it is fully approved.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -80,5 +80,5 @@ export default function PublishHotelButton({ hotelId }: PublishHotelButtonProps)
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-} 
+  )
+}

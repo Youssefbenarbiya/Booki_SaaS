@@ -1,77 +1,79 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { NavigationTabs } from "@/app/[locale]/(root)/navigation-tabs";
-import { SearchForm } from "@/app/[locale]/(root)/search-form";
-import Image from "next/image";
+import { useState, useEffect, useMemo } from "react"
+import { NavigationTabs } from "@/app/[locale]/(root)/navigation-tabs"
+import { SearchForm } from "@/app/[locale]/(root)/search-form"
 
 interface HeroCarouselProps {
-  activeTab: string;
+  activeTab: string
 }
 
 export default function HeroCarousel({ activeTab }: HeroCarouselProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [imagesLoaded, setImagesLoaded] = useState(false)
 
   // Use only the images that are available in the public directory
-  const heroImages = [
-    "/hero-bg.jpg",
-    "/hero-bg2.jpg",
-    "/hero-bg3.jpg",
-    "/hero-bg4.jpg",
-    "/hero-bg5.jpg",
-  ];
+  const heroImages = useMemo(
+    () => [
+      "/hero-bg.jpg",
+      "/hero-bg2.jpg",
+      "/hero-bg3.jpg",
+      "/hero-bg4.jpg",
+      "/hero-bg5.jpg",
+    ],
+    []
+  )
 
   // Preload images
   useEffect(() => {
     const preloadImages = async () => {
       const imagePromises = heroImages.map((src) => {
         return new Promise((resolve, reject) => {
-          const img = new window.Image();
-          img.src = src;
-          img.onload = resolve;
-          img.onerror = reject;
-        });
-      });
+          const img = new window.Image()
+          img.src = src
+          img.onload = resolve
+          img.onerror = reject
+        })
+      })
 
       try {
-        await Promise.all(imagePromises);
-        setImagesLoaded(true);
+        await Promise.all(imagePromises)
+        setImagesLoaded(true)
       } catch (error) {
-        console.error("Failed to preload images:", error);
+        console.error("Failed to preload images:", error)
         // Continue even if some images fail to load
-        setImagesLoaded(true);
+        setImagesLoaded(true)
       }
-    };
+    }
 
-    preloadImages();
-  }, [heroImages]);
+    preloadImages()
+  }, [heroImages])
 
   // Auto cycle through images after they're loaded
   useEffect(() => {
-    if (!imagesLoaded) return;
+    if (!imagesLoaded) return
 
     const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
-    }, 5000); // Change image every 5 seconds
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length)
+    }, 5000) // Change image every 5 seconds
 
-    return () => clearInterval(interval);
-  }, [imagesLoaded, heroImages.length]);
+    return () => clearInterval(interval)
+  }, [imagesLoaded, heroImages.length])
 
   // Handle manual navigation
   const goToSlide = (index: number) => {
-    setCurrentImageIndex(index);
-  };
+    setCurrentImageIndex(index)
+  }
 
   const nextSlide = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
-  };
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length)
+  }
 
   const prevSlide = () => {
     setCurrentImageIndex((prevIndex) =>
       prevIndex === 0 ? heroImages.length - 1 : prevIndex - 1
-    );
-  };
+    )
+  }
 
   return (
     <div className="relative min-h-[600px]">
@@ -162,5 +164,5 @@ export default function HeroCarousel({ activeTab }: HeroCarouselProps) {
         ))}
       </div>
     </div>
-  );
+  )
 }

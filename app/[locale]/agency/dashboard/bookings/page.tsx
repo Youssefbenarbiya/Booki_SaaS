@@ -1,4 +1,3 @@
-import { Metadata } from "next"
 import { BookingsList } from "@/components/bookings/BookingsList"
 import { getAllBookings } from "@/actions/bookings"
 import { redirect } from "next/navigation"
@@ -7,22 +6,18 @@ import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { headers } from "next/headers"
 
-export const metadata: Metadata = {
-  title: "Customer Bookings | Agency Dashboard",
-  description: "View all customer bookings for your agency's offerings",
-}
 
 export default async function AgencyBookingsPage({
   params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
-
+const {locale} = await params
   if (!session?.user) {
-    redirect(`/${params.locale}/sign-in`)
+    redirect(`/${locale}/sign-in`)
   }
 
   if (
@@ -30,7 +25,7 @@ export default async function AgencyBookingsPage({
     session.user.role !== "employee" &&
     session.user.role !== "admin"
   ) {
-    redirect(`/${params.locale}/`)
+    redirect(`/${locale}/`)
   }
 
   try {

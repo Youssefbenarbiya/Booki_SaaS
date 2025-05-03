@@ -12,9 +12,9 @@ import HotelLocationMapWrapper from "@/components/HotelLocationMapWrapper"
 export default async function HotelDetailsPage({
   params,
 }: {
-  params: { id: string; locale: string }
+  params: Promise<{ id: string; locale: string }>
 }) {
-  const { id, locale } = params
+  const { id, locale } = await params
   const hotelId = id
 
   const hotelDetails = await db.query.hotel.findFirst({

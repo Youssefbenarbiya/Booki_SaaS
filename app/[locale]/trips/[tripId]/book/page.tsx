@@ -9,10 +9,10 @@ import SignInRedirectMessage from "@/app/[locale]/(auth)/sign-in/SignInRedirectM
 export default async function BookTripPage({
   params,
 }: {
-  params: { tripId: string; locale: string }
+  params: Promise<{ tripId: string; locale: string }>
   searchParams: { travelers?: string; date?: string }
 }) {
-  const { tripId, locale } = params
+  const { tripId, locale } = await params
 
   const session = await auth.api.getSession({
     headers: await headers(),

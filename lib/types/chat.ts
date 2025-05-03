@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // WebSocket message types
 export type MessageType = "text" | "image" | "notification"
 

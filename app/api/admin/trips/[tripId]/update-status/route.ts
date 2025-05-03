@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm"
 
 export async function POST(
   request: Request,
-  { params }: { params: { tripId: string } }
+  params: Promise<{ params: { tripId: string } }>
 ) {
   try {
     const session = await auth.api.getSession({
@@ -32,9 +32,11 @@ export async function POST(
         { status: 400 }
       )
     }
+    const {
+      params: { tripId },
+    } = await params
 
     // Properly handle params in async function
-    const tripId = params.tripId
     const parsedTripId = parseInt(tripId, 10)
 
     if (isNaN(parsedTripId)) {

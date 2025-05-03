@@ -28,13 +28,10 @@ export default async function RootLayout({
   params,
 }: {
   children: React.ReactNode
-  // Tell TS that params is async
   params: Promise<{ locale: Locale }>
 }) {
-  // Await the promise before using it
   const { locale } = await params
 
-  // Validate the locale
   if (!routing.locales.includes(locale as Locale)) {
     return notFound()
   }

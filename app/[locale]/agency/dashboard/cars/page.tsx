@@ -7,13 +7,13 @@ import { getCars } from "@/actions/cars/carActions"
 import { Locale } from "@/i18n/routing"
 
 interface CarsPageProps {
-  params: {
+  params: Promise<{
     locale: Locale
-  }
+  }>
 }
 
 export default async function CarsPage({ params }: CarsPageProps) {
-  const { locale } = params
+  const { locale } = await params
   const { cars } = await getCars()
 
   // Transform the cars data so that price fields are numbers

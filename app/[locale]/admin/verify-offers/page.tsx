@@ -15,9 +15,9 @@ export default async function VerifyOffersPage({
   params,
 }: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = params
+  const { locale } = await params
 
   // Await the searchParams before using its properties
   const paramsData = await searchParams

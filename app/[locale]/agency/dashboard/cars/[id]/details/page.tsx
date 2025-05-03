@@ -1,24 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { getCarById } from "@/actions/cars/carActions";
 import { Locale } from "@/i18n/routing";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArchiveIcon } from "lucide-react";
 import ArchiveCarButton from "../../ArchiveCarButton";
 import PublishCarButton from "../../PublishCarButton";
 import { formatPrice } from "@/lib/utils";
 
 interface CarDetailsPageProps {
-  params: {
+  params:Promise< {
     id: string;
     locale: Locale;
-  };
+  }>;
 }
 
 export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
-  const { id: carId, locale } = params;
+  const { id: carId, locale } = await params
   const { car } = await getCarById(parseInt(carId));
 
   if (!car) {

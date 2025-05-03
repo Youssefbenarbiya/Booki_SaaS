@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,8 +23,6 @@ interface PublishCarButtonProps {
 
 export default function PublishCarButton({ carId }: PublishCarButtonProps) {
   const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

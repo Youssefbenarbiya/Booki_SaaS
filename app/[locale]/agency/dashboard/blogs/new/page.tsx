@@ -6,13 +6,13 @@ import { headers } from "next/headers"
 import { Locale } from "@/i18n/routing"
 
 interface NewBlogPageProps {
-  params: {
+  params: Promise<{
     locale: Locale
-  }
+  }>
 }
 
 export default async function NewBlogPage({ params }: NewBlogPageProps) {
-  const { locale } = params
+  const { locale } = await params
 
   // Get the current user session properly
   const session = await auth.api.getSession({

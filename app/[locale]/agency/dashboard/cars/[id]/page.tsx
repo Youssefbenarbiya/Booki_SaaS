@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 
 interface CarEditPageProps {
-  params: {
+  params: Promise<{
     id: string;
     locale: Locale;
-  };
+  }>;
 }
 
 export default async function CarEditPage({ params }: CarEditPageProps) {
-  const { id: paramId, locale } = params;
+  const { id: paramId, locale } = await params
 
   const id = Number(paramId);
 

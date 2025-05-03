@@ -7,16 +7,16 @@ import HotelLocationMap from "@/components/HotelLocationMap"
 import { Locale } from "@/i18n/routing"
 
 interface HotelDetailsPageProps {
-  params: {
+  params: Promise<{
     hotelId: string
     locale: Locale
-  }
+  }>
 }
 
 export default async function HotelDetailsPage({
   params,
 }: HotelDetailsPageProps) {
-  const { hotelId, locale } = params
+  const { hotelId, locale } = await params
 
   const hotel = await getHotelById(hotelId)
   if (!hotel) {

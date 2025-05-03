@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
-import { toast } from "sonner";
-import { useRouter, useParams } from "next/navigation";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { CheckCircle } from "lucide-react"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,32 +14,30 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { publishTrip } from "@/actions/trips/tripActions";
+} from "@/components/ui/alert-dialog"
+import { publishTrip } from "@/actions/trips/tripActions"
 
 interface PublishTripButtonProps {
-  tripId: number;
+  tripId: number
 }
 
 export default function PublishTripButton({ tripId }: PublishTripButtonProps) {
-  const router = useRouter();
-  const params = useParams();
-  const locale = params.locale as string;
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   async function handlePublish() {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      await publishTrip(tripId);
-      toast.success("Trip published successfully");
-      setOpen(false);
-      router.refresh();
+      await publishTrip(tripId)
+      toast.success("Trip published successfully")
+      setOpen(false)
+      router.refresh()
     } catch (error) {
-      toast.error("Failed to publish trip");
-      console.error(error);
+      toast.error("Failed to publish trip")
+      console.error(error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
@@ -80,5 +78,5 @@ export default function PublishTripButton({ tripId }: PublishTripButtonProps) {
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
+  )
 }

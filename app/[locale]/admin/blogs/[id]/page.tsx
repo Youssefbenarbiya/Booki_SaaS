@@ -14,13 +14,14 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
-
-export default async function AdminBlogDetailPage({
-  params,
-}: {
-  params: { id: string; locale: string }
-}) {
-  const { id, locale } = params
+interface PageProps {
+  params: Promise<{
+    id: string
+    locale: string
+  }>
+}
+export default async function AdminBlogDetailPage({ params }: PageProps) {
+  const { id, locale } = await params
   const blogId = parseInt(id)
 
   if (isNaN(blogId)) {
