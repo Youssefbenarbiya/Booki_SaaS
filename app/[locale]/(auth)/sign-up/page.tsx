@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 import {
   Form,
   FormControl,
@@ -7,41 +7,46 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import Link from "next/link"
-import { signUpSchema, createSignUpSchema } from "@/lib/validations/signup"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import type { z } from "zod"
-import { authClient } from "@/auth-client"
-import { useState } from "react"
-import { useToast } from "@/hooks/use-toast"
-import { Eye, EyeOff, Building2, User } from "lucide-react"
-import Image from "next/image"
-import GoogleSignIn from "../(Oauth)/google"
-import FacebookSignIn from "../(Oauth)/facebook"
-import { motion, AnimatePresence } from "framer-motion"
-import { useTranslations } from "next-intl"
-import { useParams } from "next/navigation"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { PhoneInput } from "@/components/ui/phone-input";
+import CountrySelect from "@/components/ui/country-select";
+import RegionSelect from "@/components/ui/region-select";
+import Link from "next/link";
+import { signUpSchema, createSignUpSchema } from "@/lib/validations/signup";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
+import { authClient } from "@/auth-client";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff, Building2, User, Car, Plane } from "lucide-react";
+import Image from "next/image";
+import GoogleSignIn from "../(Oauth)/google";
+import FacebookSignIn from "../(Oauth)/facebook";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 
 export default function SignUp() {
-  const [pending, setPending] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [userType, setUserType] = useState<"selection" | "customer" | "agency">(
     "selection"
-  )
-  const { toast } = useToast()
+  );
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const { toast } = useToast();
 
   // Get translations
-  const t = useTranslations("signUp")
+  const t = useTranslations("signUp");
   // Create schema with translated error messages
-  const localizedSignUpSchema = createSignUpSchema((key) => t(key))
+  const localizedSignUpSchema = createSignUpSchema((key) => t(key));
 
-  const params = useParams()
-  const currentLocale = (params.locale as string) || "en"
+  const params = useParams();
+  const currentLocale = (params.locale as string) || "en";
 
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(localizedSignUpSchema),
@@ -51,29 +56,43 @@ export default function SignUp() {
       password: "",
       confirmPassword: "",
       phoneNumber: "",
+      country: "",
+      region: "",
       isAgency: false,
       agencyName: "",
+      agencyType: undefined,
     },
     mode: "onChange",
-  })
+  });
 
   // When user type changes, update the isAgency field
   const handleUserTypeChange = (type: "customer" | "agency") => {
-    setUserType(type)
+    setUserType(type);
     if (type === "agency") {
-      form.setValue("isAgency", true)
+      form.setValue("isAgency", true);
     } else {
-      form.setValue("isAgency", false)
-      form.setValue("agencyName", "")
+      form.setValue("isAgency", false);
+      form.setValue("agencyName", "");
+      form.setValue("agencyType", undefined);
     }
-  }
+  };
 
   // Watch isAgency value to conditionally render agency name field
-  const isAgency = form.watch("isAgency")
+  const isAgency = form.watch("isAgency");
+
+  // Watch the country field to update the region selector
+  const country = form.watch("country");
+
+  // Update selectedCountry state when country changes
+  const handleCountryChange = (countryCode: string) => {
+    setSelectedCountry(countryCode);
+    form.setValue("country", countryCode);
+    form.setValue("region", ""); // Reset region when country changes
+  };
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
     try {
-      setPending(true)
+      setPending(true);
 
       // Prepare data for user creation - include phoneNumber!
       const userData = {
@@ -81,23 +100,23 @@ export default function SignUp() {
         password: values.password,
         name: values.name,
         phoneNumber: values.phoneNumber, // This was missing!
-      }
+      };
 
       // If registering as agency, save that info for later
-      const isAgencySignUp = values.isAgency && values.agencyName
+      const isAgencySignUp = values.isAgency && values.agencyName;
 
-      console.log("Sending user data to auth client:", userData)
+      console.log("Sending user data to auth client:", userData);
 
       // First, register the user through authClient
       await authClient.signUp.email(userData as any, {
         onSuccess: async (userData) => {
-          console.log("User created successfully:", userData)
+          console.log("User created successfully:", userData);
 
           // If this is an agency registration, proceed with second step
           if (isAgencySignUp) {
             try {
               // Wait a moment to ensure the user is in the database
-              await new Promise((resolve) => setTimeout(resolve, 2000))
+              await new Promise((resolve) => setTimeout(resolve, 2000));
 
               // Second step: create agency record with our custom API
               const agencyData = {
@@ -106,9 +125,12 @@ export default function SignUp() {
                 phoneNumber: values.phoneNumber,
                 role: "agency owner",
                 agencyName: values.agencyName,
-              }
+                agencyType: values.agencyType,
+                country: values.country,
+                region: values.region,
+              };
 
-              console.log("Sending agency data to API:", agencyData)
+              console.log("Sending agency data to API:", agencyData);
 
               const response = await fetch("/api/auth/register", {
                 method: "POST",
@@ -116,27 +138,29 @@ export default function SignUp() {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify(agencyData),
-              })
+              });
 
-              const responseData = await response.json()
-              console.log("Agency registration response:", responseData)
+              const responseData = await response.json();
+              console.log("Agency registration response:", responseData);
 
               if (!response.ok) {
-                throw new Error(responseData.error || "Failed to create agency")
+                throw new Error(
+                  responseData.error || "Failed to create agency"
+                );
               }
 
               // Success message for agency
               toast({
                 title: t("agencyAccountCreated"),
                 description: t("agencyVerificationEmail"),
-              })
+              });
             } catch (agencyError) {
-              console.error("Agency registration error:", agencyError)
+              console.error("Agency registration error:", agencyError);
               toast({
                 title: t("agencySetupFailed"),
                 description: t("accountCreatedAgencyFailed"),
                 variant: "destructive",
-              })
+              });
             }
           } else {
             // For customer accounts, also register with our API to ensure consistency
@@ -145,8 +169,10 @@ export default function SignUp() {
                 email: values.email,
                 name: values.name,
                 phoneNumber: values.phoneNumber,
+                country: values.country,
+                region: values.region,
                 role: "customer",
-              }
+              };
 
               // Register the customer with our custom API
               await fetch("/api/auth/register", {
@@ -155,51 +181,51 @@ export default function SignUp() {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify(customerData),
-              })
+              });
 
               // Regular user success message
               toast({
                 title: t("accountCreated"),
                 description: t("verificationEmail"),
-              })
+              });
             } catch (customerError) {
-              console.error("Customer registration error:", customerError)
+              console.error("Customer registration error:", customerError);
               // Still show success since the auth account was created
               toast({
                 title: t("accountCreated"),
                 description: t("verificationEmail"),
-              })
+              });
             }
           }
         },
         onError: (error: any) => {
-          console.error("User creation error:", error)
+          console.error("User creation error:", error);
           toast({
             title: t("accountCreationFailed"),
             description: (error as any)?.message || t("errors.auth.generic"),
             variant: "destructive",
-          })
+          });
         },
-      })
+      });
     } catch (error: any) {
-      console.error("Registration error:", error)
+      console.error("Registration error:", error);
       toast({
         title: t("somethingWentWrong"),
         description: error?.message || t("errors.auth.generic"),
         variant: "destructive",
-      })
+      });
     } finally {
-      setPending(false)
+      setPending(false);
     }
-  }
+  };
 
   // Add a function to handle form submission via button click
   const handleFormSubmit = () => {
     // Trigger form validation and submission
     form.handleSubmit((values) => {
-      onSubmit(values)
-    })()
-  }
+      onSubmit(values);
+    })();
+  };
 
   // Selection screen - first step
   if (userType === "selection") {
@@ -295,7 +321,7 @@ export default function SignUp() {
           </div>
         </motion.div>
       </div>
-    )
+    );
   }
 
   // Registration form screens (agency or customer)
@@ -428,10 +454,12 @@ export default function SignUp() {
                         {t("phoneNumber")}
                       </FormLabel>
                       <FormControl className="flex-1">
-                        <Input
-                          type="tel"
+                        <PhoneInput
                           placeholder={t("phoneNumberPlaceholder")}
-                          {...field}
+                          value={field.value}
+                          onChange={field.onChange}
+                          defaultCountry="TN"
+                          international
                           className="h-12 w-full"
                         />
                       </FormControl>
@@ -440,6 +468,60 @@ export default function SignUp() {
                   </FormItem>
                 )}
               />
+
+              {/* Country Select */}
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center w-full gap-4">
+                      <FormLabel className="text-sm font-medium min-w-[120px]">
+                        {t("country") || "Country"}
+                      </FormLabel>
+                      <FormControl className="flex-1">
+                        <CountrySelect
+                          placeholder={
+                            t("countryPlaceholder") || "Select your country"
+                          }
+                          onChange={handleCountryChange}
+                          priorityOptions={["TN", "US", "GB", "FR"]}
+                          className="h-12 w-full"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="ml-[136px]" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Region Select - only show if country is selected */}
+              {selectedCountry && (
+                <FormField
+                  control={form.control}
+                  name="region"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center w-full gap-4">
+                        <FormLabel className="text-sm font-medium min-w-[120px]">
+                          {t("region") || "Region"}
+                        </FormLabel>
+                        <FormControl className="flex-1">
+                          <RegionSelect
+                            countryCode={selectedCountry}
+                            placeholder={
+                              t("regionPlaceholder") || "Select your region"
+                            }
+                            onChange={(value) => form.setValue("region", value)}
+                            className="h-12 w-full"
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage className="ml-[136px]" />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -521,6 +603,7 @@ export default function SignUp() {
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
+                    className="space-y-4"
                   >
                     <FormField
                       control={form.control}
@@ -543,7 +626,7 @@ export default function SignUp() {
                                     : ""
                                 }`}
                                 onBlur={(e) => {
-                                  field.onBlur()
+                                  field.onBlur();
                                   if (
                                     isAgency &&
                                     (!e.target.value ||
@@ -551,12 +634,69 @@ export default function SignUp() {
                                   ) {
                                     form.setError("agencyName", {
                                       message: t("agencyNameError"),
-                                    })
+                                    });
                                   } else {
-                                    form.clearErrors("agencyName")
+                                    form.clearErrors("agencyName");
                                   }
                                 }}
                               />
+                            </FormControl>
+                          </div>
+                          <FormMessage className="ml-[136px]" />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Agency Type Radio Group */}
+                    <FormField
+                      control={form.control}
+                      name="agencyType"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <div className="flex items-center w-full gap-4">
+                            <FormLabel className="text-sm font-medium min-w-[120px]">
+                              {t("agencyType") || "Agency Type"}
+                            </FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex flex-col space-y-1 ml-2"
+                              >
+                                <div className="flex items-center space-x-3 space-y-0">
+                                  <RadioGroupItem
+                                    value="travel"
+                                    id="travel"
+                                    className="text-orange-500"
+                                  />
+                                  <div className="flex items-center gap-2">
+                                    <Plane className="h-4 w-4 text-orange-500" />
+                                    <label
+                                      htmlFor="travel"
+                                      className="text-sm font-medium"
+                                    >
+                                      {t("travelAgency") || "Travel Agency"}
+                                    </label>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-3 space-y-0">
+                                  <RadioGroupItem
+                                    value="car_rental"
+                                    id="car_rental"
+                                    className="text-orange-500"
+                                  />
+                                  <div className="flex items-center gap-2">
+                                    <Car className="h-4 w-4 text-orange-500" />
+                                    <label
+                                      htmlFor="car_rental"
+                                      className="text-sm font-medium"
+                                    >
+                                      {t("carRentalAgency") ||
+                                        "Car Rental Agency"}
+                                    </label>
+                                  </div>
+                                </div>
+                              </RadioGroup>
                             </FormControl>
                           </div>
                           <FormMessage className="ml-[136px]" />
@@ -651,5 +791,5 @@ export default function SignUp() {
         </motion.div>
       </div>
     </motion.div>
-  )
+  );
 }

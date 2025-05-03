@@ -70,9 +70,16 @@
     "email": "Email",
     "phoneNumber": "Numéro de téléphone",
     "phoneNumberPlaceholder": "+216 4567890",
+    "country": "Pays",
+    "countryPlaceholder": "Sélectionnez votre pays",
+    "region": "Région",
+    "regionPlaceholder": "Sélectionnez votre région",
     "password": "Mot de passe",
     "confirmPassword": "Confirmer le mot de passe",
     "agencyName": "Nom de l'agence",
+    "agencyType": "Type d'agence",
+    "travelAgency": "Agence de voyage",
+    "carRentalAgency": "Agence de location de voitures",
     "agencyNameError": "Le nom de l'agence est requis et doit comporter au moins 3 caractères",
     "agreeToTerms": "J'accepte tous les",
     "terms": "Termes",
@@ -115,8 +122,14 @@
         "tooLong": "Le numéro de téléphone ne doit pas dépasser 15 chiffres",
         "invalid": "Le numéro de téléphone doit être dans un format valide (ex : +1234567890)"
       },
+      "country": {
+        "required": "Le pays est requis"
+      },
       "agencyName": {
         "required": "Le nom de l'agence est requis et doit comporter au moins 3 caractères"
+      },
+      "agencyType": {
+        "required": "Veuillez sélectionner un type d'agence"
       },
       "auth": {
         "generic": "Un problème est survenu lors de l'inscription. Veuillez réessayer."

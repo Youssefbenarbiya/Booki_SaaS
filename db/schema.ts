@@ -9,8 +9,8 @@ import {
   date,
   decimal,
   numeric,
-} from "drizzle-orm/pg-core"
-import { relations } from "drizzle-orm"
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -21,11 +21,13 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
   address: text("address"),
+  country: text("country"),
+  region: text("region"),
   banned: boolean("banned").notNull().default(false),
   banReason: text("ban_reason"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-})
+});
 
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
@@ -38,7 +40,7 @@ export const session = pgTable("session", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id),
-})
+});
 
 export const account = pgTable("account", {
   id: text("id").primaryKey(),
@@ -56,7 +58,7 @@ export const account = pgTable("account", {
   password: text("password"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-})
+});
 
 export const verification = pgTable("verification", {
   id: text("id").primaryKey(),
@@ -65,7 +67,7 @@ export const verification = pgTable("verification", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),
-})
+});
 
 // --------------
 // Trip Related
@@ -112,7 +114,7 @@ export const trips = pgTable("trips", {
   createdBy: text("created_by").references(() => user.id), // Added new field to track creator
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-})
+});
 
 // Trip Images table
 export const tripImages = pgTable("trip_images", {
@@ -122,7 +124,7 @@ export const tripImages = pgTable("trip_images", {
     .references(() => trips.id, { onDelete: "cascade" }),
   imageUrl: text("image_url").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-})
+});
 
 // Trip Activities table
 export const tripActivities = pgTable("trip_activities", {
@@ -134,7 +136,7 @@ export const tripActivities = pgTable("trip_activities", {
   description: text("description"),
   scheduledDate: date("scheduled_date"),
   createdAt: timestamp("created_at").defaultNow(),
-})
+});
 
 // Trip Bookings table
 export const tripBookings = pgTable("trip_bookings", {
@@ -159,7 +161,7 @@ export const tripBookings = pgTable("trip_bookings", {
     precision: 10,
     scale: 2,
   }),
-})
+});
 
 // Trip Relations
 export const tripsRelations = relations(trips, ({ many, one }) => ({
@@ -175,21 +177,21 @@ export const tripsRelations = relations(trips, ({ many, one }) => ({
     fields: [trips.createdBy],
     references: [user.id],
   }),
-}))
+}));
 
 export const tripImagesRelations = relations(tripImages, ({ one }) => ({
   trip: one(trips, {
     fields: [tripImages.tripId],
     references: [trips.id],
   }),
-}))
+}));
 
 export const tripActivitiesRelations = relations(tripActivities, ({ one }) => ({
   trip: one(trips, {
     fields: [tripActivities.tripId],
     references: [trips.id],
   }),
-}))
+}));
 
 export const tripBookingsRelations = relations(tripBookings, ({ one }) => ({
   trip: one(trips, {
@@ -200,7 +202,7 @@ export const tripBookingsRelations = relations(tripBookings, ({ one }) => ({
     fields: [tripBookings.userId],
     references: [user.id],
   }),
-}))
+}));
 
 // -------------------
 // Hotel & Room Related
@@ -223,7 +225,7 @@ export const hotel = pgTable("hotel", {
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-})
+});
 
 // Room table
 export const room = pgTable("room", {
@@ -248,7 +250,7 @@ export const room = pgTable("room", {
   images: text("images").array().default([]).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-})
+});
 
 // Room Availability table
 export const roomAvailability = pgTable("room_availability", {
@@ -261,7 +263,7 @@ export const roomAvailability = pgTable("room_availability", {
   isAvailable: boolean("is_available").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-})
+});
 
 // Room Bookings table (new)
 export const roomBookings = pgTable("room_bookings", {
@@ -290,7 +292,7 @@ export const roomBookings = pgTable("room_bookings", {
   adultCount: integer("adult_count").default(1),
   childCount: integer("child_count").default(0),
   infantCount: integer("infant_count").default(0),
-})
+});
 
 // Hotel & Room Relations
 export const hotelRelations = relations(hotel, ({ many, one }) => ({
@@ -300,7 +302,7 @@ export const hotelRelations = relations(hotel, ({ many, one }) => ({
     fields: [hotel.agencyId],
     references: [agencies.userId],
   }),
-}))
+}));
 
 export const roomRelations = relations(room, ({ one, many }) => ({
   hotel: one(hotel, {
@@ -308,7 +310,7 @@ export const roomRelations = relations(room, ({ one, many }) => ({
     references: [hotel.id],
   }),
   availabilities: many(roomAvailability),
-}))
+}));
 
 export const roomAvailabilityRelations = relations(
   roomAvailability,
@@ -318,7 +320,7 @@ export const roomAvailabilityRelations = relations(
       references: [room.id],
     }),
   })
-)
+);
 
 export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
   room: one(room, {
@@ -329,7 +331,7 @@ export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
     fields: [roomBookings.userId],
     references: [user.id],
   }),
-}))
+}));
 
 export const cars = pgTable("cars", {
   id: serial("id").primaryKey(),
@@ -357,7 +359,7 @@ export const cars = pgTable("cars", {
   seats: integer("seats").notNull().default(4),
   category: text("category").notNull(),
   location: text("location").notNull(),
-})
+});
 
 // Car Bookings table
 export const carBookings = pgTable("car_bookings", {
@@ -386,7 +388,7 @@ export const carBookings = pgTable("car_bookings", {
   drivingLicense: text("driving_license"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
+});
 
 export const carsRelations = relations(cars, ({ many, one }) => ({
   bookings: many(carBookings),
@@ -394,7 +396,7 @@ export const carsRelations = relations(cars, ({ many, one }) => ({
     fields: [cars.agencyId],
     references: [agencies.userId],
   }),
-}))
+}));
 
 // Car Bookings Relations
 export const carBookingsRelations = relations(carBookings, ({ one }) => ({
@@ -406,7 +408,7 @@ export const carBookingsRelations = relations(carBookings, ({ one }) => ({
     fields: [carBookings.user_id],
     references: [user.id],
   }),
-}))
+}));
 
 // Blog Categories table
 export const blogCategories = pgTable("blog_categories", {
@@ -415,7 +417,7 @@ export const blogCategories = pgTable("blog_categories", {
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-})
+});
 // Blogs table
 export const blogs = pgTable("blogs", {
   id: serial("id").primaryKey(),
@@ -435,7 +437,7 @@ export const blogs = pgTable("blogs", {
   tags: text("tags").array().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-})
+});
 // Blog Relations
 export const blogRelations = relations(blogs, ({ one }) => ({
   category: one(blogCategories, {
@@ -446,13 +448,13 @@ export const blogRelations = relations(blogs, ({ one }) => ({
     fields: [blogs.authorId],
     references: [user.id],
   }),
-}))
+}));
 export const blogCategoriesRelations = relations(
   blogCategories,
   ({ many }) => ({
     blogs: many(blogs),
   })
-)
+);
 
 // User Favorites table
 export const favorites = pgTable("favorites", {
@@ -463,13 +465,13 @@ export const favorites = pgTable("favorites", {
   itemType: varchar("item_type", { length: 50 }).notNull(), // "trip", "hotel", "car"
   itemId: varchar("item_id", { length: 100 }).notNull(), // The ID of the favorited item
   createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+});
 
 // Add unique constraint to prevent duplicate favorites
 export const favoritesConstraint = pgTable("favorites_constraint", {
   id: serial("id").primaryKey(),
   userId_itemType_itemId: varchar("user_id_item_type_item_id").unique(),
-})
+});
 
 // Favorites Relations
 export const favoritesRelations = relations(favorites, ({ one }) => ({
@@ -477,7 +479,7 @@ export const favoritesRelations = relations(favorites, ({ one }) => ({
     fields: [favorites.userId],
     references: [user.id],
   }),
-}))
+}));
 
 // Notifications table
 export const notifications = pgTable("notifications", {
@@ -492,7 +494,7 @@ export const notifications = pgTable("notifications", {
   relatedItemType: varchar("related_item_type", { length: 50 }), // 'trip', 'booking', etc.
   relatedItemId: integer("related_item_id"), // ID of the related item
   createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+});
 
 // Notification Relations
 export const notificationsRelations = relations(notifications, ({ one }) => ({
@@ -500,26 +502,29 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
     fields: [notifications.userId],
     references: [user.id],
   }),
-}))
+}));
 
 // Agencies table
 export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" })
+    .references(() => user.id, { onDelete: "cascade" }) 
     .unique(),
   agencyUniqueId: varchar("agency_unique_id", { length: 20 })
     .notNull()
     .unique(),
   agencyName: varchar("agency_name", { length: 255 }).notNull().unique(),
+  agencyType: varchar("agency_type", { length: 50 }).notNull(), // travel or car_rental
   contactEmail: varchar("contact_email", { length: 255 }),
   contactPhone: varchar("contact_phone", { length: 50 }),
+  country: text("country"),
+  region: text("region"),
   address: text("address"),
   logo: text("logo"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-})
+});
 
 export const userRelations = relations(user, ({ many, one }) => ({
   favorites: many(favorites),
@@ -531,7 +536,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
     references: [agencies.userId],
   }),
   // ...other existing relations...
-}))
+}));
 
 export const agenciesRelations = relations(agencies, ({ one, many }) => ({
   user: one(user, {
@@ -539,7 +544,7 @@ export const agenciesRelations = relations(agencies, ({ one, many }) => ({
     references: [user.id],
   }),
   hotels: many(hotel), // Added hotels relation
-}))
+}));
 
 export const agencyEmployees = pgTable("agency_employees", {
   id: serial("id").primaryKey(),
@@ -550,7 +555,7 @@ export const agencyEmployees = pgTable("agency_employees", {
     .notNull()
     .references(() => agencies.userId, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
-})
+});
 
 // Add relations for agencyEmployees
 export const agencyEmployeesRelations = relations(
@@ -565,7 +570,7 @@ export const agencyEmployeesRelations = relations(
       references: [agencies.userId],
     }),
   })
-)
+);
 
 // Chat messages table
 export const chatMessages = pgTable("chat_messages", {
@@ -582,7 +587,7 @@ export const chatMessages = pgTable("chat_messages", {
   type: varchar("type", { length: 20 }).notNull().default("text"), // 'text', 'image', 'notification'
   isRead: boolean("is_read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+});
 
 // Chat messages relations
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
@@ -594,4 +599,4 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
     fields: [chatMessages.receiverId],
     references: [user.id],
   }),
-}))
+}));

@@ -70,9 +70,16 @@
     "email": "البريد الإلكتروني",
     "phoneNumber": "رقم الهاتف",
     "phoneNumberPlaceholder": "+216 4567890",
+    "country": "الدولة",
+    "countryPlaceholder": "اختر دولتك",
+    "region": "المنطقة",
+    "regionPlaceholder": "اختر منطقتك",
     "password": "كلمة المرور",
     "confirmPassword": "تأكيد كلمة المرور",
     "agencyName": "اسم الوكالة",
+    "agencyType": "نوع الوكالة",
+    "travelAgency": "وكالة سفر",
+    "carRentalAgency": "وكالة تأجير سيارات",
     "agencyNameError": "اسم الوكالة مطلوب ويجب أن يتكون من 3 أحرف على الأقل",
     "agreeToTerms": "أوافق على جميع",
     "terms": "الشروط",
@@ -115,8 +122,14 @@
         "tooLong": "يجب ألا يتجاوز رقم الهاتف 15 رقمًا",
         "invalid": "يجب أن يكون رقم الهاتف بتنسيق صالح (مثال: ‎+1234567890)"
       },
+      "country": {
+        "required": "الدولة مطلوبة"
+      },
       "agencyName": {
         "required": "اسم الوكالة مطلوب ويجب أن يتكون من 3 أحرف على الأقل"
+      },
+      "agencyType": {
+        "required": "يرجى اختيار نوع الوكالة"
       },
       "auth": {
         "generic": "حدث خطأ ما أثناء التسجيل. يرجى المحاولة مرة أخرى."
