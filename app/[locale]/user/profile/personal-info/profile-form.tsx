@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 
-import { useState, type ChangeEvent } from "react"
-import { Loader2, Pen } from "lucide-react"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
+import { useState, type ChangeEvent, useEffect } from "react";
+import { Loader2, Pen } from "lucide-react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,25 +12,32 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useToast } from "@/hooks/use-toast"
-import { updateUserInfoSchema } from "@/lib/validations/zod"
-import type { z } from "zod"
-import { handleImageUpload } from "@/actions/upload-image"
-import { authClient } from "@/auth-client"
-import type { Session } from "@/auth"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useToast } from "@/hooks/use-toast";
+import { updateUserInfoSchema } from "@/lib/validations/zod";
+import type { z } from "zod";
+import { handleImageUpload } from "@/actions/upload-image";
+import { authClient } from "@/auth-client";
+import type { Session } from "@/auth";
+import { PhoneInput } from "@/components/ui/phone-input";
+import CountrySelect from "@/components/ui/country-select";
+import RegionSelect from "@/components/ui/region-select";
+import { updateUserProfile } from "@/actions/users/updateProfile";
 
-type UserFormType = z.infer<typeof updateUserInfoSchema>
+type UserFormType = z.infer<typeof updateUserInfoSchema>;
 
 export function UpdateUserInfo({ session }: { session: Session }) {
-  const { user } = session
-  const { toast } = useToast()
-  const [submittingField, setSubmittingField] = useState<string | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
+  const { user } = session;
+  const { toast } = useToast();
+  const [submittingField, setSubmittingField] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string>(
+    (user as any).country || ""
+  );
 
   const form = useForm<UserFormType>({
     resolver: zodResolver(updateUserInfoSchema),
@@ -43,107 +50,223 @@ export function UpdateUserInfo({ session }: { session: Session }) {
       currentPassword: "",
       phoneNumber: user.phoneNumber || "",
       address: user.address || "",
+      country: (user as any).country || "",
+      region: (user as any).region || "",
     },
-  })
+  });
+
+  // Add an effect to initialize the selectedCountry from the session
+  useEffect(() => {
+    // Set selectedCountry from user data
+    if ((user as any).country) {
+      setSelectedCountry((user as any).country);
+    }
+  }, [user]);
 
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       try {
-        setIsUploading(true)
-        const file = e.target.files[0]
-        const previewURL = URL.createObjectURL(file)
-        setImagePreview(previewURL)
+        setIsUploading(true);
+        const file = e.target.files[0];
+        const previewURL = URL.createObjectURL(file);
+        setImagePreview(previewURL);
 
-        const formData = new FormData()
-        formData.append("file", file)
+        const formData = new FormData();
+        formData.append("file", file);
 
-        const uploadedUrl = await handleImageUpload(formData)
-        form.setValue("image", uploadedUrl)
+        const uploadedUrl = await handleImageUpload(formData);
+        form.setValue("image", uploadedUrl);
 
         toast({
           title: "Success!",
           description: "Profile image updated.",
-        })
-        await authClient.updateUser({ image: uploadedUrl })
-        console.log("Image uploaded:", uploadedUrl)
+        });
+        await authClient.updateUser({ image: uploadedUrl });
+        console.log("Image uploaded:", uploadedUrl);
       } catch (error: any) {
         toast({
           title: "Upload Error",
           description: error.message,
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsUploading(false)
+        setIsUploading(false);
       }
     }
-  }
+  };
+
+  // Function to update user location (country and region)
+  const updateUserLocation = async () => {
+    try {
+      setSubmittingField("location");
+      const country = form.getValues("country");
+      const region = form.getValues("region");
+
+      // Use the custom server action for updating location
+      const result = await updateUserProfile({
+        country,
+        region,
+      });
+
+      if (result.success) {
+        // Fetch the latest user data to refresh the form
+        await fetchUserProfile();
+
+        toast({
+          title: "Success!",
+          description: "Your location has been updated.",
+        });
+      } else {
+        toast({
+          title: "Error!",
+          description: result.error || "Failed to update location.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error!",
+        description: error.message || "Failed to update location.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingField(null);
+    }
+  };
+
+  // Add a function to fetch the user profile data from the database
+  const fetchUserProfile = async () => {
+    try {
+      // Get the user ID from the session
+      const userId = user.id;
+
+      // Fetch the user from the database
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch user profile");
+      }
+
+      const userData = await response.json();
+
+      // Update the form values
+      if (userData.country) {
+        setSelectedCountry(userData.country);
+        form.setValue("country", userData.country);
+      }
+
+      if (userData.region) {
+        form.setValue("region", userData.region);
+      }
+
+      if (userData.phoneNumber) {
+        form.setValue("phoneNumber", userData.phoneNumber);
+      }
+
+      if (userData.address) {
+        form.setValue("address", userData.address);
+      }
+
+      return userData;
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return null;
+    }
+  };
 
   async function onSubmit(fieldName: keyof UserFormType) {
     try {
+      // For country and region, use the custom update function
+      if (fieldName === "country" || fieldName === "region") {
+        await updateUserLocation();
+        return;
+      }
+
       // Validate the field (or fields) involved.
-      let valid = await form.trigger(fieldName)
+      let valid = await form.trigger(fieldName);
       if (fieldName === "newPassword") {
-        const validCurrent = await form.trigger("currentPassword")
-        valid = valid && validCurrent
+        const validCurrent = await form.trigger("currentPassword");
+        valid = valid && validCurrent;
       }
       if (!valid) {
         const errorMessage =
           form.formState.errors[fieldName]?.message ||
           (fieldName === "newPassword" &&
             form.formState.errors.currentPassword?.message) ||
-          "Invalid input"
+          "Invalid input";
         toast({
           title: "Validation Error",
           description: errorMessage,
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
-      setSubmittingField(fieldName)
+      setSubmittingField(fieldName);
 
       if (fieldName === "email") {
-        const newEmail = form.getValues("email")!
-        await authClient.changeEmail({ newEmail })
+        const newEmail = form.getValues("email")!;
+        await authClient.changeEmail({ newEmail });
         toast({
           title: "Check your inbox",
           description:
             "A verification link was sent to your new email address.",
-        })
+        });
       } else if (fieldName === "newPassword") {
-        const newPassword = form.getValues("newPassword")!
-        const currentPassword = form.getValues("currentPassword")!
-        await authClient.changePassword({ newPassword, currentPassword })
+        const newPassword = form.getValues("newPassword")!;
+        const currentPassword = form.getValues("currentPassword")!;
+        await authClient.changePassword({ newPassword, currentPassword });
         toast({
           title: "Success!",
           description: "Your password has been updated successfully.",
-        })
+        });
+      } else if (fieldName === "phoneNumber") {
+        // For phone number, use the custom server action
+        const phoneNumber = form.getValues("phoneNumber")!;
+        const result = await updateUserProfile({ phoneNumber });
+
+        if (result.success) {
+          // Fetch the latest user data to refresh the form
+          await fetchUserProfile();
+
+          toast({
+            title: "Success!",
+            description: "Your phone number has been updated.",
+          });
+        } else {
+          throw new Error(result.error || "Failed to update phone number");
+        }
       } else {
-        const fieldValue = form.getValues(fieldName)!
-        const values = { [fieldName]: fieldValue }
-        await authClient.updateUser(values)
+        const fieldValue = form.getValues(fieldName)!;
+        const values = { [fieldName]: fieldValue };
+        await authClient.updateUser(values);
         toast({
           title: "Success!",
           description: `Your ${fieldName} has been updated.`,
-        })
+        });
       }
     } catch (error: any) {
-      const errMsg = error.message || error
+      const errMsg = error.message || error;
       if (errMsg.toLowerCase().includes("current password")) {
         toast({
           title: "Error!",
           description: "Current password is wrong.",
           variant: "destructive",
-        })
+        });
       } else {
         toast({
           title: "Error!",
           description: errMsg,
           variant: "destructive",
-        })
+        });
       }
     } finally {
-      setSubmittingField(null)
+      setSubmittingField(null);
     }
   }
 
@@ -156,13 +279,13 @@ export function UpdateUserInfo({ session }: { session: Session }) {
     disabled = false,
     onSubmit,
   }: {
-    name: keyof UserFormType
-    label: string
-    inputType?: string
-    placeholder?: string
-    buttonText?: string
-    disabled?: boolean
-    onSubmit: () => void
+    name: keyof UserFormType;
+    label: string;
+    inputType?: string;
+    placeholder?: string;
+    buttonText?: string;
+    disabled?: boolean;
+    onSubmit: () => void;
   }) => (
     <FormField
       control={form.control}
@@ -200,7 +323,7 @@ export function UpdateUserInfo({ session }: { session: Session }) {
         </FormItem>
       )}
     />
-  )
+  );
 
   return (
     <div className="w-full">
@@ -289,10 +412,39 @@ export function UpdateUserInfo({ session }: { session: Session }) {
               onSubmit={() => onSubmit("newPassword")}
             />
 
-            <FormFieldWithButton
+            <FormField
+              control={form.control}
               name="phoneNumber"
-              label="Phone Number"
-              onSubmit={() => onSubmit("phoneNumber")}
+              render={({ field }) => (
+                <FormItem className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <PhoneInput
+                        value={field.value}
+                        onChange={(value) => field.onChange(value)}
+                        defaultCountry="US"
+                        className="mt-1"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={submittingField === "phoneNumber"}
+                    onClick={() => onSubmit("phoneNumber")}
+                    className="mt-7"
+                  >
+                    {submittingField === "phoneNumber" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Change"
+                    )}
+                  </Button>
+                </FormItem>
+              )}
             />
 
             <FormFieldWithButton
@@ -300,9 +452,70 @@ export function UpdateUserInfo({ session }: { session: Session }) {
               label="Address"
               onSubmit={() => onSubmit("address")}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <FormControl>
+                      <CountrySelect
+                        placeholder="Select country"
+                        className="mt-1"
+                        defaultValue={(user as any).country || ""}
+                        onChange={(value) => {
+                          field.onChange(value);
+                          setSelectedCountry(value);
+                          form.setValue("region", ""); // Reset region when country changes
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="region"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Region</FormLabel>
+                    <FormControl>
+                      <RegionSelect
+                        countryCode={selectedCountry}
+                        placeholder="Select region"
+                        className="mt-1"
+                        defaultValue={(user as any).region || ""}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="md:col-span-2 w-fit ml-auto"
+                disabled={submittingField === "location"}
+                onClick={updateUserLocation}
+              >
+                {submittingField === "location" ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Update Location
+              </Button>
+            </div>
           </div>
         </Form>
       </div>
     </div>
-  )
+  );
 }

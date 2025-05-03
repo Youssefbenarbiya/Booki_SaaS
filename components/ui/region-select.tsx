@@ -32,6 +32,7 @@ interface RegionSelectProps {
   onChange?: (value: string) => void;
   className?: string;
   placeholder?: string;
+  defaultValue?: string;
 }
 
 function RegionSelect({
@@ -42,8 +43,10 @@ function RegionSelect({
   onChange = () => {},
   className,
   placeholder = "Region",
+  defaultValue,
 }: RegionSelectProps) {
   const [regions, setRegions] = useState<Region[]>([]);
+  const [value, setValue] = useState<string>(defaultValue || "");
 
   useEffect(() => {
     const regions = countryRegionData.find(
@@ -54,13 +57,31 @@ function RegionSelect({
       setRegions(
         filterRegions(regions.regions, priorityOptions, whitelist, blacklist)
       );
+    } else {
+      setRegions([]);
     }
-  }, [countryCode]);
+  }, [countryCode, priorityOptions, whitelist, blacklist]);
+
+  // When defaultValue changes, update the internal value
+  useEffect(() => {
+    if (defaultValue) {
+      setValue(defaultValue);
+    }
+  }, [defaultValue]);
+
+  // Reset value when country changes to avoid invalid region selection
+  useEffect(() => {
+    if (countryCode) {
+      setValue(defaultValue || "");
+    }
+  }, [countryCode, defaultValue]);
 
   return (
     <Select
-      onValueChange={(value: string) => {
-        onChange(value);
+      value={value}
+      onValueChange={(selectedValue: string) => {
+        setValue(selectedValue);
+        onChange(selectedValue);
       }}
     >
       <SelectTrigger className={className}>
