@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import ChatWidgetWrapper from "@/components/chat/ChatWidgetWrapper"
 import { useSession } from "@/auth-client"
-import { toast } from "sonner"
+import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Terminal, MessageCircle } from "lucide-react"
 
@@ -22,13 +22,18 @@ export function ContactButton({
   agencyLogo,
 }: ContactButtonProps) {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [showServerAlert, setShowServerAlert] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string>("")
 
   const handleContactClick = () => {
-    if (!session?.user) {
-      toast.error("You must be logged in to chat with the host")
+    if (!session || !session.user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "You must be logged in to chat with the host"
+      })
       return
     }
 
