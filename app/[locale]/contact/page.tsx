@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage({
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
   // The locale is available here as params.locale if needed for any future functionality
   return (

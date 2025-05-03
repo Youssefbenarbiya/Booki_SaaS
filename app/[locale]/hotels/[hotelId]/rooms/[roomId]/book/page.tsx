@@ -11,7 +11,7 @@ import SignInRedirectMessage from "@/app/[locale]/(auth)/sign-in/SignInRedirectM
 export default async function BookRoomPage({
   params,
 }: {
-  params: { roomId: string; hotelId: string; locale: string }
+  params: Promise<{ roomId: string; hotelId: string; locale: string }>
 }) {
   const { roomId, hotelId, locale } = await params
 

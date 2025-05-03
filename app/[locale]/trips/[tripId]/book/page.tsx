@@ -10,7 +10,7 @@ export default async function BookTripPage({
   params,
 }: {
   params: Promise<{ tripId: string; locale: string }>
-  searchParams: { travelers?: string; date?: string }
+  searchParams: Promise<{ travelers?: string; date?: string }>
 }) {
   const { tripId, locale } = await params
 

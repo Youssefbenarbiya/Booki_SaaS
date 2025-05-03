@@ -18,7 +18,7 @@ export async function generateStaticParams() {
 export default async function HotelPage({
   params,
 }: {
-  params: { hotelId: string; locale: string }
+  params: Promise<{ hotelId: string; locale: string }>
 }) {
   const { hotelId, locale } = await params
   const hotelData = await getHotelById(hotelId)
