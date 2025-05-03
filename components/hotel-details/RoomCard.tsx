@@ -7,15 +7,33 @@ import type { InferSelectModel } from "drizzle-orm"
 import type { room } from "@/db/schema"
 import { BedDouble, Users } from "lucide-react"
 import Link from "next/link"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { useParams } from "next/navigation"
 
 interface RoomCardProps {
-  room: InferSelectModel<typeof room>
-  onBookRoom: (roomId: string) => void
+  room: InferSelectModel<typeof room> & { locale?: string }
+  onBookRoom?: (roomId: string) => void
   checkIn?: string
   checkOut?: string
 }
 
 export default function RoomCard({ room }: RoomCardProps) {
+  // Use the currency context for conversion
+  const { currency, convertPrice } = useCurrency()
+
+  // Get the locale from URL params or from room prop
+  const params = useParams()
+  const locale = room.locale || (params.locale as string) || "en"
+
+  // Get the room's base currency or default to TND
+  const roomCurrency = room.currency || "TND"
+
+  // Convert the price to the selected currency
+  const convertedPrice = convertPrice(
+    Number(room.pricePerNightAdult),
+    roomCurrency
+  )
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition">
       <div className="relative h-48">
@@ -49,7 +67,7 @@ export default function RoomCard({ room }: RoomCardProps) {
         <div className="mt-3 flex items-center justify-between">
           <div className="text-lg font-semibold">
             <span className="text-black">
-              {formatPrice(Number(room.pricePerNightAdult))}
+              {formatPrice(convertedPrice, { currency })}
             </span>
             <span className="text-sm font-normal text-gray-500">/night</span>
           </div>
@@ -57,7 +75,9 @@ export default function RoomCard({ room }: RoomCardProps) {
             asChild
             className="bg-yellow-500 hover:bg-yellow-600 text-white border-none"
           >
-            <Link href={`/hotels/${room.hotelId}/rooms/${room.id}/book`}>
+            <Link
+              href={`/${locale}/hotels/${room.hotelId}/rooms/${room.id}/book`}
+            >
               Book now
             </Link>
           </Button>

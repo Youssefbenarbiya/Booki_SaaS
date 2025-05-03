@@ -12,7 +12,7 @@ export default async function AuthButtons() {
       {!session && (
         <>
           <NavLink href="/sign-up">Register</NavLink>
-          <NavLink href="/sign-in">Sign In</NavLink>
+          <NavLink href="/en/sign-in">Sign In</NavLink>
         </>
       )}
     </div>

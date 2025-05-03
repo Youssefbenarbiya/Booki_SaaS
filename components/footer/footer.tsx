@@ -1,7 +1,6 @@
 import Link from "next/link"
-import { Facebook, Instagram, Twitter } from "lucide-react"
+import { Facebook, Instagram, X } from "lucide-react"
 import Image from "next/image"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import FooterGallery from "./footerGalory"
@@ -15,7 +14,7 @@ export function Footer() {
             <Link href="/" className="inline-block">
               <div className="flex items-center">
                 <span className="text-2xl font-bold">
-                  <span className="text-orange-500">Booking</span>ostelflow.
+                  <span className="text-orange-500">Booking</span>Booki.
                 </span>
               </div>
             </Link>
@@ -29,7 +28,7 @@ export function Footer() {
                 <span className="sr-only">Facebook</span>
               </Link>
               <Link href="#" className="text-white hover:text-orange-500">
-                <Twitter className="h-6 w-6" />
+                <X className="h-6 w-6" />
                 <span className="sr-only">Twitter</span>
               </Link>
               <Link href="#" className="text-white hover:text-orange-500">
@@ -125,7 +124,7 @@ export function Footer() {
             <div className="flex flex-col gap-2">
               <Input
                 type="email"
-                placeholder="ostelflowbooking@gmail.com"
+                placeholder="booking@gmail.com"
                 className="bg-transparent border-gray-700 text-white placeholder:text-gray-400"
               />
               <Button

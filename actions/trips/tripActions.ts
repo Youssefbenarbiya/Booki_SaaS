@@ -1,12 +1,18 @@
-"use server"
+"use server";
 
-import db from "@/db/drizzle"
-import { trips, tripImages, tripActivities } from "@/db/schema"
-import { eq } from "drizzle-orm"
-import { revalidatePath } from "next/cache"
-import { z } from "zod"
-import { auth } from "@/auth"
-import { headers } from "next/headers"
+import db from "@/db/drizzle";
+import {
+  trips,
+  tripImages,
+  tripActivities,
+  user,
+  agencyEmployees,
+} from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { auth } from "@/auth";
+import { headers } from "next/headers";
 
 const tripSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -14,10 +20,17 @@ const tripSchema = z.object({
   destination: z.string().min(1, "Destination is required"),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  price: z.coerce.number().positive("Price must be positive"),
+  originalPrice: z.coerce.number().positive("Original price must be positive"),
+  discountPercentage: z.coerce.number().min(0).max(100).optional().nullable(),
+  priceAfterDiscount: z.coerce
+    .number()
+    .positive("Price after discount must be positive")
+    .optional()
+    .nullable(),
   capacity: z.coerce.number().int().positive("Capacity must be positive"),
   isAvailable: z.boolean().default(true),
   images: z.array(z.string()),
+  currency: z.string().default("USD"),
   activities: z
     .array(
       z.object({
@@ -27,26 +40,59 @@ const tripSchema = z.object({
       })
     )
     .optional(),
-})
+});
 
-export type TripInput = z.infer<typeof tripSchema>
+export type TripInput = z.infer<typeof tripSchema>;
+
+// Helper function to get agency ID - works for both owners and employees
+async function getAgencyId(userId: string) {
+  // Check if user is an agency owner
+  const userWithAgency = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    with: {
+      agency: true,
+    },
+  });
+
+  if (userWithAgency?.agency) {
+    return userWithAgency.agency.userId;
+  }
+
+  // Check if user is an employee
+  const employeeRecord = await db.query.agencyEmployees.findFirst({
+    where: eq(agencyEmployees.employeeId, userId),
+  });
+
+  if (employeeRecord) {
+    return employeeRecord.agencyId;
+  }
+
+  throw new Error("No agency found for this user - not an owner or employee");
+}
 
 export async function createTrip(data: TripInput) {
   try {
-    const validatedData = tripSchema.parse(data)
+    const validatedData = tripSchema.parse(data);
 
-    // Get the current user's session to set as agencyId
+    // Get the current user's session
     const session = await auth.api.getSession({
       headers: await headers(),
-    })
+    });
 
     if (!session?.user) {
-      throw new Error("Unauthorized: You must be logged in to create a trip")
+      throw new Error("Unauthorized: You must be logged in to create a trip");
     }
 
-    console.log(`Creating trip with agency ID: ${session.user.id}`)
+    // Get the agency ID - works for both owners and employees
+    const agencyId = await getAgencyId(session.user.id);
 
-    // Create trip with agencyId set to the current user's ID
+    console.log(`Creating trip with agency ID: ${agencyId}`);
+
+    // Ensure isAvailable is false if capacity is 0
+    const isAvailable =
+      validatedData.capacity === 0 ? false : validatedData.isAvailable;
+
+    // Create trip with proper agency ID and createdBy
     const [trip] = await db
       .insert(trips)
       .values({
@@ -55,12 +101,17 @@ export async function createTrip(data: TripInput) {
         destination: validatedData.destination,
         startDate: validatedData.startDate.toISOString(),
         endDate: validatedData.endDate.toISOString(),
-        price: validatedData.price.toString(),
+        originalPrice: validatedData.originalPrice.toString(),
+        discountPercentage: validatedData.discountPercentage || undefined,
+        priceAfterDiscount:
+          validatedData.priceAfterDiscount?.toString() || undefined,
         capacity: validatedData.capacity,
-        isAvailable: validatedData.isAvailable,
-        agencyId: session.user.id, // Set the agencyId to the current user's ID
+        isAvailable: isAvailable,
+        agencyId: agencyId, // Use the agencyId from our helper
+        createdBy: session.user.id, // Track who created it
+        currency: validatedData.currency || "USD",
       })
-      .returning()
+      .returning();
 
     // Add images
     if (validatedData.images.length > 0) {
@@ -69,7 +120,7 @@ export async function createTrip(data: TripInput) {
           tripId: trip.id,
           imageUrl: url,
         }))
-      )
+      );
     }
 
     // Add activities
@@ -81,31 +132,47 @@ export async function createTrip(data: TripInput) {
           description: activity.description,
           scheduledDate: activity.scheduledDate?.toISOString(),
         }))
-      )
+      );
     }
 
-    revalidatePath("/agency/dashboard/trips")
-    revalidatePath("/")
-    return trip
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return trip;
   } catch (error) {
-    console.error("Error creating trip:", error)
-    throw error
+    console.error("Error creating trip:", error);
+    throw error;
   }
 }
 
 export async function getTrips() {
   try {
-    const trips = await db.query.trips.findMany({
+    // Get the current user's session
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      console.log("No authenticated user found when getting trips");
+      return [];
+    }
+
+    // Get the agency ID - works for both owners and employees
+    const agencyId = await getAgencyId(session.user.id);
+
+    // Get trips belonging to the user's agency
+    const tripResults = await db.query.trips.findMany({
+      where: eq(trips.agencyId, agencyId),
       with: {
         images: true,
         activities: true,
         bookings: true,
       },
-    })
-    return trips
+    });
+
+    return tripResults;
   } catch (error) {
-    console.error("Error getting trips:", error)
-    throw error
+    console.error("Error getting trips:", error);
+    throw error;
   }
 }
 
@@ -117,20 +184,29 @@ export async function getTripById(id: number) {
         images: true,
         activities: true,
         bookings: true,
+        agency: {
+          with: {
+            user: true,
+          },
+        },
       },
-    })
-    return trip
+    });
+    return trip;
   } catch (error) {
-    console.error("Error getting trip:", error)
-    throw error
+    console.error("Error getting trip:", error);
+    throw error;
   }
 }
 
 export async function updateTrip(id: number, data: TripInput) {
   try {
-    const validatedData = tripSchema.parse(data)
+    const validatedData = tripSchema.parse(data);
 
-    // Update trip
+    // Ensure isAvailable is false if capacity is 0
+    const isAvailable =
+      validatedData.capacity === 0 ? false : validatedData.isAvailable;
+
+    // Update trip with explicit null values for discount fields when they're undefined
     const [trip] = await db
       .update(trips)
       .set({
@@ -139,26 +215,30 @@ export async function updateTrip(id: number, data: TripInput) {
         destination: validatedData.destination,
         startDate: validatedData.startDate.toISOString(),
         endDate: validatedData.endDate.toISOString(),
-        price: validatedData.price.toString(),
+        originalPrice: validatedData.originalPrice.toString(),
+        discountPercentage: validatedData.discountPercentage ?? null,
+        priceAfterDiscount:
+          validatedData.priceAfterDiscount?.toString() ?? null,
         capacity: validatedData.capacity,
-        isAvailable: validatedData.isAvailable,
+        isAvailable: isAvailable,
+        currency: validatedData.currency || "USD",
       })
       .where(eq(trips.id, id))
-      .returning()
+      .returning();
 
     // Update images
-    await db.delete(tripImages).where(eq(tripImages.tripId, id))
+    await db.delete(tripImages).where(eq(tripImages.tripId, id));
     if (validatedData.images.length > 0) {
       await db.insert(tripImages).values(
         validatedData.images.map((url) => ({
           tripId: trip.id,
           imageUrl: url,
         }))
-      )
+      );
     }
 
     // Update activities
-    await db.delete(tripActivities).where(eq(tripActivities.tripId, id))
+    await db.delete(tripActivities).where(eq(tripActivities.tripId, id));
     if (validatedData.activities?.length) {
       await db.insert(tripActivities).values(
         validatedData.activities.map((activity) => ({
@@ -167,30 +247,92 @@ export async function updateTrip(id: number, data: TripInput) {
           description: activity.description,
           scheduledDate: activity.scheduledDate?.toISOString(),
         }))
-      )
+      );
     }
 
-    revalidatePath("/agency/dashboard/trips")
-    revalidatePath("/")
-    return trip
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return trip;
   } catch (error) {
-    console.error("Error updating trip:", error)
-    throw error
+    console.error("Error updating trip:", error);
+    throw error;
   }
 }
 
+export async function archiveTrip(id: number) {
+  try {
+    // Check if trip has any bookings
+    const trip = await db.query.trips.findFirst({
+      where: eq(trips.id, id),
+      with: {
+        bookings: true,
+      },
+    });
+
+    if (!trip) {
+      throw new Error("Trip not found");
+    }
+
+    // If trip has bookings, prevent archiving
+    if (trip.bookings && trip.bookings.length > 0) {
+      throw new Error(
+        "Cannot archive a trip with existing bookings. Please contact the agency."
+      );
+    }
+
+    const [archivedTrip] = await db
+      .update(trips)
+      .set({
+        isAvailable: false,
+        status: "archived",
+        updatedAt: new Date(),
+      })
+      .where(eq(trips.id, id))
+      .returning();
+
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return archivedTrip;
+  } catch (error) {
+    console.error("Error archiving trip:", error);
+    throw error;
+  }
+}
+
+export async function publishTrip(id: number) {
+  try {
+    const [publishedTrip] = await db
+      .update(trips)
+      .set({
+        isAvailable: true,
+        status: "pending", // Will need admin approval
+        updatedAt: new Date(),
+      })
+      .where(eq(trips.id, id))
+      .returning();
+
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return publishedTrip;
+  } catch (error) {
+    console.error("Error publishing trip:", error);
+    throw error;
+  }
+}
+
+// Keep the deleteTrip function for backward compatibility or admin purposes
 export async function deleteTrip(id: number) {
   try {
     const [deletedTrip] = await db
       .delete(trips)
       .where(eq(trips.id, id))
-      .returning()
+      .returning();
 
-    revalidatePath("/agency/dashboard/trips")
-    revalidatePath("/")
-    return deletedTrip
+    revalidatePath("/agency/dashboard/trips");
+    revalidatePath("/");
+    return deletedTrip;
   } catch (error) {
-    console.error("Error deleting trip:", error)
-    throw error
+    console.error("Error deleting trip:", error);
+    throw error;
   }
 }

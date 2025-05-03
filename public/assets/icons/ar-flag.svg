@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+  <rect width="900" height="600" fill="#e70013"/>
+  <circle cx="450" cy="300" r="150" fill="#fff"/>
+  <circle cx="450" cy="300" r="100" fill="#e70013"/>
+  <!-- Crescent moon on the left -->
+  <path fill="#fff" d="M370 300 C370 345 340 385 300 400 C352 400 395 355 395 300 C395 245 352 200 300 200 C340 215 370 255 370 300 Z"/>
+  <!-- 5-pointed star -->
+  <path fill="#fff" d="M450 260 L465 300 L505 300 L473 325 L485 365 L450 340 L415 365 L427 325 L395 300 L435 300 Z"/>
+</svg>

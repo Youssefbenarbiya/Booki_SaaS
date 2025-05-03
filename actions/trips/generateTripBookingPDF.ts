@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
@@ -6,7 +7,11 @@ export interface TripData {
   destination: string
   startDate: string
   endDate: string
-  price: number
+  // Update the price field to be optional and add the new pricing fields
+  price?: number
+  originalPrice?: number
+  priceAfterDiscount?: number
+  discountPercentage?: number
   activities?: Array<{
     activityName: string
     scheduledDate: string
@@ -26,7 +31,11 @@ export interface UserData {
   phone?: string
 }
 
-export function generateTripBookingPDF(tripData: TripData, bookingData: TripBookingData, userData: UserData) {
+export function generateTripBookingPDF(
+  tripData: TripData,
+  bookingData: TripBookingData,
+  userData: UserData
+) {
   // Create PDF document
   const doc = new jsPDF({
     orientation: "portrait",
@@ -102,10 +111,31 @@ export function generateTripBookingPDF(tripData: TripData, bookingData: TripBook
   drawInfoItem("Destination:", tripData.destination)
   drawInfoItem("Start Date:", tripData.startDate)
   drawInfoItem("End Date:", tripData.endDate)
+
+  // Calculate the effective price based on available pricing info
+  const effectivePrice = determineEffectivePrice(tripData)
+
   drawInfoItem(
     "Price per Seat:",
-    `$${tripData.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    `$${effectivePrice.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`
   )
+
+  // If there's a discount, show the original price and discount percentage
+  if (tripData.discountPercentage && tripData.originalPrice) {
+    drawInfoItem(
+      "Original Price:",
+      `$${tripData.originalPrice.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+      20
+    )
+    drawInfoItem("Discount Applied:", `${tripData.discountPercentage}%`, 20)
+  }
+
   currentY += 10
 
   // Section: Booking Details
@@ -113,7 +143,10 @@ export function generateTripBookingPDF(tripData: TripData, bookingData: TripBook
   drawInfoItem("Seats Booked:", bookingData.seatsBooked.toString())
   drawInfoItem(
     "Total Price:",
-    `$${bookingData.totalPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    `$${bookingData.totalPrice.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`
   )
   drawInfoItem("Booking Date:", bookingData.bookingDate)
   currentY += 10
@@ -175,16 +208,28 @@ export function generateTripBookingPDF(tripData: TripData, bookingData: TripBook
   // Footer text
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(10)
-  doc.text("Thank you for booking with us!", pageWidth / 2, footerY + 30, { align: "center" })
-  doc.text("For questions or changes, please contact customer service.", pageWidth / 2, footerY + 50, {
+  doc.text("Thank you for booking with us!", pageWidth / 2, footerY + 30, {
     align: "center",
   })
+  doc.text(
+    "For questions or changes, please contact customer service.",
+    pageWidth / 2,
+    footerY + 50,
+    {
+      align: "center",
+    }
+  )
 
   // Add page number
   doc.setFontSize(9)
-  doc.text(`Page 1 of 1 | Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 20, {
-    align: "center",
-  })
+  doc.text(
+    `Page 1 of 1 | Generated on ${new Date().toLocaleDateString()}`,
+    pageWidth / 2,
+    pageHeight - 20,
+    {
+      align: "center",
+    }
+  )
 
   // Add a QR code placeholder (you can replace this with actual QR code generation)
   doc.setDrawColor(60, 60, 60)
@@ -192,9 +237,37 @@ export function generateTripBookingPDF(tripData: TripData, bookingData: TripBook
   doc.rect(pageWidth - 100, currentY - 100, 70, 70)
   doc.setFontSize(8)
   doc.setTextColor(60, 60, 60)
-  doc.text("Booking Reference", pageWidth - 65, currentY - 110, { align: "center" })
-  doc.text("Scan to view details", pageWidth - 65, currentY - 20, { align: "center" })
+  doc.text("Booking Reference", pageWidth - 65, currentY - 110, {
+    align: "center",
+  })
+  doc.text("Scan to view details", pageWidth - 65, currentY - 20, {
+    align: "center",
+  })
 
   doc.save("trip-booking-confirmation.pdf")
 }
 
+// Helper function to determine the effective price based on available pricing info
+function determineEffectivePrice(tripData: TripData): number {
+  // Case 1: If priceAfterDiscount exists and there's a discount, use it
+  if (
+    tripData.priceAfterDiscount &&
+    tripData.discountPercentage &&
+    tripData.discountPercentage > 0
+  ) {
+    return Number(tripData.priceAfterDiscount)
+  }
+
+  // Case 2: If original price exists, use it
+  if (tripData.originalPrice !== undefined) {
+    return Number(tripData.originalPrice)
+  }
+
+  // Case 3: If the old price field exists, use it
+  if (tripData.price !== undefined) {
+    return tripData.price
+  }
+
+  // Case 4: Fallback to 0 if no price information is available
+  return 0
+}

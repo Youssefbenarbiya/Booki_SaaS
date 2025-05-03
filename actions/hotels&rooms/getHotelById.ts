@@ -1,7 +1,7 @@
-"use server"
+"use server";
 
-import { eq } from "drizzle-orm"
-import db from "@/db/drizzle"
+import { eq } from "drizzle-orm";
+import db from "@/db/drizzle";
 export async function getHotelById(hotelId: string) {
   try {
     const result = await db.query.hotel.findFirst({
@@ -12,11 +12,16 @@ export async function getHotelById(hotelId: string) {
             availabilities: true,
           },
         },
+        agency: {
+          with: {
+            user: true,
+          },
+        },
       },
-    })
-    return result
+    });
+    return result;
   } catch (error) {
-    console.error("Error getting hotel:", error)
-    throw error
+    console.error("Error getting hotel:", error);
+    throw error;
   }
 }

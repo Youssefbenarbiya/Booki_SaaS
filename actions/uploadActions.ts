@@ -43,6 +43,7 @@
 //     throw new Error("Failed to upload images")
 //   }
 // }
+
 "use server"
 
 import { v2 as cloudinary } from "cloudinary"

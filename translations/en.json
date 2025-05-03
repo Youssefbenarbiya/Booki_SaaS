@@ -1,0 +1,139 @@
+{
+  "404": {
+    "not-found": "Oops! page not found",
+    "bhome": "Back to Home"
+  },
+  "admin": {
+    "panel": "Admin Panel",
+    "dashboard": "Dashboard",
+    "verifyOffers": "Verify Offers",
+    "agencies": "Agencies",
+    "users": "Users"
+  },
+  "signIn": {
+    "title": "Login",
+    "subtitle": "Login to access your Booki account",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "passwordPlaceholder": "••••••••••••",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot Password?",
+    "loginButton": "Login",
+    "noAccount": "Don't have an account?",
+    "register": "Register",
+    "orLoginWith": "Or login with",
+    "errors": {
+      "email": {
+        "required": "Email is required",
+        "invalid": "Invalid email format"
+      },
+      "password": {
+        "required": "Password is required",
+        "tooShort": "Password must be at least 8 characters",
+        "tooLong": "Password cannot exceed 32 characters"
+      },
+      "auth": {
+        "invalid": "Invalid email or password",
+        "generic": "Something went wrong. Please try again."
+      }
+    }
+  },
+  "signUp": {
+    "title": "Register",
+    "subtitle": "Create your Booki account",
+    "namePlaceholder": "John Doe",
+    "emailPlaceholder": "john.doe@gmail.com",
+    "phonePlaceholder": "Phone number",
+    "passwordPlaceholder": "••••••••••••",
+    "confirmPasswordPlaceholder": "Confirm password",
+    "isAgency": "I am registering as a travel agency",
+    "agencyNamePlaceholder": "Agency name",
+    "termsText": "I agree to the",
+    "termsLink": "Terms and Conditions",
+    "registerButton": "Register",
+    "alreadyHaveAccount": "Already have an account?",
+    "loginLink": "Login",
+    "orRegisterWith": "Or register with",
+    "chooseRegistration": "Choose how you want to register",
+    "customerAccount": "Customer Account",
+    "agencyAccount": "Agency Account",
+    "customerFeature1": "Book trips, accommodations & cars",
+    "customerFeature2": "Save favorite destinations",
+    "customerFeature3": "Track booking history",
+    "agencyFeature1": "List and manage offerings",
+    "agencyFeature2": "Manage bookings & employees",
+    "agencyFeature3": "Dashboard analytics",
+    "backToSelection": "Back to selection",
+    "registerAs": "Register as",
+    "anAgency": "an Agency",
+    "aCustomer": "a Customer",
+    "name": "Name",
+    "email": "Email",
+    "phoneNumber": "Phone Number",
+    "phoneNumberPlaceholder": "+216 4567890",
+    "country": "Country",
+    "countryPlaceholder": "Select your country",
+    "region": "Region",
+    "regionPlaceholder": "Select your region",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "agencyName": "Agency Name",
+    "agencyType": "Agency Type",
+    "travelAgency": "Travel Agency",
+    "carRentalAgency": "Car Rental Agency",
+    "agencyNameError": "Agency name is required and must be at least 3 characters",
+    "agreeToTerms": "I agree to all the",
+    "terms": "Terms",
+    "and": "and",
+    "privacyPolicies": "Privacy Policies",
+    "processing": "Processing...",
+    "orSignUpWith": "Or Sign up with",
+    "accountCreated": "Account created",
+    "verificationEmail": "Your account has been created. Check your email for a verification link.",
+    "agencyAccountCreated": "Agency account created",
+    "agencyVerificationEmail": "Your agency account has been created. Check your email for a verification link.",
+    "agencySetupFailed": "Agency setup failed",
+    "accountCreatedAgencyFailed": "Your account was created but we couldn't set up your agency. Please contact support.",
+    "accountCreationFailed": "Account creation failed",
+    "somethingWentWrong": "Something went wrong",
+    "errors": {
+      "name": {
+        "required": "Name is required",
+        "tooShort": "Name must be at least 1 character",
+        "tooLong": "Name must be less than 50 characters"
+      },
+      "email": {
+        "required": "Email is required",
+        "invalid": "Invalid email format"
+      },
+      "password": {
+        "required": "Password is required",
+        "tooShort": "Password must be at least 8 characters",
+        "tooLong": "Password cannot exceed 32 characters"
+      },
+      "confirmPassword": {
+        "required": "Please confirm your password",
+        "tooShort": "Confirmation must be at least 8 characters",
+        "tooLong": "Confirmation cannot exceed 32 characters",
+        "mismatch": "Passwords do not match"
+      },
+      "phoneNumber": {
+        "required": "Phone number is required",
+        "tooShort": "Phone number must be at least 8 digits",
+        "tooLong": "Phone number must not exceed 15 digits",
+        "invalid": "Phone number must be a valid format (e.g., +1234567890)"
+      },
+      "country": {
+        "required": "Country is required"
+      },
+      "agencyName": {
+        "required": "Agency name is required and must be at least 3 characters"
+      },
+      "agencyType": {
+        "required": "Please select an agency type"
+      },
+      "auth": {
+        "generic": "Something went wrong with registration. Please try again."
+      }
+    }
+  }
+}

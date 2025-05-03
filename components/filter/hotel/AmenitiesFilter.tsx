@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 // Updated amenities list with more generic terms that are likely to match hotel data
 const AMENITIES = [
   { id: "wifi", label: "WiFi" },
-  { id: "free wifi", label: "Free WiFi" },
   { id: "parking", label: "Parking" },
   { id: "breakfast", label: "Breakfast" },
   { id: "pool", label: "Swimming Pool" },

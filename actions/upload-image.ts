@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// /* eslint-disable @typescript-eslint/no-explicit-any */
 // "use server"
 
 // import { writeFile } from "fs/promises"
@@ -7,7 +7,7 @@
 // //import { v2 as cloudinary } from "cloudinary" // ONLY if using Cloudinary
 // import { authClient } from "@/auth-client"
 
-// const MAX_FILE_SIZE = 6 * 1024 * 1024 // 2MB
+// const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 // const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/jpeg"]
 // const UPLOAD_DIRECTORY = "/uploads"
 
@@ -66,17 +66,16 @@
 //       await authClient.updateUser({ image: imageUrl })
 //       revalidatePath("/profile")
 //       return imageUrl
-//       // eslint-disable-next-line @typescript-eslint/no-explicit-any
 //     } catch (updateErr: any) {
 //       console.error("Database update error:", updateErr)
 //       throw new Error("Failed to update profile in database.")
 //     }
-//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 //   } catch (uploadError: any) {
 //     console.error("Image upload error:", uploadError)
 //     throw new Error(uploadError.message || "Image upload failed.")
 //   }
 // }
+
 "use server"
 
 import { revalidatePath } from "next/cache"
@@ -90,7 +89,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-const MAX_FILE_SIZE = 6 * 1024 * 1024 // 6MB limit (adjust if needed)
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 6MB limit (adjust if needed)
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
 async function uploadImage(file: File): Promise<string> {

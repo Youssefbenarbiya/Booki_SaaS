@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server"
-import { rejectTrip } from "@/actions/admin/tripApprovalActions"
+import { rejectTrip } from "@/actions/admin/ApprovalActions"
 
 export async function POST(
   request: Request,
-  { params }: { params: { tripId: string } }
+  { params }: { params: Promise<{ tripId: string }> } 
 ) {
   try {
-    const tripId = parseInt(params.tripId, 10)
+    const { tripId: tripIdStr } = await params
+    const tripId = parseInt(tripIdStr, 10)
+
     if (isNaN(tripId)) {
       return NextResponse.json(
         { success: false, message: "Invalid trip ID" },

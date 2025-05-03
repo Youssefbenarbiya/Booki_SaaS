@@ -7,9 +7,11 @@ const APP_SECRET = "bc9ff7c5-31d9-4d2a-83ad-a71ae68aad2f"
 export async function generateTripPaymentLink({
   amount,
   bookingId,
+  locale = "en", // Add locale parameter with default
 }: {
   amount: number
   bookingId: number
+  locale?: string
 }) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
@@ -28,8 +30,8 @@ export async function generateTripPaymentLink({
       amount: amountInMillimes,
       accept_card: "true",
       session_timeout_secs: 1200,
-      success_link: `${baseUrl}/trips/payment/success?bookingId=${bookingId}`,
-      fail_link: `${baseUrl}/trips/payment/failed?bookingId=${bookingId}`,
+      success_link: `${baseUrl}/${locale}/trips/payment/success?bookingId=${bookingId}`,
+      fail_link: `${baseUrl}/${locale}/trips/payment/failed?bookingId=${bookingId}`,
       developer_tracking_id: `trip_booking_${bookingId}`,
     }
 

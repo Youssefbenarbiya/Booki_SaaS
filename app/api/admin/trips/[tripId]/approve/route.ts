@@ -1,36 +1,28 @@
 import { NextResponse } from "next/server"
-import { approveTrip } from "@/actions/admin/tripApprovalActions"
+import { approveTrip } from "@/actions/admin/ApprovalActions"
 
 export async function POST(
   request: Request,
-  { params }: { params: { tripId: string } }
+  { params }: { params: Promise<{ tripId: string }> } 
 ) {
-  try {
-    const tripId = parseInt(params.tripId, 10)
-    if (isNaN(tripId)) {
-      return NextResponse.json(
-        { success: false, message: "Invalid trip ID" },
-        { status: 400 }
-      )
-    }
-
-    const result = await approveTrip(tripId)
-    
-    if (result.success) {
-      return NextResponse.json(
-        { success: true, message: "Trip approved successfully" },
-        { status: 200 }
-      )
-    } else {
-      return NextResponse.json(
-        { success: false, message: result.message },
-        { status: 500 }
-      )
-    }
-  } catch (error) {
-    console.error("Error in approve route:", error)
+  const { tripId } = await params 
+  const id = parseInt(tripId, 10)
+  if (isNaN(id)) {
     return NextResponse.json(
-      { success: false, message: "Server error" },
+      { success: false, message: "Invalid trip ID" },
+      { status: 400 }
+    )
+  }
+
+  const result = await approveTrip(id)
+  if (result.success) {
+    return NextResponse.json(
+      { success: true, message: "Trip approved successfully" },
+      { status: 200 }
+    )
+  } else {
+    return NextResponse.json(
+      { success: false, message: result.message },
       { status: 500 }
     )
   }

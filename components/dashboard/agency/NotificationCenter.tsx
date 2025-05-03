@@ -6,6 +6,7 @@ import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { useSession } from "@/auth-client"
 
 type NotificationType = {
   id: number
@@ -16,14 +17,17 @@ type NotificationType = {
   type: "error" | "info" | "success" | "warning"
   relatedItemType?: string | null
   relatedItemId?: number | null
+  userId: number
 }
 
 interface NotificationCenterProps {
   initialNotifications: NotificationType[]
   unreadCount: number
+  userRole?: string
 }
 
-export function NotificationCenter({
+// Make sure to properly export the component
+export default function NotificationCenter({
   initialNotifications,
   unreadCount: initialUnreadCount,
 }: NotificationCenterProps) {
@@ -32,9 +36,14 @@ export function NotificationCenter({
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
   const [hasNewNotifications, setHasNewNotifications] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const session = useSession()
+  const userId = session.data?.user.id
 
   // Fetch notifications periodically
   useEffect(() => {
+    // Don't fetch if not authenticated
+    if (!userId) return
+
     const fetchNotifications = async () => {
       try {
         const response = await fetch("/api/agency/notifications/latest", {
@@ -66,11 +75,11 @@ export function NotificationCenter({
     }
 
     // Set up polling interval (every 1seconds)
-    const intervalId = setInterval(fetchNotifications, 11000)
+    const intervalId = setInterval(fetchNotifications, 5000)
 
     // Clean up on component unmount
     return () => clearInterval(intervalId)
-  }, [unreadCount, isOpen])
+  }, [unreadCount, isOpen, userId])
 
   // Reset new notification indicator when opening dropdown
   useEffect(() => {
@@ -156,7 +165,9 @@ export function NotificationCenter({
     <div className="relative" ref={dropdownRef}>
       <Button
         variant="ghost"
-        className={`relative p-2 ${hasNewNotifications ? "animate-pulse" : ""}`}
+        className={`relative p-2 mt-6 ${
+          hasNewNotifications ? "animate-pulse" : ""
+        }`}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
       >

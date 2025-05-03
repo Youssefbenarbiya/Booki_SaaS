@@ -7,7 +7,8 @@ import { revalidatePath } from "next/cache"
 import { generatePaymentLink } from "@/services/roomFlouciPayment"
 import { stripe } from "@/lib/stripe"
 import { sql } from "drizzle-orm"
-import { RoomBookingWithPayment } from "@/app/hotels/[hotelId]/rooms/[roomId]/book/BookRoomForm"
+import { convertCurrency } from "@/lib/currencyUtils"
+import { RoomBookingWithPayment } from "@/app/[locale]/hotels/[hotelId]/rooms/[roomId]/book/BookRoomForm"
 
 interface CreateRoomBookingParams {
   roomId: string
@@ -36,7 +37,10 @@ export async function createRoomBooking({
   adultCount = 1,
   childCount = 0,
   paymentMethod = "flouci", // default to flouci
-}: CreateRoomBookingWithPaymentParams): Promise<RoomBookingWithPayment> {
+  locale = "en", // Add locale parameter with default
+}: CreateRoomBookingWithPaymentParams & {
+  locale?: string
+}): Promise<RoomBookingWithPayment> {
   try {
     // Check for overlapping bookings
     const existingBookings = await db.query.roomBookings.findMany({
@@ -61,17 +65,21 @@ export async function createRoomBooking({
       throw new Error("Room is not available for these dates")
     }
 
+    // Get room details including currency
+    const roomData = await db.query.room.findFirst({
+      where: eq(room.id, roomId),
+    })
+
+    if (!roomData) {
+      throw new Error("Room not found")
+    }
+
+    // Get the room's currency (default to TND if not specified)
+    const roomCurrency = roomData.currency || "TND"
+
     // Calculate total price if not provided
     let finalTotalPrice = totalPrice
     if (!finalTotalPrice) {
-      const roomData = await db.query.room.findFirst({
-        where: eq(room.id, roomId),
-      })
-
-      if (!roomData) {
-        throw new Error("Room not found")
-      }
-
       const nights = Math.ceil(
         (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
       )
@@ -81,45 +89,64 @@ export async function createRoomBooking({
         nights
     }
 
-    console.log("Creating booking with total price:", finalTotalPrice)
+    console.log(
+      `Creating booking with original total price: ${finalTotalPrice} ${roomCurrency}`
+    )
 
-    // Insert booking record (casting totalPrice as decimal)
-    const [booking] = await db
-      .insert(roomBookings)
-      .values({
-        roomId,
-        userId,
-        checkIn: checkIn.toISOString(),
-        checkOut: checkOut.toISOString(),
-        totalPrice: sql`${finalTotalPrice}::decimal`,
-        status: "pending", // initial status until payment is confirmed
-        paymentStatus: "pending",
-      })
-      .returning()
+    // Handle different payment methods
+    if (paymentMethod === "stripe") {
+      // Convert price to USD for Stripe
+      const totalPriceInUSD = await convertCurrency(
+        finalTotalPrice,
+        roomCurrency,
+        "USD"
+      )
+      console.log(
+        `Converting room price from ${roomCurrency} to USD: ${finalTotalPrice} -> ${totalPriceInUSD}`
+      )
 
-    console.log("Booking created:", booking)
+      // Insert booking record with USD price
+      const [booking] = await db
+        .insert(roomBookings)
+        .values({
+          roomId,
+          userId,
+          checkIn: checkIn.toISOString(),
+          checkOut: checkOut.toISOString(),
+          totalPrice: sql`${totalPriceInUSD}::decimal`,
+          status: "confirmed", // initial status until payment is confirmed
+          paymentStatus: "confirmed",
+          paymentMethod: "STRIPE_USD",
+          paymentCurrency: "USD",
+          originalPrice: `${finalTotalPrice}`,
+          originalCurrency: roomCurrency,
+          adultCount,
+          childCount,
+        })
+        .returning()
 
-    // If payment is to be initiated, generate a payment link or Stripe session
-    if (initiatePayment) {
-      // Retrieve room and hotel details for the payment description
-      const roomDetails = await db.query.room.findFirst({
-        where: eq(room.id, roomId),
-        with: { hotel: true },
-      })
+      console.log("Room booking created:", booking)
 
-      if (!roomDetails) {
-        throw new Error("Room not found")
-      }
+      if (initiatePayment) {
+        // Retrieve room and hotel details for the payment description
+        const roomDetails = await db.query.room.findFirst({
+          where: eq(room.id, roomId),
+          with: { hotel: true },
+        })
 
-      // Define the base URL for success and cancel URLs
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-      if (!appUrl.startsWith("http://") && !appUrl.startsWith("https://")) {
-        throw new Error(
-          "NEXT_PUBLIC_APP_URL must be a valid absolute URL including protocol"
-        )
-      }
+        if (!roomDetails) {
+          throw new Error("Room not found with hotel details")
+        }
 
-      if (paymentMethod === "stripe") {
+        // Define the base URL for success and cancel URLs
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        if (!appUrl.startsWith("http://") && !appUrl.startsWith("https://")) {
+          throw new Error(
+            "NEXT_PUBLIC_APP_URL must be a valid absolute URL including protocol"
+          )
+        }
+
         try {
           // Create a Stripe checkout session for the room booking
           const session = await stripe.checkout.sessions.create({
@@ -135,29 +162,31 @@ export async function createRoomBooking({
                       checkOut
                     )}`,
                   },
-                  unit_amount: Math.round(finalTotalPrice * 100), // Stripe expects cents
+                  unit_amount: Math.round(totalPriceInUSD * 100), // Stripe expects cents
                 },
                 quantity: 1,
               },
             ],
             mode: "payment",
-            success_url: `${appUrl}/hotels/payment/success?bookingId=${booking.id}`,
-            cancel_url: `${appUrl}/hotels/payment/failed?bookingId=${booking.id}`,
+            success_url: `${appUrl}/${locale}/hotels/payment/success?bookingId=${booking.id}`,
+            cancel_url: `${appUrl}/${locale}/hotels/payment/failed?bookingId=${booking.id}`,
             metadata: {
               bookingId: booking.id.toString(),
               bookingType: "hotel",
+              originalCurrency: roomCurrency,
+              originalPrice: finalTotalPrice.toString(),
             },
           })
 
           console.log(`Stripe session created: ${session.id}`)
 
-          // Update booking with Stripe payment details (set status to "completed")
+          // Update booking with Stripe payment details
           await db
             .update(roomBookings)
             .set({
               paymentId: session.id,
               paymentStatus: "completed",
-              paymentMethod: "STRIPE",
+              paymentMethod: "STRIPE_USD",
             })
             .where(eq(roomBookings.id, booking.id))
 
@@ -177,12 +206,48 @@ export async function createRoomBooking({
             }`
           )
         }
-      } else {
-        // Flouci payment flow
+      }
+      
+      return booking
+    } else {
+      // Flouci payment flow - convert price to TND
+      const totalPriceInTND = await convertCurrency(
+        finalTotalPrice,
+        roomCurrency,
+        "TND"
+      )
+      console.log(
+        `Converting room price from ${roomCurrency} to TND: ${finalTotalPrice} -> ${totalPriceInTND}`
+      )
+
+      // Insert booking record with TND price
+      const [booking] = await db
+        .insert(roomBookings)
+        .values({
+          roomId,
+          userId,
+          checkIn: checkIn.toISOString(),
+          checkOut: checkOut.toISOString(),
+          totalPrice: sql`${totalPriceInTND}::decimal`,
+          status: "confirmed", // initial status until payment is confirmed
+          paymentStatus: "confirmed",
+          paymentMethod: "FLOUCI_TND",
+          paymentCurrency: "TND",
+          originalPrice: `${finalTotalPrice}`,
+          originalCurrency: roomCurrency,
+          adultCount,
+          childCount,
+        })
+        .returning()
+
+      console.log("Room booking created:", booking)
+
+      if (initiatePayment) {
         const paymentData = await generatePaymentLink({
-          amount: finalTotalPrice,
+          amount: totalPriceInTND,
           bookingId: booking.id,
           developerTrackingId: `room_booking_${booking.id}`,
+          locale: locale, // Pass locale to payment link generator
         })
 
         if (!paymentData || !paymentData.paymentId) {
@@ -198,7 +263,7 @@ export async function createRoomBooking({
           .set({
             paymentId: paymentData.paymentId,
             paymentStatus: "completed",
-            paymentMethod: "FLOUCI",
+            paymentMethod: "FLOUCI_TND",
           })
           .where(eq(roomBookings.id, booking.id))
 
@@ -208,12 +273,10 @@ export async function createRoomBooking({
           paymentId: paymentData.paymentId,
         }
       }
+      
+      // Return booking if payment is not initiated
+      return booking
     }
-
-    // Revalidate pages if no payment initiation
-    revalidatePath(`/hotels/${booking.roomId}`)
-    revalidatePath("/dashboard/bookings")
-    return booking
   } catch (error) {
     console.error("Error creating room booking:", error)
     throw error

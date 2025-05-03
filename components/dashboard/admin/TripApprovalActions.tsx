@@ -1,126 +1,74 @@
 "use client"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { sendTripStatusNotification } from "@/actions/admin/notificationActions"
-import { toast } from "@/hooks/use-toast"
+import { useState } from "react"
+import { approveTrip, rejectTrip } from "@/actions/admin/ApprovalActions"
+import { toast } from "sonner"
 
-interface TripApprovalActionsProps {
-  tripId: number
-}
+export function TripApprovalActions({ offerId }: { offerId: number }) {
+  const [isLoading, setIsLoading] = useState<{
+    approve: boolean
+    reject: boolean
+  }>({
+    approve: false,
+    reject: false,
+  })
 
-export function TripApprovalActions({ tripId }: TripApprovalActionsProps) {
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-
-  const handleStatusChange = async (status: "approved" | "rejected") => {
-    setIsLoading(true)
+  const handleApprove = async () => {
+    setIsLoading({ ...isLoading, approve: true })
     try {
-      console.log(`Starting status change to ${status} for trip ${tripId}`)
-
-      // First update the trip status in the database
-      const updateResponse = await fetch(
-        `/api/admin/trips/${tripId}/update-status`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status }),
-        }
-      )
-
-      const updateData = await updateResponse.json()
-      console.log("Update response:", updateData)
-
-      if (!updateResponse.ok) {
-        throw new Error(updateData.message || "Failed to update trip status")
-      }
-
-      // Wait a moment to ensure DB transaction completes
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Send notification to agency
-      console.log(`Sending notification for trip ${tripId}`)
-      const notificationResult = await sendTripStatusNotification(
-        tripId,
-        status
-      )
-      console.log(`Notification result:`, notificationResult)
-
-      if (notificationResult.success) {
-        console.log("Notification sent successfully")
-        if (typeof toast === "function") {
-          toast({
-            title: `Trip ${
-              status === "approved" ? "approved" : "rejected"
-            } successfully`,
-            description: "Notification sent to agency.",
-            variant: "default",
-          })
-        } else {
-          alert(`Trip ${status} successfully! Notification sent.`)
-        }
+      const result = await approveTrip(offerId)
+      if (result.success) {
+        toast.success("Trip approved successfully")
+        // Refresh the page to reflect changes
+        window.location.reload()
       } else {
-        console.warn(
-          "Notification could not be sent:",
-          notificationResult.message
-        )
-        if (typeof toast === "function") {
-          toast({
-            title: `Trip ${
-              status === "approved" ? "approved" : "rejected"
-            } successfully`,
-            description:
-              "Trip status updated but notification couldn't be sent.",
-            variant: "default",
-          })
-        } else {
-          alert(`Trip ${status} successfully! (Notification failed)`)
-        }
+        toast.error(result.message || "Failed to approve trip")
       }
-
-      // Refresh the page to show updated status
-      window.location.reload()
     } catch (error) {
-      console.error(
-        `Error ${status === "approved" ? "approving" : "rejecting"} trip:`,
-        error
-      )
-      if (typeof toast === "function") {
-        toast({
-          title: "Error",
-          description: `Failed to ${status} trip. Please try again.`,
-          variant: "destructive",
-        })
-      } else {
-        alert(
-          `Error ${
-            status === "approved" ? "approving" : "rejecting"
-          } trip. Please try again.`
-        )
-      }
+      toast.error("An error occurred while approving the trip")
+      console.error(error)
     } finally {
-      setIsLoading(false)
+      setIsLoading({ ...isLoading, approve: false })
+    }
+  }
+
+  const handleReject = async () => {
+    setIsLoading({ ...isLoading, reject: true })
+    try {
+      const result = await rejectTrip(offerId)
+      if (result.success) {
+        toast.success("Trip rejected successfully")
+        // Refresh the page to reflect changes
+        window.location.reload()
+      } else {
+        toast.error(result.message || "Failed to reject trip")
+      }
+    } catch (error) {
+      toast.error("An error occurred while rejecting the trip")
+      console.error(error)
+    } finally {
+      setIsLoading({ ...isLoading, reject: false })
     }
   }
 
   return (
     <div className="flex space-x-2">
       <Button
-        onClick={() => handleStatusChange("approved")}
-        className="bg-green-600 hover:bg-green-700"
-        disabled={isLoading}
+        onClick={handleApprove}
+        disabled={isLoading.approve || isLoading.reject}
+        className="bg-green-600 hover:bg-green-700 text-white"
         size="sm"
       >
-        Approve
+        {isLoading.approve ? "Approving..." : "Approve"}
       </Button>
       <Button
-        onClick={() => handleStatusChange("rejected")}
+        onClick={handleReject}
+        disabled={isLoading.approve || isLoading.reject}
         variant="destructive"
-        disabled={isLoading}
         size="sm"
       >
-        Reject
+        {isLoading.reject ? "Rejecting..." : "Reject"}
       </Button>
     </div>
   )

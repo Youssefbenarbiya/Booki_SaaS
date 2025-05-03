@@ -19,11 +19,17 @@ export async function generateCarPaymentLink({
   bookingId,
   developerTrackingId = "",
   sessionTimeoutSecs = 1200,
-}: GenerateCarPaymentParams) {
+  locale = "en", // Add locale parameter with default
+}: GenerateCarPaymentParams & { locale?: string }) {
   try {
     if (amount <= 0) {
       throw new Error("Payment amount must be greater than zero")
     }
+
+    // Ensure amount is in TND (should already be converted by this point)
+    console.log(
+      `Processing Flouci payment for car booking #${bookingId} - Amount: ${amount} TND`
+    )
 
     // Convert amount from TND to millimes
     const amountInMillimes = Math.round(amount * 1000)
@@ -32,8 +38,8 @@ export async function generateCarPaymentLink({
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
     // Set car-specific success and failure paths
-    const successPath = `/cars/payment/success?bookingId=${bookingId}`
-    const failPath = `/cars/payment/failed?bookingId=${bookingId}`
+    const successPath = `/${locale}/cars/payment/success?bookingId=${bookingId}`
+    const failPath = `/${locale}/cars/payment/failed?bookingId=${bookingId}`
 
     const payload = {
       app_token: APP_TOKEN,

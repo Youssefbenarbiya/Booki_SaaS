@@ -19,7 +19,7 @@ export default function LanguageSelector() {
       defaultValue={searchParams.get('lang') || 'en'}
       onChange={handleLanguageChange}
     >
-      {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
+      {Object.entries(SUPPORTED_LANGUAGES).map(([code]) => (
         <option key={code} value={code} className="text-black">
           {code.toUpperCase()}
         </option>

@@ -14,6 +14,7 @@ export const roomSchema = z.object({
   capacity: z.number().int().positive("Capacity must be positive"),
   pricePerNightChild: z.number().positive("Adult price must be positive"),
   pricePerNightAdult: z.number().positive("Child price must be positive"),
+  currency: z.string().default("TND"),
   roomType: z.enum(["single", "double", "suite", "family"]),
   amenities: z.array(z.string()),
   images: z.array(z.string()).default([]),
@@ -31,6 +32,7 @@ export const hotelSchema = z.object({
   rating: z.number().int().min(1).max(5),
   amenities: z.array(z.string()),
   images: z.array(z.string()).max(10).optional(),
+  status: z.enum(["pending", "approved", "rejected"]).default("pending"),
   rooms: z.array(roomSchema),
 })
 
