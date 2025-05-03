@@ -1,23 +1,49 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { useState } from "react"
-import { toast } from "sonner"
-import { updateAgencyProfile } from "@/actions/agency/agencyActions"
-import { Loader2, Upload, Camera, Building, Mail, Phone, MapPin } from "lucide-react"
-import Image from "next/image"
-import { uploadImages } from "@/actions/uploadActions"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { updateAgencyProfile } from "@/actions/agency/agencyActions";
+import {
+  Loader2,
+  Upload,
+  Camera,
+  Building,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+} from "lucide-react";
+import Image from "next/image";
+import { uploadImages } from "@/actions/uploadActions";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { PhoneInput } from "@/components/ui/phone-input";
+import CountrySelect from "@/components/ui/country-select";
+import RegionSelect from "@/components/ui/region-select";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Agency name is required"),
@@ -25,18 +51,27 @@ const profileSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   logo: z.string().optional(),
-})
+  country: z.string().optional(),
+  region: z.string().optional(),
+});
 
-export type AgencyProfileFormValues = z.infer<typeof profileSchema>
+export type AgencyProfileFormValues = z.infer<typeof profileSchema>;
 
 interface AgencyProfileFormProps {
-  initialData: any
+  initialData: any;
 }
 
-export default function AgencyProfileForm({ initialData }: AgencyProfileFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [previewImage, setPreviewImage] = useState<string | null>(initialData?.logo || null)
+export default function AgencyProfileForm({
+  initialData,
+}: AgencyProfileFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(
+    initialData?.logo || null
+  );
+  const [selectedCountry, setSelectedCountry] = useState<string>(
+    initialData?.country || ""
+  );
 
   // Set default values from initial data
   const form = useForm<AgencyProfileFormValues>({
@@ -47,45 +82,63 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
       phone: initialData?.contactPhone || "",
       address: initialData?.address || "",
       logo: initialData?.logo || "",
+      country: initialData?.country || "",
+      region: initialData?.region || "",
     },
-  })
+  });
+
+  // Effect to update the form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        name: initialData.agencyName || "",
+        email: initialData.contactEmail || "",
+        phone: initialData.contactPhone || "",
+        address: initialData.address || "",
+        logo: initialData.logo || "",
+        country: initialData.country || "",
+        region: initialData.region || "",
+      });
+      setSelectedCountry(initialData.country || "");
+    }
+  }, [initialData, form]);
 
   // Handle logo upload
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return
+    if (!e.target.files?.[0]) return;
 
-    const file = e.target.files[0]
-    setIsUploading(true)
+    const file = e.target.files[0];
+    setIsUploading(true);
 
     try {
       // Validate file type
       if (!file.type.includes("image/")) {
-        toast.error("Please upload an image file")
-        return
+        toast.error("Please upload an image file");
+        return;
       }
 
       // Create FormData and append file
-      const formData = new FormData()
-      formData.append("file", file)
+      const formData = new FormData();
+      formData.append("file", file);
 
       // Upload the image
-      const logoUrl = await uploadImages(formData)
+      const logoUrl = await uploadImages(formData);
 
       // Update form value and preview
-      form.setValue("logo", logoUrl)
-      setPreviewImage(logoUrl)
-      toast.success("Logo uploaded successfully")
+      form.setValue("logo", logoUrl);
+      setPreviewImage(logoUrl);
+      toast.success("Logo uploaded successfully");
     } catch (error) {
-      console.error("Error uploading logo:", error)
-      toast.error("Failed to upload logo. Please try again.")
+      console.error("Error uploading logo:", error);
+      toast.error("Failed to upload logo. Please try again.");
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
   // Handle form submission
   const onSubmit = async (data: AgencyProfileFormValues) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       // Map form field names to agency schema field names
@@ -95,23 +148,27 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
         phone: data.phone,
         address: data.address,
         logo: data.logo,
-      }
+        country: data.country,
+        region: data.region,
+      };
 
       // Call the server action to update the agency profile
-      const result = await updateAgencyProfile(agencyData)
+      const result = await updateAgencyProfile(agencyData);
 
       if (result.success) {
-        toast.success("Profile updated successfully!")
+        toast.success("Profile updated successfully!");
       } else {
-        toast.error(result.error || "Failed to update profile. Please try again.")
+        toast.error(
+          result.error || "Failed to update profile. Please try again."
+        );
       }
     } catch (error) {
-      console.error("Failed to update profile:", error)
-      toast.error("Failed to update profile. Please try again.")
+      console.error("Failed to update profile:", error);
+      toast.error("Failed to update profile. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Card className="w-full shadow-md">
@@ -120,7 +177,9 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
           <Building className="h-6 w-6 text-yellow-600" />
           Agency Profile
         </CardTitle>
-        <CardDescription>Update your agency information and branding</CardDescription>
+        <CardDescription>
+          Update your agency information and branding
+        </CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
         <Form {...form}>
@@ -132,7 +191,9 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
                 name="logo"
                 render={({ field }) => (
                   <FormItem className="flex-shrink-0">
-                    <FormLabel className="text-base font-medium mb-2 block">Agency Logo</FormLabel>
+                    <FormLabel className="text-base font-medium mb-2 block">
+                      Agency Logo
+                    </FormLabel>
                     <div className="relative group">
                       {previewImage ? (
                         <div className="relative h-32 w-32 rounded-xl overflow-hidden border-2 border-yellow-200 shadow-sm">
@@ -161,7 +222,10 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
                           disabled={isUploading}
                         />
                       </FormControl>
-                      <label htmlFor="logo-upload" className="absolute inset-0 cursor-pointer">
+                      <label
+                        htmlFor="logo-upload"
+                        className="absolute inset-0 cursor-pointer"
+                      >
                         <span className="sr-only">Choose file</span>
                       </label>
                       {isUploading && (
@@ -170,17 +234,21 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
                         </div>
                       )}
                     </div>
-                    <FormDescription className="text-xs mt-2 text-center">Click to upload (200x200px)</FormDescription>
+                    <FormDescription className="text-xs mt-2 text-center">
+                      Click to upload (200x200px)
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
               <div className="flex-1 space-y-2">
-                <h3 className="text-sm font-medium text-gray-500">Profile Visibility</h3>
+                <h3 className="text-sm font-medium text-gray-500">
+                  Profile Visibility
+                </h3>
                 <p className="text-sm text-gray-600">
-                  Your agency profile information will be visible to clients and partners. Make sure to keep your
-                  contact details up to date.
+                  Your agency profile information will be visible to clients and
+                  partners. Make sure to keep your contact details up to date.
                 </p>
                 <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded-md">
                   <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse"></div>
@@ -247,9 +315,10 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
                       Phone Number
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Enter phone number"
-                        {...field}
+                      <PhoneInput
+                        value={field.value}
+                        onChange={(value) => field.onChange(value)}
+                        defaultCountry="US"
                         className="border-gray-200 focus-visible:ring-yellow-500"
                       />
                     </FormControl>
@@ -263,7 +332,7 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
                 control={form.control}
                 name="address"
                 render={({ field }) => (
-                  <FormItem className="col-span-1 md:col-span-2">
+                  <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-gray-500" />
                       Address
@@ -272,6 +341,59 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
                       <Input
                         placeholder="Enter address"
                         {...field}
+                        className="border-gray-200 focus-visible:ring-yellow-500"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Country */}
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-gray-500" />
+                      Country
+                    </FormLabel>
+                    <FormControl>
+                      <CountrySelect
+                        placeholder="Select country"
+                        defaultValue={field.value}
+                        onChange={(value) => {
+                          field.onChange(value);
+                          setSelectedCountry(value);
+                          form.setValue("region", ""); // Reset region when country changes
+                        }}
+                        className="border-gray-200 focus-visible:ring-yellow-500"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Region */}
+              <FormField
+                control={form.control}
+                name="region"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      Region
+                    </FormLabel>
+                    <FormControl>
+                      <RegionSelect
+                        countryCode={selectedCountry}
+                        placeholder="Select region"
+                        defaultValue={field.value}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
                         className="border-gray-200 focus-visible:ring-yellow-500"
                       />
                     </FormControl>
@@ -289,7 +411,8 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Saving Changes...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Saving
+                    Changes...
                   </>
                 ) : (
                   "Update Profile"
@@ -300,5 +423,5 @@ export default function AgencyProfileForm({ initialData }: AgencyProfileFormProp
         </Form>
       </CardContent>
     </Card>
-  )
+  );
 }

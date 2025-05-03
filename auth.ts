@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { betterAuth } from "better-auth"
-import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import db from "./db/drizzle"
-import { sendEmail } from "./actions/users/email"
-import { openAPI } from "better-auth/plugins"
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import db from "./db/drizzle";
+import { sendEmail } from "./actions/users/email";
+import { openAPI } from "better-auth/plugins";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
@@ -19,6 +19,8 @@ export const auth = betterAuth({
       phoneNumber: { type: "string", required: true },
       address: { type: "string", required: false },
       image: { type: "string", required: false },
+      country: { type: "string", required: false },
+      region: { type: "string", required: false },
     },
     changeEmail: {
       enabled: true,
@@ -28,7 +30,7 @@ export const auth = betterAuth({
           to: newEmail,
           subject: "Verify your email change",
           text: `Click to verify email change: ${url}`,
-        })
+        });
       },
     },
     changePassword: {
@@ -56,7 +58,7 @@ export const auth = betterAuth({
         to: user.email,
         subject: "Reset your password",
         text: `Password reset link: ${url}`,
-      })
+      });
     },
     passwordPolicy: {
       minLength: 8,
@@ -69,15 +71,15 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, token }) => {
-      const verificationUrl = `${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${token}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`
+      const verificationUrl = `${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${token}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`;
       await sendEmail({
         to: user.email,
         subject: "Verify your email",
         text: `Click the link to verify your email of Booki : ${verificationUrl}`,
-      })
+      });
     },
   },
-})
-export type Session = typeof auth.$Infer.Session
+});
+export type Session = typeof auth.$Infer.Session;
 
-export type Auth = typeof auth
+export type Auth = typeof auth;

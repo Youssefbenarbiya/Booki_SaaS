@@ -28,6 +28,7 @@ interface CountrySelectProps {
   onChange?: (value: string) => void;
   className?: string;
   placeholder?: string;
+  defaultValue?: string;
 }
 
 function CountrySelect({
@@ -37,19 +38,30 @@ function CountrySelect({
   onChange = () => {},
   className,
   placeholder = "Country",
+  defaultValue,
 }: CountrySelectProps) {
   const [countries, setCountries] = useState<CountryRegion[]>([]);
+  const [value, setValue] = useState<string>(defaultValue || "");
 
   useEffect(() => {
     setCountries(
       filterCountries(countryRegionData, priorityOptions, whitelist, blacklist)
     );
-  }, []);
+  }, [priorityOptions, whitelist, blacklist]);
+
+  // When defaultValue changes, update the internal value
+  useEffect(() => {
+    if (defaultValue) {
+      setValue(defaultValue);
+    }
+  }, [defaultValue]);
 
   return (
     <Select
-      onValueChange={(value: string) => {
-        onChange(value);
+      value={value}
+      onValueChange={(selectedValue: string) => {
+        setValue(selectedValue);
+        onChange(selectedValue);
       }}
     >
       <SelectTrigger className={className}>

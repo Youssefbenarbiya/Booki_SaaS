@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 const getPhoneNumberSchema = () =>
   z
     .string()
@@ -7,7 +7,7 @@ const getPhoneNumberSchema = () =>
     .regex(
       /^\+?[0-9]*$/,
       "Phone number must be a valid format (e.g., +1234567890)"
-    )
+    );
 export const updateUserInfoSchema = z.object({
   name: z
     .string({ required_error: "Name is required" })
@@ -34,4 +34,6 @@ export const updateUserInfoSchema = z.object({
     .min(5, { message: "Address must be at least 5 characters" })
     .max(100, { message: "Address must be at most 100 characters" })
     .optional(),
-})
+  country: z.string({ required_error: "Country is required" }).optional(),
+  region: z.string({ required_error: "Region is required" }).optional(),
+});
