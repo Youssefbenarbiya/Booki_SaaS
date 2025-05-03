@@ -8,9 +8,9 @@ import { Mail, Phone, MapPin, X, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import {
-  getUserData,
+  getUserClientData,
   UserData as ServerUserData,
-} from "@/actions/users/getUserData"
+} from "@/actions/users/getUserClientData"
 
 interface UserProfileCardProps {
   userId: string
@@ -46,8 +46,8 @@ export default function UserProfileCard({
         `Fetching user data for ID: ${userId} (attempt ${retryCount + 1})`
       )
 
-      // Call the server action instead of using fetch API
-      const result = await getUserData(userId)
+      // Call the client-safe server action
+      const result = await getUserClientData(userId)
 
       if (!result.success || !result.data) {
         // Create a more user-friendly error message
