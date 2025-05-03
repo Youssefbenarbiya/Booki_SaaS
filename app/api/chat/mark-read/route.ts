@@ -1,25 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import db from "@/db/drizzle";
-import { chatMessages } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/auth"
+import db from "@/db/drizzle"
+import { chatMessages } from "@/db/schema"
+import { and, eq } from "drizzle-orm"
 
 export async function POST(request: NextRequest) {
   try {
     // Verify that the requestor is authenticated
-    const session = await auth.api.getSession({ request });
+    const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { postId, postType, receiverId } = await request.json();
+    const { postId, postType, receiverId } = await request.json()
 
     // Validate required fields
     if (!postId || !postType || !receiverId) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
-      );
+      )
     }
 
     // Mark messages as read
@@ -33,14 +33,14 @@ export async function POST(request: NextRequest) {
           eq(chatMessages.receiverId, receiverId),
           eq(chatMessages.isRead, false)
         )
-      );
+      )
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error marking messages as read:", error);
+    console.error("Error marking messages as read:", error)
     return NextResponse.json(
       { error: "Failed to mark messages as read" },
       { status: 500 }
-    );
+    )
   }
 }
