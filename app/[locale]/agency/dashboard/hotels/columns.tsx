@@ -8,6 +8,13 @@ import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
 import ArchiveHotelButton from "./ArchiveHotelButton"
 import PublishHotelButton from "./PublishHotelButton"
+import { useState } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 // Define the Hotel type based on the page content
 export type HotelType = {
@@ -22,6 +29,7 @@ export type HotelType = {
   createdAt: Date
   updatedAt: Date
   status: string
+  rejectionReason?: string | null
   agencyId: string | null
   rooms: any[]
   hasBookings?: boolean
@@ -83,6 +91,8 @@ export const columns: ColumnDef<HotelType>[] = [
     header: "Status",
     cell: ({ row }) => {
       const status = row.original.status?.toLowerCase() || "pending";
+      const rejectionReason = row.original.rejectionReason;
+      const [showReason, setShowReason] = useState(false);
       
       let badgeVariant: "default" | "outline" | "secondary" | "destructive" = "secondary";
       let statusText = "Pending";
@@ -105,10 +115,41 @@ export const columns: ColumnDef<HotelType>[] = [
         customClass = "bg-amber-100 text-amber-800 hover:bg-amber-200";
       }
       
+      // Get first two words if rejection reason exists
+      const twoWords = rejectionReason?.split(" ").slice(0, 2).join(" ");
+      const hasMoreWords = rejectionReason ? rejectionReason.split(" ").length > 2 : false;
+      
       return (
-        <Badge variant={badgeVariant} className={customClass}>
-          {statusText}
-        </Badge>
+        <div className="flex flex-col">
+          <Badge variant={badgeVariant} className={customClass}>
+            {statusText}
+          </Badge>
+          
+          {status === "rejected" && rejectionReason && (
+            <>
+              <div className="text-xs text-red-600 mt-1">
+                {twoWords}
+                {hasMoreWords && (
+                  <button 
+                    onClick={() => setShowReason(true)}
+                    className="ml-1 text-blue-500 hover:underline"
+                  >
+                    ...view more
+                  </button>
+                )}
+              </div>
+              
+              <Dialog open={showReason} onOpenChange={setShowReason}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-red-600">Rejection Reason</DialogTitle>
+                  </DialogHeader>
+                  <p className="py-4">{rejectionReason}</p>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+        </div>
       );
     },
   },
