@@ -10,9 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Eye, Search } from "lucide-react"
+import { Eye, Search, CheckCircle2, XCircle, Clock } from "lucide-react"
 import Image from "next/image"
 import { getAgencies, searchAgencies } from "@/actions/admin/agencies"
+import { Badge } from "@/components/ui/badge"
 
 export default async function AgenciesPage({
   searchParams,
@@ -77,6 +78,9 @@ export default async function AgenciesPage({
                   Contact
                 </TableHead>
                 <TableHead className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                  Verification
+                </TableHead>
+                <TableHead className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
                   Registered
                 </TableHead>
                 <TableHead className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
@@ -131,6 +135,28 @@ export default async function AgenciesPage({
                         <div>{agency.contactEmail}</div>
                         <div>{agency.contactPhone}</div>
                       </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      {agency.verificationStatus === "approved" ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Verified
+                        </Badge>
+                      ) : agency.verificationStatus === "rejected" ? (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          Rejected
+                        </Badge>
+                      ) : agency.rneDocument || agency.patenteDocument || agency.cinDocument ? (
+                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Pending
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-200">
+                          Not Submitted
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-gray-600">
                       {agency.createdAt &&

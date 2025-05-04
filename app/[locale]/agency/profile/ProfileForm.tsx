@@ -30,6 +30,9 @@ import {
   Phone,
   MapPin,
   Globe,
+  FileText,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react"
 import Image from "next/image"
 import { uploadImages } from "@/actions/uploadActions"
@@ -53,6 +56,9 @@ const profileSchema = z.object({
   logo: z.string().optional(),
   country: z.string().optional(),
   region: z.string().optional(),
+  rneDocument: z.string().optional(),
+  patenteDocument: z.string().optional(),
+  cinDocument: z.string().optional(),
 })
 
 export type AgencyProfileFormValues = z.infer<typeof profileSchema>
@@ -66,6 +72,7 @@ export default function AgencyProfileForm({
 }: AgencyProfileFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [currentUploadField, setCurrentUploadField] = useState<string | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(
     initialData?.logo || null
   )
@@ -84,6 +91,9 @@ export default function AgencyProfileForm({
       logo: initialData?.logo || "",
       country: initialData?.country || "",
       region: initialData?.region || "",
+      rneDocument: initialData?.rneDocument || "",
+      patenteDocument: initialData?.patenteDocument || "",
+      cinDocument: initialData?.cinDocument || "",
     },
   })
 
@@ -98,6 +108,9 @@ export default function AgencyProfileForm({
         logo: initialData.logo || "",
         country: initialData.country || "",
         region: initialData.region || "",
+        rneDocument: initialData.rneDocument || "",
+        patenteDocument: initialData.patenteDocument || "",
+        cinDocument: initialData.cinDocument || "",
       })
       setSelectedCountry(initialData.country || "")
     }
@@ -136,6 +149,40 @@ export default function AgencyProfileForm({
     }
   }
 
+  // Handle document upload
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    if (!e.target.files?.[0]) return
+
+    const file = e.target.files[0]
+    setIsUploading(true)
+    setCurrentUploadField(fieldName)
+
+    try {
+      // Validate file type
+      if (!file.type.includes("image/") && !file.type.includes("application/pdf")) {
+        toast.error("Please upload an image or PDF file")
+        return
+      }
+
+      // Create FormData and append file
+      const formData = new FormData()
+      formData.append("file", file)
+
+      // Upload the document
+      const documentUrl = await uploadImages(formData)
+
+      // Update form value
+      form.setValue(fieldName as any, documentUrl)
+      toast.success(`Document uploaded successfully`)
+    } catch (error) {
+      console.error("Error uploading document:", error)
+      toast.error("Failed to upload document. Please try again.")
+    } finally {
+      setIsUploading(false)
+      setCurrentUploadField(null)
+    }
+  }
+
   // Handle form submission
   const onSubmit = async (data: AgencyProfileFormValues) => {
     setIsSubmitting(true)
@@ -150,6 +197,12 @@ export default function AgencyProfileForm({
         logo: data.logo,
         country: data.country,
         region: data.region,
+        rneDocument: data.rneDocument,
+        patenteDocument: data.patenteDocument,
+        cinDocument: data.cinDocument,
+        verificationSubmittedAt: (data.rneDocument || data.patenteDocument || data.cinDocument) 
+          ? new Date().toISOString() 
+          : undefined,
       }
 
       // Call the server action to update the agency profile
@@ -401,6 +454,243 @@ export default function AgencyProfileForm({
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Verification Documents Section */}
+            <div className="mt-8">
+              <h3 className="text-lg font-medium mb-4">Verification Documents</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Upload your business documents for agency verification. These documents will be reviewed by our admin team.
+              </p>
+              
+              {initialData?.verificationStatus && (
+                <div className={`p-4 rounded-md mb-6 ${
+                  initialData.verificationStatus === "approved" 
+                    ? "bg-green-50 border border-green-200" 
+                    : initialData.verificationStatus === "rejected"
+                    ? "bg-red-50 border border-red-200"
+                    : "bg-yellow-50 border border-yellow-200"
+                }`}>
+                  <div className="flex items-start gap-3">
+                    {initialData.verificationStatus === "approved" ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                    ) : initialData.verificationStatus === "rejected" ? (
+                      <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full bg-yellow-500 animate-pulse mt-0.5" />
+                    )}
+                    <div>
+                      <h4 className="font-medium text-sm">
+                        {initialData.verificationStatus === "approved" 
+                          ? "Agency Verified" 
+                          : initialData.verificationStatus === "rejected"
+                          ? "Verification Rejected"
+                          : "Verification Pending"}
+                      </h4>
+                      {initialData.verificationStatus === "rejected" && initialData.verificationRejectionReason && (
+                        <p className="text-sm text-red-700 mt-1">{initialData.verificationRejectionReason}</p>
+                      )}
+                      {initialData.verificationStatus === "pending" && (
+                        <p className="text-sm text-yellow-700 mt-1">Your documents are being reviewed by our team.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* RNE Document Upload */}
+                <FormField
+                  control={form.control}
+                  name="rneDocument"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        RNE Document
+                      </FormLabel>
+                      <div className="mt-2">
+                        <div className="relative flex items-center justify-center h-32 w-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group">
+                          {field.value ? (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="flex flex-col items-center">
+                                <FileText className="h-10 w-10 text-green-500" />
+                                <span className="text-xs text-gray-500 mt-2">Document uploaded</span>
+                                <a 
+                                  href={field.value} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-500 underline mt-1"
+                                >
+                                  View document
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <Upload className="h-8 w-8 text-gray-400 group-hover:text-gray-500" />
+                              <span className="text-xs text-gray-500 mt-1">Click to upload</span>
+                            </div>
+                          )}
+                          <FormControl>
+                            <Input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => handleDocumentUpload(e, "rneDocument")}
+                              className="hidden"
+                              id="rne-upload"
+                              disabled={isUploading}
+                            />
+                          </FormControl>
+                          <label
+                            htmlFor="rne-upload"
+                            className="absolute inset-0 cursor-pointer"
+                          >
+                            <span className="sr-only">Upload RNE document</span>
+                          </label>
+                          {isUploading && currentUploadField === "rneDocument" && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                              <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <FormDescription className="text-xs mt-2">
+                        Upload your National Registry of Enterprises document
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Patente Document Upload */}
+                <FormField
+                  control={form.control}
+                  name="patenteDocument"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        Patente Document
+                      </FormLabel>
+                      <div className="mt-2">
+                        <div className="relative flex items-center justify-center h-32 w-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group">
+                          {field.value ? (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="flex flex-col items-center">
+                                <FileText className="h-10 w-10 text-green-500" />
+                                <span className="text-xs text-gray-500 mt-2">Document uploaded</span>
+                                <a 
+                                  href={field.value} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-500 underline mt-1"
+                                >
+                                  View document
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <Upload className="h-8 w-8 text-gray-400 group-hover:text-gray-500" />
+                              <span className="text-xs text-gray-500 mt-1">Click to upload</span>
+                            </div>
+                          )}
+                          <FormControl>
+                            <Input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => handleDocumentUpload(e, "patenteDocument")}
+                              className="hidden"
+                              id="patente-upload"
+                              disabled={isUploading}
+                            />
+                          </FormControl>
+                          <label
+                            htmlFor="patente-upload"
+                            className="absolute inset-0 cursor-pointer"
+                          >
+                            <span className="sr-only">Upload Patente document</span>
+                          </label>
+                          {isUploading && currentUploadField === "patenteDocument" && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                              <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <FormDescription className="text-xs mt-2">
+                        Upload your Business License document
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* CIN Document Upload */}
+                <FormField
+                  control={form.control}
+                  name="cinDocument"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        CIN Document
+                      </FormLabel>
+                      <div className="mt-2">
+                        <div className="relative flex items-center justify-center h-32 w-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group">
+                          {field.value ? (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="flex flex-col items-center">
+                                <FileText className="h-10 w-10 text-green-500" />
+                                <span className="text-xs text-gray-500 mt-2">Document uploaded</span>
+                                <a 
+                                  href={field.value} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-500 underline mt-1"
+                                >
+                                  View document
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <Upload className="h-8 w-8 text-gray-400 group-hover:text-gray-500" />
+                              <span className="text-xs text-gray-500 mt-1">Click to upload</span>
+                            </div>
+                          )}
+                          <FormControl>
+                            <Input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => handleDocumentUpload(e, "cinDocument")}
+                              className="hidden"
+                              id="cin-upload"
+                              disabled={isUploading}
+                            />
+                          </FormControl>
+                          <label
+                            htmlFor="cin-upload"
+                            className="absolute inset-0 cursor-pointer"
+                          >
+                            <span className="sr-only">Upload CIN document</span>
+                          </label>
+                          {isUploading && currentUploadField === "cinDocument" && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                              <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <FormDescription className="text-xs mt-2">
+                        Upload your National Identity Card document
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end pt-4">

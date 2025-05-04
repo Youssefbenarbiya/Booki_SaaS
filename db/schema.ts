@@ -526,6 +526,15 @@ export const agencies = pgTable("agencies", {
   region: text("region"),
   address: text("address"),
   logo: text("logo"),
+  // Add verification document fields
+  rneDocument: text("rne_document"),
+  patenteDocument: text("patente_document"),
+  cinDocument: text("cin_document"),
+  isVerified: boolean("is_verified").default(false),
+  verificationStatus: varchar("verification_status", { length: 50 }).default("pending"),
+  verificationRejectionReason: text("verification_rejection_reason"),
+  verificationSubmittedAt: timestamp("verification_submitted_at"),
+  verificationReviewedAt: timestamp("verification_reviewed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

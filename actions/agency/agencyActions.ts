@@ -61,6 +61,10 @@ export async function updateAgencyProfile(data: {
   logo?: string;
   country?: string;
   region?: string;
+  rneDocument?: string;
+  patenteDocument?: string;
+  cinDocument?: string;
+  verificationSubmittedAt?: string;
 }) {
   try {
     const session = await getSession();
@@ -71,6 +75,17 @@ export async function updateAgencyProfile(data: {
     });
 
     if (agency) {
+      // Check if this is a new document submission
+      const isNewSubmission = 
+        (!agency.rneDocument && data.rneDocument) || 
+        (!agency.patenteDocument && data.patenteDocument) || 
+        (!agency.cinDocument && data.cinDocument);
+      
+      // If verification was previously rejected and new docs are submitted, reset status
+      const shouldResetStatus = 
+        agency.verificationStatus === "rejected" && 
+        (data.rneDocument || data.patenteDocument || data.cinDocument);
+      
       // Update the agency record
       await db
         .update(agencies)
@@ -82,6 +97,19 @@ export async function updateAgencyProfile(data: {
           logo: data.logo || null,
           country: data.country || null,
           region: data.region || null,
+          // Add document fields
+          rneDocument: data.rneDocument || agency.rneDocument,
+          patenteDocument: data.patenteDocument || agency.patenteDocument,
+          cinDocument: data.cinDocument || agency.cinDocument,
+          // If it's a new submission or resubmission after rejection, update verification status
+          verificationStatus: shouldResetStatus ? "pending" : agency.verificationStatus,
+          verificationSubmittedAt: isNewSubmission || shouldResetStatus 
+            ? new Date() 
+            : agency.verificationSubmittedAt,
+          // Clear rejection reason if resubmitting
+          verificationRejectionReason: shouldResetStatus 
+            ? null 
+            : agency.verificationRejectionReason,
           updatedAt: new Date(),
         })
         .where(eq(agencies.id, agency.id));

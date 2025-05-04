@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card"
 
 import {
@@ -20,8 +21,10 @@ import {
 } from "@/components/ui/table"
 import Image from "next/image"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Ban, CheckCircle, Users } from "lucide-react"
-import { getAgencyDetails, toggleUserBan } from "@/actions/admin/agencies"
+import { ArrowLeft, Ban, CheckCircle, Users, FileText, X, AlertTriangle, ShieldCheck, AlertCircle } from "lucide-react"
+import { getAgencyDetails, toggleUserBan, verifyAgency, rejectAgency } from "@/actions/admin/agencies"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 
 export default async function AgencyDetailsPage({
   params,
@@ -73,6 +76,199 @@ export default async function AgencyDetailsPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main info */}
         <div className="lg:col-span-2 space-y-6">
+          <Card className={`${
+              agency.verificationStatus === "approved" 
+                ? "border-green-200 bg-green-50" 
+                : agency.verificationStatus === "rejected"
+                ? "border-red-200 bg-red-50"
+                : agency.rneDocument || agency.patenteDocument || agency.cinDocument
+                ? "border-yellow-200 bg-yellow-50"
+                : ""
+            }`}>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {agency.verificationStatus === "approved" ? (
+                    <ShieldCheck className="h-5 w-5 text-green-600" />
+                  ) : agency.verificationStatus === "rejected" ? (
+                    <AlertCircle className="h-5 w-5 text-red-600" />
+                  ) : agency.rneDocument || agency.patenteDocument || agency.cinDocument ? (
+                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                  ) : (
+                    <FileText className="h-5 w-5 text-gray-600" />
+                  )}
+                  Verification Status
+                </CardTitle>
+                <Badge variant="outline" className={`
+                  ${agency.verificationStatus === "approved" 
+                    ? "bg-green-100 text-green-800 border-green-200" 
+                    : agency.verificationStatus === "rejected"
+                    ? "bg-red-100 text-red-800 border-red-200"
+                    : agency.rneDocument || agency.patenteDocument || agency.cinDocument
+                    ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                    : "bg-gray-100 text-gray-800 border-gray-200"
+                  }`}>
+                  {agency.verificationStatus === "approved" 
+                    ? "Verified" 
+                    : agency.verificationStatus === "rejected"
+                    ? "Rejected"
+                    : agency.rneDocument || agency.patenteDocument || agency.cinDocument
+                    ? "Pending Review"
+                    : "Not Submitted"}
+                </Badge>
+              </div>
+              <CardDescription>
+                {agency.verificationStatus === "approved" 
+                  ? "This agency has been verified and can operate without restrictions." 
+                  : agency.verificationStatus === "rejected"
+                  ? "This agency's verification request was rejected."
+                  : agency.rneDocument || agency.patenteDocument || agency.cinDocument
+                  ? "This agency has submitted documents pending review."
+                  : "This agency has not submitted verification documents yet."}
+              </CardDescription>
+            </CardHeader>
+            {(agency.rneDocument || agency.patenteDocument || agency.cinDocument) && (
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  {/* RNE Document */}
+                  <div className="border rounded-md overflow-hidden bg-white">
+                    <div className="p-3 bg-gray-50 border-b">
+                      <h3 className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        RNE Document
+                      </h3>
+                    </div>
+                    <div className="p-3">
+                      {agency.rneDocument ? (
+                        <div className="space-y-2">
+                          <div className="relative aspect-video bg-gray-100 rounded">
+                            <Image 
+                              src={agency.rneDocument} 
+                              alt="RNE Document" 
+                              fill 
+                              className="object-contain"
+                            />
+                          </div>
+                          <a 
+                            href={agency.rneDocument} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            View Full Size
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">Not submitted</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Patente Document */}
+                  <div className="border rounded-md overflow-hidden bg-white">
+                    <div className="p-3 bg-gray-50 border-b">
+                      <h3 className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Patente Document
+                      </h3>
+                    </div>
+                    <div className="p-3">
+                      {agency.patenteDocument ? (
+                        <div className="space-y-2">
+                          <div className="relative aspect-video bg-gray-100 rounded">
+                            <Image 
+                              src={agency.patenteDocument} 
+                              alt="Patente Document" 
+                              fill 
+                              className="object-contain"
+                            />
+                          </div>
+                          <a 
+                            href={agency.patenteDocument} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            View Full Size
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">Not submitted</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* CIN Document */}
+                  <div className="border rounded-md overflow-hidden bg-white">
+                    <div className="p-3 bg-gray-50 border-b">
+                      <h3 className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        CIN Document
+                      </h3>
+                    </div>
+                    <div className="p-3">
+                      {agency.cinDocument ? (
+                        <div className="space-y-2">
+                          <div className="relative aspect-video bg-gray-100 rounded">
+                            <Image 
+                              src={agency.cinDocument} 
+                              alt="CIN Document" 
+                              fill 
+                              className="object-contain"
+                            />
+                          </div>
+                          <a 
+                            href={agency.cinDocument} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            View Full Size
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">Not submitted</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {agency.verificationStatus === "rejected" && agency.verificationRejectionReason && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <h3 className="font-medium text-red-800 mb-1">Rejection Reason:</h3>
+                    <p className="text-sm text-red-700">{agency.verificationRejectionReason}</p>
+                  </div>
+                )}
+                
+                {agency.verificationStatus !== "approved" && agency.verificationStatus !== "rejected" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <form action={verifyAgency}>
+                      <input type="hidden" name="agencyId" value={agency.id.toString()} />
+                      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Approve Verification
+                      </Button>
+                    </form>
+                    
+                    <form action={rejectAgency} className="space-y-2">
+                      <input type="hidden" name="agencyId" value={agency.id.toString()} />
+                      <Textarea 
+                        name="rejectionReason" 
+                        placeholder="Enter reason for rejection..."
+                        className="w-full text-sm"
+                        required
+                      />
+                      <Button type="submit" variant="destructive" className="w-full">
+                        <X className="h-4 w-4 mr-2" />
+                        Reject Verification
+                      </Button>
+                    </form>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Agency Information</CardTitle>
