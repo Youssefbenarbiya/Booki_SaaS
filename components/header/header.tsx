@@ -8,12 +8,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu } from "lucide-react"
 import { auth } from "@/auth"
 import SignoutButton from "../navbar/signout-button"
 import { headers } from "next/headers"
 import Navbar from "@/components/navbar/navbar"
 import { Locale } from "@/i18n/routing"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface HeaderProps {
   locale: Locale
@@ -81,9 +81,25 @@ export default async function Header({ locale = "en" }: HeaderProps) {
               {session ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild className="mr-[100px]">
-                    <Button variant="ghost" size="icon">
-                      <Menu className="h-5 w-5" />
-                      <span className="sr-only">Open menu</span>
+                    <Button
+                      variant="ghost"
+                      className="h-10 w-10 rounded-full p-0 relative"
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage
+                          src={
+                            session.user?.image ||
+                            "/assets/icons/logo-blank.png"
+                          }
+                          alt={session.user?.name || "User"}
+                        />
+                        <AvatarFallback>
+                          {session.user?.name?.[0].toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      {/* Green online indicator */}
+                      <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-background" />
+                      <span className="sr-only">Online status</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end">
