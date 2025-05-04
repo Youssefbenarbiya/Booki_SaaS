@@ -1,25 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export interface CarType {
+export type CarType = {
   id: number;
-  model: string;
   brand: string;
+  model: string;
   year: number;
   plateNumber: string;
   color: string;
-  originalPrice: number;
-  currency?: string;
-  discountPercentage?: number;
-  priceAfterDiscount?: number;
+  originalPrice: string | number;
+  discountPercentage?: number | null;
+  priceAfterDiscount?: string | number | null;
   isAvailable: boolean;
-  images: string[];
   status?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  rejectionReason?: string | null;
+  images: string[] | { imageUrl: string }[];
   seats: number;
   category: string;
+  currency?: string;
   location: string;
-  bookings?: any[];
-}
+};
 
 export type CarFormValues = Omit<
   CarType,
