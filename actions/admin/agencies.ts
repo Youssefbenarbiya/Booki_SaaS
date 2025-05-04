@@ -12,7 +12,7 @@ import {
 } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
-import { sendEmail } from "@/lib/verifyAgencyEmail" // You'll need to create this email utility
+import { sendVerificationApprovalEmail, sendVerificationRejectionEmail } from "@/lib/verifyAgencyEmail"
 
 // Server action to ban/unban a user
 export async function toggleUserBan(formData: FormData) {
@@ -200,29 +200,9 @@ export async function verifyAgency(formData: FormData) {
   // Send confirmation email to the agency
   if (agency.contactEmail) {
     try {
-      await sendEmail({
-        to: agency.contactEmail,
-        subject: "Verification Approved - Your Agency is Now Verified",
-        text: `
-          Dear ${agency.agencyName},
-          
-          Congratulations! Your agency verification documents have been reviewed and approved.
-          
-          Your agency is now fully verified and can operate without restrictions on our platform.
-          
-          Thank you for completing the verification process.
-          
-          Best regards,
-          The Booki Team
-        `,
-        html: `
-          <h2>Verification Approved!</h2>
-          <p>Dear ${agency.agencyName},</p>
-          <p>Congratulations! Your agency verification documents have been reviewed and approved.</p>
-          <p>Your agency is now fully verified and can operate without restrictions on our platform.</p>
-          <p>Thank you for completing the verification process.</p>
-          <p>Best regards,<br>The Booki Team</p>
-        `,
+      await sendVerificationApprovalEmail({
+        agencyName: agency.agencyName,
+        contactEmail: agency.contactEmail
       })
     } catch (error) {
       console.error("Failed to send verification approval email:", error)
@@ -272,37 +252,10 @@ export async function rejectAgency(formData: FormData) {
   // Send rejection email to the agency
   if (agency.contactEmail) {
     try {
-      await sendEmail({
-        to: agency.contactEmail,
-        subject: "Verification Update - Additional Information Required",
-        text: `
-          Dear ${agency.agencyName},
-          
-          Thank you for submitting your verification documents.
-          
-          After review, we need some additional information or corrections before we can approve your verification:
-          
-          ${rejectionReason}
-          
-          Please update your documents in your agency profile and resubmit them for verification.
-          
-          If you have any questions, please contact our support team.
-          
-          Best regards,
-          The Booki Team
-        `,
-        html: `
-          <h2>Verification Update</h2>
-          <p>Dear ${agency.agencyName},</p>
-          <p>Thank you for submitting your verification documents.</p>
-          <p>After review, we need some additional information or corrections before we can approve your verification:</p>
-          <div style="padding: 15px; background-color: #f8f8f8; border-left: 4px solid #e74c3c; margin: 15px 0;">
-            <p style="margin: 0;">${rejectionReason}</p>
-          </div>
-          <p>Please update your documents in your agency profile and resubmit them for verification.</p>
-          <p>If you have any questions, please contact our support team.</p>
-          <p>Best regards,<br>The Booki Team</p>
-        `,
+      await sendVerificationRejectionEmail({
+        agencyName: agency.agencyName,
+        contactEmail: agency.contactEmail,
+        rejectionReason: rejectionReason
       })
     } catch (error) {
       console.error("Failed to send verification rejection email:", error)

@@ -82,19 +82,22 @@ export async function updateAgencyProfile(data: {
         (!agency.patenteDocument && data.patenteDocument) || 
         (!agency.cinDocument && data.cinDocument);
       
+      // Check if existing documents were changed
+      const isDocumentUpdated =
+        (data.rneDocument && data.rneDocument !== agency.rneDocument) ||
+        (data.patenteDocument && data.patenteDocument !== agency.patenteDocument) ||
+        (data.cinDocument && data.cinDocument !== agency.cinDocument);
+      
       // Check if documents have been changed after rejection
       const isResubmission = 
-        agency.verificationStatus === "rejected" && 
-        ((data.rneDocument && data.rneDocument !== agency.rneDocument) ||
-         (data.patenteDocument && data.patenteDocument !== agency.patenteDocument) ||
-         (data.cinDocument && data.cinDocument !== agency.cinDocument));
+        agency.verificationStatus === "rejected" && isDocumentUpdated;
       
       // If verification was previously rejected and new docs are submitted, reset status
       const shouldResetStatus = agency.verificationStatus === "rejected" && 
-        (isNewSubmission || isResubmission);
+        isDocumentUpdated;
       
-      // Determine if we need to notify the admin
-      const shouldNotifyAdmin = isNewSubmission || isResubmission;
+      // Determine if we need to notify the admin - now we notify for ANY document change
+      const shouldNotifyAdmin = isNewSubmission || isDocumentUpdated;
 
       // Prepare document fields for database update
       const rneDocument = data.rneDocument || agency.rneDocument || null;
@@ -117,7 +120,8 @@ export async function updateAgencyProfile(data: {
           patenteDocument,
           cinDocument,
           // If it's a new submission or resubmission after rejection, update verification status
-          verificationStatus: shouldResetStatus ? "pending" : agency.verificationStatus,
+          verificationStatus: shouldResetStatus ? "pending" : 
+                             (isDocumentUpdated && agency.verificationStatus !== "approved" ? "pending" : agency.verificationStatus),
           verificationSubmittedAt: shouldNotifyAdmin 
             ? new Date() 
             : agency.verificationSubmittedAt,
@@ -129,7 +133,7 @@ export async function updateAgencyProfile(data: {
         })
         .where(eq(agencies.id, agency.id));
 
-      // Notify admin if new documents were submitted
+      // Notify admin if ANY documents were submitted or updated
       if (shouldNotifyAdmin && (rneDocument || patenteDocument || cinDocument)) {
         try {
           await notifyAdminOfDocumentSubmission({
