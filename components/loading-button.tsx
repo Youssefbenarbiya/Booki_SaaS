@@ -1,18 +1,21 @@
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 export default function LoadingButton({
   pending,
   children,
   onClick,
+  className,
 }: {
   pending: boolean
   children: React.ReactNode
   onClick?: () => void
+  className?: string
 }) {
   return (
     <Button
       onClick={onClick}
-      className="w-full"
+      className={cn("w-full", className)}
       type="submit"
       disabled={pending}
     >

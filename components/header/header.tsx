@@ -162,7 +162,7 @@ export default async function Header({ locale = "en" }: HeaderProps) {
                     )}
                     <DropdownMenuSeparator className="my-1" />
                     <DropdownMenuItem className="p-0">
-                      <SignoutButton className="flex w-full items-center p-2 text-red-500 rounded-md hover:bg-red-50 cursor-pointer">
+                      <SignoutButton className="flex w-full items-center p-2 text-orange-500 bg-orange-50 rounded-md hover:bg-orange-50 cursor-pointer">
                         <LogOut className="w-4 h-4 mr-2" />
                         <span>Sign out</span>
                       </SignoutButton>

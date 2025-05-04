@@ -3,9 +3,14 @@
 import { useRouter } from "next/navigation"
 import { authClient } from "@/auth-client"
 import LoadingButton from "@/components/loading-button"
-import { useState } from "react"
+import { useState, ReactNode } from "react"
 
-export default function SignoutButton() {
+interface SignoutButtonProps {
+  children?: ReactNode
+  className?: string
+}
+
+export default function SignoutButton({ children, className }: SignoutButtonProps) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
 
@@ -28,8 +33,8 @@ export default function SignoutButton() {
   }
 
   return (
-    <LoadingButton pending={pending} onClick={handleSignOut}>
-      Sign Out
+    <LoadingButton pending={pending} onClick={handleSignOut} className={className}>
+      {children || "Sign Out"}
     </LoadingButton>
   )
 }
