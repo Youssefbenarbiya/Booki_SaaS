@@ -21,9 +21,6 @@ interface HeaderProps {
 
 export default async function Header({ locale = "en" }: HeaderProps) {
   const session = await auth.api.getSession({
-    query: {
-      disableCookieCache: true,
-    },
     headers: await headers(),
   })
 
