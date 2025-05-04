@@ -49,6 +49,7 @@ export async function rejectTrip(tripId: number, rejectionReason?: string) {
         status: "rejected",
         isAvailable: false,
         updatedAt: new Date(),
+        rejectionReason: rejectionReason,
       })
       .where(eq(trips.id, tripId))
 
@@ -98,6 +99,7 @@ export async function rejectCar(carId: number, rejectionReason?: string) {
         status: "rejected",
         isAvailable: false,
         updatedAt: new Date(),
+        rejectionReason: rejectionReason,
       })
       .where(eq(cars.id, carId))
 
@@ -164,6 +166,7 @@ export async function rejectHotel(hotelId: string | number, rejectionReason?: st
       .set({
         status: "rejected",
         updatedAt: new Date(),
+        rejectionReason: rejectionReason,
       })
       .where(eq(hotel.id, hotelIdString))
 
@@ -224,6 +227,7 @@ export async function rejectBlog(blogId: number, rejectionReason?: string) {
         published: false,
         publishedAt: null,
         updatedAt: new Date(),
+        rejectionReason: rejectionReason,
       })
       .where(eq(blogs.id, blogId))
 

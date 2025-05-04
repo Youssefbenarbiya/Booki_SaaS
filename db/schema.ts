@@ -110,6 +110,7 @@ export const trips = pgTable("trips", {
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   agencyId: text("agency_id").references(() => agencies.userId), // Changed to reference agencies.userId (which is text type)
   createdBy: text("created_by").references(() => user.id), // Added new field to track creator
   createdAt: timestamp("created_at").defaultNow(),
@@ -222,6 +223,7 @@ export const hotel = pgTable("hotel", {
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -353,6 +355,7 @@ export const cars = pgTable("cars", {
   images: text("images").array().default([]).notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -432,6 +435,7 @@ export const blogs = pgTable("blogs", {
   authorId: text("author_id").references(() => user.id),
   agencyId: text("agency_id").references(() => agencies.userId),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   views: integer("views").default(0),
   readTime: integer("read_time"),
   tags: text("tags").array().default([]),
