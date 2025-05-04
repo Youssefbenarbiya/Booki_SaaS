@@ -10,7 +10,7 @@ import { filterRegions } from "@/lib/helpers";
 
 //@ts-ignore
 import countryRegionData from "country-region-data/dist/data-umd";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 export interface Region {
   name: string;
@@ -31,7 +31,7 @@ interface RegionSelectProps {
   onChange?: (value: string) => void;
   className?: string;
   placeholder?: string;
-  defaultValue?: string;
+  value?: string;
 }
 
 function RegionSelect({
@@ -42,46 +42,24 @@ function RegionSelect({
   onChange = () => {},
   className,
   placeholder = "Region",
-  defaultValue,
+  value = "",
 }: RegionSelectProps) {
-  const [regions, setRegions] = useState<Region[]>([]);
-  const [value, setValue] = useState<string>(defaultValue || "");
-
-  useEffect(() => {
-    const regions = countryRegionData.find(
+  // Use useMemo to avoid recalculating on every render
+  const regions = useMemo(() => {
+    const country = countryRegionData.find(
       (country: CountryRegion) => country.countryShortCode === countryCode
     );
 
-    if (regions) {
-      setRegions(
-        filterRegions(regions.regions, priorityOptions, whitelist, blacklist)
-      );
-    } else {
-      setRegions([]);
+    if (country) {
+      return filterRegions(country.regions, priorityOptions, whitelist, blacklist);
     }
+    return [];
   }, [countryCode, priorityOptions, whitelist, blacklist]);
-
-  // When defaultValue changes, update the internal value
-  useEffect(() => {
-    if (defaultValue) {
-      setValue(defaultValue);
-    }
-  }, [defaultValue]);
-
-  // Reset value when country changes to avoid invalid region selection
-  useEffect(() => {
-    if (countryCode) {
-      setValue(defaultValue || "");
-    }
-  }, [countryCode, defaultValue]);
 
   return (
     <Select
       value={value}
-      onValueChange={(selectedValue: string) => {
-        setValue(selectedValue);
-        onChange(selectedValue);
-      }}
+      onValueChange={onChange}
     >
       <SelectTrigger className={className}>
         <SelectValue placeholder={placeholder} />

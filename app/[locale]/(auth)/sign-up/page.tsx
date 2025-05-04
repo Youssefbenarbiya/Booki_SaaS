@@ -87,8 +87,6 @@ export default function SignUp() {
   // Update selectedCountry state when country changes
   const handleCountryChange = (countryCode: string) => {
     setSelectedCountry(countryCode);
-    form.setValue("country", countryCode);
-    form.setValue("region", ""); // Reset region when country changes
   };
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
@@ -485,7 +483,11 @@ export default function SignUp() {
                           placeholder={
                             t("countryPlaceholder") || "Select your country"
                           }
-                          onChange={handleCountryChange}
+                          value={field.value}
+                          onChange={(value) => {
+                            field.onChange(value);
+                            handleCountryChange(value);
+                          }}
                           priorityOptions={["TN", "US", "GB", "FR"]}
                           className="h-12 w-full"
                         />
@@ -497,7 +499,7 @@ export default function SignUp() {
               />
 
               {/* Region Select - only show if country is selected */}
-              {selectedCountry && (
+              {form.watch("country") && (
                 <FormField
                   control={form.control}
                   name="region"
@@ -509,11 +511,12 @@ export default function SignUp() {
                         </FormLabel>
                         <FormControl className="flex-1">
                           <RegionSelect
-                            countryCode={selectedCountry}
+                            countryCode={form.watch("country")}
                             placeholder={
                               t("regionPlaceholder") || "Select your region"
                             }
-                            onChange={(value) => form.setValue("region", value)}
+                            value={field.value}
+                            onChange={field.onChange}
                             className="h-12 w-full"
                           />
                         </FormControl>

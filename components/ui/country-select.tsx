@@ -9,7 +9,7 @@ import {
 import { filterCountries } from "@/lib/helpers";
 //@ts-ignore
 import countryRegionData from "country-region-data/dist/data-umd";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 export interface Region {
   name: string;
@@ -29,7 +29,7 @@ interface CountrySelectProps {
   onChange?: (value: string) => void;
   className?: string;
   placeholder?: string;
-  defaultValue?: string;
+  value?: string;
 }
 
 function CountrySelect({
@@ -39,31 +39,17 @@ function CountrySelect({
   onChange = () => {},
   className,
   placeholder = "Country",
-  defaultValue,
+  value = "",
 }: CountrySelectProps) {
-  const [countries, setCountries] = useState<CountryRegion[]>([]);
-  const [value, setValue] = useState<string>(defaultValue || "");
-
-  useEffect(() => {
-    setCountries(
-      filterCountries(countryRegionData, priorityOptions, whitelist, blacklist)
-    );
+  // Use useMemo to avoid recalculating on every render
+  const countries = useMemo(() => {
+    return filterCountries(countryRegionData, priorityOptions, whitelist, blacklist);
   }, [priorityOptions, whitelist, blacklist]);
-
-  // When defaultValue changes, update the internal value
-  useEffect(() => {
-    if (defaultValue) {
-      setValue(defaultValue);
-    }
-  }, [defaultValue]);
 
   return (
     <Select
       value={value}
-      onValueChange={(selectedValue: string) => {
-        setValue(selectedValue);
-        onChange(selectedValue);
-      }}
+      onValueChange={onChange}
     >
       <SelectTrigger className={className}>
         <SelectValue placeholder={placeholder} />
