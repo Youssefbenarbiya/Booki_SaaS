@@ -82,18 +82,24 @@ export async function updateAgencyProfile(data: {
         (!agency.patenteDocument && data.patenteDocument) || 
         (!agency.cinDocument && data.cinDocument);
       
-      // If verification was previously rejected and new docs are submitted, reset status
-      const shouldResetStatus = 
+      // Check if documents have been changed after rejection
+      const isResubmission = 
         agency.verificationStatus === "rejected" && 
-        (data.rneDocument || data.patenteDocument || data.cinDocument);
+        ((data.rneDocument && data.rneDocument !== agency.rneDocument) ||
+         (data.patenteDocument && data.patenteDocument !== agency.patenteDocument) ||
+         (data.cinDocument && data.cinDocument !== agency.cinDocument));
+      
+      // If verification was previously rejected and new docs are submitted, reset status
+      const shouldResetStatus = agency.verificationStatus === "rejected" && 
+        (isNewSubmission || isResubmission);
       
       // Determine if we need to notify the admin
-      const shouldNotifyAdmin = isNewSubmission || shouldResetStatus;
+      const shouldNotifyAdmin = isNewSubmission || isResubmission;
 
       // Prepare document fields for database update
-      const rneDocument = data.rneDocument || agency.rneDocument;
-      const patenteDocument = data.patenteDocument || agency.patenteDocument;
-      const cinDocument = data.cinDocument || agency.cinDocument;
+      const rneDocument = data.rneDocument || agency.rneDocument || null;
+      const patenteDocument = data.patenteDocument || agency.patenteDocument || null;
+      const cinDocument = data.cinDocument || agency.cinDocument || null;
       
       // Update the agency record
       await db
@@ -130,9 +136,10 @@ export async function updateAgencyProfile(data: {
             agencyName: data.name,
             agencyId: agency.id,
             contactEmail: data.email,
-            rneDocument,
-            patenteDocument,
-            cinDocument,
+            isResubmission: isResubmission,
+            rneDocument: rneDocument || undefined,
+            patenteDocument: patenteDocument || undefined,
+            cinDocument: cinDocument || undefined,
           });
         } catch (error) {
           console.error("Failed to send admin notification:", error);

@@ -72,11 +72,12 @@ export async function notifyAdminOfDocumentSubmission(agencyData: {
   agencyName: string;
   agencyId: number;
   contactEmail: string;
+  isResubmission?: boolean;
   rneDocument?: string;
   patenteDocument?: string;
   cinDocument?: string;
 }) {
-  const { agencyName, agencyId, contactEmail, rneDocument, patenteDocument, cinDocument } = agencyData;
+  const { agencyName, agencyId, contactEmail, rneDocument, patenteDocument, cinDocument, isResubmission } = agencyData;
   
   // Build list of submitted documents
   const submittedDocs = [
@@ -85,13 +86,21 @@ export async function notifyAdminOfDocumentSubmission(agencyData: {
     cinDocument ? 'CIN Document' : null,
   ].filter(Boolean).join(', ');
   
+  const emailSubject = isResubmission 
+    ? `Resubmitted Verification Documents - ${agencyName}` 
+    : `New Verification Documents Submitted - ${agencyName}`;
+
+  const submissionType = isResubmission 
+    ? 'resubmitted verification documents after a previous rejection' 
+    : 'new verification documents';
+  
   return sendEmail({
     to: ADMIN_EMAIL,
-    subject: `New Verification Documents Submitted - ${agencyName}`,
+    subject: emailSubject,
     text: `
       Hello Admin,
       
-      A new verification document submission requires your review.
+      An agency has ${submissionType} that require your review.
       
       Agency: ${agencyName}
       Agency ID: ${agencyId}
@@ -107,9 +116,9 @@ export async function notifyAdminOfDocumentSubmission(agencyData: {
       The Booki System
     `,
     html: `
-      <h2>New Verification Documents Submitted</h2>
+      <h2>${isResubmission ? 'Resubmitted' : 'New'} Verification Documents</h2>
       <p>Hello Admin,</p>
-      <p>A new verification document submission requires your review.</p>
+      <p>An agency has ${submissionType} that require your review.</p>
       
       <table style="border-collapse: collapse; width: 100%; margin: 20px 0; border: 1px solid #ddd;">
         <tr style="background-color: #f8f8f8;">
@@ -128,6 +137,12 @@ export async function notifyAdminOfDocumentSubmission(agencyData: {
           <td style="padding: 12px; border: 1px solid #ddd;"><strong>Documents Submitted</strong></td>
           <td style="padding: 12px; border: 1px solid #ddd;">${submittedDocs}</td>
         </tr>
+        ${isResubmission ? `
+        <tr style="background-color: #f8fcf0;">
+          <td style="padding: 12px; border: 1px solid #ddd;"><strong>Submission Type</strong></td>
+          <td style="padding: 12px; border: 1px solid #ddd; color: #e67e22;"><strong>Resubmission after rejection</strong></td>
+        </tr>
+        ` : ''}
       </table>
       
       <p>Please review these documents in the admin panel at your earliest convenience.</p>
