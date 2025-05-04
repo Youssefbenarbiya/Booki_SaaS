@@ -35,6 +35,7 @@ export function Sidebar({ locale }: SidebarProps) {
     name?: string
     email?: string
     logo?: string
+    agencyType?: string
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -49,16 +50,19 @@ export function Sidebar({ locale }: SidebarProps) {
       name: "Trips",
       href: `/${locale}/agency/dashboard/trips`,
       icon: PlaneTakeoff,
+      hideFor: ["car_rental"],
     },
     {
       name: "Hotels",
       href: `/${locale}/agency/dashboard/hotels`,
       icon: Building2,
+      hideFor: ["car_rental"],
     },
     {
       name: "Cars",
       href: `/${locale}/agency/dashboard/cars`,
       icon: Car,
+      hideFor: ["travel"],
     },
     {
       name: "Blogs",
@@ -93,6 +97,7 @@ export function Sidebar({ locale }: SidebarProps) {
             email:
               response.agency.contactEmail || session.data?.user?.email || "",
             logo: response.agency.logo || "",
+            agencyType: response.agency.agencyType || "",
           })
         } else {
           // Fallback to user email if no agency found
@@ -112,11 +117,24 @@ export function Sidebar({ locale }: SidebarProps) {
     fetchAgencyData()
   }, [session.data?.user?.email])
 
-  // If the user is an employee, filter out the Employees tab
-  const filteredNavigation =
-    userRole === "employee"
-      ? navigation.filter((item) => item.name !== "Employees")
-      : navigation
+  // Filter navigation based on both user role and agency type
+  const filteredNavigation = navigation.filter((item) => {
+    // First filter by role
+    if (userRole === "employee" && item.name === "Employees") {
+      return false
+    }
+
+    // Then filter by agency type
+    if (
+      agencyData?.agencyType &&
+      item.hideFor &&
+      item.hideFor.includes(agencyData.agencyType)
+    ) {
+      return false
+    }
+
+    return true
+  })
 
   return (
     <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
