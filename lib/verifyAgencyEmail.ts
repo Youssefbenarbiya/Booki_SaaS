@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 
+// Admin email for verification notifications
+const ADMIN_EMAIL = 'youssefbenabia32@gmail.com';
+
 interface EmailPayload {
   to: string;
   subject: string;
@@ -62,4 +65,78 @@ export async function sendEmail({ to, subject, text, html }: EmailPayload) {
     console.error('Error sending email:', error);
     return { success: false, error };
   }
+}
+
+// Function to notify admin about new document submission
+export async function notifyAdminOfDocumentSubmission(agencyData: {
+  agencyName: string;
+  agencyId: number;
+  contactEmail: string;
+  rneDocument?: string;
+  patenteDocument?: string;
+  cinDocument?: string;
+}) {
+  const { agencyName, agencyId, contactEmail, rneDocument, patenteDocument, cinDocument } = agencyData;
+  
+  // Build list of submitted documents
+  const submittedDocs = [
+    rneDocument ? 'RNE Document' : null,
+    patenteDocument ? 'Patente Document' : null,
+    cinDocument ? 'CIN Document' : null,
+  ].filter(Boolean).join(', ');
+  
+  return sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `New Verification Documents Submitted - ${agencyName}`,
+    text: `
+      Hello Admin,
+      
+      A new verification document submission requires your review.
+      
+      Agency: ${agencyName}
+      Agency ID: ${agencyId}
+      Contact Email: ${contactEmail}
+      
+      Documents Submitted: ${submittedDocs}
+      
+      Please review these documents in the admin panel at your earliest convenience.
+      
+      Direct link to review: /admin/agencies/${agencyId}
+      
+      Thank you,
+      The Booki System
+    `,
+    html: `
+      <h2>New Verification Documents Submitted</h2>
+      <p>Hello Admin,</p>
+      <p>A new verification document submission requires your review.</p>
+      
+      <table style="border-collapse: collapse; width: 100%; margin: 20px 0; border: 1px solid #ddd;">
+        <tr style="background-color: #f8f8f8;">
+          <td style="padding: 12px; border: 1px solid #ddd;"><strong>Agency</strong></td>
+          <td style="padding: 12px; border: 1px solid #ddd;">${agencyName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px; border: 1px solid #ddd;"><strong>Agency ID</strong></td>
+          <td style="padding: 12px; border: 1px solid #ddd;">${agencyId}</td>
+        </tr>
+        <tr style="background-color: #f8f8f8;">
+          <td style="padding: 12px; border: 1px solid #ddd;"><strong>Contact Email</strong></td>
+          <td style="padding: 12px; border: 1px solid #ddd;">${contactEmail}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px; border: 1px solid #ddd;"><strong>Documents Submitted</strong></td>
+          <td style="padding: 12px; border: 1px solid #ddd;">${submittedDocs}</td>
+        </tr>
+      </table>
+      
+      <p>Please review these documents in the admin panel at your earliest convenience.</p>
+      
+      <p style="margin: 30px 0;">
+        <a href="/admin/agencies/${agencyId}" style="display: inline-block; background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px;">Review Submission</a>
+      </p>
+      
+      <p>Thank you,<br>The Booki System</p>
+    `,
+  });
 } 
