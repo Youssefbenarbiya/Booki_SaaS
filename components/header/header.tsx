@@ -5,8 +5,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { auth } from "@/auth"
 import SignoutButton from "../navbar/signout-button"
@@ -14,6 +14,7 @@ import { headers } from "next/headers"
 import Navbar from "@/components/navbar/navbar"
 import { Locale } from "@/i18n/routing"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { User, LogOut, LayoutDashboard } from "lucide-react"
 
 interface HeaderProps {
   locale: Locale
@@ -83,7 +84,7 @@ export default async function Header({ locale = "en" }: HeaderProps) {
                   <DropdownMenuTrigger asChild className="mr-[100px]">
                     <Button
                       variant="ghost"
-                      className="h-10 w-10 rounded-full p-0 relative"
+                      className="h-10 w-10 rounded-full p-0 relative hover:bg-accent"
                     >
                       <Avatar className="h-10 w-10">
                         <AvatarImage
@@ -102,38 +103,69 @@ export default async function Header({ locale = "en" }: HeaderProps) {
                       <span className="sr-only">Online status</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end">
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
+                  <DropdownMenuContent
+                    className="w-64 p-2 rounded-lg shadow-lg"
+                    align="end"
+                  >
+                    <div className="flex items-center p-2 mb-1 rounded-md bg-accent/50">
+                      <Avatar className="h-10 w-10 mr-3">
+                        <AvatarImage
+                          src={
+                            session.user?.image ||
+                            "/assets/icons/logo-blank.png"
+                          }
+                          alt={session.user?.name || "User"}
+                        />
+                        <AvatarFallback>
+                          {session.user?.name?.[0].toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
                         <p className="text-sm font-medium leading-none">
                           {session.user?.name}
                         </p>
-                        <p className="text-xs leading-none text-muted-foreground">
+                        <p className="text-xs leading-none text-muted-foreground mt-1">
                           {session.user?.email}
                         </p>
                       </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/${locale}/user/profile`} className="w-full">
-                        Profile
+                    </div>
+                    <DropdownMenuSeparator className="my-1" />
+                    <DropdownMenuItem
+                      asChild
+                      className="flex items-center cursor-pointer p-2 rounded-md hover:bg-accent"
+                    >
+                      <Link
+                        href={`/${locale}/user/profile`}
+                        className="w-full flex items-center"
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
                     {session.user.role !== "customer" && (
-                      <DropdownMenuItem asChild>
+                      <DropdownMenuItem
+                        asChild
+                        className="flex items-center cursor-pointer p-2 rounded-md hover:bg-accent"
+                      >
                         <Link
                           href={
                             session.user.role === "admin"
                               ? `/${locale}/admin`
                               : `/${locale}/agency/dashboard`
                           }
-                          className="w-full"
+                          className="w-full flex items-center"
                         >
-                          Dashboard
+                          <LayoutDashboard className="w-4 h-4 mr-2" />
+                          <span>Dashboard</span>
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem className="p-0 mb-1">
-                      <SignoutButton />
+                    <DropdownMenuSeparator className="my-1" />
+                    <DropdownMenuItem className="p-0">
+                      <SignoutButton className="flex w-full items-center p-2 text-red-500 rounded-md hover:bg-red-50 cursor-pointer">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        <span>Sign out</span>
+                      </SignoutButton>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
