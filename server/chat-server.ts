@@ -128,12 +128,16 @@ const postConnections = new Map<string, PostConnection>()
 async function getAgencyUniqueId(userId: string): Promise<string | null> {
   try {
     // Query the agencies table to find the agency's unique ID
-    const agencyData = await db.query.agencies.findFirst({
-      where: eq(agencies.userId, userId),
-      columns: { agencyUniqueId: true },
-    })
+    // Using SQL directly to avoid type issues
+    const { sql } = await import('./db/drizzle');
     
-    return agencyData?.agencyUniqueId || null
+    const results = await sql`
+      SELECT agency_unique_id FROM agencies 
+      WHERE user_id = ${userId} 
+      LIMIT 1
+    `;
+    
+    return results?.[0]?.agency_unique_id || null;
   } catch (error) {
     console.error("Error fetching agency unique ID:", error)
     return null
@@ -558,36 +562,61 @@ const startServers = (options: ServerOptions = { wsPort: 3001, httpPort: 3002 })
                 let agencyIdForPost = ""
 
                 if (messagePostType === "trip") {
-                  const trip = await db.query.trips.findFirst({
-                    where: eq(trips.id, parseInt(messagePostId)),
-                    columns: { agencyId: true },
-                  })
-                  agencyIdForPost = trip?.agencyId || ""
+                  try {
+                    const { sql } = await import('./db/drizzle');
+                    const results = await sql`
+                      SELECT agency_id FROM trips 
+                      WHERE id = ${parseInt(messagePostId)}
+                      LIMIT 1
+                    `;
+                    agencyIdForPost = results?.[0]?.agency_id || "";
+                  } catch (error) {
+                    console.error("Error querying trip:", error);
+                  }
                 } else if (messagePostType === "car") {
-                  const car = await db.query.cars.findFirst({
-                    where: eq(cars.id, parseInt(messagePostId)),
-                    columns: { agencyId: true },
-                  })
-                  agencyIdForPost = car?.agencyId || ""
+                  try {
+                    const { sql } = await import('./db/drizzle');
+                    const results = await sql`
+                      SELECT agency_id FROM cars 
+                      WHERE id = ${parseInt(messagePostId)}
+                      LIMIT 1
+                    `;
+                    agencyIdForPost = results?.[0]?.agency_id || "";
+                  } catch (error) {
+                    console.error("Error querying car:", error);
+                  }
                 } else if (messagePostType === "hotel") {
-                  const hotelData = await db.query.hotel.findFirst({
-                    where: eq(hotel.id, messagePostId),
-                    columns: { agencyId: true },
-                  })
-                  agencyIdForPost = hotelData?.agencyId || ""
+                  try {
+                    const { sql } = await import('./db/drizzle');
+                    const results = await sql`
+                      SELECT agency_id FROM hotel 
+                      WHERE id = ${messagePostId}
+                      LIMIT 1
+                    `;
+                    agencyIdForPost = results?.[0]?.agency_id || "";
+                  } catch (error) {
+                    console.error("Error querying hotel:", error);
+                  }
                 } else if (messagePostType === "room") {
                   // For rooms, find the hotel first, then get the agency
-                  const roomData = await db.query.room.findFirst({
-                    where: eq(room.id, messagePostId),
-                    columns: { hotelId: true },
-                  })
-
-                  if (roomData?.hotelId) {
-                    const hotelData = await db.query.hotel.findFirst({
-                      where: eq(hotel.id, roomData.hotelId),
-                      columns: { agencyId: true },
-                    })
-                    agencyIdForPost = hotelData?.agencyId || ""
+                  try {
+                    const { sql } = await import('./db/drizzle');
+                    const roomResult = await sql`
+                      SELECT hotel_id FROM room 
+                      WHERE id = ${messagePostId}
+                      LIMIT 1
+                    `;
+                    
+                    if (roomResult?.[0]?.hotel_id) {
+                      const hotelResult = await sql`
+                        SELECT agency_id FROM hotel 
+                        WHERE id = ${roomResult[0].hotel_id}
+                        LIMIT 1
+                      `;
+                      agencyIdForPost = hotelResult?.[0]?.agency_id || "";
+                    }
+                  } catch (error) {
+                    console.error("Error querying room/hotel:", error);
                   }
                 }
 
