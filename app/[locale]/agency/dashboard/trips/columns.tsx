@@ -65,6 +65,86 @@ export type TripType = {
   childDiscountPercentage?: number | null;
 };
 
+// Status cell component 
+function StatusCell({ status, rejectionReason }: { 
+  status: string; 
+  rejectionReason: string | null | undefined;
+}) {
+  const [showReason, setShowReason] = useState(false);
+
+  let badgeVariant: "default" | "outline" | "secondary" | "destructive" =
+    "default";
+  let statusText = status || "Unknown";
+  let customClass = "";
+
+  if (status === "pending") {
+    badgeVariant = "secondary";
+    statusText = "Pending";
+    customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+  } else if (status === "active") {
+    badgeVariant = "default";
+    statusText = "Active";
+    customClass = "bg-green-100 text-green-800 hover:bg-green-200";
+  } else if (status === "inactive") {
+    badgeVariant = "outline";
+    statusText = "Inactive";
+    customClass = "bg-gray-100 text-gray-800 hover:bg-gray-200";
+  } else if (status === "approved") {
+    badgeVariant = "default";
+    statusText = "Approved";
+    customClass = "bg-green-100 text-green-800 hover:bg-green-200";
+  } else if (status === "rejected") {
+    badgeVariant = "destructive";
+    statusText = "Rejected";
+    customClass = "bg-red-100 text-red-800 hover:bg-red-200";
+  } else if (status === "archived") {
+    badgeVariant = "outline";
+    statusText = "Archived";
+    customClass = "bg-amber-100 text-amber-800 hover:bg-amber-200";
+  }
+
+  // Get first two words if rejection reason exists
+  const twoWords = rejectionReason?.split(" ").slice(0, 2).join(" ");
+  const hasMoreWords = rejectionReason
+    ? rejectionReason.split(" ").length > 2
+    : false;
+
+  return (
+    <div className="flex flex-col">
+      <Badge variant={badgeVariant} className={customClass}>
+        {statusText}
+      </Badge>
+
+      {status === "rejected" && rejectionReason && (
+        <>
+          <div className="text-xs text-red-600 mt-1">
+            {twoWords}
+            {hasMoreWords && (
+              <button
+                onClick={() => setShowReason(true)}
+                className="ml-1 text-blue-500 hover:underline"
+              >
+                ...view more
+              </button>
+            )}
+          </div>
+
+          <Dialog open={showReason} onOpenChange={setShowReason}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-red-600">
+                  Rejection Reason
+                </DialogTitle>
+              </DialogHeader>
+              <p className="py-4">{rejectionReason}</p>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
+    </div>
+  );
+}
+
 export const columns: ColumnDef<TripType>[] = [
   {
     accessorKey: "images",
@@ -236,79 +316,8 @@ export const columns: ColumnDef<TripType>[] = [
         row.original.status ||
         (row.original.isAvailable ? "active" : "inactive");
       const rejectionReason = row.original.rejectionReason;
-      const [showReason, setShowReason] = useState(false);
-
-      let badgeVariant: "default" | "outline" | "secondary" | "destructive" =
-        "default";
-      let statusText = status || "Unknown";
-      let customClass = "";
-
-      if (status === "pending") {
-        badgeVariant = "secondary";
-        statusText = "Pending";
-        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
-      } else if (status === "active") {
-        badgeVariant = "default";
-        statusText = "Active";
-        customClass = "bg-green-100 text-green-800 hover:bg-green-200";
-      } else if (status === "inactive") {
-        badgeVariant = "outline";
-        statusText = "Inactive";
-        customClass = "bg-gray-100 text-gray-800 hover:bg-gray-200";
-      } else if (status === "approved") {
-        badgeVariant = "default";
-        statusText = "Approved";
-        customClass = "bg-green-100 text-green-800 hover:bg-green-200";
-      } else if (status === "rejected") {
-        badgeVariant = "destructive";
-        statusText = "Rejected";
-        customClass = "bg-red-100 text-red-800 hover:bg-red-200";
-      } else if (status === "archived") {
-        badgeVariant = "outline";
-        statusText = "Archived";
-        customClass = "bg-amber-100 text-amber-800 hover:bg-amber-200";
-      }
-
-      // Get first two words if rejection reason exists
-      const twoWords = rejectionReason?.split(" ").slice(0, 2).join(" ");
-      const hasMoreWords = rejectionReason
-        ? rejectionReason.split(" ").length > 2
-        : false;
-
-      return (
-        <div className="flex flex-col">
-          <Badge variant={badgeVariant} className={customClass}>
-            {statusText}
-          </Badge>
-
-          {status === "rejected" && rejectionReason && (
-            <>
-              <div className="text-xs text-red-600 mt-1">
-                {twoWords}
-                {hasMoreWords && (
-                  <button
-                    onClick={() => setShowReason(true)}
-                    className="ml-1 text-blue-500 hover:underline"
-                  >
-                    ...view more
-                  </button>
-                )}
-              </div>
-
-              <Dialog open={showReason} onOpenChange={setShowReason}>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="text-red-600">
-                      Rejection Reason
-                    </DialogTitle>
-                  </DialogHeader>
-                  <p className="py-4">{rejectionReason}</p>
-                </DialogContent>
-              </Dialog>
-            </>
-          )}
-        </div>
-      );
+      
+      return <StatusCell status={status} rejectionReason={rejectionReason} />;
     },
   },
   {
