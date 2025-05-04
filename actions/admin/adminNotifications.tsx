@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use server"
 
 import * as React from 'react'
@@ -16,13 +17,6 @@ const transporter = nodemailer.createTransport({
   },
 })
 
-// Log the email configuration status (safely without exposing passwords)
-if (!process.env.EMAIL_FROM) {
-  console.warn("EMAIL_FROM environment variable is not set")
-} else {
-  console.log(`Email configuration using: ${process.env.EMAIL_FROM}`)
-}
-
 // Offer Notification Email Template
 const OfferApprovalEmail = ({ 
   offerType, 
@@ -39,10 +33,7 @@ const OfferApprovalEmail = ({
 }) => {
   return (
     <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>New Offer Approval Request</title>
-      </head>
+     
       <body style={{ 
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
         padding: '20px',
@@ -162,11 +153,7 @@ const ApprovalDecisionEmail = ({
   const statusText = isApproved ? 'APPROVED' : 'REJECTED'
   
   return (
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{offerType} {statusText}</title>
-      </head>
+   
       <body style={{ 
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
         padding: '20px',
@@ -272,7 +259,7 @@ const ApprovalDecisionEmail = ({
           </div>
         </div>
       </body>
-    </html>
+ 
   )
 }
 
