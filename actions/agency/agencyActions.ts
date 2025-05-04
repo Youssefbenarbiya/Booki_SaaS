@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import db from "@/db/drizzle";
 import { auth } from "@/auth";
 import { headers } from "next/headers";
+import { notifyAdminOfDocumentSubmission } from "@/lib/verifyAgencyEmail";
 
 // Helper function to get the current session
 async function getSession() {
@@ -81,10 +82,24 @@ export async function updateAgencyProfile(data: {
         (!agency.patenteDocument && data.patenteDocument) || 
         (!agency.cinDocument && data.cinDocument);
       
-      // If verification was previously rejected and new docs are submitted, reset status
-      const shouldResetStatus = 
+      // Check if documents have been changed after rejection
+      const isResubmission = 
         agency.verificationStatus === "rejected" && 
-        (data.rneDocument || data.patenteDocument || data.cinDocument);
+        ((data.rneDocument && data.rneDocument !== agency.rneDocument) ||
+         (data.patenteDocument && data.patenteDocument !== agency.patenteDocument) ||
+         (data.cinDocument && data.cinDocument !== agency.cinDocument));
+      
+      // If verification was previously rejected and new docs are submitted, reset status
+      const shouldResetStatus = agency.verificationStatus === "rejected" && 
+        (isNewSubmission || isResubmission);
+      
+      // Determine if we need to notify the admin
+      const shouldNotifyAdmin = isNewSubmission || isResubmission;
+
+      // Prepare document fields for database update
+      const rneDocument = data.rneDocument || agency.rneDocument || null;
+      const patenteDocument = data.patenteDocument || agency.patenteDocument || null;
+      const cinDocument = data.cinDocument || agency.cinDocument || null;
       
       // Update the agency record
       await db
@@ -98,12 +113,12 @@ export async function updateAgencyProfile(data: {
           country: data.country || null,
           region: data.region || null,
           // Add document fields
-          rneDocument: data.rneDocument || agency.rneDocument,
-          patenteDocument: data.patenteDocument || agency.patenteDocument,
-          cinDocument: data.cinDocument || agency.cinDocument,
+          rneDocument,
+          patenteDocument,
+          cinDocument,
           // If it's a new submission or resubmission after rejection, update verification status
           verificationStatus: shouldResetStatus ? "pending" : agency.verificationStatus,
-          verificationSubmittedAt: isNewSubmission || shouldResetStatus 
+          verificationSubmittedAt: shouldNotifyAdmin 
             ? new Date() 
             : agency.verificationSubmittedAt,
           // Clear rejection reason if resubmitting
@@ -113,6 +128,24 @@ export async function updateAgencyProfile(data: {
           updatedAt: new Date(),
         })
         .where(eq(agencies.id, agency.id));
+
+      // Notify admin if new documents were submitted
+      if (shouldNotifyAdmin && (rneDocument || patenteDocument || cinDocument)) {
+        try {
+          await notifyAdminOfDocumentSubmission({
+            agencyName: data.name,
+            agencyId: agency.id,
+            contactEmail: data.email,
+            isResubmission: isResubmission,
+            rneDocument: rneDocument || undefined,
+            patenteDocument: patenteDocument || undefined,
+            cinDocument: cinDocument || undefined,
+          });
+        } catch (error) {
+          console.error("Failed to send admin notification:", error);
+          // Continue even if notification fails
+        }
+      }
 
       return { success: true };
     }

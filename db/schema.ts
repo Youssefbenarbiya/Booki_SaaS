@@ -89,7 +89,6 @@ export const verification = pgTable("verification", {
 //   createdAt: timestamp("created_at").defaultNow(),
 //   updatedAt: timestamp("updated_at").defaultNow(),
 // })
-
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -134,8 +133,7 @@ export const trips = pgTable("trips", {
   createdBy: text("created_by").references(() => user.id), // Added new field to track creator
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
+})
 // Trip Images table
 export const tripImages = pgTable("trip_images", {
   id: serial("id").primaryKey(),
