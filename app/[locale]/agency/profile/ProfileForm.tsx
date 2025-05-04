@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -13,14 +13,14 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { updateAgencyProfile } from "@/actions/agency/agencyActions";
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { useState, useEffect } from "react"
+import { toast } from "sonner"
+import { updateAgencyProfile } from "@/actions/agency/agencyActions"
 import {
   Loader2,
   Upload,
@@ -30,20 +30,20 @@ import {
   Phone,
   MapPin,
   Globe,
-} from "lucide-react";
-import Image from "next/image";
-import { uploadImages } from "@/actions/uploadActions";
+} from "lucide-react"
+import Image from "next/image"
+import { uploadImages } from "@/actions/uploadActions"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { PhoneInput } from "@/components/ui/phone-input";
-import CountrySelect from "@/components/ui/country-select";
-import RegionSelect from "@/components/ui/region-select";
+} from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { PhoneInput } from "@/components/ui/phone-input"
+import CountrySelect from "@/components/ui/country-select"
+import RegionSelect from "@/components/ui/region-select"
 
 const profileSchema = z.object({
   name: z.string().min(1, "Agency name is required"),
@@ -53,25 +53,25 @@ const profileSchema = z.object({
   logo: z.string().optional(),
   country: z.string().optional(),
   region: z.string().optional(),
-});
+})
 
-export type AgencyProfileFormValues = z.infer<typeof profileSchema>;
+export type AgencyProfileFormValues = z.infer<typeof profileSchema>
 
 interface AgencyProfileFormProps {
-  initialData: any;
+  initialData: any
 }
 
 export default function AgencyProfileForm({
   initialData,
 }: AgencyProfileFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(
     initialData?.logo || null
-  );
+  )
   const [selectedCountry, setSelectedCountry] = useState<string>(
     initialData?.country || ""
-  );
+  )
 
   // Set default values from initial data
   const form = useForm<AgencyProfileFormValues>({
@@ -85,7 +85,7 @@ export default function AgencyProfileForm({
       country: initialData?.country || "",
       region: initialData?.region || "",
     },
-  });
+  })
 
   // Effect to update the form when initialData changes
   useEffect(() => {
@@ -98,47 +98,47 @@ export default function AgencyProfileForm({
         logo: initialData.logo || "",
         country: initialData.country || "",
         region: initialData.region || "",
-      });
-      setSelectedCountry(initialData.country || "");
+      })
+      setSelectedCountry(initialData.country || "")
     }
-  }, [initialData, form]);
+  }, [initialData, form])
 
   // Handle logo upload
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return;
+    if (!e.target.files?.[0]) return
 
-    const file = e.target.files[0];
-    setIsUploading(true);
+    const file = e.target.files[0]
+    setIsUploading(true)
 
     try {
       // Validate file type
       if (!file.type.includes("image/")) {
-        toast.error("Please upload an image file");
-        return;
+        toast.error("Please upload an image file")
+        return
       }
 
       // Create FormData and append file
-      const formData = new FormData();
-      formData.append("file", file);
+      const formData = new FormData()
+      formData.append("file", file)
 
       // Upload the image
-      const logoUrl = await uploadImages(formData);
+      const logoUrl = await uploadImages(formData)
 
       // Update form value and preview
-      form.setValue("logo", logoUrl);
-      setPreviewImage(logoUrl);
-      toast.success("Logo uploaded successfully");
+      form.setValue("logo", logoUrl)
+      setPreviewImage(logoUrl)
+      toast.success("Logo uploaded successfully")
     } catch (error) {
-      console.error("Error uploading logo:", error);
-      toast.error("Failed to upload logo. Please try again.");
+      console.error("Error uploading logo:", error)
+      toast.error("Failed to upload logo. Please try again.")
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
-  };
+  }
 
   // Handle form submission
   const onSubmit = async (data: AgencyProfileFormValues) => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
 
     try {
       // Map form field names to agency schema field names
@@ -150,25 +150,25 @@ export default function AgencyProfileForm({
         logo: data.logo,
         country: data.country,
         region: data.region,
-      };
+      }
 
       // Call the server action to update the agency profile
-      const result = await updateAgencyProfile(agencyData);
+      const result = await updateAgencyProfile(agencyData)
 
       if (result.success) {
-        toast.success("Profile updated successfully!");
+        toast.success("Profile updated successfully!")
       } else {
         toast.error(
           result.error || "Failed to update profile. Please try again."
-        );
+        )
       }
     } catch (error) {
-      console.error("Failed to update profile:", error);
-      toast.error("Failed to update profile. Please try again.");
+      console.error("Failed to update profile:", error)
+      toast.error("Failed to update profile. Please try again.")
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   return (
     <Card className="w-full shadow-md">
@@ -362,11 +362,11 @@ export default function AgencyProfileForm({
                     <FormControl>
                       <CountrySelect
                         placeholder="Select country"
-                        defaultValue={field.value}
+                        value={field.value}
                         onChange={(value) => {
-                          field.onChange(value);
-                          setSelectedCountry(value);
-                          form.setValue("region", ""); // Reset region when country changes
+                          field.onChange(value)
+                          setSelectedCountry(value)
+                          form.setValue("region", "") // Reset region when country changes
                         }}
                         className="border-gray-200 focus-visible:ring-yellow-500"
                       />
@@ -390,9 +390,9 @@ export default function AgencyProfileForm({
                       <RegionSelect
                         countryCode={selectedCountry}
                         placeholder="Select region"
-                        defaultValue={field.value}
+                        value={field.value}
                         onChange={(value) => {
-                          field.onChange(value);
+                          field.onChange(value)
                         }}
                         className="border-gray-200 focus-visible:ring-yellow-500"
                       />
@@ -423,5 +423,5 @@ export default function AgencyProfileForm({
         </Form>
       </CardContent>
     </Card>
-  );
+  )
 }
