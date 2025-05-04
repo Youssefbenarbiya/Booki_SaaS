@@ -89,7 +89,6 @@ export const verification = pgTable("verification", {
 //   createdAt: timestamp("created_at").defaultNow(),
 //   updatedAt: timestamp("updated_at").defaultNow(),
 // })
-
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -107,6 +106,25 @@ export const trips = pgTable("trips", {
     scale: 2,
   }),
   currency: varchar("currency", { length: 10 }).default("TND").notNull(),
+  // Group discount fields
+  groupDiscountEnabled: boolean("group_discount_enabled").default(false),
+  groupDiscountMinPeople: integer("group_discount_min_people"),
+  groupDiscountPercentage: integer("group_discount_percentage"),
+  // Time-specific discount fields
+  timeSpecificDiscountEnabled: boolean(
+    "time_specific_discount_enabled"
+  ).default(false),
+  timeSpecificDiscountStartTime: varchar("time_specific_discount_start_time", {
+    length: 10,
+  }),
+  timeSpecificDiscountEndTime: varchar("time_specific_discount_end_time", {
+    length: 10,
+  }),
+  timeSpecificDiscountDays: text("time_specific_discount_days").array(),
+  timeSpecificDiscountPercentage: integer("time_specific_discount_percentage"),
+  // Child discount fields
+  childDiscountEnabled: boolean("child_discount_enabled").default(false),
+  childDiscountPercentage: integer("child_discount_percentage"),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
@@ -115,8 +133,7 @@ export const trips = pgTable("trips", {
   createdBy: text("created_by").references(() => user.id), // Added new field to track creator
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
+})
 // Trip Images table
 export const tripImages = pgTable("trip_images", {
   id: serial("id").primaryKey(),
