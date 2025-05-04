@@ -12,7 +12,10 @@ import {
 } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
-import { sendVerificationApprovalEmail, sendVerificationRejectionEmail } from "@/lib/verifyAgencyEmail"
+import {
+  sendVerificationApprovalEmail,
+  sendVerificationRejectionEmail,
+} from "@/lib/verifyAgencyEmail"
 
 // Server action to ban/unban a user
 export async function toggleUserBan(formData: FormData) {
@@ -202,7 +205,7 @@ export async function verifyAgency(formData: FormData) {
     try {
       await sendVerificationApprovalEmail({
         agencyName: agency.agencyName,
-        contactEmail: agency.contactEmail
+        contactEmail: agency.contactEmail,
       })
     } catch (error) {
       console.error("Failed to send verification approval email:", error)
@@ -255,13 +258,46 @@ export async function rejectAgency(formData: FormData) {
       await sendVerificationRejectionEmail({
         agencyName: agency.agencyName,
         contactEmail: agency.contactEmail,
-        rejectionReason: rejectionReason
+        rejectionReason: rejectionReason,
       })
     } catch (error) {
       console.error("Failed to send verification rejection email:", error)
       // Continue even if email fails
     }
   }
+
+  // Redirect back to the agency details page
+  redirect(`/${locale}/admin/agencies/${agencyId}`)
+}
+
+// Server action to unverify an agency
+export async function unverifyAgency(formData: FormData) {
+  const agencyId = formData.get("agencyId") as string
+  const locale = (formData.get("locale") as string) || "en"
+
+  const numericAgencyId = parseInt(agencyId)
+  if (isNaN(numericAgencyId)) {
+    throw new Error("Invalid agency ID")
+  }
+
+  // Get the agency
+  const agency = await db.query.agencies.findFirst({
+    where: eq(agencies.id, numericAgencyId),
+  })
+
+  if (!agency) {
+    throw new Error("Agency not found")
+  }
+
+  // Update verification status
+  await db
+    .update(agencies)
+    .set({
+      isVerified: false,
+      verificationStatus: "pending",
+      verificationReviewedAt: new Date(),
+    })
+    .where(eq(agencies.id, numericAgencyId))
 
   // Redirect back to the agency details page
   redirect(`/${locale}/admin/agencies/${agencyId}`)

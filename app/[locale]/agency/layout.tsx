@@ -2,7 +2,6 @@ import { headers } from "next/headers"
 import { auth } from "@/auth"
 import NotAllowed from "@/components/not-allowed"
 import { ReactNode } from "react"
-import { Metadata } from "next"
 import { Sidebar } from "@/components/dashboard/agency/Sidebar"
 import { Locale } from "@/i18n/routing"
 
@@ -11,13 +10,7 @@ interface AgencyLayoutProps {
   params: Promise<{ locale: Locale }> 
 }
 
-export const metadata: Metadata = {
-  title: {
-    template: "%s | Agency",
-    default: "Agency Dashboard",
-  },
-  description: "Agency management portal",
-}
+
 
 export default async function AgencyLayout({
   children,

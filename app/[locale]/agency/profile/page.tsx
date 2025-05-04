@@ -8,7 +8,6 @@ export const metadata: Metadata = {
 }
 
 export default async function AgencyProfilePage() {
-  // Fetch agency data
   const { agency } = await getAgencyProfile()
 
   return (

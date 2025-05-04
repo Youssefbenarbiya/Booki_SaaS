@@ -1,10 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { BookingsList } from "@/components/bookings/BookingsList"
 import { getAllBookings } from "@/actions/bookings"
-import { redirect } from "next/navigation"
-import { auth } from "@/auth"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { headers } from "next/headers"
 
 
 export default async function AgencyBookingsPage({
@@ -12,21 +10,9 @@ export default async function AgencyBookingsPage({
 }: {
   params: Promise<{ locale: string }>
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
+  
 const {locale} = await params
-  if (!session?.user) {
-    redirect(`/${locale}/sign-in`)
-  }
 
-  if (
-    session.user.role !== "agency owner" &&
-    session.user.role !== "employee" &&
-    session.user.role !== "admin"
-  ) {
-    redirect(`/${locale}/`)
-  }
 
   try {
     // Fetch all customer bookings for this agency's offerings
