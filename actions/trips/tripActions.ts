@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { headers } from "next/headers";
+import { sendTripApprovalRequest } from "../admin/adminNotifications";
 
 const tripSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -133,6 +134,11 @@ export async function createTrip(data: TripInput) {
           scheduledDate: activity.scheduledDate?.toISOString(),
         }))
       );
+    }
+
+    // If the trip is being created as available and with pending status, notify admin
+    if (isAvailable && trip.status === "pending") {
+      await sendTripApprovalRequest(trip.id);
     }
 
     revalidatePath("/agency/dashboard/trips");
@@ -310,6 +316,9 @@ export async function publishTrip(id: number) {
       })
       .where(eq(trips.id, id))
       .returning();
+
+    // Send notification email to admin
+    await sendTripApprovalRequest(id);
 
     revalidatePath("/agency/dashboard/trips");
     revalidatePath("/");

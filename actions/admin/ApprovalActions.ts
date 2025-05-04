@@ -10,6 +10,12 @@ import {
   sendHotelStatusNotification,
   sendBlogStatusNotification,
 } from "./notificationActions"
+import {
+  sendTripApprovalDecisionEmail,
+  sendCarApprovalDecisionEmail,
+  sendHotelApprovalDecisionEmail,
+  sendBlogApprovalDecisionEmail,
+} from "./adminNotifications"
 
 export async function approveTrip(tripId: number) {
   try {
@@ -23,6 +29,9 @@ export async function approveTrip(tripId: number) {
 
     // Send notification to agency
     await sendTripStatusNotification(tripId, "approved")
+    
+    // Send email notification to agency
+    await sendTripApprovalDecisionEmail(tripId, true)
 
     revalidatePath("/admin/dashboard")
     return { success: true, message: "Trip approved successfully" }
@@ -32,7 +41,7 @@ export async function approveTrip(tripId: number) {
   }
 }
 
-export async function rejectTrip(tripId: number) {
+export async function rejectTrip(tripId: number, rejectionReason?: string) {
   try {
     await db
       .update(trips)
@@ -45,6 +54,9 @@ export async function rejectTrip(tripId: number) {
 
     // Send notification to agency
     await sendTripStatusNotification(tripId, "rejected")
+    
+    // Send email notification to agency
+    await sendTripApprovalDecisionEmail(tripId, false, rejectionReason)
 
     revalidatePath("/admin/dashboard")
     return { success: true, message: "Trip rejected successfully" }
@@ -66,6 +78,9 @@ export async function approveCar(carId: number) {
 
     // Send notification to agency
     await sendCarStatusNotification(carId, "approved")
+    
+    // Send email notification to agency
+    await sendCarApprovalDecisionEmail(carId, true)
 
     revalidatePath("/admin/dashboard")
     return { success: true, message: "Car approved successfully" }
@@ -75,7 +90,7 @@ export async function approveCar(carId: number) {
   }
 }
 
-export async function rejectCar(carId: number) {
+export async function rejectCar(carId: number, rejectionReason?: string) {
   try {
     await db
       .update(cars)
@@ -88,6 +103,9 @@ export async function rejectCar(carId: number) {
 
     // Send notification to agency
     await sendCarStatusNotification(carId, "rejected")
+    
+    // Send email notification to agency
+    await sendCarApprovalDecisionEmail(carId, false, rejectionReason)
 
     revalidatePath("/admin/dashboard")
     return { success: true, message: "Car rejected successfully" }
@@ -115,6 +133,9 @@ export async function approveHotel(hotelId: string | number) {
 
     // Send notification to agency
     await sendHotelStatusNotification(hotelId, "approved")
+    
+    // Send email notification to agency
+    await sendHotelApprovalDecisionEmail(hotelIdString, true)
 
     // Revalidate all relevant paths
     revalidatePath("/admin/dashboard")
@@ -130,7 +151,7 @@ export async function approveHotel(hotelId: string | number) {
   }
 }
 
-export async function rejectHotel(hotelId: string | number) {
+export async function rejectHotel(hotelId: string | number, rejectionReason?: string) {
   try {
     // Convert the hotelId to string if it's a number
     const hotelIdString =
@@ -148,6 +169,9 @@ export async function rejectHotel(hotelId: string | number) {
 
     // Send notification to agency
     await sendHotelStatusNotification(hotelId, "rejected")
+    
+    // Send email notification to agency
+    await sendHotelApprovalDecisionEmail(hotelIdString, false, rejectionReason)
 
     // Revalidate all relevant paths
     revalidatePath("/admin/dashboard")
@@ -177,6 +201,9 @@ export async function approveBlog(blogId: number) {
 
     // Send notification to agency
     await sendBlogStatusNotification(blogId, "approved")
+    
+    // Send email notification to agency/author
+    await sendBlogApprovalDecisionEmail(blogId, true)
 
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/verify-blogs")
@@ -188,7 +215,7 @@ export async function approveBlog(blogId: number) {
   }
 }
 
-export async function rejectBlog(blogId: number) {
+export async function rejectBlog(blogId: number, rejectionReason?: string) {
   try {
     await db
       .update(blogs)
@@ -202,6 +229,9 @@ export async function rejectBlog(blogId: number) {
 
     // Send notification to agency
     await sendBlogStatusNotification(blogId, "rejected")
+    
+    // Send email notification to agency/author
+    await sendBlogApprovalDecisionEmail(blogId, false, rejectionReason)
 
     revalidatePath("/admin/dashboard")
     revalidatePath("/admin/verify-blogs")

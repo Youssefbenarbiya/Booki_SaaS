@@ -8,6 +8,7 @@ import { eq, sql, desc, asc } from "drizzle-orm"
 import fs from "fs/promises"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
+import { sendBlogApprovalRequest } from "../admin/adminNotifications"
 
 // ===== HELPER FUNCTIONS =====
 
@@ -270,6 +271,9 @@ export async function createBlog(formData: FormData, authorId: string) {
         status: "pending", // Set initial status to pending
       })
       .returning()
+
+    // Send notification email to admin
+    await sendBlogApprovalRequest(newBlog.id)
 
     revalidatePath("/agency/dashboard/blogs")
     revalidatePath("/blog")
