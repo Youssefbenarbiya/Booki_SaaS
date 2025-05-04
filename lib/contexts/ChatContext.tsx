@@ -12,6 +12,11 @@ import React, {
 } from "react";
 import { useSession } from "@/auth-client";
 import { ChatMessage } from "@/lib/types/chat";
+import * as dotenv from 'dotenv'
+import { eq } from "drizzle-orm"
+
+// Load environment variables from .env file
+dotenv.config({ path: '../.env' })
 
 export interface ChatContextType {
   messages: ChatMessage[];
@@ -386,8 +391,7 @@ export const ChatProvider = ({ children, onError }: ChatProviderProps) => {
 
       try {
         // For development mode, always use localhost:3001 if no env variable
-        const baseWsUrl =
-          process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
+        const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
 
         // Connect directly to the WebSocket server port
         let wsUrl = `${baseWsUrl}?userId=${session.data.user.id}&postId=${postId}&postType=${postType}&token=development-token`;

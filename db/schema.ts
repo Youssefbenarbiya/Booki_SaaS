@@ -619,6 +619,7 @@ export const chatMessages = pgTable("chat_messages", {
   type: varchar("type", { length: 20 }).notNull().default("text"), // 'text', 'image', 'notification'
   isRead: boolean("is_read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  customerId: varchar("customer_id")
 });
 
 // Chat messages relations

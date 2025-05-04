@@ -4,6 +4,7 @@ import { chatMessages, agencies, agencyEmployees } from "@/db/schema"
 import { eq, and, desc, or, count, inArray } from "drizzle-orm"
 import { ChatMessage } from "@/lib/types/chat"
 import db from "@/db/drizzle"
+import { getChatApiUrl } from "@/lib/config/chatConfig"
 
 /**
  * Save a chat message to the database
@@ -12,6 +13,27 @@ export async function saveChatMessage(message: ChatMessage) {
   try {
     console.log("Saving chat message to database:", message);
     
+    // With microservice, we have two options:
+    // 1. Continue using direct database operations (default)
+    // 2. Forward to the microservice API (uncomment to use)
+
+    /* Microservice API approach - uncomment to use
+    const chatApiUrl = getChatApiUrl();
+    const response = await fetch(`${chatApiUrl}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(message),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error saving message: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+    */
+    
+    // Default direct database approach:
     // IMPORTANT: Remove customerId from database insert since the column doesn't exist yet
     // We'll use in-memory filtering instead
     const { customerId, ...messageToSave } = message as any;
@@ -68,6 +90,25 @@ async function getAgencyUserIds(agencyId: string): Promise<string[]> {
  */
 export async function getChatMessages(postId: string, postType: string, userId: string) {
   try {
+    // With microservice, we have two options:
+    // 1. Continue using direct database operations (default)
+    // 2. Forward to the microservice API (uncomment to use)
+
+    /* Microservice API approach - uncomment to use
+    const chatApiUrl = getChatApiUrl();
+    const response = await fetch(
+      `${chatApiUrl}/messages?postId=${postId}&postType=${postType}&userId=${userId}`,
+      { cache: 'no-store' }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Error fetching messages: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+    */
+
     // Check if user is an agency member
     const agency = await db.query.agencies.findFirst({
       where: eq(agencies.userId, userId),
@@ -107,16 +148,113 @@ export async function getChatMessages(postId: string, postType: string, userId: 
     const result = await db.query.chatMessages.findMany({
       where: conditions,
       orderBy: [desc(chatMessages.createdAt)],
-      with: {
-        sender: true,
-        receiver: true,
-      },
     });
 
     return { success: true, messages: result }
   } catch (error) {
     console.error("Error fetching chat messages:", error)
     return { success: false, error: "Failed to fetch messages" }
+  }
+}
+
+/**
+ * Get all agency conversations with their last messages
+ */
+export async function getAgencyConversations(agencyId: string) {
+  try {
+    /* Microservice API approach - uncomment to use
+    const chatApiUrl = getChatApiUrl();
+    const response = await fetch(
+      `${chatApiUrl}/conversations?agencyId=${agencyId}`,
+      { cache: 'no-store' }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Error fetching conversations: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+    */
+
+    // Get the agency's user IDs (owner + employees)
+    const agencyUserIds = await getAgencyUserIds(agencyId);
+    
+    // Get all posts with messages involving this agency
+    const messagePosts = await db.select({
+      postId: chatMessages.postId,
+      postType: chatMessages.postType,
+    })
+    .from(chatMessages)
+    .where(
+      or(
+        inArray(chatMessages.senderId, agencyUserIds),
+        inArray(chatMessages.receiverId, agencyUserIds)
+      )
+    )
+    .groupBy(chatMessages.postId, chatMessages.postType);
+    
+    // For each post, get the last message and unread count
+    const conversations = await Promise.all(
+      messagePosts.map(async (post) => {
+        // Get the last message for this post
+        const lastMessageResult = await db.query.chatMessages.findMany({
+          where: and(
+            eq(chatMessages.postId, post.postId),
+            eq(chatMessages.postType, post.postType),
+            or(
+              inArray(chatMessages.senderId, agencyUserIds),
+              inArray(chatMessages.receiverId, agencyUserIds)
+            )
+          ),
+          orderBy: [desc(chatMessages.createdAt)],
+          limit: 1,
+        });
+        
+        // Get unread count for this post
+        const unreadResult = await db.select({ count: count() })
+          .from(chatMessages)
+          .where(and(
+            eq(chatMessages.postId, post.postId),
+            eq(chatMessages.postType, post.postType),
+            inArray(chatMessages.receiverId, agencyUserIds),
+            eq(chatMessages.isRead, false)
+          ));
+        
+        const lastMessage = lastMessageResult[0] || null;
+        const unreadCount = unreadResult[0]?.count || 0;
+        
+        // Get customer ID and name
+        let customerId = null;
+        let customerName = null;
+        
+        if (lastMessage) {
+          // Determine the customer ID (the person who is not from the agency)
+          if (!agencyUserIds.includes(lastMessage.senderId)) {
+            customerId = lastMessage.senderId;
+          } else if (!agencyUserIds.includes(lastMessage.receiverId)) {
+            customerId = lastMessage.receiverId;
+          }
+          
+          // For future: fetch customer name
+        }
+        
+        return {
+          postId: post.postId,
+          postType: post.postType,
+          postName: post.postId, // Default name, should be overridden by API call
+          lastMessage,
+          unreadCount,
+          customerId,
+          customerName
+        };
+      })
+    );
+    
+    return { success: true, conversations };
+  } catch (error) {
+    console.error("Error getting agency conversations:", error);
+    return { success: false, error: "Failed to get conversations" };
   }
 }
 
