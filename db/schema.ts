@@ -107,6 +107,25 @@ export const trips = pgTable("trips", {
     scale: 2,
   }),
   currency: varchar("currency", { length: 10 }).default("TND").notNull(),
+  // Group discount fields
+  groupDiscountEnabled: boolean("group_discount_enabled").default(false),
+  groupDiscountMinPeople: integer("group_discount_min_people"),
+  groupDiscountPercentage: integer("group_discount_percentage"),
+  // Time-specific discount fields
+  timeSpecificDiscountEnabled: boolean(
+    "time_specific_discount_enabled"
+  ).default(false),
+  timeSpecificDiscountStartTime: varchar("time_specific_discount_start_time", {
+    length: 10,
+  }),
+  timeSpecificDiscountEndTime: varchar("time_specific_discount_end_time", {
+    length: 10,
+  }),
+  timeSpecificDiscountDays: text("time_specific_discount_days").array(),
+  timeSpecificDiscountPercentage: integer("time_specific_discount_percentage"),
+  // Child discount fields
+  childDiscountEnabled: boolean("child_discount_enabled").default(false),
+  childDiscountPercentage: integer("child_discount_percentage"),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
@@ -513,7 +532,7 @@ export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }) 
+    .references(() => user.id, { onDelete: "cascade" })
     .unique(),
   agencyUniqueId: varchar("agency_unique_id", { length: 20 })
     .notNull()
@@ -531,7 +550,9 @@ export const agencies = pgTable("agencies", {
   patenteDocument: text("patente_document"),
   cinDocument: text("cin_document"),
   isVerified: boolean("is_verified").default(false),
-  verificationStatus: varchar("verification_status", { length: 50 }).default("pending"),
+  verificationStatus: varchar("verification_status", { length: 50 }).default(
+    "pending"
+  ),
   verificationRejectionReason: text("verification_rejection_reason"),
   verificationSubmittedAt: timestamp("verification_submitted_at"),
   verificationReviewedAt: timestamp("verification_reviewed_at"),

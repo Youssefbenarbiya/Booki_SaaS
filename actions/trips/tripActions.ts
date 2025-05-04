@@ -32,6 +32,34 @@ const tripSchema = z.object({
   isAvailable: z.boolean().default(true),
   images: z.array(z.string()),
   currency: z.string().default("USD"),
+  // Group Discount
+  groupDiscountEnabled: z.boolean().optional().default(false),
+  groupDiscountMinPeople: z.coerce.number().int().min(2).optional().nullable(),
+  groupDiscountPercentage: z.coerce
+    .number()
+    .min(0)
+    .max(100)
+    .optional()
+    .nullable(),
+  // Time-specific Discount
+  timeSpecificDiscountEnabled: z.boolean().optional().default(false),
+  timeSpecificDiscountStartTime: z.string().optional().nullable(),
+  timeSpecificDiscountEndTime: z.string().optional().nullable(),
+  timeSpecificDiscountDays: z.array(z.string()).optional().nullable(),
+  timeSpecificDiscountPercentage: z.coerce
+    .number()
+    .min(0)
+    .max(100)
+    .optional()
+    .nullable(),
+  // Child Discount
+  childDiscountEnabled: z.boolean().optional().default(false),
+  childDiscountPercentage: z.coerce
+    .number()
+    .min(0)
+    .max(100)
+    .optional()
+    .nullable(),
   activities: z
     .array(
       z.object({
@@ -103,14 +131,32 @@ export async function createTrip(data: TripInput) {
         startDate: validatedData.startDate.toISOString(),
         endDate: validatedData.endDate.toISOString(),
         originalPrice: validatedData.originalPrice.toString(),
-        discountPercentage: validatedData.discountPercentage || undefined,
+        discountPercentage: validatedData.discountPercentage || null,
         priceAfterDiscount:
-          validatedData.priceAfterDiscount?.toString() || undefined,
+          validatedData.priceAfterDiscount?.toString() || null,
         capacity: validatedData.capacity,
         isAvailable: isAvailable,
         agencyId: agencyId, // Use the agencyId from our helper
         createdBy: session.user.id, // Track who created it
         currency: validatedData.currency || "USD",
+        // Group Discount
+        groupDiscountEnabled: validatedData.groupDiscountEnabled ?? false,
+        groupDiscountMinPeople: validatedData.groupDiscountMinPeople || null,
+        groupDiscountPercentage: validatedData.groupDiscountPercentage || null,
+        // Time-specific Discount
+        timeSpecificDiscountEnabled:
+          validatedData.timeSpecificDiscountEnabled ?? false,
+        timeSpecificDiscountStartTime:
+          validatedData.timeSpecificDiscountStartTime || null,
+        timeSpecificDiscountEndTime:
+          validatedData.timeSpecificDiscountEndTime || null,
+        timeSpecificDiscountDays:
+          validatedData.timeSpecificDiscountDays || null,
+        timeSpecificDiscountPercentage:
+          validatedData.timeSpecificDiscountPercentage || null,
+        // Child Discount
+        childDiscountEnabled: validatedData.childDiscountEnabled ?? false,
+        childDiscountPercentage: validatedData.childDiscountPercentage || null,
       })
       .returning();
 
@@ -212,6 +258,24 @@ export async function updateTrip(id: number, data: TripInput) {
     const isAvailable =
       validatedData.capacity === 0 ? false : validatedData.isAvailable;
 
+    console.log(
+      "Updating trip with data:",
+      JSON.stringify(
+        {
+          groupDiscountEnabled: validatedData.groupDiscountEnabled,
+          groupDiscountMinPeople: validatedData.groupDiscountMinPeople,
+          groupDiscountPercentage: validatedData.groupDiscountPercentage,
+          timeSpecificDiscountEnabled:
+            validatedData.timeSpecificDiscountEnabled,
+          timeSpecificDiscountDays: validatedData.timeSpecificDiscountDays,
+          childDiscountEnabled: validatedData.childDiscountEnabled,
+          childDiscountPercentage: validatedData.childDiscountPercentage,
+        },
+        null,
+        2
+      )
+    );
+
     // Update trip with explicit null values for discount fields when they're undefined
     const [trip] = await db
       .update(trips)
@@ -228,6 +292,24 @@ export async function updateTrip(id: number, data: TripInput) {
         capacity: validatedData.capacity,
         isAvailable: isAvailable,
         currency: validatedData.currency || "USD",
+        // Group Discount
+        groupDiscountEnabled: validatedData.groupDiscountEnabled ?? false,
+        groupDiscountMinPeople: validatedData.groupDiscountMinPeople ?? null,
+        groupDiscountPercentage: validatedData.groupDiscountPercentage ?? null,
+        // Time-specific Discount
+        timeSpecificDiscountEnabled:
+          validatedData.timeSpecificDiscountEnabled ?? false,
+        timeSpecificDiscountStartTime:
+          validatedData.timeSpecificDiscountStartTime ?? null,
+        timeSpecificDiscountEndTime:
+          validatedData.timeSpecificDiscountEndTime ?? null,
+        timeSpecificDiscountDays:
+          validatedData.timeSpecificDiscountDays ?? null,
+        timeSpecificDiscountPercentage:
+          validatedData.timeSpecificDiscountPercentage ?? null,
+        // Child Discount
+        childDiscountEnabled: validatedData.childDiscountEnabled ?? false,
+        childDiscountPercentage: validatedData.childDiscountPercentage ?? null,
       })
       .where(eq(trips.id, id))
       .returning();
