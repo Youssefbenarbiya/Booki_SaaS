@@ -1,51 +1,51 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-"use client";
+"use client"
 
-import { useTransition, useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { createTrip, type TripInput } from "@/actions/trips/tripActions";
-import { ImageUploadSection } from "@/components/ImageUploadSection";
-import { fileToFormData, cn } from "@/lib/utils";
-import { uploadImages } from "@/actions/uploadActions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+import { useTransition, useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { useRouter } from "next/navigation"
+import { createTrip, type TripInput } from "@/actions/trips/tripActions"
+import { ImageUploadSection } from "@/components/ImageUploadSection"
+import { fileToFormData, cn } from "@/lib/utils"
+import { uploadImages } from "@/actions/uploadActions"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { format, startOfDay } from "date-fns";
+} from "@/components/ui/select"
+import { format, startOfDay } from "date-fns"
 
-import { CalendarIcon, Percent, DollarSign, Info } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
-import { useCurrency } from "@/lib/contexts/CurrencyContext";
+import { CalendarIcon, Percent, DollarSign, Info } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Separator } from "@/components/ui/separator"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
 
 // Define currency type for this component
 type Currency = {
-  code: string;
-  symbol: string;
-  name: string;
-};
+  code: string
+  symbol: string
+  name: string
+}
 
 // Define available currencies array locally since it's not exported by the context
 const currencies: Currency[] = [
@@ -56,77 +56,77 @@ const currencies: Currency[] = [
   { code: "JPY", symbol: "¥", name: "Japanese Yen" },
   { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
   { code: "AUD", symbol: "A$", name: "Australian Dollar" },
-];
+]
 
 // Extended TripInput type to include discount and currency
 interface ExtendedTripInput extends TripInput {
-  discountPercentage?: number;
-  currency: string;
-  // Add new discount types
-  groupDiscountEnabled?: boolean;
-  groupDiscountMinPeople?: number;
-  groupDiscountPercentage?: number;
-  timeSpecificDiscountEnabled?: boolean;
-  timeSpecificDiscountStartTime?: string;
-  timeSpecificDiscountEndTime?: string;
-  timeSpecificDiscountDays?: string[];
-  timeSpecificDiscountPercentage?: number;
-  childDiscountEnabled?: boolean;
-  childDiscountPercentage?: number;
+  discountPercentage?: number
+  currency: string
+  // These properties need to match the parent interface
+  groupDiscountEnabled: boolean
+  timeSpecificDiscountEnabled: boolean
+  childDiscountEnabled: boolean
+  groupDiscountMinPeople?: number
+  groupDiscountPercentage?: number
+  timeSpecificDiscountStartTime?: string
+  timeSpecificDiscountEndTime?: string
+  timeSpecificDiscountDays?: string[]
+  timeSpecificDiscountPercentage?: number
+  childDiscountPercentage?: number
 }
 
 export default function NewTripForm() {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   // Get the currency from the context
-  const { currency: contextCurrency, setCurrency } = useCurrency();
+  const { currency: contextCurrency, setCurrency } = useCurrency()
 
   // Image states
-  const [images, setImages] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [uploadError, setUploadError] = useState<string>("");
+  const [images, setImages] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [uploadError, setUploadError] = useState<string>("")
 
   // Discount states
-  const [hasDiscount, setHasDiscount] = useState(false);
-  const [discountPercentage, setDiscountPercentage] = useState<number>(0);
-  const [originalPrice, setOriginalPrice] = useState<number>(0);
-  const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(0);
-  const [customPercentage, setCustomPercentage] = useState<boolean>(false);
+  const [hasDiscount, setHasDiscount] = useState(false)
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0)
+  const [originalPrice, setOriginalPrice] = useState<number>(0)
+  const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(0)
+  const [customPercentage, setCustomPercentage] = useState<boolean>(false)
 
   // New discount type states
   const [groupDiscountEnabled, setGroupDiscountEnabled] =
-    useState<boolean>(false);
+    useState<boolean>(false)
   const [groupDiscountMinPeople, setGroupDiscountMinPeople] =
-    useState<number>(2);
+    useState<number>(2)
   const [groupDiscountPercentage, setGroupDiscountPercentage] =
-    useState<number>(10);
+    useState<number>(10)
 
   const [timeSpecificDiscountEnabled, setTimeSpecificDiscountEnabled] =
-    useState<boolean>(false);
+    useState<boolean>(false)
   const [timeSpecificDiscountStartTime, setTimeSpecificDiscountStartTime] =
-    useState<string>("08:00");
+    useState<string>("08:00")
   const [timeSpecificDiscountEndTime, setTimeSpecificDiscountEndTime] =
-    useState<string>("10:00");
+    useState<string>("10:00")
   const [timeSpecificDiscountDays, setTimeSpecificDiscountDays] = useState<
     string[]
-  >(["Monday"]);
+  >(["Monday"])
   const [timeSpecificDiscountPercentage, setTimeSpecificDiscountPercentage] =
-    useState<number>(15);
+    useState<number>(15)
 
   const [childDiscountEnabled, setChildDiscountEnabled] =
-    useState<boolean>(false);
+    useState<boolean>(false)
   const [childDiscountPercentage, setChildDiscountPercentage] =
-    useState<number>(25);
+    useState<number>(25)
 
   // Currency state - use context currency as default
   const [selectedCurrency, setSelectedCurrency] = useState(
     contextCurrency || "USD"
-  );
+  )
 
   // Date states
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
+  const [startDate, setStartDate] = useState<Date>()
+  const [endDate, setEndDate] = useState<Date>()
 
   const {
     register,
@@ -151,82 +151,81 @@ export default function NewTripForm() {
       childDiscountEnabled: false,
       childDiscountPercentage: 25,
     },
-  });
+  })
 
   // Watch original price to update discount calculations
-  const watchedOriginalPrice = watch("originalPrice");
+  const watchedOriginalPrice = watch("originalPrice")
 
   // Update original price when price changes
   useEffect(() => {
     if (watchedOriginalPrice) {
-      const price = Number(watchedOriginalPrice);
-      setOriginalPrice(price);
-      calculatePriceAfterDiscount(price, discountPercentage);
+      const price = Number(watchedOriginalPrice)
+      setOriginalPrice(price)
+      calculatePriceAfterDiscount(price, discountPercentage)
     }
-  }, [watchedOriginalPrice, discountPercentage]);
+  }, [watchedOriginalPrice, discountPercentage])
 
   // Calculate price after discount
   const calculatePriceAfterDiscount = (price: number, percentage: number) => {
     if (!price || !percentage) {
-      setPriceAfterDiscount(price || 0);
-      return price || 0;
+      setPriceAfterDiscount(price || 0)
+      return price || 0
     }
 
-    const calculatedPrice = price - price * (percentage / 100);
-    const roundedPrice = Math.round(calculatedPrice * 100) / 100; // Round to 2 decimal places
-    setPriceAfterDiscount(roundedPrice);
-    setValue("priceAfterDiscount", roundedPrice);
-    return roundedPrice;
-  };
+    const calculatedPrice = price - price * (percentage / 100)
+    const roundedPrice = Math.round(calculatedPrice * 100) / 100 // Round to 2 decimal places
+    setPriceAfterDiscount(roundedPrice)
+    setValue("priceAfterDiscount", roundedPrice)
+    return roundedPrice
+  }
 
   // Apply percentage discount
   const applyPercentageDiscount = (percentage: number) => {
-    setDiscountPercentage(percentage);
-    setValue("discountPercentage", percentage);
+    setDiscountPercentage(percentage)
+    setValue("discountPercentage", percentage)
 
-    const price = Number(watchedOriginalPrice) || 0;
-    calculatePriceAfterDiscount(price, percentage);
-  };
+    const price = Number(watchedOriginalPrice) || 0
+    calculatePriceAfterDiscount(price, percentage)
+  }
 
   // Handle currency change
   const handleCurrencyChange = (value: string) => {
-    setSelectedCurrency(value);
-    setValue("currency", value);
+    setSelectedCurrency(value)
+    setValue("currency", value)
     // Update the context currency
-    setCurrency(value);
-  };
+    setCurrency(value)
+  }
 
   async function onSubmit(data: ExtendedTripInput) {
     try {
       // Upload images first
-      let imageUrls: string[] = [];
+      let imageUrls: string[] = []
       if (images.length > 0) {
         try {
           imageUrls = await Promise.all(
             images.map(async (file) => {
-              const formData = await fileToFormData(file);
-              return uploadImages(formData);
+              const formData = await fileToFormData(file)
+              return uploadImages(formData)
             })
-          );
+          )
         } catch (error) {
-          console.error("Error uploading images:", error);
-          setUploadError("Failed to upload images");
-          return;
+          console.error("Error uploading images:", error)
+          setUploadError("Failed to upload images")
+          return
         }
       }
 
       // Calculate price after discount if applicable
-      let finalPriceAfterDiscount = null;
+      let finalPriceAfterDiscount = null
       if (hasDiscount && data.discountPercentage) {
         finalPriceAfterDiscount = calculatePriceAfterDiscount(
           Number(data.originalPrice),
           data.discountPercentage
-        );
+        )
       }
 
       // Automatically set isAvailable to false if capacity is 0
-      const isAvailable =
-        Number(data.capacity) === 0 ? false : data.isAvailable;
+      const isAvailable = Number(data.capacity) === 0 ? false : data.isAvailable
 
       // Log discount data before submission
       console.log("Submitting new trip with discount data:", {
@@ -240,7 +239,7 @@ export default function NewTripForm() {
         timeSpecificDiscountPercentage,
         childDiscountEnabled,
         childDiscountPercentage,
-      });
+      })
 
       // Create trip with image URLs, discount info, and currency
       const formattedData = {
@@ -281,13 +280,13 @@ export default function NewTripForm() {
         childDiscountPercentage: childDiscountEnabled
           ? childDiscountPercentage
           : null,
-      };
+      }
 
-      await createTrip(formattedData);
-      router.push("/agency/dashboard/trips");
-      router.refresh();
+      await createTrip(formattedData)
+      router.push("/agency/dashboard/trips")
+      router.refresh()
     } catch (error) {
-      console.error("Error creating trip:", error);
+      console.error("Error creating trip:", error)
     }
   }
 
@@ -345,9 +344,9 @@ export default function NewTripForm() {
                       mode="single"
                       selected={startDate}
                       onSelect={(date) => {
-                        setStartDate(date);
+                        setStartDate(date)
                         if (date) {
-                          setValue("startDate", date);
+                          setValue("startDate", date)
                         }
                       }}
                       disabled={{ before: startOfDay(new Date()) }}
@@ -382,9 +381,9 @@ export default function NewTripForm() {
                       mode="single"
                       selected={endDate}
                       onSelect={(date) => {
-                        setEndDate(date);
+                        setEndDate(date)
                         if (date) {
-                          setValue("endDate", date);
+                          setValue("endDate", date)
                         }
                       }}
                       disabled={{
@@ -424,13 +423,13 @@ export default function NewTripForm() {
                             {...register("originalPrice", {
                               required: "Original price is required",
                               onChange: (e) => {
-                                const price = Number(e.target.value);
-                                setOriginalPrice(price);
+                                const price = Number(e.target.value)
+                                setOriginalPrice(price)
                                 if (hasDiscount && discountPercentage) {
                                   calculatePriceAfterDiscount(
                                     price,
                                     discountPercentage
-                                  );
+                                  )
                                 }
                               },
                             })}
@@ -480,13 +479,13 @@ export default function NewTripForm() {
                         id="hasDiscount"
                         checked={hasDiscount}
                         onCheckedChange={(checked) => {
-                          setHasDiscount(!!checked);
+                          setHasDiscount(!!checked)
                           if (!checked) {
-                            setDiscountPercentage(0);
-                            setValue("discountPercentage", undefined);
-                            setValue("priceAfterDiscount", undefined);
-                            setPriceAfterDiscount(0);
-                            setCustomPercentage(false);
+                            setDiscountPercentage(0)
+                            setValue("discountPercentage", undefined)
+                            setValue("priceAfterDiscount", undefined)
+                            setPriceAfterDiscount(0)
+                            setCustomPercentage(false)
                           }
                         }}
                       />
@@ -507,13 +506,13 @@ export default function NewTripForm() {
                             }
                             onValueChange={(value) => {
                               if (value === "custom") {
-                                setCustomPercentage(true);
-                                return;
+                                setCustomPercentage(true)
+                                return
                               }
 
-                              setCustomPercentage(false);
-                              const percentage = Number.parseInt(value, 10);
-                              applyPercentageDiscount(percentage);
+                              setCustomPercentage(false)
+                              const percentage = Number.parseInt(value, 10)
+                              applyPercentageDiscount(percentage)
                             }}
                             className="flex flex-wrap gap-2"
                           >
@@ -546,13 +545,13 @@ export default function NewTripForm() {
                                   const value = Number.parseInt(
                                     e.target.value,
                                     10
-                                  );
+                                  )
                                   if (
                                     !isNaN(value) &&
                                     value >= 0 &&
                                     value <= 100
                                   ) {
-                                    applyPercentageDiscount(value);
+                                    applyPercentageDiscount(value)
                                   }
                                 }}
                                 className="w-24"
@@ -629,8 +628,8 @@ export default function NewTripForm() {
                                 id="groupDiscountEnabled"
                                 checked={groupDiscountEnabled}
                                 onCheckedChange={(checked) => {
-                                  setGroupDiscountEnabled(!!checked);
-                                  setValue("groupDiscountEnabled", !!checked);
+                                  setGroupDiscountEnabled(!!checked)
+                                  setValue("groupDiscountEnabled", !!checked)
                                 }}
                               />
                               <Label
@@ -666,13 +665,13 @@ export default function NewTripForm() {
                                     min="2"
                                     value={groupDiscountMinPeople}
                                     onChange={(e) => {
-                                      const value = Number(e.target.value);
+                                      const value = Number(e.target.value)
                                       if (value >= 2) {
-                                        setGroupDiscountMinPeople(value);
+                                        setGroupDiscountMinPeople(value)
                                         setValue(
                                           "groupDiscountMinPeople",
                                           value
-                                        );
+                                        )
                                       }
                                     }}
                                   />
@@ -689,13 +688,13 @@ export default function NewTripForm() {
                                       max="100"
                                       value={groupDiscountPercentage}
                                       onChange={(e) => {
-                                        const value = Number(e.target.value);
+                                        const value = Number(e.target.value)
                                         if (value >= 1 && value <= 100) {
-                                          setGroupDiscountPercentage(value);
+                                          setGroupDiscountPercentage(value)
                                           setValue(
                                             "groupDiscountPercentage",
                                             value
-                                          );
+                                          )
                                         }
                                       }}
                                     />
@@ -713,11 +712,11 @@ export default function NewTripForm() {
                                 id="timeSpecificDiscountEnabled"
                                 checked={timeSpecificDiscountEnabled}
                                 onCheckedChange={(checked) => {
-                                  setTimeSpecificDiscountEnabled(!!checked);
+                                  setTimeSpecificDiscountEnabled(!!checked)
                                   setValue(
                                     "timeSpecificDiscountEnabled",
                                     !!checked
-                                  );
+                                  )
                                 }}
                               />
                               <Label
@@ -755,11 +754,11 @@ export default function NewTripForm() {
                                       onChange={(e) => {
                                         setTimeSpecificDiscountStartTime(
                                           e.target.value
-                                        );
+                                        )
                                         setValue(
                                           "timeSpecificDiscountStartTime",
                                           e.target.value
-                                        );
+                                        )
                                       }}
                                     />
                                   </div>
@@ -774,11 +773,11 @@ export default function NewTripForm() {
                                       onChange={(e) => {
                                         setTimeSpecificDiscountEndTime(
                                           e.target.value
-                                        );
+                                        )
                                         setValue(
                                           "timeSpecificDiscountEndTime",
                                           e.target.value
-                                        );
+                                        )
                                       }}
                                     />
                                   </div>
@@ -812,26 +811,26 @@ export default function NewTripForm() {
                                               const newDays = [
                                                 ...timeSpecificDiscountDays,
                                                 day,
-                                              ];
+                                              ]
                                               setTimeSpecificDiscountDays(
                                                 newDays
-                                              );
+                                              )
                                               setValue(
                                                 "timeSpecificDiscountDays",
                                                 newDays
-                                              );
+                                              )
                                             } else {
                                               const newDays =
                                                 timeSpecificDiscountDays.filter(
                                                   (d) => d !== day
-                                                );
+                                                )
                                               setTimeSpecificDiscountDays(
                                                 newDays
-                                              );
+                                              )
                                               setValue(
                                                 "timeSpecificDiscountDays",
                                                 newDays
-                                              );
+                                              )
                                             }
                                           }}
                                         />
@@ -855,15 +854,15 @@ export default function NewTripForm() {
                                       max="100"
                                       value={timeSpecificDiscountPercentage}
                                       onChange={(e) => {
-                                        const value = Number(e.target.value);
+                                        const value = Number(e.target.value)
                                         if (value >= 1 && value <= 100) {
                                           setTimeSpecificDiscountPercentage(
                                             value
-                                          );
+                                          )
                                           setValue(
                                             "timeSpecificDiscountPercentage",
                                             value
-                                          );
+                                          )
                                         }
                                       }}
                                       className="w-24"
@@ -882,8 +881,8 @@ export default function NewTripForm() {
                                 id="childDiscountEnabled"
                                 checked={childDiscountEnabled}
                                 onCheckedChange={(checked) => {
-                                  setChildDiscountEnabled(!!checked);
-                                  setValue("childDiscountEnabled", !!checked);
+                                  setChildDiscountEnabled(!!checked)
+                                  setValue("childDiscountEnabled", !!checked)
                                 }}
                               />
                               <Label
@@ -920,13 +919,13 @@ export default function NewTripForm() {
                                     max="100"
                                     value={childDiscountPercentage}
                                     onChange={(e) => {
-                                      const value = Number(e.target.value);
+                                      const value = Number(e.target.value)
                                       if (value >= 1 && value <= 100) {
-                                        setChildDiscountPercentage(value);
+                                        setChildDiscountPercentage(value)
                                         setValue(
                                           "childDiscountPercentage",
                                           value
-                                        );
+                                        )
                                       }
                                     }}
                                     className="w-24"
@@ -1053,27 +1052,27 @@ export default function NewTripForm() {
                             {/* Calculate the maximum possible discount */}
                             {(() => {
                               // Get all applicable discount percentages
-                              const discounts = [];
+                              const discounts = []
                               if (hasDiscount && discountPercentage > 0) {
-                                discounts.push(discountPercentage);
+                                discounts.push(discountPercentage)
                               }
                               if (
                                 groupDiscountEnabled &&
                                 groupDiscountPercentage > 0
                               ) {
-                                discounts.push(groupDiscountPercentage);
+                                discounts.push(groupDiscountPercentage)
                               }
                               if (
                                 timeSpecificDiscountEnabled &&
                                 timeSpecificDiscountPercentage > 0
                               ) {
-                                discounts.push(timeSpecificDiscountPercentage);
+                                discounts.push(timeSpecificDiscountPercentage)
                               }
                               if (
                                 childDiscountEnabled &&
                                 childDiscountPercentage > 0
                               ) {
-                                discounts.push(childDiscountPercentage);
+                                discounts.push(childDiscountPercentage)
                               }
 
                               // If no discounts are active, show original price
@@ -1090,14 +1089,14 @@ export default function NewTripForm() {
                                       {selectedCurrency}
                                     </span>
                                   </div>
-                                );
+                                )
                               }
 
                               // Find the maximum discount
-                              const maxDiscount = Math.max(...discounts);
+                              const maxDiscount = Math.max(...discounts)
                               const finalPrice =
                                 originalPrice -
-                                (originalPrice * maxDiscount) / 100;
+                                (originalPrice * maxDiscount) / 100
 
                               return (
                                 <>
@@ -1121,7 +1120,7 @@ export default function NewTripForm() {
                                     </span>
                                   </div>
                                 </>
-                              );
+                              )
                             })()}
                           </div>
                         </div>
@@ -1193,5 +1192,5 @@ export default function NewTripForm() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

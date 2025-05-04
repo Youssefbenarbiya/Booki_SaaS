@@ -136,11 +136,11 @@ export async function updateAgencyProfile(data: {
             agencyName: data.name,
             agencyId: agency.id,
             contactEmail: data.email,
-            isResubmission: isResubmission,
+            isResubmission: !!isResubmission,
             rneDocument: rneDocument || undefined,
             patenteDocument: patenteDocument || undefined,
             cinDocument: cinDocument || undefined,
-          });
+          })
         } catch (error) {
           console.error("Failed to send admin notification:", error);
           // Continue even if notification fails
