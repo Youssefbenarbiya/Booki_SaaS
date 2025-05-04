@@ -127,10 +127,13 @@ const postConnections = new Map<string, PostConnection>()
 // Helper function to get agency unique ID from user ID
 async function getAgencyUniqueId(userId: string): Promise<string | null> {
   try {
-    // TODO: Replace with your actual query
-    // For now, we'll make a simplified version that doesn't cause type errors
-    console.log("Looking up agency unique ID for user:", userId)
-    return null
+    // Query the agencies table to find the agency's unique ID
+    const agencyData = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, userId),
+      columns: { agencyUniqueId: true },
+    })
+    
+    return agencyData?.agencyUniqueId || null
   } catch (error) {
     console.error("Error fetching agency unique ID:", error)
     return null
@@ -422,126 +425,114 @@ const startServers = (options: ServerOptions = { wsPort: 3001, httpPort: 3002 })
 
             // Determine if sender is from an agency (has agencyId)
             const senderAgencyUniqueId = await getAgencyUniqueId(userId)
-            const isSenderFromAgency = !!senderAgencyUniqueId
+            const isSenderFromAgency = !!senderAgencyUniqueId || userRole === "agency owner"
 
             // Determine recipient based on sender type
             let recipientId = ""
             let recipientConnection: ChatConnection | undefined
 
-            // If customerId is provided, use it as the recipient when sending from agency
-            if (isSenderFromAgency && messageCustomerId) {
-              recipientId = messageCustomerId
-              console.log("Using provided customerId as recipient:", recipientId)
-
-              // Try to find the customer's active connection
-              recipientConnection = connections.get(recipientId)
-            } else if (isSenderFromAgency) {
-              // Reset recipientId to ensure we're not using a stale value
-              recipientId = ""
-
-              // First priority: Check message history to find the original customer
-              try {
-                // Get complete message history for this conversation
-                console.log(
-                  "Looking for customer in message history for:",
-                  messagePostId,
-                  messagePostType
-                )
-                const history = await getChatMessages(
-                  messagePostId,
-                  messagePostType,
-                  userId
-                )
-
-                if (
-                  history.success &&
-                  history.messages &&
-                  history.messages.length > 0
-                ) {
-                  // Sort messages by creation date (oldest first) to find the conversation starter
-                  const sortedMessages = [...history.messages].sort(
-                    (a, b) =>
-                      new Date(a.createdAt).getTime() -
-                      new Date(b.createdAt).getTime()
+            if (isSenderFromAgency) {
+              // AGENCY SENDING MESSAGE TO CUSTOMER
+              
+              // If customerId is explicitly provided, use it as the recipient
+              if (messageCustomerId) {
+                recipientId = messageCustomerId
+                console.log("Using provided customerId as recipient:", recipientId)
+                
+                // Try to find the customer's active connection
+                recipientConnection = connections.get(recipientId)
+              } else {
+                // No customerId provided - we need to find the customer from message history
+                console.log("No customerId provided, searching message history")
+                
+                try {
+                  // Get complete message history for this conversation
+                  const history = await getChatMessages(
+                    messagePostId,
+                    messagePostType,
+                    userId
                   )
 
-                  console.log(
-                    `Found ${sortedMessages.length} messages in history to search for customer`
-                  )
-
-                  // APPROACH 1: Find the initiator of the conversation (usually the customer)
-                  const firstMessage = sortedMessages[0]
-                  if (firstMessage && firstMessage.senderId !== userId) {
-                    recipientId = firstMessage.senderId
-                    console.log(
-                      "Found conversation initiator as recipient:",
-                      recipientId
+                  if (history.success && history.messages && history.messages.length > 0) {
+                    // Sort messages by creation date (oldest first) to find the conversation starter
+                    const sortedMessages = [...history.messages].sort(
+                      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
                     )
 
-                    // Try to find the customer's connection
-                    recipientConnection = connections.get(recipientId)
-                  }
+                    console.log(`Found ${sortedMessages.length} messages in history to search for customer`)
 
-                  // If we didn't find a valid recipient yet, try another approach
-                  if (!recipientId || recipientId === userId) {
-                    // APPROACH 2: Find any message from a non-agency user
-                    const customerMessage = sortedMessages.find((msg) => {
-                      return (
-                        msg.senderId !== userId &&
-                        !msg.senderId.includes("agency")
+                    // Try multiple approaches to find the customer
+                    let customerFound = false
+                    
+                    // Look for the customerId field in messages first - this is the most reliable
+                    const messageWithCustomerId = sortedMessages.find(msg => msg.customerId && msg.customerId !== userId)
+                    
+                    if (messageWithCustomerId?.customerId) {
+                      recipientId = messageWithCustomerId.customerId
+                      customerFound = true
+                      console.log("Found customer from customerId field:", recipientId)
+                    }
+                    
+                    // If no customer found yet, try to find the conversation initiator
+                    if (!customerFound) {
+                      const firstMessage = sortedMessages[0]
+                      if (firstMessage && firstMessage.senderId !== userId && !firstMessage.senderId.includes("agency")) {
+                        recipientId = firstMessage.senderId
+                        customerFound = true
+                        console.log("Found conversation initiator as recipient:", recipientId)
+                      }
+                    }
+                    
+                    // If still no customer found, try to find any message from a non-agency user
+                    if (!customerFound) {
+                      const customerMessage = sortedMessages.find(msg => 
+                        msg.senderId !== userId && !msg.senderId.includes("agency")
                       )
-                    })
-
-                    if (customerMessage) {
-                      recipientId = customerMessage.senderId
-                      console.log(
-                        "Found customer sender as recipient:",
-                        recipientId
+                      
+                      if (customerMessage) {
+                        recipientId = customerMessage.senderId
+                        customerFound = true
+                        console.log("Found customer sender as recipient:", recipientId)
+                      }
+                    }
+                    
+                    // If still no customer found, try to find a message sent to a customer
+                    if (!customerFound) {
+                      const sentToCustomer = sortedMessages.find(msg => 
+                        msg.senderId === userId && 
+                        msg.receiverId !== userId && 
+                        !msg.receiverId.includes("agency")
                       )
-
-                      // Try to find the customer's connection
+                      
+                      if (sentToCustomer) {
+                        recipientId = sentToCustomer.receiverId
+                        customerFound = true
+                        console.log("Found previous message to customer:", recipientId)
+                      }
+                    }
+                    
+                    // Try to find the customer's connection if we found a recipient
+                    if (customerFound) {
                       recipientConnection = connections.get(recipientId)
                     }
                   }
-
-                  // If we still don't have a recipient, try a third approach
-                  if (!recipientId || recipientId === userId) {
-                    // APPROACH 3: Find any message where this agency was the recipient
-                    const receivedMessage = sortedMessages.find(
-                      (msg) =>
-                        msg.receiverId === userId && msg.senderId !== userId
-                    )
-
-                    if (receivedMessage) {
-                      recipientId = receivedMessage.senderId
-                      console.log(
-                        "Found customer from received message:",
-                        recipientId
-                      )
-
-                      // Try to find the customer's connection
-                      recipientConnection = connections.get(recipientId)
-                    }
-                  }
+                } catch (error) {
+                  console.error("Error finding customer from history:", error)
                 }
-              } catch (error) {
-                console.error("Error finding customer from history:", error)
-              }
-
-              // Second priority: Try the active connection if history search failed
-              if (!recipientId || recipientId === userId) {
-                if (postConnection.customerConnection) {
-                  recipientId = postConnection.customerConnection.userId
-                  recipientConnection = postConnection.customerConnection
-                  console.log("Using active customer connection:", recipientId)
+                
+                // If still no recipient found, check active connections
+                if (!recipientId || recipientId === userId) {
+                  if (postConnection.customerConnection) {
+                    recipientId = postConnection.customerConnection.userId
+                    recipientConnection = postConnection.customerConnection
+                    console.log("Using active customer connection:", recipientId)
+                  }
                 }
               }
 
               // Final validation - NEVER send a message to ourselves
-              if (!recipientId || recipientId === userId) {
-                console.error(
-                  "WARNING: Failed to find valid recipient - preventing self-message"
-                )
+              if (!recipientId || recipientId === userId || recipientId.includes("agency")) {
+                console.error("WARNING: Failed to find valid recipient - preventing self-message")
                 ws.send(
                   JSON.stringify({
                     type: "error",
@@ -552,12 +543,16 @@ const startServers = (options: ServerOptions = { wsPort: 3001, httpPort: 3002 })
                 )
                 return // Abort the message send
               }
+              
+              // Set the customerId field to ensure we can track the conversation
+              completeMessage.customerId = recipientId
             } else {
-              // Sender is a customer - get the customerId from the sender
-              // This ensures the agency knows which customer sent the message
+              // CUSTOMER SENDING MESSAGE TO AGENCY
+              
+              // Set the customerId field from the sender (customer's ID)
               completeMessage.customerId = userId
 
-              // Send to the agency that owns this listing
+              // Find the agency that owns this listing
               try {
                 // Look up the agency ID from the database based on the postType and postId
                 let agencyIdForPost = ""
@@ -597,41 +592,23 @@ const startServers = (options: ServerOptions = { wsPort: 3001, httpPort: 3002 })
                 }
 
                 if (agencyIdForPost) {
-                  // Get the agency's unique ID for logic purposes
-                  const agencyUniqueId = await getAgencyUniqueId(agencyIdForPost)
-
-                  if (agencyUniqueId) {
-                    // Log that we're using agency unique ID for routing
-                    console.log(
-                      "Using agency unique ID for routing:",
-                      agencyUniqueId
-                    )
-                    // But use the agency's userId as the actual receiverId in the database
-                    recipientId = agencyIdForPost
-
-                    // Try to find the agency's connection
-                    recipientConnection = connections.get(agencyIdForPost)
-                  } else {
-                    // Fallback to the agency's user ID if unique ID not found
-                    recipientId = agencyIdForPost
-
-                    // Try to find the agency's connection
-                    recipientConnection = connections.get(agencyIdForPost)
-                  }
+                  recipientId = agencyIdForPost
+                  // Try to find the agency's connection
+                  recipientConnection = connections.get(agencyIdForPost)
                 } else {
                   // Fallback to the connected agency
-                  recipientConnection = postConnection.agencyConnection
                   recipientId = postConnection.agencyConnection?.userId || ""
+                  recipientConnection = postConnection.agencyConnection
                 }
               } catch (error) {
                 console.error("Error finding agency for post:", error)
                 // Fallback to the connected agency
-                recipientConnection = postConnection.agencyConnection
                 recipientId = postConnection.agencyConnection?.userId || ""
+                recipientConnection = postConnection.agencyConnection
               }
             }
 
-            // Validate recipient ID
+            // Final validation for recipient ID
             if (!recipientId) {
               console.error("No valid recipient found:", {
                 isSenderFromAgency,
@@ -642,162 +619,6 @@ const startServers = (options: ServerOptions = { wsPort: 3001, httpPort: 3002 })
                 userId,
               })
 
-              // Try to create a fallback based on the post information
-              try {
-                if (!isSenderFromAgency) {
-                  // For a customer sending a message, try to find the correct agency from database
-                  if (messagePostType === "trip") {
-                    const trip = await db.query.trips.findFirst({
-                      where: eq(trips.id, parseInt(messagePostId)),
-                      columns: { agencyId: true },
-                    })
-                    if (trip?.agencyId) {
-                      // We found the agency, use its user ID for the receiverId
-                      recipientId = trip.agencyId
-                      // But log that we're using the unique ID for routing purposes
-                      const agencyUniqueId = await getAgencyUniqueId(
-                        trip.agencyId
-                      )
-                      if (agencyUniqueId) {
-                        console.log(
-                          "Using agency unique ID for routing:",
-                          agencyUniqueId
-                        )
-                      }
-
-                      // Try to find the agency's connection
-                      recipientConnection = connections.get(trip.agencyId)
-                    }
-                  } else if (messagePostType === "car") {
-                    const car = await db.query.cars.findFirst({
-                      where: eq(cars.id, parseInt(messagePostId)),
-                      columns: { agencyId: true },
-                    })
-                    if (car?.agencyId) {
-                      // We found the agency, use its user ID for the receiverId
-                      recipientId = car.agencyId
-                      // But log that we're using the unique ID for routing purposes
-                      const agencyUniqueId = await getAgencyUniqueId(car.agencyId)
-                      if (agencyUniqueId) {
-                        console.log(
-                          "Using agency unique ID for routing:",
-                          agencyUniqueId
-                        )
-                      }
-
-                      // Try to find the agency's connection
-                      recipientConnection = connections.get(car.agencyId)
-                    }
-                  } else if (messagePostType === "hotel") {
-                    const hotelData = await db.query.hotel.findFirst({
-                      where: eq(hotel.id, messagePostId),
-                      columns: { agencyId: true },
-                    })
-                    if (hotelData?.agencyId) {
-                      // We found the agency, use its user ID for the receiverId
-                      recipientId = hotelData.agencyId
-                      // But log that we're using the unique ID for routing purposes
-                      const agencyUniqueId = await getAgencyUniqueId(
-                        hotelData.agencyId
-                      )
-                      if (agencyUniqueId) {
-                        console.log(
-                          "Using agency unique ID for routing:",
-                          agencyUniqueId
-                        )
-                      }
-
-                      // Try to find the agency's connection
-                      recipientConnection = connections.get(hotelData.agencyId)
-                    }
-                  } else if (messagePostType === "room") {
-                    // For rooms, find the hotel first, then get the agency
-                    const roomData = await db.query.room.findFirst({
-                      where: eq(room.id, messagePostId),
-                      columns: { hotelId: true },
-                    })
-
-                    if (roomData?.hotelId) {
-                      const hotelData = await db.query.hotel.findFirst({
-                        where: eq(hotel.id, roomData.hotelId),
-                        columns: { agencyId: true },
-                      })
-                      if (hotelData?.agencyId) {
-                        // We found the agency, use its user ID for the receiverId
-                        recipientId = hotelData.agencyId
-                        // But log that we're using the unique ID for routing purposes
-                        const agencyUniqueId = await getAgencyUniqueId(
-                          hotelData.agencyId
-                        )
-                        if (agencyUniqueId) {
-                          console.log(
-                            "Using agency unique ID for routing:",
-                            agencyUniqueId
-                          )
-                        }
-
-                        // Try to find the agency's connection
-                        recipientConnection = connections.get(hotelData.agencyId)
-                      }
-                    }
-                  }
-
-                  // If still no recipient, use a fallback pattern that makes debugging easier
-                  if (!recipientId) {
-                    recipientId = `unknown_agency_for_${messagePostType}_${messagePostId}`
-                    console.log("Using generic fallback agency ID:", recipientId)
-                  }
-                } else {
-                  // For agency sending to customer, try to find a customer from message history
-                  try {
-                    // Look for the first message in this conversation from a non-agency user
-                    const history = await getChatMessages(
-                      messagePostId,
-                      messagePostType,
-                      userId
-                    )
-                    if (
-                      history.success &&
-                      history.messages &&
-                      history.messages.length > 0
-                    ) {
-                      // Find the first customer message in this conversation
-                      const customerMessage = history.messages.find((msg) => {
-                        // A customer won't have an agency unique ID in sender or receiver
-                        return (
-                          !msg.senderId.includes("agency") &&
-                          msg.senderId !== userId
-                        )
-                      })
-
-                      if (customerMessage) {
-                        recipientId = customerMessage.senderId
-                        console.log(
-                          "Found customer recipient from message history:",
-                          recipientId
-                        )
-
-                        // Try to find the customer's connection
-                        recipientConnection = connections.get(
-                          customerMessage.senderId
-                        )
-                      } else {
-                        recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`
-                      }
-                    }
-                  } catch (error) {
-                    console.error("Error finding customer from history:", error)
-                    recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`
-                  }
-                }
-              } catch (error) {
-                console.error("Error in fallback recipient search:", error)
-                // Last resort fallback
-                recipientId = isSenderFromAgency
-                  ? `fallback_customer_${Date.now()}`
-                  : `fallback_agency_${Date.now()}`
-              }
-
               ws.send(
                 JSON.stringify({
                   type: "warning",
@@ -807,6 +628,15 @@ const startServers = (options: ServerOptions = { wsPort: 3001, httpPort: 3002 })
                   },
                 })
               )
+              
+              // Try fallback logic if absolutely needed
+              if (isSenderFromAgency) {
+                // Agency sending to customer, use a fallback placeholder
+                recipientId = `unknown_customer_for_${messagePostType}_${messagePostId}`
+              } else {
+                // Customer sending to agency, use a fallback placeholder
+                recipientId = `unknown_agency_for_${messagePostType}_${messagePostId}`
+              }
             }
 
             // Set the recipient ID
