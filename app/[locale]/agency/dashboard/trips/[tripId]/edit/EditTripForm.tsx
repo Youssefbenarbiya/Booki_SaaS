@@ -64,11 +64,21 @@ const currencies: Currency[] = [
   { code: "AUD", symbol: "A$", name: "Australian Dollar" },
 ];
 
-// Extend TripInput to include currency
-interface ExtendedTripInput extends TripInput {
+// Define custom interface instead of extending TripInput to avoid type issues
+interface ExtendedTripInput {
+  name: string;
+  description: string;
+  destination: string;
+  startDate: Date;
+  endDate: Date;
+  originalPrice: number;
   discountPercentage?: number;
+  priceAfterDiscount?: number;
+  capacity: number;
+  isAvailable: boolean;
+  images: string[];
   currency: string;
-  // Add new discount types
+  // Add all discount types
   groupDiscountEnabled?: boolean;
   groupDiscountMinPeople?: number;
   groupDiscountPercentage?: number;
@@ -79,6 +89,11 @@ interface ExtendedTripInput extends TripInput {
   timeSpecificDiscountPercentage?: number;
   childDiscountEnabled?: boolean;
   childDiscountPercentage?: number;
+  activities?: {
+    activityName: string;
+    description?: string;
+    scheduledDate?: Date;
+  }[];
 }
 
 interface EditTripFormProps {
@@ -427,17 +442,17 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       });
 
       // Build final data for update
-      const formattedData = {
+      const formattedData: TripInput = {
         ...data,
         originalPrice: Number(data.originalPrice),
         discountPercentage:
           hasDiscount && data.discountPercentage
             ? data.discountPercentage
-            : null,
+            : undefined,
         priceAfterDiscount:
           hasDiscount && finalPriceAfterDiscount
             ? finalPriceAfterDiscount
-            : null,
+            : undefined,
         images: imageUrls,
         // Make sure dates are Date objects
         startDate: startDate || new Date(),
@@ -450,29 +465,29 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         groupDiscountEnabled: groupDiscountEnabled,
         groupDiscountMinPeople: groupDiscountEnabled
           ? groupDiscountMinPeople
-          : null,
+          : undefined,
         groupDiscountPercentage: groupDiscountEnabled
           ? groupDiscountPercentage
-          : null,
+          : undefined,
 
         timeSpecificDiscountEnabled: timeSpecificDiscountEnabled,
         timeSpecificDiscountStartTime: timeSpecificDiscountEnabled
           ? timeSpecificDiscountStartTime
-          : null,
+          : undefined,
         timeSpecificDiscountEndTime: timeSpecificDiscountEnabled
           ? timeSpecificDiscountEndTime
-          : null,
+          : undefined,
         timeSpecificDiscountDays: timeSpecificDiscountEnabled
           ? timeSpecificDiscountDays
-          : null,
+          : undefined,
         timeSpecificDiscountPercentage: timeSpecificDiscountEnabled
           ? timeSpecificDiscountPercentage
-          : null,
+          : undefined,
 
         childDiscountEnabled: childDiscountEnabled,
         childDiscountPercentage: childDiscountEnabled
           ? childDiscountPercentage
-          : null,
+          : undefined,
       };
 
       // Run your update action

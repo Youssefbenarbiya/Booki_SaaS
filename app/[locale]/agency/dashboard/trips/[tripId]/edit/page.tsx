@@ -32,24 +32,26 @@ export default async function EditTripPage({ params }: EditTripPageProps) {
     startDate: new Date(trip.startDate),
     endDate: new Date(trip.endDate),
     originalPrice: Number(trip.originalPrice),
-    discountPercentage: trip.discountPercentage ?? null,
+    discountPercentage: trip.discountPercentage ?? undefined,
     priceAfterDiscount: trip.priceAfterDiscount
       ? Number(trip.priceAfterDiscount)
-      : null,
+      : undefined,
     capacity: trip.capacity,
     isAvailable: trip.isAvailable ?? false,
     currency: trip.currency || "USD", // Ensure currency is passed, default to USD if not available
-    // Add all additional discount fields with proper fallbacks to null
+    // Add all additional discount fields with proper fallbacks to undefined
     groupDiscountEnabled: trip.groupDiscountEnabled ?? false,
-    groupDiscountMinPeople: trip.groupDiscountMinPeople ?? null,
-    groupDiscountPercentage: trip.groupDiscountPercentage ?? null,
+    groupDiscountMinPeople: trip.groupDiscountMinPeople ?? undefined,
+    groupDiscountPercentage: trip.groupDiscountPercentage ?? undefined,
     timeSpecificDiscountEnabled: trip.timeSpecificDiscountEnabled ?? false,
-    timeSpecificDiscountStartTime: trip.timeSpecificDiscountStartTime ?? null,
-    timeSpecificDiscountEndTime: trip.timeSpecificDiscountEndTime ?? null,
-    timeSpecificDiscountDays: trip.timeSpecificDiscountDays ?? null,
-    timeSpecificDiscountPercentage: trip.timeSpecificDiscountPercentage ?? null,
+    timeSpecificDiscountStartTime:
+      trip.timeSpecificDiscountStartTime ?? undefined,
+    timeSpecificDiscountEndTime: trip.timeSpecificDiscountEndTime ?? undefined,
+    timeSpecificDiscountDays: trip.timeSpecificDiscountDays ?? undefined,
+    timeSpecificDiscountPercentage:
+      trip.timeSpecificDiscountPercentage ?? undefined,
     childDiscountEnabled: trip.childDiscountEnabled ?? false,
-    childDiscountPercentage: trip.childDiscountPercentage ?? null,
+    childDiscountPercentage: trip.childDiscountPercentage ?? undefined,
     images: trip.images.map((img: any) => ({
       id: img.id,
       imageUrl: img.imageUrl,
