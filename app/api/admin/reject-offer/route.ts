@@ -6,11 +6,15 @@ import {
   rejectBlog 
 } from "@/actions/admin/ApprovalActions";
 import { auth } from "@/auth";
+import { headers } from "next/headers"
+
 
 export async function POST(request: NextRequest) {
   try {
     // Verify admin authorization
-    const session = await auth.api.getSession();
+    const session =  await auth.api.getSession({
+      headers: await headers(),
+    })
     if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

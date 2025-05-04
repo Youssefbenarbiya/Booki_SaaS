@@ -304,12 +304,18 @@ export async function sendTripApprovalRequest(tripId: number) {
     // Prepare email data
     const adminViewLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/verify-offers`
     
+    // Get agency name
+    let agencyName = "Agency"
+    if (trip.agency) {
+      agencyName = trip.agency.agencyName
+    }
+    
     const emailHtml = await render(
       <OfferApprovalEmail
         offerType="Trip"
         offerName={trip.name}
         offerDestination={trip.destination}
-        agencyName={trip.agency?.agencyName || 'Agency'}
+        agencyName={agencyName}
         adminViewLink={adminViewLink}
       />
     )
@@ -318,7 +324,7 @@ export async function sendTripApprovalRequest(tripId: number) {
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to: "youssefbenarbia345@gmail.com",
-      subject: `New Trip Approval Request - ${trip.name}`,
+      subject: `New Trip Approval Request - ${trip.name} from ${agencyName}`,
       html: emailHtml,
     }
 
@@ -402,17 +408,21 @@ export async function sendHotelApprovalRequest(hotelId: string) {
     // Get hotel details
     const hotelData = await db.query.hotel.findFirst({
       where: eq(hotel.id, hotelId),
-      with: {
-        agency: {
-          with: {
-            user: true
-          }
-        }
-      }
     })
 
     if (!hotelData) {
       return { success: false, message: "Hotel not found" }
+    }
+
+    // Get agency details separately
+    let agencyName = "Unknown Agency"
+    if (hotelData.agencyId) {
+      const agency = await db.query.agencies.findFirst({
+        where: eq(agencies.userId, hotelData.agencyId)
+      })
+      if (agency) {
+        agencyName = agency.agencyName
+      }
     }
 
     // Prepare email data
@@ -423,7 +433,7 @@ export async function sendHotelApprovalRequest(hotelId: string) {
         offerType="Hotel"
         offerName={hotelData.name}
         offerDestination={`${hotelData.city}, ${hotelData.country}`}
-        agencyName={hotelData.agency?.agencyName || 'Agency'}
+        agencyName={agencyName}
         adminViewLink={adminViewLink}
       />
     )
@@ -432,7 +442,7 @@ export async function sendHotelApprovalRequest(hotelId: string) {
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to: "youssefbenarbia345@gmail.com",
-      subject: `New Hotel Approval Request - ${hotelData.name}`,
+      subject: `New Hotel Approval Request - ${hotelData.name} from ${agencyName}`,
       html: emailHtml,
     }
 
@@ -590,20 +600,29 @@ export async function sendTripApprovalDecisionEmail(
       return { success: false, message: "Trip or agency details not found" }
     }
 
-    // Get agency user email
+    // Get agency details for contact email
+    const agency = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, trip.agencyId)
+    })
+
+    if (!agency) {
+      return { success: false, message: "Agency details not found" }
+    }
+
+    // Get agency user as fallback email
     const agencyUser = await db.query.user.findFirst({
       where: eq(user.id, trip.agencyId)
     })
 
-    if (!agencyUser || !agencyUser.email) {
-      return { success: false, message: "Agency email not found" }
+    // Use agency contactEmail if available, fall back to user email
+    const recipientEmail = agency.contactEmail || agencyUser?.email
+    
+    if (!recipientEmail) {
+      return { success: false, message: "Agency contact email not found" }
     }
 
     // Get agency name
-    let agencyName = agencyUser.name
-    if (trip.agency) {
-      agencyName = trip.agency.agencyName || agencyUser.name
-    }
+    const agencyName = agency.agencyName || agencyUser?.name || 'Agency'
 
     // Prepare email data
     const dashboardLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/agency/dashboard/trips`
@@ -622,7 +641,7 @@ export async function sendTripApprovalDecisionEmail(
     // Send email
     const mailOptions = {
       from: process.env.EMAIL_FROM,
-      to: agencyUser.email,
+      to: recipientEmail,
       subject: `Trip ${isApproved ? 'Approved' : 'Rejected'} - ${trip.name}`,
       html: emailHtml,
     }
@@ -660,21 +679,28 @@ export async function sendCarApprovalDecisionEmail(
       return { success: false, message: "Car or agency details not found" }
     }
 
-    // Get agency user email
+    // Get agency details for contact email
+    const agency = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, car.agencyId)
+    })
+
+    if (!agency) {
+      return { success: false, message: "Agency details not found" }
+    }
+
+    // Get agency user as fallback email
     const agencyUser = await db.query.user.findFirst({
       where: eq(user.id, car.agencyId)
     })
 
-    if (!agencyUser || !agencyUser.email) {
-      return { success: false, message: "Agency email not found" }
-    }
-
-    // Get agency name
-    const agency = await db.query.agencies.findFirst({
-      where: eq(agencies.userId, car.agencyId)
-    })
+    // Use agency contactEmail if available, fall back to user email
+    const recipientEmail = agency.contactEmail || agencyUser?.email
     
-    const agencyName = agency?.agencyName || agencyUser.name
+    if (!recipientEmail) {
+      return { success: false, message: "Agency contact email not found" }
+    }
+    
+    const agencyName = agency.agencyName || agencyUser?.name || 'Agency'
 
     // Prepare email data
     const dashboardLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/agency/dashboard/cars`
@@ -693,7 +719,7 @@ export async function sendCarApprovalDecisionEmail(
     // Send email
     const mailOptions = {
       from: process.env.EMAIL_FROM,
-      to: agencyUser.email,
+      to: recipientEmail,
       subject: `Car ${isApproved ? 'Approved' : 'Rejected'} - ${car.brand} ${car.model}`,
       html: emailHtml,
     }
@@ -731,21 +757,28 @@ export async function sendHotelApprovalDecisionEmail(
       return { success: false, message: "Hotel or agency details not found" }
     }
 
-    // Get agency user email
+    // Get agency details for contact email
+    const agency = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, hotelData.agencyId)
+    })
+
+    if (!agency) {
+      return { success: false, message: "Agency details not found" }
+    }
+
+    // Get agency user as fallback email
     const agencyUser = await db.query.user.findFirst({
       where: eq(user.id, hotelData.agencyId)
     })
 
-    if (!agencyUser || !agencyUser.email) {
-      return { success: false, message: "Agency email not found" }
-    }
-
-    // Get agency name
-    const agency = await db.query.agencies.findFirst({
-      where: eq(agencies.userId, hotelData.agencyId)
-    })
+    // Use agency contactEmail if available, fall back to user email
+    const recipientEmail = agency.contactEmail || agencyUser?.email
     
-    const agencyName = agency?.agencyName || agencyUser.name
+    if (!recipientEmail) {
+      return { success: false, message: "Agency contact email not found" }
+    }
+    
+    const agencyName = agency.agencyName || agencyUser?.name || 'Agency'
 
     // Prepare email data
     const dashboardLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/agency/dashboard/hotels`
@@ -764,7 +797,7 @@ export async function sendHotelApprovalDecisionEmail(
     // Send email
     const mailOptions = {
       from: process.env.EMAIL_FROM,
-      to: agencyUser.email,
+      to: recipientEmail,
       subject: `Hotel ${isApproved ? 'Approved' : 'Rejected'} - ${hotelData.name}`,
       html: emailHtml,
     }
@@ -802,30 +835,45 @@ export async function sendBlogApprovalDecisionEmail(
       return { success: false, message: "Blog not found" }
     }
 
-    // Check which ID to use for contacting creator
-    const userId = blog.agencyId || blog.authorId
-    if (!userId) {
-      return { success: false, message: "Neither agency nor author ID found for blog" }
-    }
+    let recipientEmail: string | null = null
+    let creatorName = "Author"
 
-    // Get user email
-    const userData = await db.query.user.findFirst({
-      where: eq(user.id, userId)
-    })
-
-    if (!userData || !userData.email) {
-      return { success: false, message: "User email not found" }
-    }
-
-    // Get agency/author name
-    let creatorName = userData.name
+    // If blog is from agency, prioritize agency contact email
     if (blog.agencyId) {
       const agency = await db.query.agencies.findFirst({
         where: eq(agencies.userId, blog.agencyId)
       })
+      
       if (agency) {
         creatorName = agency.agencyName
+        recipientEmail = agency.contactEmail // Get agency contact email
+
+        // If no contactEmail, fall back to user email
+        if (!recipientEmail) {
+          const agencyUser = await db.query.user.findFirst({
+            where: eq(user.id, blog.agencyId)
+          })
+          if (agencyUser?.email) {
+            recipientEmail = agencyUser.email
+          }
+        }
       }
+    } 
+    
+    // If no agency or agency email not found, try author
+    if (!recipientEmail && blog.authorId) {
+      const author = await db.query.user.findFirst({
+        where: eq(user.id, blog.authorId)
+      })
+      
+      if (author) {
+        creatorName = author.name
+        recipientEmail = author.email
+      }
+    }
+
+    if (!recipientEmail) {
+      return { success: false, message: "No recipient email found for blog" }
     }
 
     // Prepare email data
@@ -845,7 +893,7 @@ export async function sendBlogApprovalDecisionEmail(
     // Send email
     const mailOptions = {
       from: process.env.EMAIL_FROM,
-      to: userData.email,
+      to: recipientEmail,
       subject: `Blog ${isApproved ? 'Approved' : 'Rejected'} - ${blog.title}`,
       html: emailHtml,
     }
