@@ -530,7 +530,7 @@ export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }) 
+    .references(() => user.id, { onDelete: "cascade" })
     .unique(),
   agencyUniqueId: varchar("agency_unique_id", { length: 20 })
     .notNull()
@@ -548,7 +548,9 @@ export const agencies = pgTable("agencies", {
   patenteDocument: text("patente_document"),
   cinDocument: text("cin_document"),
   isVerified: boolean("is_verified").default(false),
-  verificationStatus: varchar("verification_status", { length: 50 }).default("pending"),
+  verificationStatus: varchar("verification_status", { length: 50 }).default(
+    "pending"
+  ),
   verificationRejectionReason: text("verification_rejection_reason"),
   verificationSubmittedAt: timestamp("verification_submitted_at"),
   verificationReviewedAt: timestamp("verification_reviewed_at"),
