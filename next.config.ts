@@ -4,14 +4,6 @@ const withNextIntl = createNextIntlPlugin()
 
 const nextConfig: NextConfig = {
   images: {
-    domains: [
-      "m.media-amazon.com",
-      "lh3.googleusercontent.com",
-      "platform-lookaside.fbsbx.com",
-      "localhost",
-      "res.cloudinary.com",
-      "booki-hazel.vercel.app",
-    ],
     remotePatterns: [
       {
         protocol: "https",
@@ -24,6 +16,22 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "source.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "m.media-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "platform-lookaside.fbsbx.com",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
       },
     ],
   },
