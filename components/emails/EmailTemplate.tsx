@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from 'react';
 import {
   Body,
@@ -11,8 +12,7 @@ import {
   Section,
   Text,
   Hr,
-  Column,
-  Row,
+ 
 } from '@react-email/components';
 
 interface EmailTemplateProps {
@@ -50,7 +50,7 @@ export const EmailTemplate: React.FC<EmailTemplateProps> = ({
             />
           </Section>
           <Section style={content}>
-            <Heading style={heading}>{heading}</Heading>
+            <Heading style={headingStyle}>{heading}</Heading>
             {children}
             
             {ctaText && ctaLink && (
@@ -65,8 +65,8 @@ export const EmailTemplate: React.FC<EmailTemplateProps> = ({
           <Hr style={hr} />
           
           <Section style={footer}>
-            <Text style={footerText}>Best regards,</Text>
-            <Text style={footerText}>{footerText}</Text>
+            <Text style={footerTextStyle}>Best regards,</Text>
+            <Text style={footerTextStyle}>{footerText}</Text>
           </Section>
         </Container>
       </Body>
@@ -102,7 +102,7 @@ const content = {
   border: '1px solid #e5e7eb',
 };
 
-const heading = {
+const headingStyle = {
   fontSize: '24px',
   lineHeight: '1.3',
   fontWeight: '700',
@@ -145,7 +145,7 @@ const footer = {
   padding: '0 30px',
 };
 
-const footerText = {
+const footerTextStyle = {
   fontSize: '14px',
   lineHeight: '1.5',
   color: '#666',

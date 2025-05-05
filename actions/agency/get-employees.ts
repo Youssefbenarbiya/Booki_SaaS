@@ -3,7 +3,7 @@
 
 import { headers } from "next/headers"
 import db from "@/db/drizzle"
-import { agencyEmployees, user } from "@/db/schema"
+import { agencyEmployees } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { auth } from "@/auth"
 
