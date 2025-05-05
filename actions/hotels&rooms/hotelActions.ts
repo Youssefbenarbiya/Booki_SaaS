@@ -13,6 +13,7 @@ import { hotelSchema, type HotelInput } from "@/lib/validations/hotelSchema"
 import { eq, inArray } from "drizzle-orm"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
+import { sendHotelApprovalRequest } from "../admin/adminNotifications"
 
 // Helper function to get agency ID
 async function getAgencyId(userId: string) {
@@ -118,6 +119,12 @@ export async function createHotel(data: HotelInput) {
     })
 
     const rooms = await Promise.all(roomPromises)
+    
+    // If hotel status is pending, send notification to admin
+    if (newHotel.status === "pending") {
+      await sendHotelApprovalRequest(hotelId)
+    }
+    
     return { ...newHotel, rooms }
   } catch (error) {
     console.error("Error creating hotel:", error)
@@ -241,6 +248,10 @@ export async function publishHotel(hotelId: string) {
       })
       .where(eq(hotel.id, hotelId))
       .returning()
+      
+    // Send notification email to admin
+    await sendHotelApprovalRequest(hotelId)
+      
     return publishedHotel
   } catch (error) {
     console.error("Error publishing hotel:", error)

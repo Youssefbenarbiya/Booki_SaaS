@@ -7,6 +7,7 @@ import db from "@/db/drizzle";
 import { auth } from "@/auth";
 import { headers } from "next/headers";
 import { CarFormValues } from "@/app/[locale]/agency/dashboard/cars/types";
+import { sendCarApprovalRequest } from "../admin/adminNotifications";
 
 // Helper function to get the current session
 async function getSession() {
@@ -105,7 +106,7 @@ export async function createCar(data: CarFormValues) {
     if (discountPercentage !== undefined && discountPercentage !== null) {
       if (priceAfterDiscount === undefined || priceAfterDiscount === null) {
         priceAfterDiscount =
-          data.originalPrice - (data.originalPrice * discountPercentage) / 100;
+          Number(data.originalPrice) - (Number(data.originalPrice) * discountPercentage) / 100;
       }
     }
 
@@ -116,7 +117,12 @@ export async function createCar(data: CarFormValues) {
         ? data.isAvailable
         : true;
 
-    // Create car with discount fields included
+    // Process images to ensure they are strings
+    const processedImages = Array.isArray(data.images)
+      ? data.images.map(img => typeof img === 'string' ? img : img.imageUrl)
+      : [];
+
+    // Create car with discount fields included and always set status to "pending" for new cars
     const newCar = await db
       .insert(cars)
       .values({
@@ -133,14 +139,17 @@ export async function createCar(data: CarFormValues) {
             ? priceAfterDiscount.toString()
             : undefined,
         isAvailable: isAvailable,
-        images: data.images || [],
+        images: processedImages,
         agencyId: agencyId,
         seats: data.seats || 4,
         category: data.category,
         location: data.location,
-        status: data.status || (isAvailable ? "active" : "inactive"),
+        status: "pending", // Always set to pending for admin approval
       })
       .returning();
+
+    // Always send notification email to admin for new cars
+    await sendCarApprovalRequest(newCar[0].id);
 
     revalidatePath("/agency/dashboard/cars");
     return { car: newCar[0] };
@@ -175,7 +184,7 @@ export async function updateCar(id: number, data: CarFormValues) {
     if (discountPercentage !== undefined && discountPercentage !== null) {
       if (priceAfterDiscount === undefined || priceAfterDiscount === null) {
         priceAfterDiscount =
-          data.originalPrice - (data.originalPrice * discountPercentage) / 100;
+          Number(data.originalPrice) - (Number(data.originalPrice) * discountPercentage) / 100;
       }
     }
 
@@ -184,6 +193,11 @@ export async function updateCar(id: number, data: CarFormValues) {
       data.isAvailable !== undefined && data.isAvailable !== null
         ? data.isAvailable
         : true;
+
+    // Process images to ensure they are strings
+    const processedImages = Array.isArray(data.images)
+      ? data.images.map(img => typeof img === 'string' ? img : img.imageUrl)
+      : [];
 
     const updatedCar = await db
       .update(cars)
@@ -201,7 +215,7 @@ export async function updateCar(id: number, data: CarFormValues) {
             ? priceAfterDiscount.toString()
             : null,
         isAvailable: isAvailable,
-        images: data.images,
+        images: processedImages,
         updatedAt: new Date(),
         seats: data.seats || 4,
         category: data.category,
@@ -416,6 +430,9 @@ export async function publishCar(id: number) {
       })
       .where(eq(cars.id, id))
       .returning();
+
+    // Send notification email to admin
+    await sendCarApprovalRequest(id);
 
     revalidatePath("/agency/dashboard/cars");
     revalidatePath("/");

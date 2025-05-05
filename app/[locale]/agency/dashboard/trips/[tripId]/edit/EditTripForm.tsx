@@ -64,10 +64,36 @@ const currencies: Currency[] = [
   { code: "AUD", symbol: "A$", name: "Australian Dollar" },
 ];
 
-// Extend TripInput to include currency
-interface ExtendedTripInput extends TripInput {
+// Define custom interface instead of extending TripInput to avoid type issues
+interface ExtendedTripInput {
+  name: string;
+  description: string;
+  destination: string;
+  startDate: Date;
+  endDate: Date;
+  originalPrice: number;
   discountPercentage?: number;
+  priceAfterDiscount?: number;
+  capacity: number;
+  isAvailable: boolean;
+  images: string[];
   currency: string;
+  // Add all discount types
+  groupDiscountEnabled?: boolean;
+  groupDiscountMinPeople?: number;
+  groupDiscountPercentage?: number;
+  timeSpecificDiscountEnabled?: boolean;
+  timeSpecificDiscountStartTime?: string;
+  timeSpecificDiscountEndTime?: string;
+  timeSpecificDiscountDays?: string[];
+  timeSpecificDiscountPercentage?: number;
+  childDiscountEnabled?: boolean;
+  childDiscountPercentage?: number;
+  activities?: {
+    activityName: string;
+    description?: string;
+    scheduledDate?: Date;
+  }[];
 }
 
 interface EditTripFormProps {
@@ -94,6 +120,16 @@ interface EditTripFormProps {
       description: string;
       scheduledDate: Date | null;
     }>;
+    groupDiscountEnabled?: boolean;
+    groupDiscountMinPeople?: number;
+    groupDiscountPercentage?: number;
+    timeSpecificDiscountEnabled?: boolean;
+    timeSpecificDiscountStartTime?: string;
+    timeSpecificDiscountEndTime?: string;
+    timeSpecificDiscountDays?: string[];
+    timeSpecificDiscountPercentage?: number;
+    childDiscountEnabled?: boolean;
+    childDiscountPercentage?: number;
   };
   locale: Locale;
 }
@@ -130,9 +166,12 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
     new Date(trip.endDate)
   );
 
-  // Determine if trip has a discount
+  // Determine if trip has any type of discount
   const hasExistingDiscount =
-    !!trip.discountPercentage && !!trip.priceAfterDiscount;
+    (!!trip.discountPercentage && !!trip.priceAfterDiscount) ||
+    trip.groupDiscountEnabled === true ||
+    trip.timeSpecificDiscountEnabled === true ||
+    trip.childDiscountEnabled === true;
 
   // Discount states
   const [hasDiscount, setHasDiscount] = useState<boolean>(hasExistingDiscount);
@@ -148,6 +187,31 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
   const [customPercentage, setCustomPercentage] = useState<boolean>(
     !!trip.discountPercentage && ![10, 20, 30].includes(trip.discountPercentage)
   );
+
+  // New discount type states
+  const [groupDiscountEnabled, setGroupDiscountEnabled] =
+    useState<boolean>(false);
+  const [groupDiscountMinPeople, setGroupDiscountMinPeople] =
+    useState<number>(2);
+  const [groupDiscountPercentage, setGroupDiscountPercentage] =
+    useState<number>(10);
+
+  const [timeSpecificDiscountEnabled, setTimeSpecificDiscountEnabled] =
+    useState<boolean>(false);
+  const [timeSpecificDiscountStartTime, setTimeSpecificDiscountStartTime] =
+    useState<string>("08:00");
+  const [timeSpecificDiscountEndTime, setTimeSpecificDiscountEndTime] =
+    useState<string>("10:00");
+  const [timeSpecificDiscountDays, setTimeSpecificDiscountDays] = useState<
+    string[]
+  >(["Monday"]);
+  const [timeSpecificDiscountPercentage, setTimeSpecificDiscountPercentage] =
+    useState<number>(15);
+
+  const [childDiscountEnabled, setChildDiscountEnabled] =
+    useState<boolean>(false);
+  const [childDiscountPercentage, setChildDiscountPercentage] =
+    useState<number>(25);
 
   // --- keep track of the selected currency ---
   const [selectedCurrency, setSelectedCurrency] =
@@ -173,8 +237,18 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       priceAfterDiscount: trip.priceAfterDiscount,
       capacity: trip.capacity,
       isAvailable: trip.isAvailable,
-      // Pass the trip's currency (or fallback) into the form
       currency: tripCurrency,
+      groupDiscountEnabled: trip.groupDiscountEnabled,
+      groupDiscountMinPeople: trip.groupDiscountMinPeople || 2,
+      groupDiscountPercentage: trip.groupDiscountPercentage || 10,
+      timeSpecificDiscountEnabled: trip.timeSpecificDiscountEnabled,
+      timeSpecificDiscountStartTime:
+        trip.timeSpecificDiscountStartTime || "08:00",
+      timeSpecificDiscountEndTime: trip.timeSpecificDiscountEndTime || "10:00",
+      timeSpecificDiscountDays: trip.timeSpecificDiscountDays || ["Monday"],
+      timeSpecificDiscountPercentage: trip.timeSpecificDiscountPercentage || 15,
+      childDiscountEnabled: trip.childDiscountEnabled,
+      childDiscountPercentage: trip.childDiscountPercentage || 25,
       activities: trip.activities.map((activity) => ({
         activityName: activity.activityName,
         description: activity.description || undefined,
@@ -190,7 +264,25 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
 
   // Initialize form with correct values when component mounts
   useEffect(() => {
-    // Reset form with trip data
+    // Correctly initialize discount states based on trip data
+    setGroupDiscountEnabled(trip.groupDiscountEnabled ?? false);
+    setGroupDiscountMinPeople(trip.groupDiscountMinPeople || 2);
+    setGroupDiscountPercentage(trip.groupDiscountPercentage || 10);
+
+    setTimeSpecificDiscountEnabled(trip.timeSpecificDiscountEnabled ?? false);
+    setTimeSpecificDiscountStartTime(
+      trip.timeSpecificDiscountStartTime || "08:00"
+    );
+    setTimeSpecificDiscountEndTime(trip.timeSpecificDiscountEndTime || "10:00");
+    setTimeSpecificDiscountDays(trip.timeSpecificDiscountDays || ["Monday"]);
+    setTimeSpecificDiscountPercentage(
+      trip.timeSpecificDiscountPercentage || 15
+    );
+
+    setChildDiscountEnabled(trip.childDiscountEnabled ?? false);
+    setChildDiscountPercentage(trip.childDiscountPercentage || 25);
+
+    // Form reset with discount states
     reset({
       name: trip.name,
       description: trip.description,
@@ -203,6 +295,18 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       capacity: trip.capacity,
       isAvailable: trip.isAvailable,
       currency: tripCurrency,
+      // Initialize with existing trip data or defaults
+      groupDiscountEnabled: trip.groupDiscountEnabled ?? false,
+      groupDiscountMinPeople: trip.groupDiscountMinPeople || 2,
+      groupDiscountPercentage: trip.groupDiscountPercentage || 10,
+      timeSpecificDiscountEnabled: trip.timeSpecificDiscountEnabled ?? false,
+      timeSpecificDiscountStartTime:
+        trip.timeSpecificDiscountStartTime || "08:00",
+      timeSpecificDiscountEndTime: trip.timeSpecificDiscountEndTime || "10:00",
+      timeSpecificDiscountDays: trip.timeSpecificDiscountDays || ["Monday"],
+      timeSpecificDiscountPercentage: trip.timeSpecificDiscountPercentage || 15,
+      childDiscountEnabled: trip.childDiscountEnabled ?? false,
+      childDiscountPercentage: trip.childDiscountPercentage || 25,
       activities: trip.activities.map((activity) => ({
         activityName: activity.activityName,
         description: activity.description || undefined,
@@ -228,7 +332,18 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       setOriginalPrice(trip.originalPrice);
       setPriceAfterDiscount(trip.originalPrice);
     }
-  }, [trip, hasExistingDiscount, reset, tripCurrency]);
+
+    // Debug log to see what discount data is coming from the database
+    console.log("Trip discount data:", {
+      groupDiscountEnabled: trip.groupDiscountEnabled,
+      groupDiscountMinPeople: trip.groupDiscountMinPeople,
+      groupDiscountPercentage: trip.groupDiscountPercentage,
+      timeSpecificDiscountEnabled: trip.timeSpecificDiscountEnabled,
+      timeSpecificDiscountDays: trip.timeSpecificDiscountDays,
+      childDiscountEnabled: trip.childDiscountEnabled,
+      childDiscountPercentage: trip.childDiscountPercentage,
+    });
+  }, [trip, hasExistingDiscount, reset, tripCurrency, originalPrice]);
 
   // Update original price when price changes
   useEffect(() => {
@@ -312,8 +427,22 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       const isAvailable =
         Number(data.capacity) === 0 ? false : data.isAvailable;
 
+      // Ensure discount values are passed to the database
+      console.log("Submitting discount data:", {
+        groupDiscountEnabled,
+        groupDiscountMinPeople,
+        groupDiscountPercentage,
+        timeSpecificDiscountEnabled,
+        timeSpecificDiscountStartTime,
+        timeSpecificDiscountEndTime,
+        timeSpecificDiscountDays,
+        timeSpecificDiscountPercentage,
+        childDiscountEnabled,
+        childDiscountPercentage,
+      });
+
       // Build final data for update
-      const formattedData = {
+      const formattedData: TripInput = {
         ...data,
         originalPrice: Number(data.originalPrice),
         discountPercentage:
@@ -332,6 +461,33 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         currency: data.currency || "USD",
         // Use the computed isAvailable value
         isAvailable: isAvailable,
+        // Add new discount types - use state values directly to ensure they're correct
+        groupDiscountEnabled: groupDiscountEnabled,
+        groupDiscountMinPeople: groupDiscountEnabled
+          ? groupDiscountMinPeople
+          : undefined,
+        groupDiscountPercentage: groupDiscountEnabled
+          ? groupDiscountPercentage
+          : undefined,
+
+        timeSpecificDiscountEnabled: timeSpecificDiscountEnabled,
+        timeSpecificDiscountStartTime: timeSpecificDiscountEnabled
+          ? timeSpecificDiscountStartTime
+          : undefined,
+        timeSpecificDiscountEndTime: timeSpecificDiscountEnabled
+          ? timeSpecificDiscountEndTime
+          : undefined,
+        timeSpecificDiscountDays: timeSpecificDiscountEnabled
+          ? timeSpecificDiscountDays
+          : undefined,
+        timeSpecificDiscountPercentage: timeSpecificDiscountEnabled
+          ? timeSpecificDiscountPercentage
+          : undefined,
+
+        childDiscountEnabled: childDiscountEnabled,
+        childDiscountPercentage: childDiscountEnabled
+          ? childDiscountPercentage
+          : undefined,
       };
 
       // Run your update action
@@ -350,7 +506,6 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
   return (
     <div className="max-w-5xl mx-auto my-8 px-4">
       <Card>
-        
         <CardContent className="p-6">
           <form
             onSubmit={handleSubmit((data) =>
@@ -721,6 +876,497 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
                             />
                           </div>
                         )}
+
+                        {/* ADDITIONAL DISCOUNT TYPES */}
+                        <div className="mt-8 space-y-6">
+                          <h3 className="text-md font-medium">
+                            Additional Discount Types
+                          </h3>
+
+                          {/* Group Discount */}
+                          <div className="space-y-4 border-l-2 border-blue-200 pl-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="groupDiscountEnabled"
+                                checked={groupDiscountEnabled}
+                                onCheckedChange={(checked) => {
+                                  setGroupDiscountEnabled(!!checked);
+                                  setValue("groupDiscountEnabled", !!checked);
+                                }}
+                              />
+                              <Label
+                                htmlFor="groupDiscountEnabled"
+                                className="font-medium"
+                              >
+                                Group Booking Discount
+                              </Label>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      Apply discount when booking for multiple
+                                      people
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+
+                            {groupDiscountEnabled && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
+                                <div className="space-y-2">
+                                  <Label htmlFor="groupDiscountMinPeople">
+                                    Minimum People
+                                  </Label>
+                                  <Input
+                                    id="groupDiscountMinPeople"
+                                    type="number"
+                                    min="2"
+                                    value={groupDiscountMinPeople}
+                                    onChange={(e) => {
+                                      const value = Number(e.target.value);
+                                      if (value >= 2) {
+                                        setGroupDiscountMinPeople(value);
+                                        setValue(
+                                          "groupDiscountMinPeople",
+                                          value
+                                        );
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="groupDiscountPercentage">
+                                    Discount Percentage (Optional)
+                                  </Label>
+                                  <div className="flex items-center space-x-2">
+                                    <Input
+                                      id="groupDiscountPercentage"
+                                      type="number"
+                                      min="1"
+                                      max="100"
+                                      value={groupDiscountPercentage}
+                                      onChange={(e) => {
+                                        const value = Number(e.target.value);
+                                        if (value >= 1 && value <= 100) {
+                                          setGroupDiscountPercentage(value);
+                                          setValue(
+                                            "groupDiscountPercentage",
+                                            value
+                                          );
+                                        }
+                                      }}
+                                    />
+                                    <Percent className="h-4 w-4" />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Time-specific Discount */}
+                          <div className="space-y-4 border-l-2 border-purple-200 pl-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="timeSpecificDiscountEnabled"
+                                checked={timeSpecificDiscountEnabled}
+                                onCheckedChange={(checked) => {
+                                  setTimeSpecificDiscountEnabled(!!checked);
+                                  setValue(
+                                    "timeSpecificDiscountEnabled",
+                                    !!checked
+                                  );
+                                }}
+                              />
+                              <Label
+                                htmlFor="timeSpecificDiscountEnabled"
+                                className="font-medium"
+                              >
+                                Time-specific Discount
+                              </Label>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      Apply discount for specific hours on
+                                      specific days
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+
+                            {timeSpecificDiscountEnabled && (
+                              <div className="space-y-4 pl-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="timeSpecificDiscountStartTime">
+                                      Start Time
+                                    </Label>
+                                    <Input
+                                      id="timeSpecificDiscountStartTime"
+                                      type="time"
+                                      value={timeSpecificDiscountStartTime}
+                                      onChange={(e) => {
+                                        setTimeSpecificDiscountStartTime(
+                                          e.target.value
+                                        );
+                                        setValue(
+                                          "timeSpecificDiscountStartTime",
+                                          e.target.value
+                                        );
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="timeSpecificDiscountEndTime">
+                                      End Time
+                                    </Label>
+                                    <Input
+                                      id="timeSpecificDiscountEndTime"
+                                      type="time"
+                                      value={timeSpecificDiscountEndTime}
+                                      onChange={(e) => {
+                                        setTimeSpecificDiscountEndTime(
+                                          e.target.value
+                                        );
+                                        setValue(
+                                          "timeSpecificDiscountEndTime",
+                                          e.target.value
+                                        );
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="timeSpecificDiscountDays">
+                                    Days of Week
+                                  </Label>
+                                  <div className="flex flex-wrap gap-2">
+                                    {[
+                                      "Monday",
+                                      "Tuesday",
+                                      "Wednesday",
+                                      "Thursday",
+                                      "Friday",
+                                      "Saturday",
+                                      "Sunday",
+                                    ].map((day) => (
+                                      <div
+                                        key={day}
+                                        className="flex items-center space-x-2 border rounded-md p-2"
+                                      >
+                                        <Checkbox
+                                          id={`day-${day}`}
+                                          checked={timeSpecificDiscountDays.includes(
+                                            day
+                                          )}
+                                          onCheckedChange={(checked) => {
+                                            if (checked) {
+                                              const newDays = [
+                                                ...timeSpecificDiscountDays,
+                                                day,
+                                              ];
+                                              setTimeSpecificDiscountDays(
+                                                newDays
+                                              );
+                                              setValue(
+                                                "timeSpecificDiscountDays",
+                                                newDays
+                                              );
+                                            } else {
+                                              const newDays =
+                                                timeSpecificDiscountDays.filter(
+                                                  (d) => d !== day
+                                                );
+                                              setTimeSpecificDiscountDays(
+                                                newDays
+                                              );
+                                              setValue(
+                                                "timeSpecificDiscountDays",
+                                                newDays
+                                              );
+                                            }
+                                          }}
+                                        />
+                                        <Label htmlFor={`day-${day}`}>
+                                          {day}
+                                        </Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="timeSpecificDiscountPercentage">
+                                    Discount Percentage (Optional)
+                                  </Label>
+                                  <div className="flex items-center space-x-2">
+                                    <Input
+                                      id="timeSpecificDiscountPercentage"
+                                      type="number"
+                                      min="1"
+                                      max="100"
+                                      value={timeSpecificDiscountPercentage}
+                                      onChange={(e) => {
+                                        const value = Number(e.target.value);
+                                        if (value >= 1 && value <= 100) {
+                                          setTimeSpecificDiscountPercentage(
+                                            value
+                                          );
+                                          setValue(
+                                            "timeSpecificDiscountPercentage",
+                                            value
+                                          );
+                                        }
+                                      }}
+                                      className="w-24"
+                                    />
+                                    <Percent className="h-4 w-4" />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Child Discount */}
+                          <div className="space-y-4 border-l-2 border-green-200 pl-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="childDiscountEnabled"
+                                checked={childDiscountEnabled}
+                                onCheckedChange={(checked) => {
+                                  setChildDiscountEnabled(!!checked);
+                                  setValue("childDiscountEnabled", !!checked);
+                                }}
+                              />
+                              <Label
+                                htmlFor="childDiscountEnabled"
+                                className="font-medium"
+                              >
+                                Child Discount (Under 12)
+                              </Label>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      Apply discount for children under 12 years
+                                      old
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+
+                            {childDiscountEnabled && (
+                              <div className="pl-6 space-y-2">
+                                <Label htmlFor="childDiscountPercentage">
+                                  Discount Percentage (Optional)
+                                </Label>
+                                <div className="flex items-center space-x-2">
+                                  <Input
+                                    id="childDiscountPercentage"
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={childDiscountPercentage}
+                                    onChange={(e) => {
+                                      const value = Number(e.target.value);
+                                      if (value >= 1 && value <= 100) {
+                                        setChildDiscountPercentage(value);
+                                        setValue(
+                                          "childDiscountPercentage",
+                                          value
+                                        );
+                                      }
+                                    }}
+                                    className="w-24"
+                                  />
+                                  <Percent className="h-4 w-4" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Discount Summary */}
+                          <div className="mt-6">
+                            <div className="bg-slate-50 rounded-md p-4 space-y-3">
+                              <h3 className="font-medium text-md">
+                                Total Discount Summary
+                              </h3>
+
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">
+                                  Original Price:
+                                </span>
+                                <span className="font-medium">
+                                  {currentCurrencySymbol}
+                                  {originalPrice.toFixed(2)} {selectedCurrency}
+                                </span>
+                              </div>
+
+                              {/* Regular discount */}
+                              {hasDiscount && discountPercentage > 0 && (
+                                <div className="flex justify-between items-center">
+                                  <span>
+                                    Regular Discount ({discountPercentage}%):
+                                  </span>
+                                  <span className="text-red-500">
+                                    -{currentCurrencySymbol}
+                                    {(
+                                      (originalPrice * discountPercentage) /
+                                      100
+                                    ).toFixed(2)}{" "}
+                                    {selectedCurrency}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Group discount */}
+                              {groupDiscountEnabled &&
+                                groupDiscountPercentage > 0 && (
+                                  <div className="flex justify-between items-center">
+                                    <span>
+                                      Group Discount ({groupDiscountPercentage}
+                                      %) - {groupDiscountMinPeople}+ people:
+                                    </span>
+                                    <span className="text-red-500">
+                                      -{currentCurrencySymbol}
+                                      {(
+                                        (originalPrice *
+                                          groupDiscountPercentage) /
+                                        100
+                                      ).toFixed(2)}{" "}
+                                      {selectedCurrency}
+                                    </span>
+                                  </div>
+                                )}
+
+                              {/* Time-specific discount */}
+                              {timeSpecificDiscountEnabled &&
+                                timeSpecificDiscountPercentage > 0 && (
+                                  <div className="flex justify-between items-center">
+                                    <span>
+                                      Time Discount (
+                                      {timeSpecificDiscountPercentage}%):
+                                    </span>
+                                    <span className="text-red-500">
+                                      -{currentCurrencySymbol}
+                                      {(
+                                        (originalPrice *
+                                          timeSpecificDiscountPercentage) /
+                                        100
+                                      ).toFixed(2)}{" "}
+                                      {selectedCurrency}
+                                    </span>
+                                  </div>
+                                )}
+
+                              {/* Child discount */}
+                              {childDiscountEnabled &&
+                                childDiscountPercentage > 0 && (
+                                  <div className="flex justify-between items-center">
+                                    <span>
+                                      Child Discount ({childDiscountPercentage}
+                                      %):
+                                    </span>
+                                    <span className="text-red-500">
+                                      -{currentCurrencySymbol}
+                                      {(
+                                        (originalPrice *
+                                          childDiscountPercentage) /
+                                        100
+                                      ).toFixed(2)}{" "}
+                                      {selectedCurrency}
+                                    </span>
+                                  </div>
+                                )}
+
+                              <Separator className="my-2" />
+
+                              {/* Calculate the maximum possible discount */}
+                              {(() => {
+                                // Get all applicable discount percentages
+                                const discounts = [];
+                                if (hasDiscount && discountPercentage > 0) {
+                                  discounts.push(discountPercentage);
+                                }
+                                if (
+                                  groupDiscountEnabled &&
+                                  groupDiscountPercentage > 0
+                                ) {
+                                  discounts.push(groupDiscountPercentage);
+                                }
+                                if (
+                                  timeSpecificDiscountEnabled &&
+                                  timeSpecificDiscountPercentage > 0
+                                ) {
+                                  discounts.push(
+                                    timeSpecificDiscountPercentage
+                                  );
+                                }
+                                if (
+                                  childDiscountEnabled &&
+                                  childDiscountPercentage > 0
+                                ) {
+                                  discounts.push(childDiscountPercentage);
+                                }
+
+                                // If no discounts are active, show original price
+                                if (discounts.length === 0) {
+                                  return (
+                                    <div className="flex justify-between items-center font-bold">
+                                      <span>Price After Discount:</span>
+                                      <span className="text-green-600">
+                                        {currentCurrencySymbol}
+                                        {originalPrice.toFixed(2)}{" "}
+                                        {selectedCurrency}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+
+                                // Find the maximum discount
+                                const maxDiscount = Math.max(...discounts);
+                                const finalPrice =
+                                  originalPrice -
+                                  (originalPrice * maxDiscount) / 100;
+
+                                return (
+                                  <>
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="italic">
+                                        Note: Only the highest discount will be
+                                        applied
+                                      </span>
+                                      <span className="font-medium">
+                                        {maxDiscount}%
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center font-bold">
+                                      <span>Price After Discount:</span>
+                                      <span className="text-green-600">
+                                        {currentCurrencySymbol}
+                                        {finalPrice.toFixed(2)}{" "}
+                                        {selectedCurrency}
+                                      </span>
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </CardContent>

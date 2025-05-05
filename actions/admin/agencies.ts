@@ -12,6 +12,10 @@ import {
 } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { redirect } from "next/navigation"
+import {
+  sendVerificationApprovalEmail,
+  sendVerificationRejectionEmail,
+} from "@/lib/verifyAgencyEmail"
 
 // Server action to ban/unban a user
 export async function toggleUserBan(formData: FormData) {
@@ -165,4 +169,136 @@ export async function getAgencyDetails(id: string) {
     roomBookingsList,
     totalBookings,
   }
+}
+
+// Server action to verify an agency
+export async function verifyAgency(formData: FormData) {
+  const agencyId = formData.get("agencyId") as string
+  const locale = (formData.get("locale") as string) || "en"
+
+  const numericAgencyId = parseInt(agencyId)
+  if (isNaN(numericAgencyId)) {
+    throw new Error("Invalid agency ID")
+  }
+
+  // Get the agency
+  const agency = await db.query.agencies.findFirst({
+    where: eq(agencies.id, numericAgencyId),
+  })
+
+  if (!agency) {
+    throw new Error("Agency not found")
+  }
+
+  // Update verification status
+  await db
+    .update(agencies)
+    .set({
+      isVerified: true,
+      verificationStatus: "approved",
+      verificationReviewedAt: new Date(),
+    })
+    .where(eq(agencies.id, numericAgencyId))
+
+  // Send confirmation email to the agency
+  if (agency.contactEmail) {
+    try {
+      await sendVerificationApprovalEmail({
+        agencyName: agency.agencyName,
+        contactEmail: agency.contactEmail,
+      })
+    } catch (error) {
+      console.error("Failed to send verification approval email:", error)
+      // Continue even if email fails
+    }
+  }
+
+  // Redirect back to the agency details page
+  redirect(`/${locale}/admin/agencies/${agencyId}`)
+}
+
+// Server action to reject agency verification
+export async function rejectAgency(formData: FormData) {
+  const agencyId = formData.get("agencyId") as string
+  const rejectionReason = formData.get("rejectionReason") as string
+  const locale = (formData.get("locale") as string) || "en"
+
+  const numericAgencyId = parseInt(agencyId)
+  if (isNaN(numericAgencyId)) {
+    throw new Error("Invalid agency ID")
+  }
+
+  if (!rejectionReason || rejectionReason.trim() === "") {
+    throw new Error("Rejection reason is required")
+  }
+
+  // Get the agency
+  const agency = await db.query.agencies.findFirst({
+    where: eq(agencies.id, numericAgencyId),
+  })
+
+  if (!agency) {
+    throw new Error("Agency not found")
+  }
+
+  // Update verification status
+  await db
+    .update(agencies)
+    .set({
+      isVerified: false,
+      verificationStatus: "rejected",
+      verificationRejectionReason: rejectionReason,
+      verificationReviewedAt: new Date(),
+    })
+    .where(eq(agencies.id, numericAgencyId))
+
+  // Send rejection email to the agency
+  if (agency.contactEmail) {
+    try {
+      await sendVerificationRejectionEmail({
+        agencyName: agency.agencyName,
+        contactEmail: agency.contactEmail,
+        rejectionReason: rejectionReason,
+      })
+    } catch (error) {
+      console.error("Failed to send verification rejection email:", error)
+      // Continue even if email fails
+    }
+  }
+
+  // Redirect back to the agency details page
+  redirect(`/${locale}/admin/agencies/${agencyId}`)
+}
+
+// Server action to unverify an agency
+export async function unverifyAgency(formData: FormData) {
+  const agencyId = formData.get("agencyId") as string
+  const locale = (formData.get("locale") as string) || "en"
+
+  const numericAgencyId = parseInt(agencyId)
+  if (isNaN(numericAgencyId)) {
+    throw new Error("Invalid agency ID")
+  }
+
+  // Get the agency
+  const agency = await db.query.agencies.findFirst({
+    where: eq(agencies.id, numericAgencyId),
+  })
+
+  if (!agency) {
+    throw new Error("Agency not found")
+  }
+
+  // Update verification status
+  await db
+    .update(agencies)
+    .set({
+      isVerified: false,
+      verificationStatus: "pending",
+      verificationReviewedAt: new Date(),
+    })
+    .where(eq(agencies.id, numericAgencyId))
+
+  // Redirect back to the agency details page
+  redirect(`/${locale}/admin/agencies/${agencyId}`)
 }

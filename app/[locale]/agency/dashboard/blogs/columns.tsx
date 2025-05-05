@@ -8,6 +8,13 @@ import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { deleteBlog } from "@/actions/blogs/blogActions";
 import { useParams } from "next/navigation";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export type Blog = {
   id: number;
@@ -29,7 +36,71 @@ export type Blog = {
     id: number;
     name: string;
   } | null;
+  rejectionReason?: string | null;
 };
+
+// Status cell component
+function StatusCell({ value, rejectionReason }: { value: string; rejectionReason: string | null | undefined }) {
+  const [showReason, setShowReason] = useState(false);
+  
+  let badgeVariant: "default" | "outline" | "secondary" | "destructive" = "secondary";
+  let statusText = "Pending";
+  let customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+  
+  if (value === "approved") {
+    badgeVariant = "default";
+    statusText = "Approved";
+    customClass = "bg-green-100 text-green-800 hover:bg-green-200";
+  } else if (value === "rejected") {
+    badgeVariant = "destructive";
+    statusText = "Rejected";
+  } else if (value === "pending") {
+    badgeVariant = "secondary";
+    statusText = "Pending";
+    customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+  } else if (value === "archived") {
+    badgeVariant = "outline";
+    statusText = "Archived";
+    customClass = "bg-amber-100 text-amber-800 hover:bg-amber-200";
+  }
+  
+  // Get first two words if rejection reason exists
+  const twoWords = rejectionReason?.split(" ").slice(0, 2).join(" ");
+  const hasMoreWords = rejectionReason ? rejectionReason.split(" ").length > 2 : false;
+  
+  return (
+    <div className="flex flex-col">
+      <Badge variant={badgeVariant} className={customClass}>
+        {statusText}
+      </Badge>
+      
+      {value === "rejected" && rejectionReason && (
+        <>
+          <div className="text-xs text-red-600 mt-1">
+            {twoWords}
+            {hasMoreWords && (
+              <button 
+                onClick={() => setShowReason(true)}
+                className="ml-1 text-blue-500 hover:underline"
+              >
+                ...view more
+              </button>
+            )}
+          </div>
+          
+          <Dialog open={showReason} onOpenChange={setShowReason}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-red-600">Rejection Reason</DialogTitle>
+              </DialogHeader>
+              <p className="py-4">{rejectionReason}</p>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
+    </div>
+  );
+}
 
 export const columns: ColumnDef<Blog>[] = [
   {
@@ -108,31 +179,12 @@ export const columns: ColumnDef<Blog>[] = [
   },
   {
     accessorKey: "status",
-    header: "Approval Status",
+    header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
-
-      let badgeVariant: "default" | "outline" | "secondary" | "destructive" =
-        "secondary";
-      const statusText = status.charAt(0).toUpperCase() + status.slice(1);
-      let customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
-
-      if (status === "approved") {
-        badgeVariant = "default";
-        customClass = "bg-green-100 text-green-800 hover:bg-green-200";
-      } else if (status === "rejected") {
-        badgeVariant = "destructive";
-        customClass = "bg-red-100 text-red-800 hover:bg-red-200";
-      } else if (status === "pending") {
-        badgeVariant = "secondary";
-        customClass = "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
-      }
-
-      return (
-        <Badge variant={badgeVariant} className={customClass}>
-          {statusText}
-        </Badge>
-      );
+      const rejectionReason = row.original.rejectionReason;
+      
+      return <StatusCell value={status} rejectionReason={rejectionReason} />;
     },
   },
   {

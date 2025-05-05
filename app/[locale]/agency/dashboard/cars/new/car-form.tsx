@@ -88,7 +88,22 @@ export function CarForm({
   // When editing, load existing image URLs into preview state
   useEffect(() => {
     if (initialData?.images && Array.isArray(initialData.images)) {
-      setImagePreviews(initialData.images)
+      // Check if images are objects with imageUrl property
+      if (
+        initialData.images.length > 0 &&
+        typeof initialData.images[0] === "object" &&
+        "imageUrl" in initialData.images[0]
+      ) {
+        // Map the array of objects to an array of strings
+        setImagePreviews(
+          initialData.images.map(
+            (img) => (img as { imageUrl: string }).imageUrl
+          )
+        )
+      } else {
+        // Images are already strings
+        setImagePreviews(initialData.images as string[])
+      }
     }
   }, [initialData])
 
@@ -119,11 +134,14 @@ export function CarForm({
           year: initialData.year,
           plateNumber: initialData.plateNumber,
           color: initialData.color,
-          originalPrice: initialData.originalPrice,
+          originalPrice: Number(initialData.originalPrice),
           currency: initialData.currency || "USD",
           isAvailable: Boolean(initialData.isAvailable),
           discountPercentage: initialData.discountPercentage ?? undefined,
-          priceAfterDiscount: initialData.priceAfterDiscount ?? undefined,
+          priceAfterDiscount:
+            initialData.priceAfterDiscount !== undefined
+              ? Number(initialData.priceAfterDiscount)
+              : undefined,
           seats: initialData.seats ?? 4,
           category: initialData.category ?? "",
           location: initialData.location ?? "",
@@ -180,10 +198,10 @@ export function CarForm({
       setCustomPercentage(!std.includes(initialData.discountPercentage ?? 0))
 
       if (initialData.priceAfterDiscount !== undefined) {
-        setPriceAfterDiscount(initialData.priceAfterDiscount ?? 0)
+        setPriceAfterDiscount(Number(initialData.priceAfterDiscount) ?? 0)
       } else {
         calculatePriceAfterDiscount(
-          initialData.originalPrice,
+          Number(initialData.originalPrice),
           initialData.discountPercentage ?? 0
         )
       }
@@ -625,8 +643,8 @@ export function CarForm({
                 {isLoading
                   ? "Saving..."
                   : isEditing
-                  ? "Update Car"
-                  : "Create Car"}
+                    ? "Update Car"
+                    : "Create Car"}
               </Button>
             </div>
           </form>

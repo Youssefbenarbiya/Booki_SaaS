@@ -9,7 +9,7 @@ import { headers } from "next/headers"
 import { auth } from "@/auth"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
-import { authClient } from "@/auth-client" // Add this import for authClient
+import { authClient } from "@/auth-client" 
 
 // Schema for validation
 const employeeSchema = z.object({

@@ -89,7 +89,6 @@ export const verification = pgTable("verification", {
 //   createdAt: timestamp("created_at").defaultNow(),
 //   updatedAt: timestamp("updated_at").defaultNow(),
 // })
-
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -107,15 +106,34 @@ export const trips = pgTable("trips", {
     scale: 2,
   }),
   currency: varchar("currency", { length: 10 }).default("TND").notNull(),
+  // Group discount fields
+  groupDiscountEnabled: boolean("group_discount_enabled").default(false),
+  groupDiscountMinPeople: integer("group_discount_min_people"),
+  groupDiscountPercentage: integer("group_discount_percentage"),
+  // Time-specific discount fields
+  timeSpecificDiscountEnabled: boolean(
+    "time_specific_discount_enabled"
+  ).default(false),
+  timeSpecificDiscountStartTime: varchar("time_specific_discount_start_time", {
+    length: 10,
+  }),
+  timeSpecificDiscountEndTime: varchar("time_specific_discount_end_time", {
+    length: 10,
+  }),
+  timeSpecificDiscountDays: text("time_specific_discount_days").array(),
+  timeSpecificDiscountPercentage: integer("time_specific_discount_percentage"),
+  // Child discount fields
+  childDiscountEnabled: boolean("child_discount_enabled").default(false),
+  childDiscountPercentage: integer("child_discount_percentage"),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   agencyId: text("agency_id").references(() => agencies.userId), // Changed to reference agencies.userId (which is text type)
   createdBy: text("created_by").references(() => user.id), // Added new field to track creator
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
+})
 // Trip Images table
 export const tripImages = pgTable("trip_images", {
   id: serial("id").primaryKey(),
@@ -222,6 +240,7 @@ export const hotel = pgTable("hotel", {
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -353,6 +372,7 @@ export const cars = pgTable("cars", {
   images: text("images").array().default([]).notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -432,6 +452,7 @@ export const blogs = pgTable("blogs", {
   authorId: text("author_id").references(() => user.id),
   agencyId: text("agency_id").references(() => agencies.userId),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   views: integer("views").default(0),
   readTime: integer("read_time"),
   tags: text("tags").array().default([]),
@@ -509,7 +530,7 @@ export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }) 
+    .references(() => user.id, { onDelete: "cascade" })
     .unique(),
   agencyUniqueId: varchar("agency_unique_id", { length: 20 })
     .notNull()
@@ -522,6 +543,17 @@ export const agencies = pgTable("agencies", {
   region: text("region"),
   address: text("address"),
   logo: text("logo"),
+  // Add verification document fields
+  rneDocument: text("rne_document"),
+  patenteDocument: text("patente_document"),
+  cinDocument: text("cin_document"),
+  isVerified: boolean("is_verified").default(false),
+  verificationStatus: varchar("verification_status", { length: 50 }).default(
+    "pending"
+  ),
+  verificationRejectionReason: text("verification_rejection_reason"),
+  verificationSubmittedAt: timestamp("verification_submitted_at"),
+  verificationReviewedAt: timestamp("verification_reviewed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -587,6 +619,7 @@ export const chatMessages = pgTable("chat_messages", {
   type: varchar("type", { length: 20 }).notNull().default("text"), // 'text', 'image', 'notification'
   isRead: boolean("is_read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  customerId: varchar("customer_id")
 });
 
 // Chat messages relations
