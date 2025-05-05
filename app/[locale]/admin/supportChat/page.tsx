@@ -42,8 +42,37 @@ interface SupportMessage {
   tempId?: string;
 }
 
+// Default translations as fallback
+const defaultTranslations = {
+  supportTitle: "Support Management",
+  activeTickets: "Active Support Tickets",
+  ticketsDescription: "View and respond to customer support tickets",
+  noTickets: "No active support tickets",
+  loading: "Loading...",
+  selectTicket: "Select a ticket",
+  agency: "Agency",
+  selectTicketToStart: "Select a ticket to start chatting",
+  noTicketSelected: "No ticket selected. Please select a ticket from the list.",
+  typeMessage: "Type your message...",
+  selectTicketFirst: "Select a ticket first",
+  closeTicket: "Close Ticket",
+  ticketClosed: "Ticket has been closed",
+  newMessageFrom: "New message from",
+  newTicketFrom: "New support ticket from"
+};
+
 const AdminSupportChat = () => {
-  const t = useTranslations("AdminSupportChat");
+  // Create a custom translation function that falls back to our defaults
+  const tBase = useTranslations("AdminSupportChat");
+  const t = (key: keyof typeof defaultTranslations) => {
+    try {
+      return tBase(key);
+    } catch {
+      // If translation is missing, use our default
+      return defaultTranslations[key] || key;
+    }
+  };
+  
   const { data: session } = useSession();
   const userId = session?.user?.id;
   
