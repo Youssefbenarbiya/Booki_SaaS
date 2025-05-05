@@ -72,6 +72,7 @@ export default async function CarDetailPage({
                 locale={locale}
                 showContactButton={true}
                 size="md"
+                isVerified={car.agency?.isVerified || false}
               />
             </div>
           </div>

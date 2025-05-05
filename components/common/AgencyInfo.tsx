@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import { CheckCircle2, AlertCircle } from "lucide-react"
 
 interface AgencyInfoProps {
   agencyName: string
@@ -10,6 +11,7 @@ interface AgencyInfoProps {
   size?: "sm" | "md" | "lg"
   showContactButton?: boolean
   locale: string
+  isVerified?: boolean
 }
 
 export default function AgencyInfo({
@@ -17,6 +19,7 @@ export default function AgencyInfo({
   agencyLogo,
   className,
   size = "md",
+  isVerified = false,
 }: AgencyInfoProps) {
   const avatarSizes = {
     sm: "h-8 w-8",
@@ -43,14 +46,28 @@ export default function AgencyInfo({
         <p className={cn("font-medium", textSizes[size])}>
           {agencyName || "Agency"}
         </p>
-        <p
+        <div
           className={cn(
-            "text-muted-foreground",
+            "flex items-center gap-1",
             size === "sm" ? "text-xs" : size === "md" ? "text-xs" : "text-sm"
           )}
         >
-          Verified Agency
-        </p>
+          {isVerified ? (
+            <>
+              <CheckCircle2 className="h-3 w-3 text-green-500" />
+              <span className="text-green-600 dark:text-green-400">
+                Verified Agency
+              </span>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="h-3 w-3 text-red-500" />
+              <span className="text-red-600 dark:text-red-400">
+                Unverified Agency
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

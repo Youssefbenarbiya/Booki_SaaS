@@ -47,6 +47,7 @@ export default async function HotelPage({
           agencyLogo={hotelData.agency?.logo || null}
           locale={locale}
           showContactButton={true}
+          isVerified={hotelData.agency?.isVerified || false}
         />
       </div>
       <HotelGallery images={hotelData.images} hotelName={hotelData.name} />
@@ -61,7 +62,9 @@ export default async function HotelPage({
           description: hotelData.description || "",
           amenities: hotelData.amenities,
           latitude: hotelData.latitude ? Number(hotelData.latitude) : undefined,
-          longitude: hotelData.longitude ? Number(hotelData.longitude) : undefined,
+          longitude: hotelData.longitude
+            ? Number(hotelData.longitude)
+            : undefined,
         }}
       />
 
