@@ -16,6 +16,8 @@ import {
   UserCircle,
   MessageCircle,
   HelpCircle,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react"
 import { useSession } from "@/auth-client"
 import { Separator } from "@/components/ui/separator"
@@ -23,6 +25,8 @@ import { useEffect, useState } from "react"
 import { getAgencyProfile } from "@/actions/agency/agencyActions"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Locale } from "@/i18n/routing"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface SidebarProps {
   locale: Locale
@@ -37,6 +41,8 @@ export function Sidebar({ locale }: SidebarProps) {
     email?: string
     logo?: string
     agencyType?: string
+    isVerified?: boolean
+    verificationStatus?: string
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -104,6 +110,8 @@ export function Sidebar({ locale }: SidebarProps) {
               response.agency.contactEmail || session.data?.user?.email || "",
             logo: response.agency.logo || "",
             agencyType: response.agency.agencyType || "",
+            isVerified: response.agency.isVerified || false,
+            verificationStatus: response.agency.verificationStatus || "pending",
           })
         } else {
           // Fallback to user email if no agency found
@@ -111,6 +119,8 @@ export function Sidebar({ locale }: SidebarProps) {
             name: "Agency",
             email: session.data?.user?.email || "",
             logo: "",
+            isVerified: false,
+            verificationStatus: "pending",
           })
         }
       } catch (error) {
@@ -197,9 +207,23 @@ export function Sidebar({ locale }: SidebarProps) {
               </>
             ) : (
               <>
-                <h2 className="text-xl font-bold text-white">
-                  {agencyData?.name}
-                </h2>
+                <div className="flex items-center justify-center gap-2">
+                  <h2 className="text-xl font-bold text-white">
+                    {agencyData?.name}
+                  </h2>
+                  {agencyData?.isVerified ? (
+                    <Badge className="bg-green-600 text-xs hover:bg-green-700 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Verified
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="destructive"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      <AlertCircle className="h-3 w-3" /> Not Verified
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex items-center justify-center mt-2 text-gray-400">
                   <Mail className="h-4 w-4 mr-2" />
                   <span className="text-sm">{agencyData?.email}</span>
@@ -217,6 +241,29 @@ export function Sidebar({ locale }: SidebarProps) {
             </div>
           </div>
         </div>
+
+        {/* Show notification for unverified agencies */}
+        {!isLoading && agencyData && !agencyData.isVerified && (
+          <Alert
+            variant="destructive"
+            className="animate-pulse bg-red-900/30 border-red-500 mb-2"
+          >
+            <AlertCircle className="h-5 w-5" />
+            <AlertTitle className="font-bold">
+              Verification Required!
+            </AlertTitle>
+            <AlertDescription className="text-sm">
+              Your agency is not verified.
+              <Link
+                href={`/${locale}/agency/profile`}
+                className="underline ml-1 font-semibold hover:text-white"
+              >
+                Complete your profile now
+              </Link>{" "}
+              to unlock all features.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Separator className="bg-gray-800" />
 
