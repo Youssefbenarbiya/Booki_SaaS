@@ -15,6 +15,7 @@ import {
   CalendarCheck,
   UserCircle,
   MessageCircle,
+  HelpCircle,
 } from "lucide-react"
 import { useSession } from "@/auth-client"
 import { Separator } from "@/components/ui/separator"
@@ -83,6 +84,11 @@ export function Sidebar({ locale }: SidebarProps) {
       name: "Messages",
       href: `/${locale}/agency/dashboard/messages`,
       icon: MessageCircle,
+    },
+    {
+      name: "Support",
+      href: `/${locale}/agency/dashboard/supportChat`,
+      icon: HelpCircle,
     },
   ]
 

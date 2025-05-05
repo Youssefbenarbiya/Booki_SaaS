@@ -63,6 +63,14 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
         >
           <span>{t("users")}</span>
         </Link>
+        <Link
+          href={`/${currentLocale}/admin/supportChat`}
+          className={`flex items-center px-4 py-2 rounded-md ${isActive(
+            `/${currentLocale}/admin/supportChat`
+          )}`}
+        >
+          <span>{t("supportChat")}</span>
+        </Link>
       </nav>
     </div>
   )

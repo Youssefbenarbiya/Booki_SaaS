@@ -633,3 +633,40 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+// Support Chat System
+export const support_tickets = pgTable("support_tickets", {
+  id: text("id").primaryKey(),
+  subject: text("subject").notNull(),
+  status: text("status").notNull().default("open"), // "open", "closed", "pending"
+  agencyId: text("agency_id").notNull(),
+  agencyName: text("agency_name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const support_messages = pgTable("support_messages", {
+  id: text("id").primaryKey(),
+  ticketId: text("ticket_id")
+    .notNull()
+    .references(() => support_tickets.id, { onDelete: "cascade" }),
+  senderId: text("sender_id").notNull(),
+  receiverId: text("receiver_id").notNull(),
+  content: text("content").notNull(),
+  type: text("type").notNull().default("text"), // "text", "image", etc.
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  senderRole: text("sender_role").notNull(), // "agency" or "admin"
+});
+
+// Support tables relations
+export const supportTicketsRelations = relations(support_tickets, ({ many }) => ({
+  messages: many(support_messages),
+}));
+
+export const supportMessagesRelations = relations(support_messages, ({ one }) => ({
+  ticket: one(support_tickets, {
+    fields: [support_messages.ticketId],
+    references: [support_tickets.id],
+  }),
+}));
