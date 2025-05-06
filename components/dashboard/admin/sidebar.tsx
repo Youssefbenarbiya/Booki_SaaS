@@ -69,7 +69,7 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
             `/${currentLocale}/admin/supportChat`
           )}`}
         >
-          <span>{t("supportChat")}</span>
+          <span>supportChat</span>
         </Link>
       </nav>
     </div>

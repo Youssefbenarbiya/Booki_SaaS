@@ -50,3 +50,27 @@ export const getChatApiUrl = (): string => {
   // Server-side rendering fallback
   return "http://localhost:3002"
 }
+
+export const getSupportWebSocketUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_SUPPORT_WS_URL) {
+    return process.env.NEXT_PUBLIC_SUPPORT_WS_URL
+  }
+  if (typeof window !== "undefined") {
+    const isSecure = window.location.protocol === "https:"
+    const wsProtocol = isSecure ? "wss:" : "ws:"
+    return `${wsProtocol}//localhost:3003`
+  }
+  return "ws://localhost:3003"
+}
+
+export const getSupportChatApiUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_SUPPORT_API_URL) {
+    return process.env.NEXT_PUBLIC_SUPPORT_API_URL
+  }
+  if (typeof window !== "undefined") {
+    const isSecure = window.location.protocol === "https:"
+    const httpProtocol = isSecure ? "https:" : "http:"
+    return `${httpProtocol}//localhost:3004`
+  }
+  return "http://localhost:3004"
+}
