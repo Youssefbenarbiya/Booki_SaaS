@@ -14,9 +14,7 @@ export default function PaymentSelector({
   return (
     <div className="space-y-2 p-4 rounded-lg bg-gray-50 shadow-xl max-w-xs">
       <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs font-bold">
-          3
-        </div>
+       
         <h2 className="text-orange-500 font-bold text-sm">Payment Method</h2>
       </div>
 
