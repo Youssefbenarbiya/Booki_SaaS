@@ -89,49 +89,86 @@ export async function getAgencyConversations(agencyId: string) {
       )
     }
 
-    // Group by user instead of by post
+    // Debug the messages
+    if (allMessages.length > 0) {
+      console.log("First few messages:", allMessages.slice(0, 3).map(msg => ({
+        id: msg.id,
+        senderId: msg.senderId,
+        receiverId: msg.receiverId,
+        postId: msg.postId,
+        postType: msg.postType,
+        content: msg.content.substring(0, 20) + "...",
+      })))
+    }
+
+    // NEW APPROACH: Group by post first, then by customer
     const conversationMap = new Map()
 
+    // First, group messages by post
+    const postGroups = new Map()
+    
     for (const message of allMessages) {
-      // Determine if the message is from a customer to agency, or agency to customer
-      const isIncoming = agencyUserIds.includes(message.receiverId)
-      // Get the customer ID (the non-agency user)
-      const customerId = isIncoming ? message.senderId : message.receiverId
-
-      // Skip messages between agency members
-      if (agencyUserIds.includes(customerId)) {
-        continue
+      const postKey = `${message.postType}-${message.postId}`
+      if (!postGroups.has(postKey)) {
+        postGroups.set(postKey, [])
       }
-
-      // Create a unique key for each user-post combination
-      const key = `${customerId}-${message.postType}-${message.postId}`
-
-      if (
-        !conversationMap.has(key) ||
-        new Date(message.createdAt) >
-          new Date(conversationMap.get(key).lastMessage.createdAt)
-      ) {
-        conversationMap.set(key, {
-          postId: message.postId,
-          postType: message.postType,
-          postName: `${
-            message.postType.charAt(0).toUpperCase() + message.postType.slice(1)
-          } #${message.postId}`,
+      postGroups.get(postKey).push(message)
+    }
+    
+    console.log("Post groups created:", postGroups.size)
+    
+    // Process each post group
+    for (const [postKey, messages] of postGroups.entries()) {
+      // Get post details from first message
+      const firstMessage = messages[0]
+      const [postType, postId] = postKey.split('-')
+      
+      // Group participants by non-agency users
+      const customerMessages = new Map()
+      
+      for (const message of messages) {
+        let customerId
+        
+        // Determine if sender or receiver is not an agency member
+        if (!agencyUserIds.includes(message.senderId)) {
+          customerId = message.senderId
+        } else if (!agencyUserIds.includes(message.receiverId)) {
+          customerId = message.receiverId
+        } else {
+          // This is a message between agency members, skip it
+          continue
+        }
+        
+        // Use customerId as key
+        if (!customerMessages.has(customerId)) {
+          customerMessages.set(customerId, [])
+        }
+        customerMessages.get(customerId).push(message)
+      }
+      
+      // For each customer, create a conversation
+      for (const [customerId, customerMsgs] of customerMessages.entries()) {
+        // Sort messages by date, newest first
+        customerMsgs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        
+        // Get the last message
+        const lastMessage = customerMsgs[0]
+        
+        // Count unread messages
+        const unreadCount = customerMsgs.filter(
+          msg => agencyUserIds.includes(msg.receiverId) && !msg.isRead
+        ).length
+        
+        // Create conversation entry
+        const convKey = `${customerId}-${postType}-${postId}`
+        conversationMap.set(convKey, {
+          postId: postId,
+          postType: postType,
+          postName: `${postType.charAt(0).toUpperCase() + postType.slice(1)} #${postId}`,
           customerId: customerId,
-          lastMessage: message,
-          unreadCount:
-            agencyUserIds.includes(message.receiverId) && !message.isRead
-              ? 1
-              : 0,
+          lastMessage: lastMessage,
+          unreadCount: unreadCount,
         })
-      } else if (
-        agencyUserIds.includes(message.receiverId) &&
-        !message.isRead
-      ) {
-        // Increment unread count for existing conversation
-        const conv = conversationMap.get(key)
-        conv.unreadCount = (conv.unreadCount || 0) + 1
-        conversationMap.set(key, conv)
       }
     }
 

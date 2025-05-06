@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 
+// Define types for log entries
+type LogEntry = {
+  timestamp: string
+  action: string
+  [key: string]: unknown
+}
+
 export default function MessageDebugPage() {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
@@ -15,12 +22,12 @@ export default function MessageDebugPage() {
   const [message, setMessage] = useState("Hello, this is a test message")
   const [postId, setPostId] = useState("")
   const [postType, setPostType] = useState<"trip" | "car" | "hotel" | "room">("trip")
-  const [debugLog, setDebugLog] = useState<any[]>([])
+  const [debugLog, setDebugLog] = useState<LogEntry[]>([])
 
   const agencyId = session?.user?.id
 
-  async function addToLog(message: any) {
-    setDebugLog((prev) => [...prev, { timestamp: new Date().toISOString(), ...message }])
+  async function addToLog(message: Record<string, unknown>) {
+    setDebugLog((prev) => [...prev, { timestamp: new Date().toISOString(), action: "log", ...message }])
   }
 
   async function handleCheckMessages() {
@@ -159,7 +166,7 @@ export default function MessageDebugPage() {
                 <label className="block text-sm mb-1">Post Type:</label>
                 <select
                   value={postType}
-                  onChange={(e) => setPostType(e.target.value as any)}
+                  onChange={(e) => setPostType(e.target.value as "trip" | "car" | "hotel" | "room")}
                   className="w-full border rounded p-2"
                 >
                   <option value="trip">Trip</option>

@@ -47,6 +47,9 @@ export default async function Page({
     )
   }
 
+  // Make sure we have conversations array
+  const conversations = result.conversations || []
+
   // otherwise hand off to your ChatManager
   return (
     <>
@@ -59,7 +62,7 @@ export default async function Page({
         </div>
       </div>
       <ChatManager
-        initialConversations={result.conversations.map((conv) => ({
+        initialConversations={conversations.map((conv) => ({
           ...conv,
           postType: conv.postType as "trip" | "hotel" | "room" | "car",
         }))}
