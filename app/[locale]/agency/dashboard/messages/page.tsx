@@ -3,6 +3,7 @@ import ChatManager from "@/components/chat/ChatManager"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 import { getAgencyConversations } from "@/actions/agency/messages"
+import Link from "next/link"
 
 export default async function Page({
   params,
@@ -37,17 +38,32 @@ export default async function Page({
         <div className="bg-red-50 text-red-600 rounded-lg p-4 mt-4">
           Error loading conversations. Please try again later.
         </div>
+        <div className="mt-4">
+          <Link href="/agency/dashboard/messages/debug" className="text-blue-600 hover:underline">
+            Go to Message Debug Tool →
+          </Link>
+        </div>
       </div>
     )
   }
 
   // otherwise hand off to your ChatManager
   return (
-    <ChatManager
-      initialConversations={result.conversations!.map((conv) => ({
-        ...conv,
-        postType: conv.postType as "trip" | "hotel" | "room" | "car",
-      }))}
-    />
+    <>
+      <div className="container mx-auto pt-0 pb-4 px-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Messages</h1>
+          <Link href="/agency/dashboard/messages/debug" className="text-sm text-blue-600 hover:underline">
+            Debug Tool
+          </Link>
+        </div>
+      </div>
+      <ChatManager
+        initialConversations={result.conversations.map((conv) => ({
+          ...conv,
+          postType: conv.postType as "trip" | "hotel" | "room" | "car",
+        }))}
+      />
+    </>
   )
 }
