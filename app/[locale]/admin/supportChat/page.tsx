@@ -93,54 +93,57 @@ const AdminSupportChat = () => {
 
   // Connect to WebSocket
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return
 
     // Use the correct type for timers in Next.js
-    let reconnectTimer: ReturnType<typeof setTimeout>;
-    
+    let reconnectTimer: ReturnType<typeof setTimeout>
+
     const connectWebSocket = () => {
       // Clear any existing WebSocket
       if (socketRef.current) {
         try {
-          socketRef.current.close();
+          socketRef.current.close()
         } catch (e) {
-          console.error("Error closing existing socket:", e);
+          console.error("Error closing existing socket:", e)
         }
       }
-      
+
       // Get the WebSocket URL from environment variables or use default
-      const wsUrl = process.env.NEXT_PUBLIC_SUPPORT_WS_URL || "ws://localhost:3003";
+      const wsUrl =
+        process.env.NEXT_PUBLIC_SUPPORT_WS_URL || "ws://localhost:3003"
 
       // Create a single WebSocket connection without ticket ID in the URL
       // This ensures we maintain one connection for all tickets
-      const socket = new WebSocket(`${wsUrl}?userId=${userId}&userRole=admin`);
-      socketRef.current = socket;
+      const socket = new WebSocket(`${wsUrl}?userId=${userId}&userRole=admin`)
+      socketRef.current = socket
 
       socket.onopen = () => {
-        console.log("Admin Support WebSocket connected");
-        setIsConnected(true);
-        setLoading(false);
-        
+        console.log("Admin Support WebSocket connected")
+        setIsConnected(true)
+        setLoading(false)
+
         // If a ticket is already selected when connection opens, request its messages
         if (selectedTicket) {
-          console.log(`Requesting initial messages for ticket ${selectedTicket}`);
+          console.log(
+            `Requesting initial messages for ticket ${selectedTicket}`
+          )
           socket.send(
             JSON.stringify({
               type: "get_ticket_history",
-              ticketId: selectedTicket
+              ticketId: selectedTicket,
             })
-          );
+          )
         }
-      };
+      }
 
       socket.onclose = () => {
-        console.log("Admin Support WebSocket disconnected");
-        setIsConnected(false);
-        
+        console.log("Admin Support WebSocket disconnected")
+        setIsConnected(false)
+
         // Try to reconnect after 3 seconds
-        clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(connectWebSocket, 3000);
-      };
+        clearTimeout(reconnectTimer)
+        reconnectTimer = setTimeout(connectWebSocket, 3000)
+      }
 
       socket.onerror = (error) => {
         console.error("Admin Support WebSocket error:", error)
@@ -156,35 +159,39 @@ const AdminSupportChat = () => {
           setIsConnected(true)
         } else if (data.type === "tickets") {
           console.log(`Received ${data.tickets.length} tickets in update`)
-          
+
           setTickets((prev: SupportTicket[]) => {
-            const newIds = data.tickets.map((ticket: SupportTicket) => ticket.id);
-            const prevIds = prev.map((ticket: SupportTicket) => ticket.id);
-            const added = newIds.filter((id: string) => !prevIds.includes(id));
-            const removed = prevIds.filter((id: string) => !newIds.includes(id));
-            
-            if (added.length > 0) console.log("New tickets added:", added);
-            if (removed.length > 0) console.log("Tickets removed:", removed);
-            
+            const newIds = data.tickets.map(
+              (ticket: SupportTicket) => ticket.id
+            )
+            const prevIds = prev.map((ticket: SupportTicket) => ticket.id)
+            const added = newIds.filter((id: string) => !prevIds.includes(id))
+            const removed = prevIds.filter((id: string) => !newIds.includes(id))
+
+            if (added.length > 0) console.log("New tickets added:", added)
+            if (removed.length > 0) console.log("Tickets removed:", removed)
+
             const withNewMessages = data.tickets
               .filter((ticket: SupportTicket) => ticket.hasNewMessages)
-              .map((ticket: SupportTicket) => ticket.id);
-            
+              .map((ticket: SupportTicket) => ticket.id)
+
             if (withNewMessages.length > 0) {
-              console.log("Tickets with new messages:", withNewMessages);
+              console.log("Tickets with new messages:", withNewMessages)
             }
-            
-            return data.tickets;
+
+            return data.tickets
           })
         } else if (data.type === "history") {
           console.log(`Received ${data.messages.length} messages in history`)
           setMessages((prev) => {
             if (prev.length !== data.messages.length) {
-              console.log(`Replacing ${prev.length} messages with ${data.messages.length} from history`)
+              console.log(
+                `Replacing ${prev.length} messages with ${data.messages.length} from history`
+              )
             }
             return data.messages
           })
-          
+
           setTimeout(() => {
             if (messageEndRef.current) {
               console.log("Scrolling to latest message in history")
@@ -193,26 +200,33 @@ const AdminSupportChat = () => {
           }, 100)
         } else if (data.type === "message") {
           console.log("Received message:", data)
-          
+
           if (Array.isArray(data.messages)) {
             console.log(`Received ${data.messages.length} messages in batch`)
             setMessages((prev) => [...prev, ...data.messages])
           } else if (data.data) {
-            console.log(`Received message for ticket: ${data.data.ticketId}, current selected: ${selectedTicket}`)
-            
-            if (data.data.ticketId === selectedTicket) {
-              console.log("Message is for current ticket, adding to conversation")
-              
-              // Force a re-render after message processing
-              setTimeout(() => setForceUpdateCounter(prev => prev + 1), 100);
-              
-              const senderInfo = data.data.senderRole === "agency" 
-                ? (tickets.find(t => t.id === data.data.ticketId)?.agencyName || "Agency") 
+            console.log(
+              `Received message for ticket: ${data.data.ticketId}, current selected: ${selectedTicket}`
+            )
+
+            // Handle incoming message
+            const messageTicketId = data.data.ticketId
+
+            // Get sender info for notifications
+            const senderInfo =
+              data.data.senderRole === "agency"
+                ? tickets.find((t) => t.id === messageTicketId)?.agencyName ||
+                  "Agency"
                 : "Admin"
-              
-              console.log(`New message from ${senderInfo}: ${data.data.content}`)
-              
+
+            // If message is for currently selected ticket, add it to conversation
+            if (messageTicketId === selectedTicket) {
+              console.log(
+                "Message is for current ticket, adding to conversation"
+              )
+
               setMessages((prev) => {
+                // Check if we already have this message or its temp version
                 const existingMsgIndex = prev.findIndex(
                   (msg) =>
                     msg.id === data.data.id ||
@@ -220,7 +234,9 @@ const AdminSupportChat = () => {
                 )
 
                 if (existingMsgIndex !== -1) {
-                  console.log(`Replacing existing message at index ${existingMsgIndex}`)
+                  console.log(
+                    `Replacing existing message at index ${existingMsgIndex}`
+                  )
                   const newMessages = [...prev]
                   newMessages[existingMsgIndex] = data.data
                   return newMessages
@@ -230,58 +246,80 @@ const AdminSupportChat = () => {
                 return [...prev, data.data]
               })
 
+              // Show notification for agency messages
               if (data.data.senderRole === "agency") {
-                toast.info(`New message from ${senderInfo} in current conversation`)
+                toast.info(
+                  `New message from ${senderInfo} in current conversation`
+                )
               }
-              
+
+              // Ensure we scroll to the new message
               setTimeout(() => {
                 if (messageEndRef.current) {
                   console.log("Scrolling to new message")
                   messageEndRef.current.scrollIntoView({ behavior: "smooth" })
                 }
               }, 100)
+
+              // Force a re-render after message processing
+              setForceUpdateCounter((prev) => prev + 1)
             } else {
-              console.log(`Message is for another ticket: ${data.data.ticketId}`)
-              
-              const ticketDetails = tickets.find(t => t.id === data.data.ticketId)
+              // Message is for another ticket
+              console.log(`Message is for another ticket: ${messageTicketId}`)
+
+              const ticketDetails = tickets.find(
+                (t) => t.id === messageTicketId
+              )
               if (ticketDetails) {
                 console.log(`Found ticket: ${ticketDetails.subject}`)
-                
-                toast.info(`New message from ${ticketDetails.agencyName || "Agency"}`)
-                
-                setTickets(prev => 
-                  prev.map(ticket => 
-                    ticket.id === data.data.ticketId
+
+                // Only show toast for agency messages
+                if (data.data.senderRole === "agency") {
+                  toast.info(
+                    `New message from ${senderInfo} in "${ticketDetails.subject}"`
+                  )
+                }
+
+                // Mark ticket as having new messages
+                setTickets((prev) =>
+                  prev.map((ticket) =>
+                    ticket.id === messageTicketId
                       ? { ...ticket, hasNewMessages: true }
                       : ticket
                   )
                 )
-                
-                console.log(`Marked ticket ${data.data.ticketId} as having new messages`)
+
+                console.log(
+                  `Marked ticket ${messageTicketId} as having new messages`
+                )
               } else {
-                console.log(`Could not find ticket ${data.data.ticketId} in current list`)
+                console.log(
+                  `Could not find ticket ${messageTicketId} in current list`
+                )
               }
             }
           }
         } else if (data.type === "new_ticket") {
           console.log("Received new ticket notification:", data.ticket)
-          toast.success(`New support ticket from ${data.ticket.agencyName || "Agency"}`)
-          
-          setTickets(prev => {
-            if (prev.some(t => t.id === data.ticket.id)) {
+          toast.success(
+            `New support ticket from ${data.ticket.agencyName || "Agency"}`
+          )
+
+          setTickets((prev) => {
+            if (prev.some((t) => t.id === data.ticket.id)) {
               console.log(`Ticket ${data.ticket.id} already exists in list`)
               return prev
             }
-            
+
             console.log(`Adding new ticket ${data.ticket.id} to list`)
             return [data.ticket, ...prev]
           })
         } else if (data.type === "ticket_closed") {
           console.log("Received ticket closed notification:", data.ticket)
           toast.info("Ticket has been closed")
-          
-          setTickets(prev =>
-            prev.map(ticket =>
+
+          setTickets((prev) =>
+            prev.map((ticket) =>
               ticket.id === data.ticket.id
                 ? { ...ticket, status: "closed" }
                 : ticket
@@ -303,7 +341,7 @@ const AdminSupportChat = () => {
         socketRef.current.close()
       }
     }
-  }, [userId]) // Only depend on userId to maintain persistent connection
+  }, [userId, selectedTicket]) // Add selectedTicket as a dependency to reconnect when it changes
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -313,14 +351,16 @@ const AdminSupportChat = () => {
   // Add a useEffect that responds to forceUpdateCounter changes
   useEffect(() => {
     if (forceUpdateCounter > 0) {
-      console.log(`Force update triggered (${forceUpdateCounter}), ensuring UI is current`);
-      
+      console.log(
+        `Force update triggered (${forceUpdateCounter}), ensuring UI is current`
+      )
+
       // Scroll to bottom of messages
       if (messageEndRef.current) {
-        messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+        messageEndRef.current.scrollIntoView({ behavior: "smooth" })
       }
     }
-  }, [forceUpdateCounter]);
+  }, [forceUpdateCounter])
 
   // Send message
   const sendMessage = () => {
@@ -384,44 +424,41 @@ const AdminSupportChat = () => {
 
   // Select ticket to view
   const handleTicketSelect = (ticket: SupportTicket) => {
-    console.log(`Selecting ticket: ${ticket.id}, agency: ${ticket.agencyId}`);
-    
+    console.log(`Selecting ticket: ${ticket.id}, agency: ${ticket.agencyId}`)
+
     // Update selected ticket and agency IDs
-    setSelectedTicket(ticket.id);
-    setSelectedAgencyId(ticket.agencyId);
+    setSelectedTicket(ticket.id)
+    setSelectedAgencyId(ticket.agencyId)
 
     // Clear previous messages while we fetch new ones
-    setMessages([]);
+    setMessages([])
 
-    // If we have a connected socket, request the messages for this ticket
+    // Request the messages for this ticket
     if (socketRef.current && isConnected) {
-      console.log(`Requesting messages for ticket ${ticket.id} via existing connection`);
-      
+      console.log(`Requesting messages for ticket ${ticket.id}`)
+
       try {
-        // Send a request for the ticket history through the existing connection
+        // Send a request for the ticket history
         socketRef.current.send(
           JSON.stringify({
             type: "get_ticket_history",
-            ticketId: ticket.id
+            ticketId: ticket.id,
           })
-        );
-        
+        )
+
         // Mark this ticket as read by removing the hasNewMessages flag
-        setTickets(prev =>
-          prev.map(t => 
-            t.id === ticket.id 
-              ? { ...t, hasNewMessages: false }
-              : t
+        setTickets((prev) =>
+          prev.map((t) =>
+            t.id === ticket.id ? { ...t, hasNewMessages: false } : t
           )
-        );
+        )
       } catch (error) {
-        console.error("Error sending ticket history request:", error);
-        toast.error("Failed to fetch messages. Please refresh the page.");
+        console.error("Error sending ticket history request:", error)
+        toast.error("Failed to fetch messages. Please try again.")
       }
     } else {
-      console.warn("Socket not connected, cannot fetch messages");
-      // Instead of reconnecting, just show an error
-      toast.error("Connection lost. Please refresh the page to reconnect.");
+      console.warn("Socket not connected, cannot fetch messages")
+      toast.error("Connection lost. Please refresh the page to reconnect.")
     }
   }
 
@@ -520,33 +557,39 @@ const AdminSupportChat = () => {
                           ?.agencyName || t("agency")
                       : t("selectTicketToStart")}
                   </CardDescription>
-                  
+
                   {/* WebSocket Debug Indicator */}
                   <div className="flex items-center mt-1 text-xs">
-                    <div 
-                      className={`w-2 h-2 rounded-full mr-1 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} 
+                    <div
+                      className={`w-2 h-2 rounded-full mr-1 ${isConnected ? "bg-green-500" : "bg-red-500"}`}
                     />
-                    <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
-                      {isConnected ? 'Connected' : 'Disconnected'}
+                    <span
+                      className={
+                        isConnected ? "text-green-600" : "text-red-600"
+                      }
+                    >
+                      {isConnected ? "Connected" : "Disconnected"}
                     </span>
                     <span className="ml-2 text-gray-400">
-                      {messages.length > 0 ? `${messages.length} messages` : 'No messages'}
+                      {messages.length > 0
+                        ? `${messages.length} messages`
+                        : "No messages"}
                     </span>
                     <span className="ml-2 text-gray-400">
                       Updates: {forceUpdateCounter}
                     </span>
-                    <button 
+                    <button
                       onClick={() => {
                         if (socketRef.current && selectedTicket) {
-                          console.log("Manually requesting ticket messages");
+                          console.log("Manually requesting ticket messages")
                           socketRef.current.send(
                             JSON.stringify({
                               type: "get_ticket_history",
-                              ticketId: selectedTicket
+                              ticketId: selectedTicket,
                             })
-                          );
-                          setForceUpdateCounter(prev => prev + 1);
-                          toast.info("Refreshing messages...");
+                          )
+                          setForceUpdateCounter((prev) => prev + 1)
+                          toast.info("Refreshing messages...")
                         }
                       }}
                       className="ml-2 text-blue-500 hover:text-blue-700"
