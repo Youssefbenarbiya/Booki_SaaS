@@ -53,8 +53,14 @@ export const getChatApiUrl = (): string => {
 
 export const getSupportWebSocketUrl = (): string => {
   if (process.env.NEXT_PUBLIC_SUPPORT_WS_URL) {
+    console.log("Using Support WebSocket URL from env:", process.env.NEXT_PUBLIC_SUPPORT_WS_URL)
     return process.env.NEXT_PUBLIC_SUPPORT_WS_URL
   }
+  
+  console.log(
+    "NEXT_PUBLIC_SUPPORT_WS_URL environment variable not found, falling back to localhost"
+  )
+  
   if (typeof window !== "undefined") {
     const isSecure = window.location.protocol === "https:"
     const wsProtocol = isSecure ? "wss:" : "ws:"
@@ -65,8 +71,14 @@ export const getSupportWebSocketUrl = (): string => {
 
 export const getSupportChatApiUrl = (): string => {
   if (process.env.NEXT_PUBLIC_SUPPORT_API_URL) {
+    console.log("Using Support API URL from env:", process.env.NEXT_PUBLIC_SUPPORT_API_URL)
     return process.env.NEXT_PUBLIC_SUPPORT_API_URL
   }
+  
+  console.log(
+    "NEXT_PUBLIC_SUPPORT_API_URL environment variable not found, falling back to localhost"
+  )
+  
   if (typeof window !== "undefined") {
     const isSecure = window.location.protocol === "https:"
     const httpProtocol = isSecure ? "https:" : "http:"
