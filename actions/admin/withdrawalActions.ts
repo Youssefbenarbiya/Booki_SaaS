@@ -5,7 +5,7 @@ import { headers } from "next/headers"
 import { auth } from "@/auth"
 import { eq, desc, asc, sql } from "drizzle-orm"
 import { withdrawalRequest, agencyWallet, walletTransaction, agencies, notifications } from "@/db/schema"
-import { db } from "@/db"
+import db from "@/db/drizzle"
 
 /**
  * Get all withdrawal requests for admin
@@ -135,7 +135,7 @@ export async function approveWithdrawalRequest({
     // Create notification for agency
     await db.insert(notifications).values({
       title: "Withdrawal Request Approved",
-      message: `Your withdrawal request for $${parseFloat(withdrawalRequestData.amount).toFixed(2)} has been approved and processed.`,
+      message: `Your withdrawal request for ${parseFloat(withdrawalRequestData.amount).toFixed(2)} TND has been approved and processed.`,
       type: "success",
       userId: withdrawalRequestData.agency.userId,
       relatedItemType: "withdrawal",
@@ -207,7 +207,7 @@ export async function rejectWithdrawalRequest({
     // Create notification for agency
     await db.insert(notifications).values({
       title: "Withdrawal Request Rejected",
-      message: `Your withdrawal request for $${parseFloat(withdrawalRequestData.amount).toFixed(2)} has been rejected. Reason: ${notes}`,
+      message: `Your withdrawal request for ${parseFloat(withdrawalRequestData.amount).toFixed(2)} TND has been rejected. Reason: ${notes}`,
       type: "error",
       userId: withdrawalRequestData.agency.userId,
       relatedItemType: "withdrawal",

@@ -91,12 +91,12 @@ export function WithdrawalRequestForm({ currentBalance }: { currentBalance: numb
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount</FormLabel>
+              <FormLabel>Amount (TND)</FormLabel>
               <FormControl>
                 <Input placeholder="0.00" {...field} />
               </FormControl>
               <FormDescription>
-                Available balance: ${balanceAmount.toFixed(2)}
+                Available balance: {balanceAmount.toFixed(2)} TND
               </FormDescription>
               <FormMessage />
             </FormItem>

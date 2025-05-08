@@ -25,6 +25,12 @@ interface WithdrawalRequest {
   notes?: string | null;
 }
 
+// Helper function to format amount in TND
+function formatTND(amount: string | number): string {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return `${numAmount.toFixed(2)} TND`;
+}
+
 export default async function WalletPage() {
   const { wallet } = await getAgencyWallet()
   const { transactions } = await getAgencyTransactions(20)
@@ -40,7 +46,7 @@ export default async function WalletPage() {
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-2">Current Balance</h2>
           <div className="text-4xl font-bold text-primary">
-            {formatCurrency(walletBalance)}
+            {formatTND(walletBalance)}
           </div>
           <p className="text-sm text-gray-500 mt-2">
             Available for withdrawal
@@ -79,7 +85,7 @@ export default async function WalletPage() {
                       <div>{transaction.description}</div>
                       <div className={transaction.type === "credit" ? "text-green-600" : "text-red-600"}>
                         {transaction.type === "credit" ? "+" : "-"}
-                        {formatCurrency(transactionAmount)}
+                        {formatTND(transactionAmount)}
                       </div>
                       <div>
                         <Badge variant={transaction.type === "credit" ? "default" : "destructive"}>
@@ -116,7 +122,7 @@ export default async function WalletPage() {
                   return (
                     <div key={request.id} className="grid grid-cols-5 text-sm py-2 border-b border-gray-100">
                       <div>{format(new Date(request.createdAt || new Date()), "MMM d, yyyy")}</div>
-                      <div>{formatCurrency(requestAmount)}</div>
+                      <div>{formatTND(requestAmount)}</div>
                       <div>{request.bankAccountNumber} ({request.bankName})</div>
                       <div>
                         <Badge

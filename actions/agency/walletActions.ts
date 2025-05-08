@@ -3,10 +3,62 @@
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
-import { eq, desc, sql, and } from "drizzle-orm"
-import { agencies, agencyWallet, walletTransaction, withdrawalRequest, notifications } from "@/db/schema"
-import { db } from "@/db"
-import { getDashboardStats } from "./dashboardActions"
+import { eq, desc, sql, and, sum } from "drizzle-orm"
+import { agencies, agencyWallet, walletTransaction, withdrawalRequest, notifications, tripBookings, trips, roomBookings, room, hotel, carBookings, cars } from "@/db/schema"
+import db from "@/db/drizzle"
+
+/**
+ * Calculate agency income from all sources (trips, rooms, cars)
+ */
+async function calculateAgencyIncome(agencyId: string) {
+  try {
+    // Calculate revenue from trip bookings
+    const tripBookingsRevenueResult = await db
+      .select({
+        revenue: sql<string>`COALESCE(SUM(${tripBookings.seatsBooked} * ${trips.priceAfterDiscount}), '0')`,
+      })
+      .from(tripBookings)
+      .innerJoin(trips, eq(tripBookings.tripId, trips.id))
+      .where(eq(trips.agencyId, agencyId))
+
+    // Calculate revenue from room bookings
+    const roomBookingsRevenueResult = await db
+      .select({
+        revenue: sql<string>`
+          COALESCE(SUM(
+            DATE_PART('day', ${roomBookings.checkOut}::timestamp - ${roomBookings.checkIn}::timestamp) * 
+            ${room.pricePerNightAdult}::decimal
+          ), '0')
+        `,
+      })
+      .from(roomBookings)
+      .innerJoin(room, eq(roomBookings.roomId, room.id))
+      .innerJoin(hotel, eq(room.hotelId, hotel.id))
+      .where(eq(hotel.agencyId, agencyId))
+
+    // Calculate revenue from car bookings
+    const carBookingsRevenueResult = await db
+      .select({
+        revenue: sql<string>`COALESCE(SUM(${carBookings.total_price}), '0')`,
+      })
+      .from(carBookings)
+      .innerJoin(cars, eq(carBookings.car_id, cars.id))
+      .where(eq(cars.agencyId, agencyId))
+
+    // Parse revenue values
+    const tripRevenue = parseFloat(tripBookingsRevenueResult[0]?.revenue || "0")
+    const roomRevenue = parseFloat(roomBookingsRevenueResult[0]?.revenue || "0")
+    const carRevenue = parseFloat(carBookingsRevenueResult[0]?.revenue || "0")
+
+    // Calculate total revenue in TND
+    const totalRevenue = tripRevenue + roomRevenue + carRevenue
+    
+    return totalRevenue
+  } catch (error) {
+    console.error("Error calculating agency income:", error)
+    return 0
+  }
+}
 
 /**
  * Get agency wallet
@@ -46,9 +98,33 @@ export async function getAgencyWallet() {
       wallet = newWallet
     }
 
-    // Sync wallet with actual revenue
-    await syncWalletWithRevenue(agency.userId)
-
+    // Calculate total income
+    const totalIncome = await calculateAgencyIncome(agency.userId)
+    
+    // Get total withdrawals
+    const withdrawalsResult = await db
+      .select({
+        total: sql<string>`COALESCE(SUM(${withdrawalRequest.amount}), '0')`,
+      })
+      .from(withdrawalRequest)
+      .where(and(
+        eq(withdrawalRequest.agencyId, agency.userId), 
+        eq(withdrawalRequest.status, "approved")
+      ))
+    
+    const totalWithdrawn = parseFloat(withdrawalsResult[0]?.total || "0")
+    
+    // Calculate current balance
+    const currentBalance = (totalIncome - totalWithdrawn).toFixed(2)
+    
+    // Update wallet balance
+    await db.update(agencyWallet)
+      .set({
+        balance: currentBalance,
+        updatedAt: new Date()
+      })
+      .where(eq(agencyWallet.agencyId, agency.userId))
+    
     // Fetch updated wallet
     wallet = await db.query.agencyWallet.findFirst({
       where: eq(agencyWallet.agencyId, agency.userId),
@@ -58,48 +134,6 @@ export async function getAgencyWallet() {
   } catch (error) {
     console.error("Error fetching agency wallet:", error)
     return { wallet: null, error: "Failed to fetch wallet" }
-  }
-}
-
-/**
- * Sync wallet balance with revenue from all sources
- */
-async function syncWalletWithRevenue(agencyId: string) {
-  try {
-    // Get the stats for this agency
-    const stats = await getDashboardStats()
-    
-    // Calculate total revenue
-    const totalRevenue = stats.totalRevenue
-    
-    // Get total withdrawals
-    const withdrawalsResult = await db
-      .select({
-        total: sql<string>`COALESCE(SUM(${withdrawalRequest.amount}), '0')`,
-      })
-      .from(withdrawalRequest)
-      .where(and(
-        eq(withdrawalRequest.agencyId, agencyId), 
-        eq(withdrawalRequest.status, "approved")
-      ))
-    
-    const totalWithdrawn = parseFloat(withdrawalsResult[0]?.total || "0")
-    
-    // Calculate current balance
-    const currentBalance = (totalRevenue - totalWithdrawn).toFixed(2)
-    
-    // Update wallet
-    await db.update(agencyWallet)
-      .set({
-        balance: currentBalance.toString(),
-        updatedAt: new Date()
-      })
-      .where(eq(agencyWallet.agencyId, agencyId))
-    
-    return true
-  } catch (error) {
-    console.error("Error syncing wallet balance:", error)
-    return false
   }
 }
 
@@ -233,7 +267,7 @@ export async function createWithdrawalRequest(data: {
     // Create notification for admin
     await db.insert(notifications).values({
       title: "New Withdrawal Request",
-      message: `${agency.agencyName} has requested a withdrawal of $${data.amount.toFixed(2)}`,
+      message: `${agency.agencyName} has requested a withdrawal of ${data.amount.toFixed(2)} TND`,
       type: "info",
       role: "ADMIN",
       relatedItemType: "withdrawal",

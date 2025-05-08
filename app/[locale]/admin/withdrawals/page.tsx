@@ -23,18 +23,24 @@ interface WithdrawalRequest {
   };
 }
 
+// Helper function to format amount in TND
+function formatTND(amount: string | number): string {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return `${numAmount.toFixed(2)} TND`;
+}
+
 export default async function AdminWithdrawalsPage() {
   const { withdrawalRequests } = await getWithdrawalRequests()
   
   // Group withdrawal requests by status
   const pendingRequests = withdrawalRequests.filter(
-    (request) => request.status === "pending"
+    (request: any) => request.status === "pending"
   )
   const approvedRequests = withdrawalRequests.filter(
-    (request) => request.status === "approved"
+    (request: any) => request.status === "approved"
   )
   const rejectedRequests = withdrawalRequests.filter(
-    (request) => request.status === "rejected"
+    (request: any) => request.status === "rejected"
   )
 
   return (
@@ -76,7 +82,7 @@ export default async function AdminWithdrawalsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {withdrawalRequests.map((request) => {
+                  {withdrawalRequests.map((request: any) => {
                     const requestAmount = typeof request.amount === 'string'
                       ? parseFloat(request.amount)
                       : request.amount;
@@ -95,7 +101,7 @@ export default async function AdminWithdrawalsPage() {
                           </Link>
                         </td>
                         <td className="py-4 text-sm font-semibold">
-                          ${requestAmount.toFixed(2)}
+                          {formatTND(requestAmount)}
                         </td>
                         <td className="py-4 text-sm">
                           <div>{request.accountHolderName}</div>
