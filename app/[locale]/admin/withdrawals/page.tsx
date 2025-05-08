@@ -8,9 +8,9 @@ import { WithdrawalRequestActionButtons } from "@/components/dashboard/admin/Wit
 
 interface WithdrawalRequest {
   id: number;
-  createdAt: Date | string;
+  createdAt: Date | string | null;
   agencyId: string;
-  amount: number;
+  amount: string | number;
   bankName: string;
   accountHolderName: string;
   bankAccountNumber: string;
@@ -28,13 +28,13 @@ export default async function AdminWithdrawalsPage() {
   
   // Group withdrawal requests by status
   const pendingRequests = withdrawalRequests.filter(
-    (request: WithdrawalRequest) => request.status === "pending"
+    (request) => request.status === "pending"
   )
   const approvedRequests = withdrawalRequests.filter(
-    (request: WithdrawalRequest) => request.status === "approved"
+    (request) => request.status === "approved"
   )
   const rejectedRequests = withdrawalRequests.filter(
-    (request: WithdrawalRequest) => request.status === "rejected"
+    (request) => request.status === "rejected"
   )
 
   return (
@@ -76,52 +76,58 @@ export default async function AdminWithdrawalsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {withdrawalRequests.map((request: WithdrawalRequest) => (
-                    <tr key={request.id} className="border-b">
-                      <td className="py-4 text-sm">
-                        {format(new Date(request.createdAt), "MMM d, yyyy")}
-                      </td>
-                      <td className="py-4 text-sm">
-                        <Link 
-                          href={`/admin/agencies/${request.agencyId}`}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          {request.agency.agencyName}
-                        </Link>
-                      </td>
-                      <td className="py-4 text-sm font-semibold">
-                        ${request.amount.toFixed(2)}
-                      </td>
-                      <td className="py-4 text-sm">
-                        <div>{request.accountHolderName}</div>
-                        <div className="text-gray-500">{request.bankName}</div>
-                        <div className="text-gray-500">{request.bankAccountNumber}</div>
-                      </td>
-                      <td className="py-4 text-sm">
-                        <Badge
-                          variant={
-                            request.status === "pending"
-                              ? "outline"
-                              : request.status === "approved"
-                              ? "default"
-                              : "destructive"
-                          }
-                        >
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                        </Badge>
-                      </td>
-                      <td className="py-4 text-sm">
-                        {request.status === "pending" && (
-                          <WithdrawalRequestActionButtons requestId={request.id} />
-                        )}
-                        {request.status !== "pending" && (
-                          <span className="text-gray-500 text-xs">
-                            {request.processedAt ? `Processed on ${format(new Date(request.processedAt), "MMM d, yyyy")}` : ""}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {withdrawalRequests.map((request) => {
+                    const requestAmount = typeof request.amount === 'string'
+                      ? parseFloat(request.amount)
+                      : request.amount;
+                      
+                    return (
+                      <tr key={request.id} className="border-b">
+                        <td className="py-4 text-sm">
+                          {format(new Date(request.createdAt || new Date()), "MMM d, yyyy")}
+                        </td>
+                        <td className="py-4 text-sm">
+                          <Link 
+                            href={`/admin/agencies/${request.agencyId}`}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            {request.agency.agencyName}
+                          </Link>
+                        </td>
+                        <td className="py-4 text-sm font-semibold">
+                          ${requestAmount.toFixed(2)}
+                        </td>
+                        <td className="py-4 text-sm">
+                          <div>{request.accountHolderName}</div>
+                          <div className="text-gray-500">{request.bankName}</div>
+                          <div className="text-gray-500">{request.bankAccountNumber}</div>
+                        </td>
+                        <td className="py-4 text-sm">
+                          <Badge
+                            variant={
+                              request.status === "pending"
+                                ? "outline"
+                                : request.status === "approved"
+                                ? "default"
+                                : "destructive"
+                            }
+                          >
+                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          </Badge>
+                        </td>
+                        <td className="py-4 text-sm">
+                          {request.status === "pending" && (
+                            <WithdrawalRequestActionButtons requestId={request.id} />
+                          )}
+                          {request.status !== "pending" && request.processedAt && (
+                            <span className="text-gray-500 text-xs">
+                              Processed on {format(new Date(request.processedAt), "MMM d, yyyy")}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

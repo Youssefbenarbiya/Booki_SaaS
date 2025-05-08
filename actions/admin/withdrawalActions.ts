@@ -96,7 +96,10 @@ export async function approveWithdrawalRequest({
       return { success: false, error: "Agency wallet not found" }
     }
 
-    if (agencyWalletData.balance < withdrawalRequestData.amount) {
+    const walletBalance = parseFloat(agencyWalletData.balance || "0")
+    const withdrawalAmount = parseFloat(withdrawalRequestData.amount || "0")
+    
+    if (walletBalance < withdrawalAmount) {
       return { success: false, error: "Insufficient balance in agency wallet" }
     }
 
@@ -132,7 +135,7 @@ export async function approveWithdrawalRequest({
     // Create notification for agency
     await db.insert(notifications).values({
       title: "Withdrawal Request Approved",
-      message: `Your withdrawal request for $${withdrawalRequestData.amount.toFixed(2)} has been approved and processed.`,
+      message: `Your withdrawal request for $${parseFloat(withdrawalRequestData.amount).toFixed(2)} has been approved and processed.`,
       type: "success",
       userId: withdrawalRequestData.agency.userId,
       relatedItemType: "withdrawal",
@@ -204,7 +207,7 @@ export async function rejectWithdrawalRequest({
     // Create notification for agency
     await db.insert(notifications).values({
       title: "Withdrawal Request Rejected",
-      message: `Your withdrawal request for $${withdrawalRequestData.amount.toFixed(2)} has been rejected. Reason: ${notes}`,
+      message: `Your withdrawal request for $${parseFloat(withdrawalRequestData.amount).toFixed(2)} has been rejected. Reason: ${notes}`,
       type: "error",
       userId: withdrawalRequestData.agency.userId,
       relatedItemType: "withdrawal",

@@ -9,16 +9,16 @@ import { getAgencyTransactions, getAgencyWallet, getAgencyWithdrawalRequests } f
 
 interface Transaction {
   id: number;
-  createdAt: Date | string;
+  createdAt: Date | string | null;
   description: string;
   type: string;
-  amount: number;
+  amount: string | number;
 }
 
 interface WithdrawalRequest {
   id: number;
-  createdAt: Date | string;
-  amount: number;
+  createdAt: Date | string | null;
+  amount: string | number;
   bankName: string;
   bankAccountNumber: string;
   status: string;
@@ -30,6 +30,8 @@ export default async function WalletPage() {
   const { transactions } = await getAgencyTransactions(20)
   const { withdrawalRequests } = await getAgencyWithdrawalRequests()
 
+  const walletBalance = wallet?.balance ? parseFloat(wallet.balance) : 0
+
   return (
     <div className="py-8">
       <h1 className="text-3xl font-bold mb-8">Agency Wallet</h1>
@@ -38,7 +40,7 @@ export default async function WalletPage() {
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-2">Current Balance</h2>
           <div className="text-4xl font-bold text-primary">
-            {formatCurrency(wallet?.balance || 0)}
+            {formatCurrency(walletBalance)}
           </div>
           <p className="text-sm text-gray-500 mt-2">
             Available for withdrawal
@@ -66,21 +68,27 @@ export default async function WalletPage() {
                   <div>Amount</div>
                   <div>Type</div>
                 </div>
-                {transactions.map((transaction: Transaction) => (
-                  <div key={transaction.id} className="grid grid-cols-4 text-sm py-2 border-b border-gray-100">
-                    <div>{format(new Date(transaction.createdAt), "MMM d, yyyy")}</div>
-                    <div>{transaction.description}</div>
-                    <div className={transaction.type === "credit" ? "text-green-600" : "text-red-600"}>
-                      {transaction.type === "credit" ? "+" : "-"}
-                      {formatCurrency(transaction.amount)}
+                {transactions.map((transaction) => {
+                  const transactionAmount = typeof transaction.amount === 'string' 
+                    ? parseFloat(transaction.amount) 
+                    : transaction.amount;
+                  
+                  return (
+                    <div key={transaction.id} className="grid grid-cols-4 text-sm py-2 border-b border-gray-100">
+                      <div>{format(new Date(transaction.createdAt || new Date()), "MMM d, yyyy")}</div>
+                      <div>{transaction.description}</div>
+                      <div className={transaction.type === "credit" ? "text-green-600" : "text-red-600"}>
+                        {transaction.type === "credit" ? "+" : "-"}
+                        {formatCurrency(transactionAmount)}
+                      </div>
+                      <div>
+                        <Badge variant={transaction.type === "credit" ? "default" : "destructive"}>
+                          {transaction.type === "credit" ? "Payment" : "Withdrawal"}
+                        </Badge>
+                      </div>
                     </div>
-                    <div>
-                      <Badge variant={transaction.type === "credit" ? "default" : "destructive"}>
-                        {transaction.type === "credit" ? "Payment" : "Withdrawal"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </Card>
@@ -100,27 +108,33 @@ export default async function WalletPage() {
                   <div>Status</div>
                   <div>Notes</div>
                 </div>
-                {withdrawalRequests.map((request: WithdrawalRequest) => (
-                  <div key={request.id} className="grid grid-cols-5 text-sm py-2 border-b border-gray-100">
-                    <div>{format(new Date(request.createdAt), "MMM d, yyyy")}</div>
-                    <div>{formatCurrency(request.amount)}</div>
-                    <div>{request.bankAccountNumber} ({request.bankName})</div>
-                    <div>
-                      <Badge
-                        variant={
-                          request.status === "pending"
-                            ? "outline"
-                            : request.status === "approved"
-                            ? "default"
-                            : "destructive"
-                        }
-                      >
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </Badge>
+                {withdrawalRequests.map((request) => {
+                  const requestAmount = typeof request.amount === 'string' 
+                    ? parseFloat(request.amount) 
+                    : request.amount;
+                  
+                  return (
+                    <div key={request.id} className="grid grid-cols-5 text-sm py-2 border-b border-gray-100">
+                      <div>{format(new Date(request.createdAt || new Date()), "MMM d, yyyy")}</div>
+                      <div>{formatCurrency(requestAmount)}</div>
+                      <div>{request.bankAccountNumber} ({request.bankName})</div>
+                      <div>
+                        <Badge
+                          variant={
+                            request.status === "pending"
+                              ? "outline"
+                              : request.status === "approved"
+                              ? "default"
+                              : "destructive"
+                          }
+                        >
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </Badge>
+                      </div>
+                      <div>{request.notes || "-"}</div>
                     </div>
-                    <div>{request.notes || "-"}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>

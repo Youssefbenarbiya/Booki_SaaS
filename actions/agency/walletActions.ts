@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
-import { eq, desc } from "drizzle-orm"
+import { eq, desc, sql, and } from "drizzle-orm"
 import { agencies, agencyWallet, walletTransaction, withdrawalRequest, notifications } from "@/db/schema"
 import { db } from "@/db"
+import { getDashboardStats } from "./dashboardActions"
 
 /**
  * Get agency wallet
@@ -39,16 +40,66 @@ export async function getAgencyWallet() {
     if (!wallet) {
       const [newWallet] = await db.insert(agencyWallet).values({
         agencyId: agency.userId,
-        balance: 0,
+        balance: "0",
       }).returning()
       
       wallet = newWallet
     }
 
+    // Sync wallet with actual revenue
+    await syncWalletWithRevenue(agency.userId)
+
+    // Fetch updated wallet
+    wallet = await db.query.agencyWallet.findFirst({
+      where: eq(agencyWallet.agencyId, agency.userId),
+    })
+
     return { wallet }
   } catch (error) {
     console.error("Error fetching agency wallet:", error)
     return { wallet: null, error: "Failed to fetch wallet" }
+  }
+}
+
+/**
+ * Sync wallet balance with revenue from all sources
+ */
+async function syncWalletWithRevenue(agencyId: string) {
+  try {
+    // Get the stats for this agency
+    const stats = await getDashboardStats()
+    
+    // Calculate total revenue
+    const totalRevenue = stats.totalRevenue
+    
+    // Get total withdrawals
+    const withdrawalsResult = await db
+      .select({
+        total: sql<string>`COALESCE(SUM(${withdrawalRequest.amount}), '0')`,
+      })
+      .from(withdrawalRequest)
+      .where(and(
+        eq(withdrawalRequest.agencyId, agencyId), 
+        eq(withdrawalRequest.status, "approved")
+      ))
+    
+    const totalWithdrawn = parseFloat(withdrawalsResult[0]?.total || "0")
+    
+    // Calculate current balance
+    const currentBalance = (totalRevenue - totalWithdrawn).toFixed(2)
+    
+    // Update wallet
+    await db.update(agencyWallet)
+      .set({
+        balance: currentBalance.toString(),
+        updatedAt: new Date()
+      })
+      .where(eq(agencyWallet.agencyId, agencyId))
+    
+    return true
+  } catch (error) {
+    console.error("Error syncing wallet balance:", error)
+    return false
   }
 }
 
@@ -163,14 +214,15 @@ export async function createWithdrawalRequest(data: {
       return { success: false, error: "Wallet not found" }
     }
 
-    if (wallet.balance < data.amount) {
+    const walletBalance = parseFloat(wallet.balance || "0")
+    if (walletBalance < data.amount) {
       return { success: false, error: "Insufficient balance" }
     }
 
     // Create withdrawal request
     const [newWithdrawalRequest] = await db.insert(withdrawalRequest).values({
       agencyId: agency.userId,
-      amount: data.amount,
+      amount: data.amount.toString(),
       bankName: data.bankName,
       accountHolderName: data.accountHolderName,
       bankAccountNumber: data.bankAccountNumber,

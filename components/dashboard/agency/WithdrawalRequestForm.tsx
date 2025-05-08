@@ -36,8 +36,9 @@ const withdrawalSchema = z.object({
 
 type WithdrawalFormValues = z.infer<typeof withdrawalSchema>
 
-export function WithdrawalRequestForm({ currentBalance }: { currentBalance: number }) {
+export function WithdrawalRequestForm({ currentBalance }: { currentBalance: number | string }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const balanceAmount = typeof currentBalance === 'string' ? parseFloat(currentBalance) : currentBalance
 
   const form = useForm<WithdrawalFormValues>({
     resolver: zodResolver(withdrawalSchema),
@@ -55,7 +56,7 @@ export function WithdrawalRequestForm({ currentBalance }: { currentBalance: numb
       setIsSubmitting(true)
       const amount = parseFloat(data.amount)
       
-      if (amount > currentBalance) {
+      if (amount > balanceAmount) {
         toast.error("Withdrawal amount cannot exceed your current balance")
         return
       }
@@ -95,7 +96,7 @@ export function WithdrawalRequestForm({ currentBalance }: { currentBalance: numb
                 <Input placeholder="0.00" {...field} />
               </FormControl>
               <FormDescription>
-                Available balance: ${currentBalance.toFixed(2)}
+                Available balance: ${balanceAmount.toFixed(2)}
               </FormDescription>
               <FormMessage />
             </FormItem>
