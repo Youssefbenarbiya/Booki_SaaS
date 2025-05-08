@@ -74,21 +74,6 @@ export const verification = pgTable("verification", {
 // --------------
 
 // Trips table
-// export const trips = pgTable("trips", {
-//   id: serial("id").primaryKey(),
-//   name: varchar("name", { length: 255 }).notNull(),
-//   description: text("description"),
-//   destination: varchar("destination", { length: 255 }).notNull(),
-//   startDate: date("start_date").notNull(),
-//   endDate: date("end_date").notNull(),
-//   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-//   capacity: integer("capacity").notNull(),
-//   isAvailable: boolean("is_available").default(true),
-//   status: varchar("status", { length: 50 }).notNull().default("pending"),
-//   agencyId: text("agency_id").references(() => user.id),
-//   createdAt: timestamp("created_at").defaultNow(),
-//   updatedAt: timestamp("updated_at").defaultNow(),
-// })
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -134,6 +119,7 @@ export const trips = pgTable("trips", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 })
+
 // Trip Images table
 export const tripImages = pgTable("trip_images", {
   id: serial("id").primaryKey(),
@@ -180,47 +166,6 @@ export const tripBookings = pgTable("trip_bookings", {
     scale: 2,
   }),
 });
-
-// Trip Relations
-export const tripsRelations = relations(trips, ({ many, one }) => ({
-  images: many(tripImages),
-  activities: many(tripActivities),
-  bookings: many(tripBookings),
-  agency: one(agencies, {
-    // Updated to reference agencies table
-    fields: [trips.agencyId],
-    references: [agencies.userId], // Reference the text-type userId field instead of id
-  }),
-  creator: one(user, {
-    fields: [trips.createdBy],
-    references: [user.id],
-  }),
-}));
-
-export const tripImagesRelations = relations(tripImages, ({ one }) => ({
-  trip: one(trips, {
-    fields: [tripImages.tripId],
-    references: [trips.id],
-  }),
-}));
-
-export const tripActivitiesRelations = relations(tripActivities, ({ one }) => ({
-  trip: one(trips, {
-    fields: [tripActivities.tripId],
-    references: [trips.id],
-  }),
-}));
-
-export const tripBookingsRelations = relations(tripBookings, ({ one }) => ({
-  trip: one(trips, {
-    fields: [tripBookings.tripId],
-    references: [trips.id],
-  }),
-  user: one(user, {
-    fields: [tripBookings.userId],
-    references: [user.id],
-  }),
-}));
 
 // -------------------
 // Hotel & Room Related
@@ -313,45 +258,6 @@ export const roomBookings = pgTable("room_bookings", {
   infantCount: integer("infant_count").default(0),
 });
 
-// Hotel & Room Relations
-export const hotelRelations = relations(hotel, ({ many, one }) => ({
-  rooms: many(room),
-  agency: one(agencies, {
-    // Added relation to agency
-    fields: [hotel.agencyId],
-    references: [agencies.userId],
-  }),
-}));
-
-export const roomRelations = relations(room, ({ one, many }) => ({
-  hotel: one(hotel, {
-    fields: [room.hotelId],
-    references: [hotel.id],
-  }),
-  availabilities: many(roomAvailability),
-}));
-
-export const roomAvailabilityRelations = relations(
-  roomAvailability,
-  ({ one }) => ({
-    room: one(room, {
-      fields: [roomAvailability.roomId],
-      references: [room.id],
-    }),
-  })
-);
-
-export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
-  room: one(room, {
-    fields: [roomBookings.roomId],
-    references: [room.id],
-  }),
-  user: one(user, {
-    fields: [roomBookings.userId],
-    references: [user.id],
-  }),
-}));
-
 export const cars = pgTable("cars", {
   id: serial("id").primaryKey(),
   model: varchar("model", { length: 100 }).notNull(),
@@ -410,26 +316,6 @@ export const carBookings = pgTable("car_bookings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const carsRelations = relations(cars, ({ many, one }) => ({
-  bookings: many(carBookings),
-  agency: one(agencies, {
-    fields: [cars.agencyId],
-    references: [agencies.userId],
-  }),
-}));
-
-// Car Bookings Relations
-export const carBookingsRelations = relations(carBookings, ({ one }) => ({
-  car: one(cars, {
-    fields: [carBookings.car_id],
-    references: [cars.id],
-  }),
-  user: one(user, {
-    fields: [carBookings.user_id],
-    references: [user.id],
-  }),
-}));
-
 // Blog Categories table
 export const blogCategories = pgTable("blog_categories", {
   id: serial("id").primaryKey(),
@@ -459,23 +345,6 @@ export const blogs = pgTable("blogs", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
-// Blog Relations
-export const blogRelations = relations(blogs, ({ one }) => ({
-  category: one(blogCategories, {
-    fields: [blogs.categoryId],
-    references: [blogCategories.id],
-  }),
-  author: one(user, {
-    fields: [blogs.authorId],
-    references: [user.id],
-  }),
-}));
-export const blogCategoriesRelations = relations(
-  blogCategories,
-  ({ many }) => ({
-    blogs: many(blogs),
-  })
-);
 
 // User Favorites table
 export const favorites = pgTable("favorites", {
@@ -494,36 +363,20 @@ export const favoritesConstraint = pgTable("favorites_constraint", {
   userId_itemType_itemId: varchar("user_id_item_type_item_id").unique(),
 });
 
-// Favorites Relations
-export const favoritesRelations = relations(favorites, ({ one }) => ({
-  user: one(user, {
-    fields: [favorites.userId],
-    references: [user.id],
-  }),
-}));
-
 // Notifications table
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
-    .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 255 }).notNull(),
   message: text("message").notNull(),
   type: varchar("type", { length: 50 }).notNull(), // 'info', 'success', 'warning', 'error'
   read: boolean("read").default(false).notNull(),
-  relatedItemType: varchar("related_item_type", { length: 50 }), // 'trip', 'booking', etc.
+  relatedItemType: varchar("related_item_type", { length: 50 }), // 'trip', 'booking', 'withdrawal', etc.
   relatedItemId: integer("related_item_id"), // ID of the related item
+  role: varchar("role", { length: 20 }), // 'ADMIN', 'AGENCY', etc. - for role-based notifications
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
-// Notification Relations
-export const notificationsRelations = relations(notifications, ({ one }) => ({
-  user: one(user, {
-    fields: [notifications.userId],
-    references: [user.id],
-  }),
-}));
 
 // Agencies table
 export const agencies = pgTable("agencies", {
@@ -558,26 +411,6 @@ export const agencies = pgTable("agencies", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const userRelations = relations(user, ({ many, one }) => ({
-  favorites: many(favorites),
-  sessions: many(session),
-  accounts: many(account),
-  notifications: many(notifications),
-  agency: one(agencies, {
-    fields: [user.id],
-    references: [agencies.userId],
-  }),
-  // ...other existing relations...
-}));
-
-export const agenciesRelations = relations(agencies, ({ one, many }) => ({
-  user: one(user, {
-    fields: [agencies.userId],
-    references: [user.id],
-  }),
-  hotels: many(hotel), // Added hotels relation
-}));
-
 export const agencyEmployees = pgTable("agency_employees", {
   id: serial("id").primaryKey(),
   employeeId: text("employee_id")
@@ -588,21 +421,6 @@ export const agencyEmployees = pgTable("agency_employees", {
     .references(() => agencies.userId, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
 });
-
-// Add relations for agencyEmployees
-export const agencyEmployeesRelations = relations(
-  agencyEmployees,
-  ({ one }) => ({
-    employee: one(user, {
-      fields: [agencyEmployees.employeeId],
-      references: [user.id],
-    }),
-    agency: one(agencies, {
-      fields: [agencyEmployees.agencyId],
-      references: [agencies.userId],
-    }),
-  })
-);
 
 // Chat messages table
 export const chatMessages = pgTable("chat_messages", {
@@ -621,18 +439,6 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   customerId: varchar("customer_id")
 });
-
-// Chat messages relations
-export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
-  sender: one(user, {
-    fields: [chatMessages.senderId],
-    references: [user.id],
-  }),
-  receiver: one(user, {
-    fields: [chatMessages.receiverId],
-    references: [user.id],
-  }),
-}));
 
 // Support Chat System
 export const support_tickets = pgTable("support_tickets", {
@@ -659,7 +465,225 @@ export const support_messages = pgTable("support_messages", {
   senderRole: text("sender_role").notNull(), // "agency" or "admin"
 });
 
-// Support tables relations
+// Agency Wallet table
+export const agencyWallet = pgTable("agency_wallet", {
+  id: serial("id").primaryKey(),
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  agencyId: text("agency_id").notNull().references(() => agencies.userId, { onDelete: "cascade" }).unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Withdrawal Request table
+export const withdrawalRequest = pgTable("withdrawal_request", {
+  id: serial("id").primaryKey(),
+  agencyId: text("agency_id").notNull().references(() => agencies.userId, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  bankName: varchar("bank_name", { length: 100 }).notNull(),
+  accountHolderName: varchar("account_holder_name", { length: 100 }).notNull(),
+  bankAccountNumber: varchar("bank_account_number", { length: 50 }).notNull(),
+  notes: text("notes"),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // pending, approved, rejected
+  processedAt: timestamp("processed_at"),
+  processedById: text("processed_by_id").references(() => user.id, { onDelete: "set null" }),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Wallet Transaction table
+export const walletTransaction = pgTable("wallet_transaction", {
+  id: serial("id").primaryKey(),
+  agencyId: text("agency_id").notNull().references(() => agencies.userId, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  type: varchar("type", { length: 10 }).notNull(), // credit or debit
+  description: text("description").notNull(),
+  status: varchar("status", { length: 20 }).default("completed").notNull(),
+  withdrawalRequestId: integer("withdrawal_request_id").references(() => withdrawalRequest.id, { onDelete: "set null" }),
+  tripId: integer("trip_id").references(() => trips.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Relations
+export const userRelations = relations(user, ({ many, one }) => ({
+  favorites: many(favorites),
+  sessions: many(session),
+  accounts: many(account),
+  notifications: many(notifications),
+  agency: one(agencies, {
+    fields: [user.id],
+    references: [agencies.userId],
+  }),
+}));
+
+export const tripsRelations = relations(trips, ({ many, one }) => ({
+  images: many(tripImages),
+  activities: many(tripActivities),
+  bookings: many(tripBookings),
+  agency: one(agencies, {
+    fields: [trips.agencyId],
+    references: [agencies.userId],
+  }),
+  creator: one(user, {
+    fields: [trips.createdBy],
+    references: [user.id],
+  }),
+  transactions: many(walletTransaction),
+}));
+
+export const tripImagesRelations = relations(tripImages, ({ one }) => ({
+  trip: one(trips, {
+    fields: [tripImages.tripId],
+    references: [trips.id],
+  }),
+}));
+
+export const tripActivitiesRelations = relations(tripActivities, ({ one }) => ({
+  trip: one(trips, {
+    fields: [tripActivities.tripId],
+    references: [trips.id],
+  }),
+}));
+
+export const tripBookingsRelations = relations(tripBookings, ({ one }) => ({
+  trip: one(trips, {
+    fields: [tripBookings.tripId],
+    references: [trips.id],
+  }),
+  user: one(user, {
+    fields: [tripBookings.userId],
+    references: [user.id],
+  }),
+}));
+
+export const hotelRelations = relations(hotel, ({ many, one }) => ({
+  rooms: many(room),
+  agency: one(agencies, {
+    fields: [hotel.agencyId],
+    references: [agencies.userId],
+  }),
+}));
+
+export const roomRelations = relations(room, ({ one, many }) => ({
+  hotel: one(hotel, {
+    fields: [room.hotelId],
+    references: [hotel.id],
+  }),
+  availabilities: many(roomAvailability),
+}));
+
+export const roomAvailabilityRelations = relations(
+  roomAvailability,
+  ({ one }) => ({
+    room: one(room, {
+      fields: [roomAvailability.roomId],
+      references: [room.id],
+    }),
+  })
+);
+
+export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
+  room: one(room, {
+    fields: [roomBookings.roomId],
+    references: [room.id],
+  }),
+  user: one(user, {
+    fields: [roomBookings.userId],
+    references: [user.id],
+  }),
+}));
+
+export const carsRelations = relations(cars, ({ many, one }) => ({
+  bookings: many(carBookings),
+  agency: one(agencies, {
+    fields: [cars.agencyId],
+    references: [agencies.userId],
+  }),
+}));
+
+export const carBookingsRelations = relations(carBookings, ({ one }) => ({
+  car: one(cars, {
+    fields: [carBookings.car_id],
+    references: [cars.id],
+  }),
+  user: one(user, {
+    fields: [carBookings.user_id],
+    references: [user.id],
+  }),
+}));
+
+export const blogRelations = relations(blogs, ({ one }) => ({
+  category: one(blogCategories, {
+    fields: [blogs.categoryId],
+    references: [blogCategories.id],
+  }),
+  author: one(user, {
+    fields: [blogs.authorId],
+    references: [user.id],
+  }),
+}));
+
+export const blogCategoriesRelations = relations(
+  blogCategories,
+  ({ many }) => ({
+    blogs: many(blogs),
+  })
+);
+
+export const favoritesRelations = relations(favorites, ({ one }) => ({
+  user: one(user, {
+    fields: [favorites.userId],
+    references: [user.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(user, {
+    fields: [notifications.userId],
+    references: [user.id],
+  }),
+}));
+
+export const agenciesRelations = relations(agencies, ({ one, many }) => ({
+  user: one(user, {
+    fields: [agencies.userId],
+    references: [user.id],
+  }),
+  hotels: many(hotel),
+  wallet: one(agencyWallet, {
+    fields: [agencies.userId],
+    references: [agencyWallet.agencyId],
+  }),
+  transactions: many(walletTransaction),
+  withdrawalRequests: many(withdrawalRequest),
+}));
+
+export const agencyEmployeesRelations = relations(
+  agencyEmployees,
+  ({ one }) => ({
+    employee: one(user, {
+      fields: [agencyEmployees.employeeId],
+      references: [user.id],
+    }),
+    agency: one(agencies, {
+      fields: [agencyEmployees.agencyId],
+      references: [agencies.userId],
+    }),
+  })
+);
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  sender: one(user, {
+    fields: [chatMessages.senderId],
+    references: [user.id],
+  }),
+  receiver: one(user, {
+    fields: [chatMessages.receiverId],
+    references: [user.id],
+  }),
+}));
+
 export const supportTicketsRelations = relations(support_tickets, ({ many }) => ({
   messages: many(support_messages),
 }));
@@ -669,4 +693,43 @@ export const supportMessagesRelations = relations(support_messages, ({ one }) =>
     fields: [support_messages.ticketId],
     references: [support_tickets.id],
   }),
+}));
+
+// Add relations for agency wallet
+export const agencyWalletRelations = relations(agencyWallet, ({ one, many }) => ({
+  agency: one(agencies, {
+    fields: [agencyWallet.agencyId],
+    references: [agencies.userId],
+  }),
+  transactions: many(walletTransaction),
+  withdrawalRequests: many(withdrawalRequest),
+}));
+
+// Add relations for wallet transactions
+export const walletTransactionRelations = relations(walletTransaction, ({ one }) => ({
+  agency: one(agencies, {
+    fields: [walletTransaction.agencyId],
+    references: [agencies.userId],
+  }),
+  withdrawalRequest: one(withdrawalRequest, {
+    fields: [walletTransaction.withdrawalRequestId],
+    references: [withdrawalRequest.id],
+  }),
+  trip: one(trips, {
+    fields: [walletTransaction.tripId],
+    references: [trips.id],
+  }),
+}));
+
+// Add relations for withdrawal requests
+export const withdrawalRequestRelations = relations(withdrawalRequest, ({ one, many }) => ({
+  agency: one(agencies, {
+    fields: [withdrawalRequest.agencyId],
+    references: [agencies.userId],
+  }),
+  processedBy: one(user, {
+    fields: [withdrawalRequest.processedById],
+    references: [user.id],
+  }),
+  transactions: many(walletTransaction),
 }));
