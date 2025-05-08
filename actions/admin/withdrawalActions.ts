@@ -13,7 +13,7 @@ export async function getWithdrawalRequests() {
   try {
     const session = await auth()
     
-    if (!session?.user?.id || session.user.role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "admin") {
       return { withdrawalRequests: [], error: "Unauthorized" }
     }
 
@@ -55,7 +55,7 @@ export async function approveWithdrawalRequest({
   try {
     const session = await auth()
     
-    if (!session?.user?.id || session.user.role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "admin") {
       return { success: false, error: "Unauthorized" }
     }
 
@@ -157,7 +157,7 @@ export async function rejectWithdrawalRequest({
   try {
     const session = await auth()
     
-    if (!session?.user?.id || session.user.role !== "ADMIN") {
+    if (!session?.user?.id || session.user.role !== "admin") {
       return { success: false, error: "Unauthorized" }
     }
 
