@@ -6,18 +6,35 @@ import Link from "next/link"
 import { getWithdrawalRequests } from "@/actions/admin/withdrawalActions"
 import { WithdrawalRequestActionButtons } from "@/components/dashboard/admin/WithdrawalRequestActionButtons"
 
+interface WithdrawalRequest {
+  id: number;
+  createdAt: Date | string;
+  agencyId: string;
+  amount: number;
+  bankName: string;
+  accountHolderName: string;
+  bankAccountNumber: string;
+  status: string;
+  processedAt?: Date | string | null;
+  agency: {
+    userId: string;
+    agencyName: string;
+    contactEmail?: string;
+  };
+}
+
 export default async function AdminWithdrawalsPage() {
   const { withdrawalRequests } = await getWithdrawalRequests()
   
   // Group withdrawal requests by status
   const pendingRequests = withdrawalRequests.filter(
-    (request) => request.status === "pending"
+    (request: WithdrawalRequest) => request.status === "pending"
   )
   const approvedRequests = withdrawalRequests.filter(
-    (request) => request.status === "approved"
+    (request: WithdrawalRequest) => request.status === "approved"
   )
   const rejectedRequests = withdrawalRequests.filter(
-    (request) => request.status === "rejected"
+    (request: WithdrawalRequest) => request.status === "rejected"
   )
 
   return (
@@ -59,7 +76,7 @@ export default async function AdminWithdrawalsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {withdrawalRequests.map((request) => (
+                  {withdrawalRequests.map((request: WithdrawalRequest) => (
                     <tr key={request.id} className="border-b">
                       <td className="py-4 text-sm">
                         {format(new Date(request.createdAt), "MMM d, yyyy")}
@@ -69,7 +86,7 @@ export default async function AdminWithdrawalsPage() {
                           href={`/admin/agencies/${request.agencyId}`}
                           className="text-blue-600 hover:text-blue-800"
                         >
-                          {request.agency.name}
+                          {request.agency.agencyName}
                         </Link>
                       </td>
                       <td className="py-4 text-sm font-semibold">

@@ -6,7 +6,24 @@ import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { WithdrawalRequestForm } from "@/components/dashboard/agency/WithdrawalRequestForm"
 import { getAgencyTransactions, getAgencyWallet, getAgencyWithdrawalRequests } from "@/actions/agency/walletActions"
-import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal, AwaitedReactNode } from "react"
+
+interface Transaction {
+  id: number;
+  createdAt: Date | string;
+  description: string;
+  type: string;
+  amount: number;
+}
+
+interface WithdrawalRequest {
+  id: number;
+  createdAt: Date | string;
+  amount: number;
+  bankName: string;
+  bankAccountNumber: string;
+  status: string;
+  notes?: string | null;
+}
 
 export default async function WalletPage() {
   const { wallet } = await getAgencyWallet()
@@ -49,7 +66,7 @@ export default async function WalletPage() {
                   <div>Amount</div>
                   <div>Type</div>
                 </div>
-                {transactions.map((transaction: { id: Key | null | undefined; createdAt: string | number | Date; description: string | number | bigint | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<AwaitedReactNode> | null | undefined; type: string; amount: number }) => (
+                {transactions.map((transaction: Transaction) => (
                   <div key={transaction.id} className="grid grid-cols-4 text-sm py-2 border-b border-gray-100">
                     <div>{format(new Date(transaction.createdAt), "MMM d, yyyy")}</div>
                     <div>{transaction.description}</div>
@@ -58,7 +75,7 @@ export default async function WalletPage() {
                       {formatCurrency(transaction.amount)}
                     </div>
                     <div>
-                      <Badge variant={transaction.type === "credit" ? "success" : "destructive"}>
+                      <Badge variant={transaction.type === "credit" ? "default" : "destructive"}>
                         {transaction.type === "credit" ? "Payment" : "Withdrawal"}
                       </Badge>
                     </div>
@@ -83,7 +100,7 @@ export default async function WalletPage() {
                   <div>Status</div>
                   <div>Notes</div>
                 </div>
-                {withdrawalRequests.map((request: { id: Key | null | undefined; createdAt: string | number | Date; amount: number; bankAccountNumber: string | number | bigint | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<AwaitedReactNode> | null | undefined; bankName: string | number | bigint | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<AwaitedReactNode> | null | undefined; status: string; notes: any }) => (
+                {withdrawalRequests.map((request: WithdrawalRequest) => (
                   <div key={request.id} className="grid grid-cols-5 text-sm py-2 border-b border-gray-100">
                     <div>{format(new Date(request.createdAt), "MMM d, yyyy")}</div>
                     <div>{formatCurrency(request.amount)}</div>
@@ -94,7 +111,7 @@ export default async function WalletPage() {
                           request.status === "pending"
                             ? "outline"
                             : request.status === "approved"
-                            ? "success"
+                            ? "default"
                             : "destructive"
                         }
                       >

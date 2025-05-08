@@ -1,19 +1,22 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { db } from "@/db"
+import { headers } from "next/headers"
 import { auth } from "@/auth"
 import { eq, desc, asc, sql } from "drizzle-orm"
 import { withdrawalRequest, agencyWallet, walletTransaction, agencies, notifications } from "@/db/schema"
+import { db } from "@/db"
 
 /**
  * Get all withdrawal requests for admin
  */
 export async function getWithdrawalRequests() {
   try {
-    const session = await auth()
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
     
-    if (!session?.user?.id || session.user.role !== "admin") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
       return { withdrawalRequests: [], error: "Unauthorized" }
     }
 
@@ -53,9 +56,11 @@ export async function approveWithdrawalRequest({
   notes?: string
 }) {
   try {
-    const session = await auth()
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
     
-    if (!session?.user?.id || session.user.role !== "admin") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
       return { success: false, error: "Unauthorized" }
     }
 
@@ -155,9 +160,11 @@ export async function rejectWithdrawalRequest({
   notes: string
 }) {
   try {
-    const session = await auth()
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
     
-    if (!session?.user?.id || session.user.role !== "admin") {
+    if (!session?.user?.id || session.user.role !== "ADMIN") {
       return { success: false, error: "Unauthorized" }
     }
 
