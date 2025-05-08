@@ -12,43 +12,43 @@ import db from "@/db/drizzle"
  */
 async function calculateAgencyIncome(agencyId: string) {
   try {
-    // Calculate revenue from trip bookings
+    // Calculate revenue from trip bookings - filtered by agency
     const tripBookingsRevenueResult = await db
       .select({
-        revenue: sql<string>`COALESCE(SUM(${tripBookings.seatsBooked} * ${trips.priceAfterDiscount}), '0')`,
+        revenue: sql<number>`SUM(${tripBookings.seatsBooked} * ${trips.priceAfterDiscount})`,
       })
       .from(tripBookings)
       .innerJoin(trips, eq(tripBookings.tripId, trips.id))
-      .where(eq(trips.agencyId, agencyId))
+      .where(eq(trips.agencyId, agencyId)) // Filter by agency
 
-    // Calculate revenue from room bookings
+    // Calculate revenue from room bookings - filtered by agency
     const roomBookingsRevenueResult = await db
       .select({
-        revenue: sql<string>`
-          COALESCE(SUM(
+        revenue: sql<number>`
+          SUM(
             DATE_PART('day', ${roomBookings.checkOut}::timestamp - ${roomBookings.checkIn}::timestamp) * 
             ${room.pricePerNightAdult}::decimal
-          ), '0')
+          )
         `,
       })
       .from(roomBookings)
       .innerJoin(room, eq(roomBookings.roomId, room.id))
       .innerJoin(hotel, eq(room.hotelId, hotel.id))
-      .where(eq(hotel.agencyId, agencyId))
+      .where(eq(hotel.agencyId, agencyId)) // Filter by agency
 
-    // Calculate revenue from car bookings
+    // Calculate revenue from car bookings - filtered by agency
     const carBookingsRevenueResult = await db
       .select({
-        revenue: sql<string>`COALESCE(SUM(${carBookings.total_price}), '0')`,
+        revenue: sql<number>`SUM(${carBookings.total_price})`,
       })
       .from(carBookings)
       .innerJoin(cars, eq(carBookings.car_id, cars.id))
       .where(eq(cars.agencyId, agencyId))
 
     // Parse revenue values
-    const tripRevenue = parseFloat(tripBookingsRevenueResult[0]?.revenue || "0")
-    const roomRevenue = parseFloat(roomBookingsRevenueResult[0]?.revenue || "0")
-    const carRevenue = parseFloat(carBookingsRevenueResult[0]?.revenue || "0")
+    const tripRevenue = Number(tripBookingsRevenueResult[0]?.revenue || 0)
+    const roomRevenue = Number(roomBookingsRevenueResult[0]?.revenue || 0)
+    const carRevenue = Number(carBookingsRevenueResult[0]?.revenue || 0)
 
     // Calculate total revenue in TND
     const totalRevenue = tripRevenue + roomRevenue + carRevenue
@@ -104,7 +104,7 @@ export async function getAgencyWallet() {
     // Get total withdrawals
     const withdrawalsResult = await db
       .select({
-        total: sql<string>`COALESCE(SUM(${withdrawalRequest.amount}), '0')`,
+        total: sql<number>`COALESCE(SUM(${withdrawalRequest.amount}), 0)`,
       })
       .from(withdrawalRequest)
       .where(and(
@@ -112,7 +112,7 @@ export async function getAgencyWallet() {
         eq(withdrawalRequest.status, "approved")
       ))
     
-    const totalWithdrawn = parseFloat(withdrawalsResult[0]?.total || "0")
+    const totalWithdrawn = Number(withdrawalsResult[0]?.total || 0)
     
     // Calculate current balance
     const currentBalance = (totalIncome - totalWithdrawn).toFixed(2)
@@ -248,7 +248,7 @@ export async function createWithdrawalRequest(data: {
       return { success: false, error: "Wallet not found" }
     }
 
-    const walletBalance = parseFloat(wallet.balance || "0")
+    const walletBalance = Number(wallet.balance || 0)
     if (walletBalance < data.amount) {
       return { success: false, error: "Insufficient balance" }
     }

@@ -25,7 +25,7 @@ interface WithdrawalRequest {
 
 // Helper function to format amount in TND
 function formatTND(amount: string | number): string {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  const numAmount = typeof amount === 'string' ? Number(amount) : amount;
   return `${numAmount.toFixed(2)} TND`;
 }
 

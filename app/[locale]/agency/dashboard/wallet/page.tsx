@@ -27,7 +27,7 @@ interface WithdrawalRequest {
 
 // Helper function to format amount in TND
 function formatTND(amount: string | number): string {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  const numAmount = typeof amount === 'string' ? Number(amount) : amount;
   return `${numAmount.toFixed(2)} TND`;
 }
 
@@ -36,7 +36,7 @@ export default async function WalletPage() {
   const { transactions } = await getAgencyTransactions(20)
   const { withdrawalRequests } = await getAgencyWithdrawalRequests()
 
-  const walletBalance = wallet?.balance ? parseFloat(wallet.balance) : 0
+  const walletBalance = wallet?.balance ? Number(wallet.balance) : 0
 
   return (
     <div className="py-8">
