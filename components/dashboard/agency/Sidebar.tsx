@@ -253,14 +253,12 @@ export function Sidebar({ locale }: SidebarProps) {
               Verification Required!
             </AlertTitle>
             <AlertDescription className="text-sm">
-              Your agency is not verified.
               <Link
                 href={`/${locale}/agency/profile`}
                 className="underline ml-1 font-semibold hover:text-white"
               >
                 Complete your profile now
               </Link>{" "}
-              to unlock all features.
             </AlertDescription>
           </Alert>
         )}
