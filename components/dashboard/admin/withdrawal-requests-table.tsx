@@ -91,10 +91,6 @@ export function WithdrawalRequestsTable({
       setLoading(true)
       setError(null)
 
-      // In a real app, you would get the user ID and role from auth
-      const userId = "admin-user-id"
-      const userRole = "admin"
-
       let url = `/api/admin/withdrawals?limit=${pagination.limit}&offset=${pagination.offset}`
 
       if (statusFilter !== "all") {
@@ -104,15 +100,11 @@ export function WithdrawalRequestsTable({
       // Include locale in API request if needed
       url += `&locale=${locale}`
 
-      const response = await fetch(url, {
-        headers: {
-          "x-user-id": userId,
-          "x-user-role": userRole,
-        },
-      })
+      const response = await fetch(url)
 
       if (!response.ok) {
-        throw new Error("Failed to fetch withdrawal requests")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to fetch withdrawal requests")
       }
 
       const data = await response.json()
@@ -123,6 +115,7 @@ export function WithdrawalRequestsTable({
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred")
+      console.error("Error fetching withdrawals:", err)
     } finally {
       setLoading(false)
     }
@@ -137,18 +130,12 @@ export function WithdrawalRequestsTable({
     if (!selectedRequest) return
 
     try {
-      // In a real app, you would get the user ID and role from auth
-      const userId = "admin-user-id"
-      const userRole = "admin"
-
       const response = await fetch(
         `/api/admin/withdrawals/${selectedRequest.withdrawalRequest.id}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userId,
-            "x-user-role": userRole,
           },
           body: JSON.stringify({
             status: "approved",
@@ -157,7 +144,8 @@ export function WithdrawalRequestsTable({
       )
 
       if (!response.ok) {
-        throw new Error("Failed to approve withdrawal request")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to approve withdrawal request")
       }
 
       // Refresh data
@@ -165,6 +153,7 @@ export function WithdrawalRequestsTable({
       setIsApproveDialogOpen(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred")
+      console.error("Error approving withdrawal:", err)
     }
   }
 
@@ -173,18 +162,12 @@ export function WithdrawalRequestsTable({
     if (!selectedRequest) return
 
     try {
-      // In a real app, you would get the user ID and role from auth
-      const userId = "admin-user-id"
-      const userRole = "admin"
-
       const response = await fetch(
         `/api/admin/withdrawals/${selectedRequest.withdrawalRequest.id}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userId,
-            "x-user-role": userRole,
           },
           body: JSON.stringify({
             status: "rejected",
@@ -194,7 +177,8 @@ export function WithdrawalRequestsTable({
       )
 
       if (!response.ok) {
-        throw new Error("Failed to reject withdrawal request")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to reject withdrawal request")
       }
 
       // Refresh data
@@ -203,6 +187,7 @@ export function WithdrawalRequestsTable({
       setRejectionReason("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred")
+      console.error("Error rejecting withdrawal:", err)
     }
   }
 

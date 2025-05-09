@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { wallet, walletTransactions, withdrawalRequests } from "@/db/schema"
+import { auth } from "@/auth"
+import { headers } from "next/headers"
 
 // Update withdrawal request status (admin only)
 export async function PATCH(
@@ -9,13 +11,21 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = request.headers.get("x-user-id")
-    const userRole = request.headers.get("x-user-role")
+    // Get session from auth
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
 
-    if (!userId || userRole !== "admin") {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Check if user is an admin
+    if (session.user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const userId = session.user.id
     const withdrawalId = Number.parseInt(params.id)
     const body = await request.json()
     const { status, rejectionReason } = body

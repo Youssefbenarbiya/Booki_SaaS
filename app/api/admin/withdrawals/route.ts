@@ -2,19 +2,29 @@ import { type NextRequest, NextResponse } from "next/server"
 import { withdrawalRequests } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 import db from "@/db/drizzle"
+import { auth } from "@/auth"
+import { headers } from "next/headers"
 
 // Get all withdrawal requests (admin only)
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id")
-    const userRole = request.headers.get("x-user-role")
     const url = new URL(request.url)
     const status = url.searchParams.get("status")
     const limit = Number.parseInt(url.searchParams.get("limit") || "10")
     const offset = Number.parseInt(url.searchParams.get("offset") || "0")
 
-    if (!userId || userRole !== "admin") {
+    // Get session from auth
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check if user is an admin
+    if (session.user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     // Build query
@@ -31,7 +41,7 @@ export async function GET(request: NextRequest) {
       .offset(offset)
 
     // Add status filter if provided
-    if (status) {
+    if (status && status !== "all") {
       query = query.where(eq(withdrawalRequests.status, status))
     }
 
@@ -42,7 +52,7 @@ export async function GET(request: NextRequest) {
       .select({ count: db.fn.count() })
       .from(withdrawalRequests)
 
-    if (status) {
+    if (status && status !== "all") {
       countQuery = countQuery.where(eq(withdrawalRequests.status, status))
     }
 
