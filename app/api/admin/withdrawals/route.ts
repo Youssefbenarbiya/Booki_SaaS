@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { withdrawalRequests } from "@/db/schema"
-import { eq, desc } from "drizzle-orm"
+import { withdrawalRequests, user } from "@/db/schema"
+import { eq, desc, sql } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
@@ -27,40 +27,67 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Build query
-    let query = db
-      .select({
-        withdrawalRequest: withdrawalRequests,
-        userName: db.query.user.name,
-        userEmail: db.query.user.email,
-      })
-      .from(withdrawalRequests)
-      .leftJoin(db.query.user, eq(withdrawalRequests.userId, db.query.user.id))
-      .orderBy(desc(withdrawalRequests.createdAt))
-      .limit(limit)
-      .offset(offset)
+    // Get all withdrawal requests with associated user info
+    let query = db.query.withdrawalRequests.findMany({
+      orderBy: [desc(withdrawalRequests.createdAt)],
+      limit,
+      offset,
+      with: {
+        user: true
+      }
+    });
 
-    // Add status filter if provided
+    // Apply status filter if provided
     if (status && status !== "all") {
-      query = query.where(eq(withdrawalRequests.status, status))
+      query = db.query.withdrawalRequests.findMany({
+        where: eq(withdrawalRequests.status, status),
+        orderBy: [desc(withdrawalRequests.createdAt)],
+        limit,
+        offset,
+        with: {
+          user: true
+        }
+      });
     }
 
-    const results = await query
+    // Execute the query
+    const results = await query;
 
-    // Get total count
-    let countQuery = db
-      .select({ count: db.fn.count() })
-      .from(withdrawalRequests)
+    // Format the results to match the expected structure
+    const formattedResults = results.map(item => ({
+      withdrawalRequest: {
+        id: item.id,
+        walletId: item.walletId,
+        userId: item.userId,
+        amount: item.amount,
+        status: item.status,
+        approvedBy: item.approvedBy,
+        approvedAt: item.approvedAt,
+        rejectedBy: item.rejectedBy,
+        rejectedAt: item.rejectedAt,
+        rejectionReason: item.rejectionReason,
+        paymentMethod: item.paymentMethod,
+        paymentDetails: item.paymentDetails,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      },
+      userName: item.user.name,
+      userEmail: item.user.email
+    }));
 
-    if (status && status !== "all") {
-      countQuery = countQuery.where(eq(withdrawalRequests.status, status))
-    }
+    // Count total records
+    const countQuery = status && status !== "all"
+      ? db.select({ count: sql`count(*)` })
+          .from(withdrawalRequests)
+          .where(eq(withdrawalRequests.status, status))
+      : db.select({ count: sql`count(*)` })
+          .from(withdrawalRequests);
 
-    const countResult = await countQuery
-    const totalCount = Number(countResult[0].count)
+    const countResult = await countQuery;
+    const totalCount = Number(countResult[0].count);
 
     return NextResponse.json({
-      withdrawals: results,
+      withdrawals: formattedResults,
       pagination: {
         total: totalCount,
         limit,
