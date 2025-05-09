@@ -2,15 +2,22 @@ import { type NextRequest, NextResponse } from "next/server"
 import { tripBookings, trips, carBookings, cars, roomBookings, room, hotel, agencies, user } from "@/db/schema"
 import { eq, sum, and } from "drizzle-orm"
 import db from "@/db/drizzle"
+import { auth } from "@/auth"
+import { headers } from "next/headers"
 
 // Get income summary for an agency
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id")
+    // Get session from auth
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
 
-    if (!userId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const userId = session.user.id
 
     // Find agency by user ID
     const agency = await db.query.agencies.findFirst({

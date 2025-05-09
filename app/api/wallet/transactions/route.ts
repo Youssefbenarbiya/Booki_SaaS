@@ -1,19 +1,27 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { wallet, walletTransactions } from "@/db/schema"
-import { eq, desc } from "drizzle-orm"
+import { eq, desc, sql } from "drizzle-orm"
 import db from "@/db/drizzle"
+import { auth } from "@/auth"
+import { headers } from "next/headers"
 
 // Get transactions for a user's wallet
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id")
+    // Get session from auth
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = session.user.id
+    
     const url = new URL(request.url)
     const limit = Number.parseInt(url.searchParams.get("limit") || "10")
     const offset = Number.parseInt(url.searchParams.get("offset") || "0")
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     // Find user's wallet
     const userWallet = await db.query.wallet.findFirst({
@@ -34,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     // Get total count
     const countResult = await db
-      .select({ count: db.fn.count() })
+      .select({ count: sql`count(*)` })
       .from(walletTransactions)
       .where(eq(walletTransactions.walletId, userWallet.id))
 

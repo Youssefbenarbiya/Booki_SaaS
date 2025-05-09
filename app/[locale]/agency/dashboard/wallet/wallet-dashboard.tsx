@@ -12,6 +12,8 @@ import {
   Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { useSession } from "@/auth-client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -44,6 +46,8 @@ import {
 } from "@/components/ui/select"
 
 export function WalletDashboard() {
+  const router = useRouter()
+  const session = useSession()
   const [withdrawalAmount, setWithdrawalAmount] = useState<string>("")
   const [withdrawalType, setWithdrawalType] = useState<string>("fixed")
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
@@ -78,6 +82,13 @@ export function WalletDashboard() {
 
   // Fetch wallet data on component mount
   useEffect(() => {
+    if (!session) return;
+    
+    if (!session.data) {
+      toast.error('You must be logged in to view wallet information')
+      return;
+    }
+    
     Promise.all([
       fetchWallet(),
       fetchTransactions(),
@@ -86,17 +97,16 @@ export function WalletDashboard() {
     ]).finally(() => {
       setIsLoading(false)
     })
-  }, [])
+  }, [session])
 
   const fetchWallet = async () => {
     try {
-      const response = await fetch('/api/wallet', {
-        headers: {
-          'x-user-id': getUserId(), // You'd need to implement a function to get the current user's ID
-        }
-      })
+      const response = await fetch('/api/wallet')
       
-      if (!response.ok) throw new Error('Failed to fetch wallet')
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch wallet')
+      }
       
       const data = await response.json()
       setWalletBalance(parseFloat(data.wallet.balance))
@@ -108,13 +118,12 @@ export function WalletDashboard() {
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('/api/wallet/transactions?limit=5', {
-        headers: {
-          'x-user-id': getUserId(),
-        }
-      })
+      const response = await fetch('/api/wallet/transactions?limit=5')
       
-      if (!response.ok) throw new Error('Failed to fetch transactions')
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch transactions')
+      }
       
       const data = await response.json()
       setRecentTransactions(data.transactions.map((tx: any) => ({
@@ -132,13 +141,12 @@ export function WalletDashboard() {
 
   const fetchWithdrawalRequests = async () => {
     try {
-      const response = await fetch('/api/wallet/withdraw', {
-        headers: {
-          'x-user-id': getUserId(),
-        }
-      })
+      const response = await fetch('/api/wallet/withdraw')
       
-      if (!response.ok) throw new Error('Failed to fetch withdrawal requests')
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch withdrawal requests')
+      }
       
       const data = await response.json()
       setWithdrawalRequests(data.requests)
@@ -150,13 +158,12 @@ export function WalletDashboard() {
 
   const fetchIncomeSummary = async () => {
     try {
-      const response = await fetch('/api/wallet/income-summary', {
-        headers: {
-          'x-user-id': getUserId(),
-        }
-      })
+      const response = await fetch('/api/wallet/income-summary')
       
-      if (!response.ok) throw new Error('Failed to fetch income summary')
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch income summary')
+      }
       
       const data = await response.json()
       setIncomeSummary(data.summary)
@@ -166,14 +173,22 @@ export function WalletDashboard() {
     }
   }
 
-  // Temporary function to get user ID - replace with your auth logic
+  // Get the user ID from the session
   const getUserId = () => {
-    // This should return the current user's ID from your auth system
-    return "current-user-id"
+    if (!session?.data?.user?.id) {
+      console.error('No user ID in session')
+      return null;
+    }
+    return session.data.user.id;
   }
 
   const handleWithdrawalRequest = async () => {
     try {
+      if (!session?.data) {
+        toast.error('You must be logged in to make a withdrawal request')
+        return;
+      }
+      
       setIsSubmitting(true)
       const amount = withdrawalType === "fixed" 
         ? parseFloat(selectedFixedAmount) 
@@ -193,7 +208,6 @@ export function WalletDashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': getUserId(),
         },
         body: JSON.stringify({
           amount,
@@ -228,11 +242,21 @@ export function WalletDashboard() {
     }
   }
 
-  if (isLoading) {
+  if (!session) {
     return (
       <div className="flex justify-center items-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2">Loading wallet information...</span>
+      </div>
+    )
+  }
+
+  if (!session.data) {
+    return (
+      <div className="flex flex-col justify-center items-center h-96 text-center px-4">
+        <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+        <p className="text-muted-foreground mb-6">You need to be logged in to view your wallet information.</p>
+        <Button onClick={() => router.push('/login')}>Log In</Button>
       </div>
     )
   }

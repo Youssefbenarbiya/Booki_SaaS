@@ -1,17 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { wallet, withdrawalRequests } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, desc } from "drizzle-orm"
 import db from "@/db/drizzle"
+import { auth } from "@/auth"
+import { headers } from "next/headers"
 
 // Create a withdrawal request
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id")
+    // Get session from auth
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
 
-    if (!userId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const userId = session.user.id
+    
     const body = await request.json()
     const { amount, paymentMethod, paymentDetails } = body
 
@@ -65,16 +72,21 @@ export async function POST(request: NextRequest) {
 // Get withdrawal requests for a user
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id")
+    // Get session from auth
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
 
-    if (!userId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const userId = session.user.id
 
     // Get withdrawal requests
     const requests = await db.query.withdrawalRequests.findMany({
       where: eq(withdrawalRequests.userId, userId),
-      orderBy: [db.desc(withdrawalRequests.createdAt)],
+      orderBy: [desc(withdrawalRequests.createdAt)],
     })
 
     return NextResponse.json({ requests })

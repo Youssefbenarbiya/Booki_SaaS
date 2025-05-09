@@ -2,15 +2,22 @@ import { type NextRequest, NextResponse } from "next/server"
 import { wallet } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import db from "@/db/drizzle"
+import { auth } from "@/auth"
+import { headers } from "next/headers"
 
 // Get wallet for a user
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id")
+    // Get session from auth
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
 
-    if (!userId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const userId = session.user.id
 
     // Find or create wallet
     let userWallet = await db.query.wallet.findFirst({
