@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -9,7 +9,9 @@ import {
   DollarSign,
   History,
   Wallet,
+  Loader2,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -33,38 +35,39 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
 
 export function WalletDashboard() {
   const [withdrawalAmount, setWithdrawalAmount] = useState<string>("")
   const [withdrawalType, setWithdrawalType] = useState<string>("fixed")
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
   const [selectedFixedAmount, setSelectedFixedAmount] = useState<string>("100")
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [paymentMethod, setPaymentMethod] = useState<string>("bank_transfer")
+  const [paymentDetails, setPaymentDetails] = useState<string>("")
 
-  // Mock data - in a real app, this would come from an API
-  const walletBalance = 12450.75
-  const recentTransactions = [
-    {
-      id: 1,
-      type: "deposit",
-      amount: 2500,
-      date: "2023-05-01",
-      status: "completed",
-    },
-    {
-      id: 2,
-      type: "withdrawal",
-      amount: 1000,
-      date: "2023-04-28",
-      status: "completed",
-    },
-    {
-      id: 3,
-      type: "withdrawal",
-      amount: 500,
-      date: "2023-04-15",
-      status: "processing",
-    },
-  ]
+  // State for wallet data
+  const [walletBalance, setWalletBalance] = useState<number>(0)
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([])
+  const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([])
+  const [incomeSummary, setIncomeSummary] = useState<{
+    tripBookings: number;
+    carBookings: number;
+    roomBookings: number;
+    total: number;
+  }>({
+    tripBookings: 0,
+    carBookings: 0,
+    roomBookings: 0,
+    total: 0,
+  })
 
   const fixedAmounts = [
     { value: "100", label: "$100" },
@@ -73,17 +76,165 @@ export function WalletDashboard() {
     { value: "5000", label: "$5,000" },
   ]
 
-  const handleWithdrawalRequest = () => {
-    // In a real app, this would send the request to the backend
-    const amount =
-      withdrawalType === "fixed" ? selectedFixedAmount : withdrawalAmount
-    console.log(`Withdrawal request submitted: $${amount}`)
-    setIsDialogOpen(false)
+  // Fetch wallet data on component mount
+  useEffect(() => {
+    Promise.all([
+      fetchWallet(),
+      fetchTransactions(),
+      fetchWithdrawalRequests(),
+      fetchIncomeSummary(),
+    ]).finally(() => {
+      setIsLoading(false)
+    })
+  }, [])
 
-    // Reset form
-    setWithdrawalAmount("")
-    setWithdrawalType("fixed")
-    setSelectedFixedAmount("100")
+  const fetchWallet = async () => {
+    try {
+      const response = await fetch('/api/wallet', {
+        headers: {
+          'x-user-id': getUserId(), // You'd need to implement a function to get the current user's ID
+        }
+      })
+      
+      if (!response.ok) throw new Error('Failed to fetch wallet')
+      
+      const data = await response.json()
+      setWalletBalance(parseFloat(data.wallet.balance))
+    } catch (error) {
+      console.error('Error fetching wallet:', error)
+      toast.error('Failed to load wallet data')
+    }
+  }
+
+  const fetchTransactions = async () => {
+    try {
+      const response = await fetch('/api/wallet/transactions?limit=5', {
+        headers: {
+          'x-user-id': getUserId(),
+        }
+      })
+      
+      if (!response.ok) throw new Error('Failed to fetch transactions')
+      
+      const data = await response.json()
+      setRecentTransactions(data.transactions.map((tx: any) => ({
+        id: tx.id,
+        type: tx.type,
+        amount: parseFloat(tx.amount),
+        date: new Date(tx.createdAt).toISOString().split('T')[0],
+        status: tx.status,
+      })))
+    } catch (error) {
+      console.error('Error fetching transactions:', error)
+      toast.error('Failed to load transaction history')
+    }
+  }
+
+  const fetchWithdrawalRequests = async () => {
+    try {
+      const response = await fetch('/api/wallet/withdraw', {
+        headers: {
+          'x-user-id': getUserId(),
+        }
+      })
+      
+      if (!response.ok) throw new Error('Failed to fetch withdrawal requests')
+      
+      const data = await response.json()
+      setWithdrawalRequests(data.requests)
+    } catch (error) {
+      console.error('Error fetching withdrawal requests:', error)
+      toast.error('Failed to load withdrawal requests')
+    }
+  }
+
+  const fetchIncomeSummary = async () => {
+    try {
+      const response = await fetch('/api/wallet/income-summary', {
+        headers: {
+          'x-user-id': getUserId(),
+        }
+      })
+      
+      if (!response.ok) throw new Error('Failed to fetch income summary')
+      
+      const data = await response.json()
+      setIncomeSummary(data.summary)
+    } catch (error) {
+      console.error('Error fetching income summary:', error)
+      toast.error('Failed to load income summary')
+    }
+  }
+
+  // Temporary function to get user ID - replace with your auth logic
+  const getUserId = () => {
+    // This should return the current user's ID from your auth system
+    return "current-user-id"
+  }
+
+  const handleWithdrawalRequest = async () => {
+    try {
+      setIsSubmitting(true)
+      const amount = withdrawalType === "fixed" 
+        ? parseFloat(selectedFixedAmount) 
+        : parseFloat(withdrawalAmount)
+        
+      if (isNaN(amount) || amount <= 0) {
+        toast.error('Please enter a valid amount')
+        return
+      }
+      
+      if (amount > walletBalance) {
+        toast.error('Insufficient balance')
+        return
+      }
+
+      const response = await fetch('/api/wallet/withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': getUserId(),
+        },
+        body: JSON.stringify({
+          amount,
+          paymentMethod,
+          paymentDetails,
+        }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to submit withdrawal request')
+      }
+      
+      toast.success('Withdrawal request submitted successfully')
+      setIsDialogOpen(false)
+      
+      // Refresh data
+      fetchWallet()
+      fetchWithdrawalRequests()
+      
+      // Reset form
+      setWithdrawalAmount("")
+      setWithdrawalType("fixed")
+      setSelectedFixedAmount("100")
+      setPaymentMethod("bank_transfer")
+      setPaymentDetails("")
+    } catch (error) {
+      console.error('Error submitting withdrawal request:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to submit withdrawal request')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading wallet information...</span>
+      </div>
+    )
   }
 
   return (
@@ -115,7 +266,7 @@ export function WalletDashboard() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                Last updated: Today at 3:45 PM
+                Last updated: {new Date().toLocaleString()}
               </p>
             </div>
           </CardContent>
@@ -192,14 +343,51 @@ export function WalletDashboard() {
                     </div>
                   </TabsContent>
                 </Tabs>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="payment-method">Payment Method</Label>
+                    <Select
+                      value={paymentMethod}
+                      onValueChange={setPaymentMethod}
+                    >
+                      <SelectTrigger id="payment-method">
+                        <SelectValue placeholder="Select payment method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="paypal">PayPal</SelectItem>
+                        <SelectItem value="check">Check</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="payment-details">Payment Details</Label>
+                    <Input
+                      id="payment-details"
+                      placeholder="Bank account, PayPal email, etc."
+                      value={paymentDetails}
+                      onChange={(e) => setPaymentDetails(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
                 <DialogFooter>
                   <Button
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleWithdrawalRequest}>
+                  <Button 
+                    onClick={handleWithdrawalRequest}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     Submit Request
                   </Button>
                 </DialogFooter>
@@ -215,45 +403,51 @@ export function WalletDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between border-b pb-4 last:border-0"
-                >
-                  <div className="flex items-center gap-4">
-                    {transaction.type === "deposit" ? (
-                      <ArrowUpCircle className="h-8 w-8 text-green-500" />
-                    ) : (
-                      <ArrowDownCircle className="h-8 w-8 text-orange-500" />
-                    )}
-                    <div>
-                      <p className="font-medium capitalize">
-                        {transaction.type}
+              {recentTransactions.length > 0 ? (
+                recentTransactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between border-b pb-4 last:border-0"
+                  >
+                    <div className="flex items-center gap-4">
+                      {transaction.type === "deposit" || transaction.type === "payment" ? (
+                        <ArrowUpCircle className="h-8 w-8 text-green-500" />
+                      ) : (
+                        <ArrowDownCircle className="h-8 w-8 text-orange-500" />
+                      )}
+                      <div>
+                        <p className="font-medium capitalize">
+                          {transaction.type}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {transaction.date}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">
+                        {transaction.type === "deposit" || transaction.type === "payment" ? "+" : "-"}$
+                        {transaction.amount.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                        })}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        {transaction.date}
+                      <p
+                        className={`text-sm ${
+                          transaction.status === "completed"
+                            ? "text-green-500"
+                            : "text-amber-500"
+                        } capitalize`}
+                      >
+                        {transaction.status}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      {transaction.type === "deposit" ? "+" : "-"}$
-                      {transaction.amount.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </p>
-                    <p
-                      className={`text-sm ${
-                        transaction.status === "completed"
-                          ? "text-green-500"
-                          : "text-amber-500"
-                      } capitalize`}
-                    >
-                      {transaction.status}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No recent transactions found
+                </p>
+              )}
             </div>
           </CardContent>
           <CardFooter>
@@ -264,7 +458,37 @@ export function WalletDashboard() {
           </CardFooter>
         </Card>
 
-        <Card className="col-span-full">
+        {/* Income Summary Card */}
+        <Card className="col-span-full lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-xl">Income Summary</CardTitle>
+            <CardDescription>Summary of your booking income</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span>Trip Bookings:</span>
+                <span className="font-medium">${incomeSummary.tripBookings.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Car Bookings:</span>
+                <span className="font-medium">${incomeSummary.carBookings.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Room Bookings:</span>
+                <span className="font-medium">${incomeSummary.roomBookings.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="pt-2 border-t">
+                <div className="flex justify-between items-center font-bold">
+                  <span>Total Income:</span>
+                  <span>${incomeSummary.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-full lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-xl">Withdrawal History</CardTitle>
             <CardDescription>
@@ -291,48 +515,34 @@ export function WalletDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="bg-white border-b">
-                    <td className="px-6 py-4">WD-2023-001</td>
-                    <td className="px-6 py-4">May 1, 2023</td>
-                    <td className="px-6 py-4">$1,500.00</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Completed
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="bg-white border-b">
-                    <td className="px-6 py-4">WD-2023-002</td>
-                    <td className="px-6 py-4">April 15, 2023</td>
-                    <td className="px-6 py-4">$2,000.00</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                        Processing
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="bg-white">
-                    <td className="px-6 py-4">WD-2023-003</td>
-                    <td className="px-6 py-4">April 5, 2023</td>
-                    <td className="px-6 py-4">$500.00</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Rejected
-                      </span>
-                    </td>
-                  </tr>
+                  {withdrawalRequests.length > 0 ? (
+                    withdrawalRequests.map((request) => (
+                      <tr key={request.id} className="bg-white border-b">
+                        <td className="px-6 py-4">WD-{request.id}</td>
+                        <td className="px-6 py-4">{new Date(request.createdAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">${parseFloat(request.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-amber-100 text-amber-800'
+                          }`}>
+                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="bg-white border-b">
+                      <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
+                        No withdrawal requests found
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" size="sm">
-              Previous
-            </Button>
-            <Button variant="outline" size="sm">
-              Next
-            </Button>
-          </CardFooter>
         </Card>
       </div>
 
