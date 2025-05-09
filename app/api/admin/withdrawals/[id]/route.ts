@@ -1,0 +1,124 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { eq } from "drizzle-orm"
+import db from "@/db/drizzle"
+import { wallet, walletTransactions, withdrawalRequests } from "@/db/schema"
+
+// Update withdrawal request status (admin only)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const userId = request.headers.get("x-user-id")
+    const userRole = request.headers.get("x-user-role")
+
+    if (!userId || userRole !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const withdrawalId = Number.parseInt(params.id)
+    const body = await request.json()
+    const { status, rejectionReason } = body
+
+    if (!status || !["approved", "rejected"].includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 })
+    }
+
+    // Get withdrawal request
+    const withdrawalRequest = await db.query.withdrawalRequests.findFirst({
+      where: eq(withdrawalRequests.id, withdrawalId),
+    })
+
+    if (!withdrawalRequest) {
+      return NextResponse.json(
+        { error: "Withdrawal request not found" },
+        { status: 404 }
+      )
+    }
+
+    // Check if request is already processed
+    if (withdrawalRequest.status !== "pending") {
+      return NextResponse.json(
+        { error: "Withdrawal request already processed" },
+        { status: 400 }
+      )
+    }
+
+    // Get user's wallet
+    const userWallet = await db.query.wallet.findFirst({
+      where: eq(wallet.id, withdrawalRequest.walletId),
+    })
+
+    if (!userWallet) {
+      return NextResponse.json({ error: "Wallet not found" }, { status: 404 })
+    }
+
+    // Process based on status
+    if (status === "approved") {
+      // Update wallet balance
+      const newBalance =
+        Number.parseFloat(userWallet.balance.toString()) -
+        Number.parseFloat(withdrawalRequest.amount.toString())
+
+      if (newBalance < 0) {
+        return NextResponse.json(
+          { error: "Insufficient balance" },
+          { status: 400 }
+        )
+      }
+
+      // Update wallet
+      await db
+        .update(wallet)
+        .set({
+          balance: newBalance.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(wallet.id, userWallet.id))
+
+      // Create transaction record
+      await db.insert(walletTransactions).values({
+        walletId: userWallet.id,
+        amount: withdrawalRequest.amount.toString(),
+        type: "withdrawal",
+        status: "completed",
+        description: "Withdrawal request approved",
+        reference: withdrawalRequest.id.toString(),
+        referenceType: "withdrawal_request",
+      })
+
+      // Update withdrawal request
+      await db
+        .update(withdrawalRequests)
+        .set({
+          status: "approved",
+          approvedBy: userId,
+          approvedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(withdrawalRequests.id, withdrawalId))
+    } else {
+      // Reject withdrawal request
+      await db
+        .update(withdrawalRequests)
+        .set({
+          status: "rejected",
+          rejectedBy: userId,
+          rejectedAt: new Date(),
+          rejectionReason: rejectionReason || "Rejected by admin",
+          updatedAt: new Date(),
+        })
+        .where(eq(withdrawalRequests.id, withdrawalId))
+    }
+
+    return NextResponse.json({
+      message: `Withdrawal request ${status} successfully`,
+    })
+  } catch (error) {
+    console.error("Error updating withdrawal request:", error)
+    return NextResponse.json(
+      { error: "Failed to update withdrawal request" },
+      { status: 500 }
+    )
+  }
+}
