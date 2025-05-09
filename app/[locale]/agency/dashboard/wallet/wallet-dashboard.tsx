@@ -10,6 +10,7 @@ import {
   History,
   Wallet,
   Loader2,
+  RefreshCw,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -60,6 +61,7 @@ export function WalletDashboard() {
   const [selectedFixedAmount, setSelectedFixedAmount] = useState<string>("100")
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
   const [paymentMethod, setPaymentMethod] = useState<string>("bank_transfer")
   const [paymentDetails, setPaymentDetails] = useState<string>("")
 
@@ -78,6 +80,7 @@ export function WalletDashboard() {
     roomBookings: 0,
     total: 0,
   })
+  const [calculations, setCalculations] = useState<any>(null)
 
   const fixedAmounts = [
     { value: "100", label: "$100" },
@@ -128,11 +131,31 @@ export function WalletDashboard() {
       
       const data = await response.json()
       setWalletBalance(parseFloat(data.wallet.balance))
+      
+      // Store calculation details if available
+      if (data.calculations) {
+        setCalculations(data.calculations)
+      }
+      
       return true
     } catch (error) {
       console.error('Error fetching wallet:', error)
       toast.error(`Failed to load wallet data: ${getErrorMessage(error)}`)
       return false
+    }
+  }
+
+  const refreshWalletBalance = async () => {
+    setIsRefreshing(true)
+    try {
+      await fetchWallet()
+      await fetchIncomeSummary()
+      toast.success('Wallet balance updated')
+    } catch (error) {
+      console.error('Error refreshing wallet balance:', error)
+      toast.error(`Failed to refresh wallet balance: ${getErrorMessage(error)}`)
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -295,7 +318,17 @@ export function WalletDashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="col-span-full lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-xl">Wallet Balance</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-xl">Wallet Balance</CardTitle>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={refreshWalletBalance}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
             <CardDescription>Your current available funds</CardDescription>
           </CardHeader>
           <CardContent>
@@ -312,6 +345,25 @@ export function WalletDashboard() {
               <p className="text-sm text-muted-foreground mt-2">
                 Last updated: {new Date().toLocaleString()}
               </p>
+              {calculations && (
+                <div className="w-full mt-4 text-sm">
+                  <p className="font-medium mb-2">Balance calculation:</p>
+                  <div className="space-y-1 text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Total Earnings:</span>
+                      <span>${calculations.totalEarnings.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Withdrawals:</span>
+                      <span>-${calculations.totalWithdrawals.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="border-t pt-1 flex justify-between font-medium">
+                      <span>Current Balance:</span>
+                      <span>${calculations.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex justify-center">

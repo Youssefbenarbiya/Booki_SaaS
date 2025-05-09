@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { tripBookings, trips, carBookings, cars, roomBookings, room, hotel, agencies, user } from "@/db/schema"
-import { eq, sum, and } from "drizzle-orm"
+import { tripBookings, trips, carBookings, cars, roomBookings, room, hotel, agencies, user, wallet, walletTransactions } from "@/db/schema"
+import { eq, sum, and, desc } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
@@ -11,8 +11,8 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
-// Get income summary for an agency
-export async function GET(request: NextRequest) {
+// Calculate and update wallet balance from completed bookings
+export async function POST(request: NextRequest) {
   try {
     // Get session from auth
     const session = await auth.api.getSession({
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.user.id
-    console.log("Getting income summary for user ID:", userId)
+    console.log("Calculating balance for user ID:", userId)
 
     try {
       // Find agency by user ID
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       console.log("Found agency:", agency.agencyName)
 
       try {
-        // Get sum of trip bookings for this agency
+        // Get sum of trip bookings for this agency with status "completed"
         const tripBookingsSum = await db
           .select({
             total: sum(tripBookings.totalPrice),
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
             )
           )
 
-        // Get sum of car bookings for this agency
+        // Get sum of car bookings for this agency with status "completed"
         const carBookingsSum = await db
           .select({
             total: sum(carBookings.total_price),
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
             )
           )
 
-        // Get sum of room bookings for this agency
+        // Get sum of room bookings for this agency with status "completed"
         const roomBookingsSum = await db
           .select({
             total: sum(roomBookings.totalPrice),
@@ -97,23 +97,85 @@ export async function GET(request: NextRequest) {
           ? parseFloat(roomBookingsSum[0].total.toString()) 
           : 0
 
-        const total = tripTotal + carTotal + roomTotal
-
-        const summary = {
-          tripBookings: tripTotal,
-          carBookings: carTotal,
-          roomBookings: roomTotal,
-          total,
-        }
+        const totalEarnings = tripTotal + carTotal + roomTotal
         
-        console.log("Income summary calculated:", summary)
+        console.log("Total earnings calculated:", {
+          tripTotal,
+          carTotal,
+          roomTotal,
+          totalEarnings
+        })
 
-        return NextResponse.json({ summary })
+        // Find or create wallet for this user
+        let userWallet = await db.query.wallet.findFirst({
+          where: eq(wallet.userId, userId),
+        })
+
+        if (!userWallet) {
+          console.log("No wallet found, creating one")
+          const newWallet = await db
+            .insert(wallet)
+            .values({
+              userId: userId,
+            })
+            .returning()
+            
+          userWallet = newWallet[0]
+          console.log("Created wallet:", userWallet)
+        }
+
+        // Get sum of withdrawal amounts
+        const withdrawalsSum = await db
+          .select({
+            total: sum(walletTransactions.amount),
+          })
+          .from(walletTransactions)
+          .where(
+            and(
+              eq(walletTransactions.walletId, userWallet.id),
+              eq(walletTransactions.type, "withdrawal"),
+              eq(walletTransactions.status, "completed")
+            )
+          )
+
+        const totalWithdrawals = withdrawalsSum[0]?.total
+          ? parseFloat(withdrawalsSum[0].total.toString())
+          : 0
+          
+        console.log("Total withdrawals:", totalWithdrawals)
+
+        // Calculate the current balance
+        const balance = totalEarnings - totalWithdrawals
+        
+        // Update the wallet balance
+        const updatedWallet = await db
+          .update(wallet)
+          .set({
+            balance: balance.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallet.id, userWallet.id))
+          .returning()
+          
+        console.log("Updated wallet balance:", updatedWallet[0])
+
+        return NextResponse.json({
+          success: true, 
+          wallet: updatedWallet[0],
+          calculations: {
+            tripBookings: tripTotal,
+            carBookings: carTotal,
+            roomBookings: roomTotal,
+            totalEarnings,
+            totalWithdrawals,
+            balance
+          }
+        })
       } catch (queryError) {
-        console.error("Error in income summary queries:", queryError)
+        console.error("Error in balance calculation:", queryError)
         return NextResponse.json(
           { 
-            error: "Failed to calculate income summary", 
+            error: "Failed to calculate balance", 
             details: getErrorMessage(queryError) 
           },
           { status: 500 }
@@ -130,10 +192,10 @@ export async function GET(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error("Error in income summary API:", error)
+    console.error("Error in calculate balance API:", error)
     return NextResponse.json(
       { 
-        error: "Failed to fetch income summary", 
+        error: "Failed to calculate balance", 
         details: getErrorMessage(error) 
       },
       { status: 500 }
