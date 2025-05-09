@@ -105,14 +105,14 @@ export function WalletDashboard() {
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch wallet')
+        throw new Error(error.details || error.error || 'Failed to fetch wallet')
       }
       
       const data = await response.json()
       setWalletBalance(parseFloat(data.wallet.balance))
     } catch (error) {
       console.error('Error fetching wallet:', error)
-      toast.error('Failed to load wallet data')
+      toast.error(`Failed to load wallet data: ${error.message || 'Unknown error'}`)
     }
   }
 
@@ -122,7 +122,7 @@ export function WalletDashboard() {
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch transactions')
+        throw new Error(error.details || error.error || 'Failed to fetch transactions')
       }
       
       const data = await response.json()
@@ -135,7 +135,7 @@ export function WalletDashboard() {
       })))
     } catch (error) {
       console.error('Error fetching transactions:', error)
-      toast.error('Failed to load transaction history')
+      toast.error(`Failed to load transaction history: ${error.message || 'Unknown error'}`)
     }
   }
 
@@ -145,14 +145,14 @@ export function WalletDashboard() {
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch withdrawal requests')
+        throw new Error(error.details || error.error || 'Failed to fetch withdrawal requests')
       }
       
       const data = await response.json()
       setWithdrawalRequests(data.requests)
     } catch (error) {
       console.error('Error fetching withdrawal requests:', error)
-      toast.error('Failed to load withdrawal requests')
+      toast.error(`Failed to load withdrawal requests: ${error.message || 'Unknown error'}`)
     }
   }
 
@@ -162,14 +162,14 @@ export function WalletDashboard() {
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch income summary')
+        throw new Error(error.details || error.error || 'Failed to fetch income summary')
       }
       
       const data = await response.json()
       setIncomeSummary(data.summary)
     } catch (error) {
       console.error('Error fetching income summary:', error)
-      toast.error('Failed to load income summary')
+      toast.error(`Failed to load income summary: ${error.message || 'Unknown error'}`)
     }
   }
 
