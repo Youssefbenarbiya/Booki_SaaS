@@ -45,6 +45,12 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 
+// Helper function to extract error message
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 export function WalletDashboard() {
   const router = useRouter()
   const session = useSession()
@@ -89,17 +95,29 @@ export function WalletDashboard() {
       return;
     }
     
-    Promise.all([
-      fetchWallet(),
-      fetchTransactions(),
-      fetchWithdrawalRequests(),
-      fetchIncomeSummary(),
-    ]).finally(() => {
-      setIsLoading(false)
-    })
+    // Load data sequentially to ensure wallet exists before other calls
+    setIsLoading(true)
+    fetchWallet()
+      .then((walletExists) => {
+        if (walletExists) {
+          // Only proceed with other API calls if wallet exists
+          return Promise.all([
+            fetchTransactions(),
+            fetchWithdrawalRequests(),
+            fetchIncomeSummary(),
+          ])
+        }
+      })
+      .catch((error) => {
+        console.error('Error loading wallet data:', error)
+        toast.error(`Error loading wallet data: ${getErrorMessage(error)}`)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
   }, [session])
 
-  const fetchWallet = async () => {
+  const fetchWallet = async (): Promise<boolean> => {
     try {
       const response = await fetch('/api/wallet')
       
@@ -110,9 +128,11 @@ export function WalletDashboard() {
       
       const data = await response.json()
       setWalletBalance(parseFloat(data.wallet.balance))
+      return true
     } catch (error) {
       console.error('Error fetching wallet:', error)
-      toast.error(`Failed to load wallet data: ${error.message || 'Unknown error'}`)
+      toast.error(`Failed to load wallet data: ${getErrorMessage(error)}`)
+      return false
     }
   }
 
@@ -135,7 +155,7 @@ export function WalletDashboard() {
       })))
     } catch (error) {
       console.error('Error fetching transactions:', error)
-      toast.error(`Failed to load transaction history: ${error.message || 'Unknown error'}`)
+      toast.error(`Failed to load transaction history: ${getErrorMessage(error)}`)
     }
   }
 
@@ -152,7 +172,7 @@ export function WalletDashboard() {
       setWithdrawalRequests(data.requests)
     } catch (error) {
       console.error('Error fetching withdrawal requests:', error)
-      toast.error(`Failed to load withdrawal requests: ${error.message || 'Unknown error'}`)
+      toast.error(`Failed to load withdrawal requests: ${getErrorMessage(error)}`)
     }
   }
 
@@ -169,7 +189,7 @@ export function WalletDashboard() {
       setIncomeSummary(data.summary)
     } catch (error) {
       console.error('Error fetching income summary:', error)
-      toast.error(`Failed to load income summary: ${error.message || 'Unknown error'}`)
+      toast.error(`Failed to load income summary: ${getErrorMessage(error)}`)
     }
   }
 
@@ -218,15 +238,15 @@ export function WalletDashboard() {
       
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to submit withdrawal request')
+        throw new Error(errorData.details || errorData.error || 'Failed to submit withdrawal request')
       }
       
       toast.success('Withdrawal request submitted successfully')
       setIsDialogOpen(false)
       
       // Refresh data
-      fetchWallet()
-      fetchWithdrawalRequests()
+      await fetchWallet()
+      await fetchWithdrawalRequests()
       
       // Reset form
       setWithdrawalAmount("")
@@ -236,7 +256,7 @@ export function WalletDashboard() {
       setPaymentDetails("")
     } catch (error) {
       console.error('Error submitting withdrawal request:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to submit withdrawal request')
+      toast.error(getErrorMessage(error))
     } finally {
       setIsSubmitting(false)
     }
