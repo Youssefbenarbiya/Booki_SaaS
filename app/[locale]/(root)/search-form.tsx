@@ -307,7 +307,7 @@ export function SearchForm({ type }: SearchFormProps) {
                     <Calendar className="h-5 w-5 text-gray-400 mr-2" />
                     <div>
                       <FormLabel className="text-xs text-gray-500">
-                        Date of pick-up
+                        Date of pick-up &nbsp;
                       </FormLabel>
                       <FormControl>
                         <Popover>
@@ -350,7 +350,7 @@ export function SearchForm({ type }: SearchFormProps) {
                     <Calendar className="h-5 w-5 text-gray-400 mr-2" />
                     <div>
                       <FormLabel className="text-xs text-gray-500">
-                        Return date
+                        Return date &nbsp;
                       </FormLabel>
                       <FormControl>
                         <Popover>
@@ -437,7 +437,7 @@ export function SearchForm({ type }: SearchFormProps) {
                   <Calendar className="h-5 w-5 text-gray-400 mr-2" />
                   <div>
                     <FormLabel className="text-xs text-gray-500">
-                      Start Date
+                      Start Date &nbsp;
                     </FormLabel>
                     <FormControl>
                       <Popover>
