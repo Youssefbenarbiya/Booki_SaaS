@@ -18,6 +18,8 @@ import PaymentSelector from "@/components/payment/PaymentSelector"
 import { createBookingWithPayment } from "@/actions/trips/tripBookingActions"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
 import { convertCurrency } from "@/lib/currencyUtils"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Separator } from "@/components/ui/separator"
 
 interface BookingFormProps {
   tripId: number
@@ -25,6 +27,8 @@ interface BookingFormProps {
   pricePerSeat: number
   userId: string
   originalCurrency?: string
+  advancePaymentEnabled?: boolean
+  advancePaymentPercentage?: number
 }
 
 export default function BookingForm({
@@ -33,6 +37,8 @@ export default function BookingForm({
   pricePerSeat,
   userId,
   originalCurrency = "TND", // Default currency if not specified
+  advancePaymentEnabled = false,
+  advancePaymentPercentage = 0,
 }: BookingFormProps) {
   const [seats, setSeats] = useState(1)
   const [isPending, startTransition] = useTransition()
@@ -42,6 +48,9 @@ export default function BookingForm({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "flouci" | "stripe"
   >("flouci")
+  
+  // Add state for payment type (full or advance)
+  const [paymentType, setPaymentType] = useState<"full" | "advance">("full")
   
   // State for payment method specific pricing
   const [stripePrice, setStripePrice] = useState<number | null>(null)
@@ -100,6 +109,19 @@ export default function BookingForm({
   // Calculate total price in the appropriate currency
   const totalPrice = seats * displayPricePerSeat
   
+  // Calculate advance payment amount
+  const advancePaymentAmount = advancePaymentEnabled && advancePaymentPercentage 
+    ? totalPrice * (advancePaymentPercentage / 100) 
+    : 0
+    
+  // Calculate remaining amount to be paid in cash
+  const remainingCashAmount = advancePaymentEnabled && paymentType === "advance" 
+    ? totalPrice - advancePaymentAmount 
+    : 0
+  
+  // Amount to actually charge
+  const amountToCharge = paymentType === "full" ? totalPrice : advancePaymentAmount
+  
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
@@ -117,6 +139,8 @@ export default function BookingForm({
           seatsBooked: seats,
           pricePerSeat, // Use original price for database
           paymentMethod: selectedPaymentMethod, // Pass the selected payment method
+          paymentType, // Pass whether this is full or advance payment
+          advancePaymentPercentage: paymentType === "advance" ? advancePaymentPercentage : undefined,
         })
 
         if (!result.paymentLink && !result.sessionId) {
@@ -205,6 +229,33 @@ export default function BookingForm({
             </p>
           </div>
 
+          {/* Payment Type Selector (Full or Advance) */}
+          {advancePaymentEnabled && advancePaymentPercentage > 0 && (
+            <div className="space-y-3 pt-2">
+              <Label className="font-medium">Payment Option</Label>
+              <RadioGroup 
+                value={paymentType} 
+                onValueChange={(value) => setPaymentType(value as "full" | "advance")}
+                className="space-y-2"
+              >
+                <div className="flex items-center space-x-2 border rounded-md p-3">
+                  <RadioGroupItem value="full" id="full-payment" />
+                  <Label htmlFor="full-payment" className="cursor-pointer flex-1">
+                    <span className="font-medium">Pay Full Amount</span>
+                    <p className="text-sm text-muted-foreground">Pay the entire amount online</p>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-md p-3">
+                  <RadioGroupItem value="advance" id="advance-payment" />
+                  <Label htmlFor="advance-payment" className="cursor-pointer flex-1">
+                    <span className="font-medium">Pay {advancePaymentPercentage}% Advance</span>
+                    <p className="text-sm text-muted-foreground">Pay {advancePaymentPercentage}% now and the rest in cash at the agency</p>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -234,20 +285,52 @@ export default function BookingForm({
                   {formatPrice(displayPricePerSeat, { currency: displayCurrency })}
                 </span>
               </div>
+              <div className="text-sm text-muted-foreground flex justify-between">
+                <span>Number of Seats:</span>
+                <span className="font-medium">{seats}</span>
+              </div>
             </div>
           )}
 
           <CardFooter className="flex flex-col pt-4 px-0 border-t">
-            <div className="text-lg font-semibold mb-4 w-full flex justify-between items-center">
-              <span>Total Price:</span>
-              <span className="text-primary">
-                {formatPrice(totalPrice, { currency: displayCurrency })}
-              </span>
+            <div className="w-full space-y-2">
+              {/* Show payment breakdown if advance payment selected */}
+              {advancePaymentEnabled && paymentType === "advance" && (
+                <>
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Total Trip Cost:</span>
+                    <span>
+                      {formatPrice(totalPrice, { currency: displayCurrency })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Online Advance Payment ({advancePaymentPercentage}%):</span>
+                    <span>
+                      {formatPrice(advancePaymentAmount, { currency: displayCurrency })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Remaining Cash Payment ({100 - advancePaymentPercentage}%):</span>
+                    <span>
+                      {formatPrice(remainingCashAmount, { currency: displayCurrency })}
+                    </span>
+                  </div>
+                  <Separator className="my-2" />
+                </>
+              )}
+              
+              {/* Show amount being charged now */}
+              <div className="text-lg font-semibold w-full flex justify-between items-center">
+                <span>{paymentType === "advance" ? "Pay Now:" : "Total Price:"}</span>
+                <span className="text-primary">
+                  {formatPrice(amountToCharge, { currency: displayCurrency })}
+                </span>
+              </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full mt-4"
               disabled={isPending || loading}
               size="lg"
             >

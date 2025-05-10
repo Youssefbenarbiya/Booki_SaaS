@@ -119,11 +119,10 @@ export async function createTrip(tripData: TripInput) {
     throw new Error("Only agencies can create trips")
   }
 
-  // Begin a transaction to ensure all operations complete successfully
-  // If one operation fails, all operations will be rolled back
-  return await db.transaction(async (tx) => {
-    // Insert trip data
-    const [createdTripRow] = await tx
+  // Instead of using a transaction, perform each operation sequentially
+  try {
+    // First insert trip data
+    const [createdTripRow] = await db
       .insert(trips)
       .values({
         name: tripData.name,
@@ -173,7 +172,7 @@ export async function createTrip(tripData: TripInput) {
     if (tripData.images && tripData.images.length > 0) {
       await Promise.all(
         tripData.images.map((imageUrl) =>
-          tx.insert(tripImages).values({
+          db.insert(tripImages).values({
             tripId: tripId,
             imageUrl: imageUrl,
           })
@@ -185,7 +184,7 @@ export async function createTrip(tripData: TripInput) {
     if (tripData.activities && tripData.activities.length > 0) {
       await Promise.all(
         tripData.activities.map((activity) =>
-          tx.insert(tripActivities).values({
+          db.insert(tripActivities).values({
             tripId: tripId,
             activityName: activity.activityName,
             description: activity.description || null,
@@ -196,7 +195,10 @@ export async function createTrip(tripData: TripInput) {
     }
 
     return { id: tripId }
-  })
+  } catch (error) {
+    console.error("Error creating trip:", error)
+    throw error
+  }
 }
 
 export async function getTrips() {
@@ -273,87 +275,89 @@ export async function updateTrip(tripId: number, tripData: TripInput) {
           timeSpecificDiscountDays: validatedData.timeSpecificDiscountDays,
           childDiscountEnabled: validatedData.childDiscountEnabled,
           childDiscountPercentage: validatedData.childDiscountPercentage,
+          advancePaymentEnabled: validatedData.advancePaymentEnabled,
+          advancePaymentPercentage: validatedData.advancePaymentPercentage,
         },
         null,
         2
       )
     );
 
-    // Update trip with explicit null values for discount fields when they're undefined
-    const [trip] = await db.transaction(async (tx) => {
-      // Update trip data
-      const [updatedTrip] = await tx
-        .update(trips)
-        .set({
-          name: validatedData.name,
-          description: validatedData.description || null,
-          destination: validatedData.destination,
-          startDate: validatedData.startDate,
-          endDate: validatedData.endDate,
-          originalPrice: validatedData.originalPrice.toString(),
-          discountPercentage: validatedData.discountPercentage ?? null,
-          priceAfterDiscount:
-            validatedData.priceAfterDiscount?.toString() ?? null,
-          currency: validatedData.currency,
-          capacity: validatedData.capacity,
-          isAvailable: isAvailable,
-          updatedAt: new Date(),
-          // Include discount fields
-          groupDiscountEnabled: validatedData.groupDiscountEnabled ?? false,
-          groupDiscountMinPeople: validatedData.groupDiscountMinPeople ?? null,
-          groupDiscountPercentage: validatedData.groupDiscountPercentage ?? null,
+    // Update trip directly without using a transaction
+    // First update the trip data
+    const [updatedTrip] = await db
+      .update(trips)
+      .set({
+        name: validatedData.name,
+        description: validatedData.description || null,
+        destination: validatedData.destination,
+        startDate: validatedData.startDate,
+        endDate: validatedData.endDate,
+        originalPrice: validatedData.originalPrice.toString(),
+        discountPercentage: validatedData.discountPercentage ?? null,
+        priceAfterDiscount:
+          validatedData.priceAfterDiscount?.toString() ?? null,
+        currency: validatedData.currency,
+        capacity: validatedData.capacity,
+        isAvailable: isAvailable,
+        updatedAt: new Date(),
+        // Include discount fields
+        groupDiscountEnabled: validatedData.groupDiscountEnabled ?? false,
+        groupDiscountMinPeople: validatedData.groupDiscountMinPeople ?? null,
+        groupDiscountPercentage: validatedData.groupDiscountPercentage ?? null,
 
-          timeSpecificDiscountEnabled:
-            validatedData.timeSpecificDiscountEnabled ?? false,
-          timeSpecificDiscountStartTime:
-            validatedData.timeSpecificDiscountStartTime ?? null,
-          timeSpecificDiscountEndTime:
-            validatedData.timeSpecificDiscountEndTime ?? null,
-          timeSpecificDiscountDays:
-            validatedData.timeSpecificDiscountDays ?? null,
-          timeSpecificDiscountPercentage:
-            validatedData.timeSpecificDiscountPercentage ?? null,
+        timeSpecificDiscountEnabled:
+          validatedData.timeSpecificDiscountEnabled ?? false,
+        timeSpecificDiscountStartTime:
+          validatedData.timeSpecificDiscountStartTime ?? null,
+        timeSpecificDiscountEndTime:
+          validatedData.timeSpecificDiscountEndTime ?? null,
+        timeSpecificDiscountDays:
+          validatedData.timeSpecificDiscountDays ?? null,
+        timeSpecificDiscountPercentage:
+          validatedData.timeSpecificDiscountPercentage ?? null,
 
-          childDiscountEnabled: validatedData.childDiscountEnabled ?? false,
-          childDiscountPercentage: validatedData.childDiscountPercentage ?? null,
-          
-          // Include advance payment fields
-          advancePaymentEnabled: validatedData.advancePaymentEnabled ?? false,
-          advancePaymentPercentage: validatedData.advancePaymentPercentage ?? null,
-        })
-        .where(eq(trips.id, tripId))
-        .returning();
+        childDiscountEnabled: validatedData.childDiscountEnabled ?? false,
+        childDiscountPercentage: validatedData.childDiscountPercentage ?? null,
+        
+        // Include advance payment fields
+        advancePaymentEnabled: validatedData.advancePaymentEnabled ?? false,
+        advancePaymentPercentage: validatedData.advancePaymentPercentage ?? null,
+      })
+      .where(eq(trips.id, tripId))
+      .returning();
 
-      // Update images
-      await tx.delete(tripImages).where(eq(tripImages.tripId, tripId));
-      if (validatedData.images.length > 0) {
-        await tx.insert(tripImages).values(
-          validatedData.images.map((url) => ({
-            tripId: tripId,
-            imageUrl: url,
-          }))
-        );
-      }
+    // Then update images - first delete existing images
+    await db.delete(tripImages).where(eq(tripImages.tripId, tripId));
+    
+    // Then insert new images if any
+    if (validatedData.images.length > 0) {
+      await db.insert(tripImages).values(
+        validatedData.images.map((url) => ({
+          tripId: tripId,
+          imageUrl: url,
+        }))
+      );
+    }
 
-      // Update activities
-      await tx.delete(tripActivities).where(eq(tripActivities.tripId, tripId));
-      if (validatedData.activities?.length) {
-        await tx.insert(tripActivities).values(
-          validatedData.activities.map((activity) => ({
-            tripId: tripId,
-            activityName: activity.activityName,
-            description: activity.description,
-            scheduledDate: activity.scheduledDate?.toISOString(),
-          }))
-        );
-      }
-
-      return updatedTrip;
-    });
+    // Update activities - first delete existing activities
+    await db.delete(tripActivities).where(eq(tripActivities.tripId, tripId));
+    
+    // Then insert new activities if any
+    if (validatedData.activities?.length) {
+      await db.insert(tripActivities).values(
+        validatedData.activities.map((activity) => ({
+          tripId: tripId,
+          activityName: activity.activityName,
+          description: activity.description,
+          scheduledDate: activity.scheduledDate?.toISOString(),
+        }))
+      );
+    }
 
     revalidatePath("/agency/dashboard/trips");
     revalidatePath("/");
-    return trip;
+    return updatedTrip;
   } catch (error) {
     console.error("Error updating trip:", error);
     throw error;

@@ -48,6 +48,10 @@ export default async function BookTripPage({
   // Ensure hasDiscount is a boolean
   const isDiscounted = Boolean(hasDiscount)
 
+  // Get advance payment settings from the trip
+  const advancePaymentEnabled = trip.advancePaymentEnabled || false
+  const advancePaymentPercentage = trip.advancePaymentPercentage || 0
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -70,6 +74,8 @@ export default async function BookTripPage({
               pricePerSeat={effectivePrice}
               userId={session.user.id}
               originalCurrency={tripCurrency}
+              advancePaymentEnabled={advancePaymentEnabled}
+              advancePaymentPercentage={advancePaymentPercentage}
             />
           </div>
         </div>
