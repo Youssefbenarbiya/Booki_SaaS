@@ -13,7 +13,16 @@ import {
   FormItem,
   FormLabel,
 } from "@/components/ui/form";
-import { Search, MapPin, Calendar, Users, Plus, Minus } from "lucide-react";
+import {
+  Search,
+  MapPin,
+  Calendar,
+  Users,
+  Plus,
+  Minus,
+  ChevronDown,
+  Loader2,
+} from "lucide-react";
 import { format, startOfDay } from "date-fns";
 import { Calendar as UiCalendar } from "@/components/ui/calendar";
 import {
@@ -22,7 +31,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const tripSearchSchema = z.object({
   destination: z.string().min(1, "Destination is required"),
@@ -79,6 +88,83 @@ export function SearchForm({ type }: SearchFormProps) {
   const [rooms, setRooms] = useState(1);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
+
+  // Dropdown states
+  const [isDestinationOpen, setIsDestinationOpen] = useState(false);
+  const destinationRef = useRef<HTMLDivElement>(null);
+  const [searchValue, setSearchValue] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [debounceTimeout, setDebounceTimeout] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+
+  // Fetch suggestions from the API based on user input
+  const fetchSuggestions = async (query: string) => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `/api/search-suggestions?query=${encodeURIComponent(query)}&type=${type}`
+      );
+      const data = await response.json();
+
+      if (data.suggestions) {
+        setSuggestions(data.suggestions);
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      setSuggestions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle input changes with debounce
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: any
+  ) => {
+    const value = e.target.value;
+    field.onChange(value);
+    setSearchValue(value);
+
+    // Debounce API calls to prevent excessive requests
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      fetchSuggestions(value);
+    }, 300);
+
+    setDebounceTimeout(timeout);
+
+    if (value.trim() !== "") {
+      setIsDestinationOpen(true);
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        destinationRef.current &&
+        !destinationRef.current.contains(event.target as Node)
+      ) {
+        setIsDestinationOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Update the guests field value when counts change
   const updateGuestsValue = () => {
@@ -150,16 +236,55 @@ export function SearchForm({ type }: SearchFormProps) {
                 <FormItem className="flex-1">
                   <div className="flex items-center h-full bg-gray-50 rounded-md px-4 py-2">
                     <MapPin className="h-5 w-5 text-gray-400 mr-2" />
-                    <div>
-                      <FormLabel className="text-xs text-gray-500">
-                        Destination ?
+                    <div className="w-full" ref={destinationRef}>
+                      <FormLabel className="text-xs text-gray-500 flex justify-between items-center">
+                        Destination ?{" "}
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Destinations, Hotels"
-                          {...field}
-                          className="border-0 p-0 bg-transparent focus:ring-0 text-sm placeholder:text-gray-400"
-                        />
+                        <div className="relative">
+                          <div className="flex items-center justify-between cursor-pointer">
+                            <Input
+                              placeholder="Destinations, Hotels"
+                              {...field}
+                              className="border-0 p-0 bg-transparent focus:ring-0 text-sm placeholder:text-gray-400"
+                              onClick={() => setIsDestinationOpen(true)}
+                              onChange={(e) => handleInputChange(e, field)}
+                              value={field.value}
+                            />
+                          </div>
+                          {isDestinationOpen && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                              <div className="max-h-64 overflow-y-auto py-1">
+                                {isLoading ? (
+                                  <div className="flex items-center justify-center py-4">
+                                    <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+                                    <span className="ml-2 text-sm text-gray-500">
+                                      Loading suggestions...
+                                    </span>
+                                  </div>
+                                ) : suggestions.length > 0 ? (
+                                  suggestions.map((suggestion, index) => (
+                                    <div
+                                      key={index}
+                                      className="px-4 py-2 hover:bg-yellow-50 cursor-pointer"
+                                      onClick={() => {
+                                        field.onChange(suggestion);
+                                        setIsDestinationOpen(false);
+                                      }}
+                                    >
+                                      {suggestion}
+                                    </div>
+                                  ))
+                                ) : searchValue.trim() !== "" ? (
+                                  <div className="px-4 py-2 text-sm text-gray-500">
+                                    No results found
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </FormControl>
                     </div>
                   </div>
@@ -436,16 +561,55 @@ export function SearchForm({ type }: SearchFormProps) {
                 <FormItem className="flex-1">
                   <div className="flex items-center h-full bg-gray-50 rounded-md px-4 py-2">
                     <MapPin className="h-5 w-5 text-gray-400 mr-2" />
-                    <div>
-                      <FormLabel className="text-xs text-gray-500">
-                        Pick-up location
+                    <div className="w-full" ref={destinationRef}>
+                      <FormLabel className="text-xs text-gray-500 flex justify-between items-center">
+                        Pick-up location{" "}
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Airport, city, address..."
-                          {...field}
-                          className="border-0 p-0 bg-transparent focus:ring-0 text-sm"
-                        />
+                        <div className="relative">
+                          <div className="flex items-center justify-between cursor-pointer">
+                            <Input
+                              placeholder="Airport, city, address..."
+                              {...field}
+                              className="border-0 p-0 bg-transparent focus:ring-0 text-sm"
+                              onClick={() => setIsDestinationOpen(true)}
+                              onChange={(e) => handleInputChange(e, field)}
+                              value={field.value}
+                            />
+                          </div>
+                          {isDestinationOpen && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                              <div className="max-h-64 overflow-y-auto py-1">
+                                {isLoading ? (
+                                  <div className="flex items-center justify-center py-4">
+                                    <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+                                    <span className="ml-2 text-sm text-gray-500">
+                                      Loading suggestions...
+                                    </span>
+                                  </div>
+                                ) : suggestions.length > 0 ? (
+                                  suggestions.map((suggestion, index) => (
+                                    <div
+                                      key={index}
+                                      className="px-4 py-2 hover:bg-yellow-50 cursor-pointer"
+                                      onClick={() => {
+                                        field.onChange(suggestion);
+                                        setIsDestinationOpen(false);
+                                      }}
+                                    >
+                                      {suggestion}
+                                    </div>
+                                  ))
+                                ) : searchValue.trim() !== "" ? (
+                                  <div className="px-4 py-2 text-sm text-gray-500">
+                                    No results found
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </FormControl>
                     </div>
                   </div>
@@ -576,16 +740,55 @@ export function SearchForm({ type }: SearchFormProps) {
               <FormItem className="flex-1">
                 <div className="flex items-center h-full bg-gray-50 rounded-md px-4 py-2">
                   <MapPin className="h-5 w-5 text-gray-400 mr-2" />
-                  <div>
-                    <FormLabel className="text-xs text-gray-500">
-                      Destination
+                  <div className="w-full" ref={destinationRef}>
+                    <FormLabel className="text-xs text-gray-500 flex justify-between items-center">
+                      Destination{" "}
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Where do you want to go?"
-                        {...field}
-                        className="border-0 p-0 bg-transparent focus:ring-0 text-sm placeholder:text-gray-400"
-                      />
+                      <div className="relative">
+                        <div className="flex items-center justify-between cursor-pointer">
+                          <Input
+                            placeholder="Where do you want to go?"
+                            {...field}
+                            className="border-0 p-0 bg-transparent focus:ring-0 text-sm placeholder:text-gray-400"
+                            onClick={() => setIsDestinationOpen(true)}
+                            onChange={(e) => handleInputChange(e, field)}
+                            value={field.value}
+                          />
+                        </div>
+                        {isDestinationOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                            <div className="max-h-64 overflow-y-auto py-1">
+                              {isLoading ? (
+                                <div className="flex items-center justify-center py-4">
+                                  <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+                                  <span className="ml-2 text-sm text-gray-500">
+                                    Loading suggestions...
+                                  </span>
+                                </div>
+                              ) : suggestions.length > 0 ? (
+                                suggestions.map((suggestion, index) => (
+                                  <div
+                                    key={index}
+                                    className="px-4 py-2 hover:bg-yellow-50 cursor-pointer"
+                                    onClick={() => {
+                                      field.onChange(suggestion);
+                                      setIsDestinationOpen(false);
+                                    }}
+                                  >
+                                    {suggestion}
+                                  </div>
+                                ))
+                              ) : searchValue.trim() !== "" ? (
+                                <div className="px-4 py-2 text-sm text-gray-500">
+                                  No results found
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </FormControl>
                   </div>
                 </div>
