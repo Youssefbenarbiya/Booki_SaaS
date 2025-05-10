@@ -89,6 +89,9 @@ interface ExtendedTripInput {
   timeSpecificDiscountPercentage?: number;
   childDiscountEnabled?: boolean;
   childDiscountPercentage?: number;
+  // Add advance payment option
+  advancePaymentEnabled?: boolean;
+  advancePaymentPercentage?: number;
   activities?: {
     activityName: string;
     description?: string;
@@ -130,6 +133,8 @@ interface EditTripFormProps {
     timeSpecificDiscountPercentage?: number;
     childDiscountEnabled?: boolean;
     childDiscountPercentage?: number;
+    advancePaymentEnabled?: boolean;
+    advancePaymentPercentage?: number;
   };
   locale: Locale;
 }
@@ -217,6 +222,11 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
   const [selectedCurrency, setSelectedCurrency] =
     useState<string>(tripCurrency);
 
+  // New advance payment states
+  const [advancePaymentEnabled, setAdvancePaymentEnabled] = useState<boolean>(false);
+  const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(20);
+  const [customAdvancePercentage, setCustomAdvancePercentage] = useState<boolean>(false);
+
   const {
     register,
     handleSubmit,
@@ -249,6 +259,8 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       timeSpecificDiscountPercentage: trip.timeSpecificDiscountPercentage || 15,
       childDiscountEnabled: trip.childDiscountEnabled,
       childDiscountPercentage: trip.childDiscountPercentage || 25,
+      advancePaymentEnabled: trip.advancePaymentEnabled,
+      advancePaymentPercentage: trip.advancePaymentPercentage || 20,
       activities: trip.activities.map((activity) => ({
         activityName: activity.activityName,
         description: activity.description || undefined,
@@ -281,6 +293,14 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
 
     setChildDiscountEnabled(trip.childDiscountEnabled ?? false);
     setChildDiscountPercentage(trip.childDiscountPercentage || 25);
+    
+    // Initialize advance payment states
+    setAdvancePaymentEnabled(trip.advancePaymentEnabled ?? false);
+    setAdvancePaymentPercentage(trip.advancePaymentPercentage || 20);
+    setCustomAdvancePercentage(
+      !!trip.advancePaymentPercentage && 
+      ![20, 30, 50].includes(trip.advancePaymentPercentage)
+    );
 
     // Form reset with discount states
     reset({
@@ -307,6 +327,9 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       timeSpecificDiscountPercentage: trip.timeSpecificDiscountPercentage || 15,
       childDiscountEnabled: trip.childDiscountEnabled ?? false,
       childDiscountPercentage: trip.childDiscountPercentage || 25,
+      // Initialize advance payment fields
+      advancePaymentEnabled: trip.advancePaymentEnabled ?? false,
+      advancePaymentPercentage: trip.advancePaymentPercentage || 20,
       activities: trip.activities.map((activity) => ({
         activityName: activity.activityName,
         description: activity.description || undefined,
@@ -333,8 +356,8 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       setPriceAfterDiscount(trip.originalPrice);
     }
 
-    // Debug log to see what discount data is coming from the database
-    console.log("Trip discount data:", {
+    // Debug log to see what data is coming from the database
+    console.log("Trip data:", {
       groupDiscountEnabled: trip.groupDiscountEnabled,
       groupDiscountMinPeople: trip.groupDiscountMinPeople,
       groupDiscountPercentage: trip.groupDiscountPercentage,
@@ -342,6 +365,8 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
       timeSpecificDiscountDays: trip.timeSpecificDiscountDays,
       childDiscountEnabled: trip.childDiscountEnabled,
       childDiscountPercentage: trip.childDiscountPercentage,
+      advancePaymentEnabled: trip.advancePaymentEnabled,
+      advancePaymentPercentage: trip.advancePaymentPercentage,
     });
   }, [trip, hasExistingDiscount, reset, tripCurrency, originalPrice]);
 
@@ -439,6 +464,8 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         timeSpecificDiscountPercentage,
         childDiscountEnabled,
         childDiscountPercentage,
+        advancePaymentEnabled,
+        advancePaymentPercentage,
       });
 
       // Build final data for update
@@ -487,6 +514,12 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
         childDiscountEnabled: childDiscountEnabled,
         childDiscountPercentage: childDiscountEnabled
           ? childDiscountPercentage
+          : undefined,
+          
+        // Add advance payment options
+        advancePaymentEnabled: advancePaymentEnabled,
+        advancePaymentPercentage: advancePaymentEnabled
+          ? advancePaymentPercentage
           : undefined,
       };
 
@@ -1412,6 +1445,146 @@ export default function EditTripForm({ trip, locale }: EditTripFormProps) {
                 />
                 <Label htmlFor="isAvailable">Available for Booking</Label>
               </div>
+            </div>
+
+            {/* Add the advance payment section before the Trip Images section, after pricing */}
+            <div className="md:col-span-2">
+              <Card className="border-2 border-muted">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <DollarSign className="h-5 w-5 mr-1" />
+                    Payment Options
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="advancePaymentEnabled"
+                      checked={advancePaymentEnabled}
+                      onCheckedChange={(checked) => {
+                        setAdvancePaymentEnabled(!!checked);
+                        setValue("advancePaymentEnabled", !!checked);
+                        if (!checked) {
+                          setAdvancePaymentPercentage(20);
+                          setValue("advancePaymentPercentage", undefined);
+                          setCustomAdvancePercentage(false);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="advancePaymentEnabled" className="font-medium">
+                      Allow Partial Advance Payment
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Customers can pay a percentage in advance and the rest in cash at the agency</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+
+                  {advancePaymentEnabled && (
+                    <div className="space-y-4 pl-6 border-l-2 border-muted">
+                      <div className="space-y-3">
+                        <Label>Advance Payment Percentage</Label>
+                        <RadioGroup
+                          value={
+                            customAdvancePercentage
+                              ? "custom"
+                              : advancePaymentPercentage.toString()
+                          }
+                          onValueChange={(value) => {
+                            if (value === "custom") {
+                              setCustomAdvancePercentage(true);
+                              return;
+                            }
+
+                            setCustomAdvancePercentage(false);
+                            const percentage = Number.parseInt(value, 10);
+                            setAdvancePaymentPercentage(percentage);
+                            setValue("advancePaymentPercentage", percentage);
+                          }}
+                          className="flex flex-wrap gap-2"
+                        >
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="20" id="p20" />
+                            <Label htmlFor="p20">20%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="30" id="p30" />
+                            <Label htmlFor="p30">30%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="50" id="p50" />
+                            <Label htmlFor="p50">50%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="custom" id="pcustom" />
+                            <Label htmlFor="pcustom">Custom</Label>
+                          </div>
+                        </RadioGroup>
+
+                        {customAdvancePercentage && (
+                          <div className="flex items-center space-x-2 mt-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="99"
+                              value={advancePaymentPercentage || ""}
+                              onChange={(e) => {
+                                const value = Number.parseInt(
+                                  e.target.value,
+                                  10
+                                );
+                                if (
+                                  !isNaN(value) &&
+                                  value >= 1 &&
+                                  value <= 99
+                                ) {
+                                  setAdvancePaymentPercentage(value);
+                                  setValue("advancePaymentPercentage", value);
+                                }
+                              }}
+                              className="w-24"
+                            />
+                            <Percent className="h-4 w-4" />
+                          </div>
+                        )}
+
+                        <div className="bg-muted p-4 rounded-md space-y-2 mt-4">
+                          <div className="flex justify-between">
+                            <span>Original Price:</span>
+                            <span>
+                              {currentCurrencySymbol}
+                              {originalPrice.toFixed(2)} {selectedCurrency}
+                            </span>
+                          </div>
+                          
+                          {/* Show actual calculated amounts */}
+                          <div className="flex justify-between">
+                            <span>Advance Payment ({advancePaymentPercentage}%):</span>
+                            <span className="font-medium">
+                              {currentCurrencySymbol}
+                              {((hasDiscount && priceAfterDiscount ? priceAfterDiscount : originalPrice) * advancePaymentPercentage / 100).toFixed(2)} {selectedCurrency}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between">
+                            <span>Remaining Payment (Cash):</span>
+                            <span className="font-medium">
+                              {currentCurrencySymbol}
+                              {((hasDiscount && priceAfterDiscount ? priceAfterDiscount : originalPrice) * (100 - advancePaymentPercentage) / 100).toFixed(2)} {selectedCurrency}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Trip Images */}

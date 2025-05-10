@@ -125,6 +125,9 @@ export const trips = pgTable("trips", {
   // Child discount fields
   childDiscountEnabled: boolean("child_discount_enabled").default(false),
   childDiscountPercentage: integer("child_discount_percentage"),
+  // Advance payment fields
+  advancePaymentEnabled: boolean("advance_payment_enabled").default(false),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),

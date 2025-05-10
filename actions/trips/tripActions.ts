@@ -7,6 +7,7 @@ import {
   tripActivities,
   user,
   agencyEmployees,
+  agencies,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -69,6 +70,9 @@ const tripSchema = z.object({
       })
     )
     .optional(),
+  // Add advance payment fields
+  advancePaymentEnabled: z.boolean().optional().nullable(),
+  advancePaymentPercentage: z.coerce.number().min(0).max(100).optional().nullable(),
 });
 
 export type TripInput = z.infer<typeof tripSchema>;
@@ -99,101 +103,100 @@ async function getAgencyId(userId: string) {
   throw new Error("No agency found for this user - not an owner or employee");
 }
 
-export async function createTrip(data: TripInput) {
-  try {
-    const validatedData = tripSchema.parse(data);
+export async function createTrip(tripData: TripInput) {
+  const session = await auth()
 
-    // Get the current user's session
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
 
-    if (!session?.user) {
-      throw new Error("Unauthorized: You must be logged in to create a trip");
-    }
+  // Check if session user is an agency or has an agency association
+  const agency = await db.query.agencies.findFirst({
+    where: eq(agencies.userId, session.user.id),
+  })
 
-    // Get the agency ID - works for both owners and employees
-    const agencyId = await getAgencyId(session.user.id);
+  if (!agency) {
+    throw new Error("Only agencies can create trips")
+  }
 
-    console.log(`Creating trip with agency ID: ${agencyId}`);
-
-    // Ensure isAvailable is false if capacity is 0
-    const isAvailable =
-      validatedData.capacity === 0 ? false : validatedData.isAvailable;
-
-    // Create trip with proper agency ID and createdBy
-    const [trip] = await db
+  // Begin a transaction to ensure all operations complete successfully
+  // If one operation fails, all operations will be rolled back
+  return await db.transaction(async (tx) => {
+    // Insert trip data
+    const [createdTripRow] = await tx
       .insert(trips)
       .values({
-        name: validatedData.name,
-        description: validatedData.description,
-        destination: validatedData.destination,
-        startDate: validatedData.startDate.toISOString(),
-        endDate: validatedData.endDate.toISOString(),
-        originalPrice: validatedData.originalPrice.toString(),
-        discountPercentage: validatedData.discountPercentage || null,
-        priceAfterDiscount:
-          validatedData.priceAfterDiscount?.toString() || null,
-        capacity: validatedData.capacity,
-        isAvailable: isAvailable,
-        agencyId: agencyId, // Use the agencyId from our helper
-        createdBy: session.user.id, // Track who created it
-        currency: validatedData.currency || "USD",
-        // Group Discount
-        groupDiscountEnabled: validatedData.groupDiscountEnabled ?? false,
-        groupDiscountMinPeople: validatedData.groupDiscountMinPeople || null,
-        groupDiscountPercentage: validatedData.groupDiscountPercentage || null,
-        // Time-specific Discount
-        timeSpecificDiscountEnabled:
-          validatedData.timeSpecificDiscountEnabled ?? false,
+        name: tripData.name,
+        description: tripData.description || null,
+        destination: tripData.destination,
+        startDate: tripData.startDate,
+        endDate: tripData.endDate,
+        originalPrice: tripData.originalPrice.toString(),
+        discountPercentage: tripData.discountPercentage || null,
+        priceAfterDiscount: tripData.priceAfterDiscount
+          ? tripData.priceAfterDiscount.toString()
+          : null,
+        currency: tripData.currency,
+        capacity: tripData.capacity,
+        isAvailable: tripData.isAvailable,
+        // Use provided agency ID or fall back to current user's agency ID
+        agencyId: agency.userId,
+        createdBy: session.user.id,
+        // Add discount types
+        groupDiscountEnabled: tripData.groupDiscountEnabled || false,
+        groupDiscountMinPeople: tripData.groupDiscountMinPeople || null,
+        groupDiscountPercentage: tripData.groupDiscountPercentage || null,
+
+        timeSpecificDiscountEnabled: tripData.timeSpecificDiscountEnabled || false,
         timeSpecificDiscountStartTime:
-          validatedData.timeSpecificDiscountStartTime || null,
+          tripData.timeSpecificDiscountStartTime || null,
         timeSpecificDiscountEndTime:
-          validatedData.timeSpecificDiscountEndTime || null,
-        timeSpecificDiscountDays:
-          validatedData.timeSpecificDiscountDays || null,
+          tripData.timeSpecificDiscountEndTime || null,
+        timeSpecificDiscountDays: tripData.timeSpecificDiscountDays || null,
         timeSpecificDiscountPercentage:
-          validatedData.timeSpecificDiscountPercentage || null,
-        // Child Discount
-        childDiscountEnabled: validatedData.childDiscountEnabled ?? false,
-        childDiscountPercentage: validatedData.childDiscountPercentage || null,
+          tripData.timeSpecificDiscountPercentage || null,
+
+        childDiscountEnabled: tripData.childDiscountEnabled || false,
+        childDiscountPercentage: tripData.childDiscountPercentage || null,
+        
+        // Add advance payment fields
+        advancePaymentEnabled: tripData.advancePaymentEnabled || false,
+        advancePaymentPercentage: tripData.advancePaymentPercentage || null,
       })
-      .returning();
+      .returning({
+        id: trips.id,
+      })
 
-    // Add images
-    if (validatedData.images.length > 0) {
-      await db.insert(tripImages).values(
-        validatedData.images.map((url) => ({
-          tripId: trip.id,
-          imageUrl: url,
-        }))
-      );
+    const tripId = createdTripRow.id
+
+    // Insert images if provided
+    if (tripData.images && tripData.images.length > 0) {
+      await Promise.all(
+        tripData.images.map((imageUrl) =>
+          tx.insert(tripImages).values({
+            tripId: tripId,
+            imageUrl: imageUrl,
+          })
+        )
+      )
     }
 
-    // Add activities
-    if (validatedData.activities?.length) {
-      await db.insert(tripActivities).values(
-        validatedData.activities.map((activity) => ({
-          tripId: trip.id,
-          activityName: activity.activityName,
-          description: activity.description,
-          scheduledDate: activity.scheduledDate?.toISOString(),
-        }))
-      );
+    // Insert activities if provided
+    if (tripData.activities && tripData.activities.length > 0) {
+      await Promise.all(
+        tripData.activities.map((activity) =>
+          tx.insert(tripActivities).values({
+            tripId: tripId,
+            activityName: activity.activityName,
+            description: activity.description || null,
+            scheduledDate: activity.scheduledDate || null,
+          })
+        )
+      )
     }
 
-    // If the trip is being created as available and with pending status, notify admin
-    if (isAvailable && trip.status === "pending") {
-      await sendTripApprovalRequest(trip.id);
-    }
-
-    revalidatePath("/agency/dashboard/trips");
-    revalidatePath("/");
-    return trip;
-  } catch (error) {
-    console.error("Error creating trip:", error);
-    throw error;
-  }
+    return { id: tripId }
+  })
 }
 
 export async function getTrips() {
@@ -250,9 +253,9 @@ export async function getTripById(id: number) {
   }
 }
 
-export async function updateTrip(id: number, data: TripInput) {
+export async function updateTrip(tripId: number, tripData: TripInput) {
   try {
-    const validatedData = tripSchema.parse(data);
+    const validatedData = tripSchema.parse(tripData);
 
     // Ensure isAvailable is false if capacity is 0
     const isAvailable =
@@ -277,66 +280,76 @@ export async function updateTrip(id: number, data: TripInput) {
     );
 
     // Update trip with explicit null values for discount fields when they're undefined
-    const [trip] = await db
-      .update(trips)
-      .set({
-        name: validatedData.name,
-        description: validatedData.description,
-        destination: validatedData.destination,
-        startDate: validatedData.startDate.toISOString(),
-        endDate: validatedData.endDate.toISOString(),
-        originalPrice: validatedData.originalPrice.toString(),
-        discountPercentage: validatedData.discountPercentage ?? null,
-        priceAfterDiscount:
-          validatedData.priceAfterDiscount?.toString() ?? null,
-        capacity: validatedData.capacity,
-        isAvailable: isAvailable,
-        currency: validatedData.currency || "USD",
-        // Group Discount
-        groupDiscountEnabled: validatedData.groupDiscountEnabled ?? false,
-        groupDiscountMinPeople: validatedData.groupDiscountMinPeople ?? null,
-        groupDiscountPercentage: validatedData.groupDiscountPercentage ?? null,
-        // Time-specific Discount
-        timeSpecificDiscountEnabled:
-          validatedData.timeSpecificDiscountEnabled ?? false,
-        timeSpecificDiscountStartTime:
-          validatedData.timeSpecificDiscountStartTime ?? null,
-        timeSpecificDiscountEndTime:
-          validatedData.timeSpecificDiscountEndTime ?? null,
-        timeSpecificDiscountDays:
-          validatedData.timeSpecificDiscountDays ?? null,
-        timeSpecificDiscountPercentage:
-          validatedData.timeSpecificDiscountPercentage ?? null,
-        // Child Discount
-        childDiscountEnabled: validatedData.childDiscountEnabled ?? false,
-        childDiscountPercentage: validatedData.childDiscountPercentage ?? null,
-      })
-      .where(eq(trips.id, id))
-      .returning();
+    const [trip] = await db.transaction(async (tx) => {
+      // Update trip data
+      const [updatedTrip] = await tx
+        .update(trips)
+        .set({
+          name: validatedData.name,
+          description: validatedData.description || null,
+          destination: validatedData.destination,
+          startDate: validatedData.startDate,
+          endDate: validatedData.endDate,
+          originalPrice: validatedData.originalPrice.toString(),
+          discountPercentage: validatedData.discountPercentage ?? null,
+          priceAfterDiscount:
+            validatedData.priceAfterDiscount?.toString() ?? null,
+          currency: validatedData.currency,
+          capacity: validatedData.capacity,
+          isAvailable: isAvailable,
+          updatedAt: new Date(),
+          // Include discount fields
+          groupDiscountEnabled: validatedData.groupDiscountEnabled ?? false,
+          groupDiscountMinPeople: validatedData.groupDiscountMinPeople ?? null,
+          groupDiscountPercentage: validatedData.groupDiscountPercentage ?? null,
 
-    // Update images
-    await db.delete(tripImages).where(eq(tripImages.tripId, id));
-    if (validatedData.images.length > 0) {
-      await db.insert(tripImages).values(
-        validatedData.images.map((url) => ({
-          tripId: trip.id,
-          imageUrl: url,
-        }))
-      );
-    }
+          timeSpecificDiscountEnabled:
+            validatedData.timeSpecificDiscountEnabled ?? false,
+          timeSpecificDiscountStartTime:
+            validatedData.timeSpecificDiscountStartTime ?? null,
+          timeSpecificDiscountEndTime:
+            validatedData.timeSpecificDiscountEndTime ?? null,
+          timeSpecificDiscountDays:
+            validatedData.timeSpecificDiscountDays ?? null,
+          timeSpecificDiscountPercentage:
+            validatedData.timeSpecificDiscountPercentage ?? null,
 
-    // Update activities
-    await db.delete(tripActivities).where(eq(tripActivities.tripId, id));
-    if (validatedData.activities?.length) {
-      await db.insert(tripActivities).values(
-        validatedData.activities.map((activity) => ({
-          tripId: trip.id,
-          activityName: activity.activityName,
-          description: activity.description,
-          scheduledDate: activity.scheduledDate?.toISOString(),
-        }))
-      );
-    }
+          childDiscountEnabled: validatedData.childDiscountEnabled ?? false,
+          childDiscountPercentage: validatedData.childDiscountPercentage ?? null,
+          
+          // Include advance payment fields
+          advancePaymentEnabled: validatedData.advancePaymentEnabled ?? false,
+          advancePaymentPercentage: validatedData.advancePaymentPercentage ?? null,
+        })
+        .where(eq(trips.id, tripId))
+        .returning();
+
+      // Update images
+      await tx.delete(tripImages).where(eq(tripImages.tripId, tripId));
+      if (validatedData.images.length > 0) {
+        await tx.insert(tripImages).values(
+          validatedData.images.map((url) => ({
+            tripId: tripId,
+            imageUrl: url,
+          }))
+        );
+      }
+
+      // Update activities
+      await tx.delete(tripActivities).where(eq(tripActivities.tripId, tripId));
+      if (validatedData.activities?.length) {
+        await tx.insert(tripActivities).values(
+          validatedData.activities.map((activity) => ({
+            tripId: tripId,
+            activityName: activity.activityName,
+            description: activity.description,
+            scheduledDate: activity.scheduledDate?.toISOString(),
+          }))
+        );
+      }
+
+      return updatedTrip;
+    });
 
     revalidatePath("/agency/dashboard/trips");
     revalidatePath("/");
