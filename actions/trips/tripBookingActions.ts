@@ -71,7 +71,7 @@ export async function createBooking({
         userId: userId,
         seatsBooked: seatsBooked,
         totalPrice: sql`${totalPrice}::decimal`,
-        status: "confirmed", 
+        status: "confirmed",
         bookingDate: new Date(),
         paymentCurrency: paymentCurrency || trip.currency, // Store the payment currency
         originalCurrency: trip.currency, // Store the original currency for reference
@@ -189,7 +189,7 @@ export async function createBookingWithPayment({
           .update(tripBookings)
           .set({
             paymentId: session.id,
-            paymentStatus: "pending",
+            paymentStatus: "completed",
             paymentMethod: "STRIPE_USD",
           })
           .where(eq(tripBookings.id, booking.id))
@@ -261,7 +261,7 @@ export async function createBookingWithPayment({
         .update(tripBookings)
         .set({
           paymentId: paymentData.paymentId,
-          paymentStatus: "pending",
+          paymentStatus: "completed",
           paymentMethod: "FLOUCI_TND",
         })
         .where(eq(tripBookings.id, booking.id))

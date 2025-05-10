@@ -10,6 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Upload,
+  FileText,
+  ExternalLink,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -55,6 +58,7 @@ type WithdrawalRequest = {
     rejectionReason: string | null
     paymentMethod: string | null
     paymentDetails: string | null
+    receiptUrl: string | null
     createdAt: string
     updatedAt: string
   }
@@ -84,6 +88,8 @@ export function WithdrawalRequestsTable({
     limit: 10,
     offset: 0,
   })
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [uploadingReceipt, setUploadingReceipt] = useState(false)
 
   // Fetch withdrawal requests
   const fetchWithdrawals = async () => {
@@ -125,11 +131,51 @@ export function WithdrawalRequestsTable({
     fetchWithdrawals()
   }, [statusFilter, pagination.offset, pagination.limit])
 
+  // Handle receipt file upload
+  const uploadReceipt = async () => {
+    if (!receiptFile || !selectedRequest) return null
+    
+    try {
+      setUploadingReceipt(true)
+      const formData = new FormData()
+      formData.append("receipt", receiptFile)
+      formData.append("withdrawalId", selectedRequest.withdrawalRequest.id.toString())
+      
+      const response = await fetch(`/api/admin/withdrawals/upload-receipt`, {
+        method: "POST",
+        body: formData,
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to upload receipt")
+      }
+      
+      const data = await response.json()
+      return data.receiptUrl
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload receipt")
+      console.error("Error uploading receipt:", err)
+      return null
+    } finally {
+      setUploadingReceipt(false)
+    }
+  }
+
   // Handle approve withdrawal
   const handleApprove = async () => {
     if (!selectedRequest) return
-
+    
     try {
+      // First upload the receipt if provided
+      let receiptUrl = null
+      if (receiptFile) {
+        receiptUrl = await uploadReceipt()
+        if (!receiptUrl) {
+          return // Don't proceed if receipt upload failed
+        }
+      }
+
       const response = await fetch(
         `/api/admin/withdrawals/${selectedRequest.withdrawalRequest.id}`,
         {
@@ -139,6 +185,7 @@ export function WithdrawalRequestsTable({
           },
           body: JSON.stringify({
             status: "approved",
+            receiptUrl: receiptUrl,
           }),
         }
       )
@@ -151,6 +198,7 @@ export function WithdrawalRequestsTable({
       // Refresh data
       fetchWithdrawals()
       setIsApproveDialogOpen(false)
+      setReceiptFile(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred")
       console.error("Error approving withdrawal:", err)
@@ -254,6 +302,13 @@ export function WithdrawalRequestsTable({
       ...pagination,
       offset: (page - 1) * pagination.limit,
     })
+  }
+
+  // Handle file change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setReceiptFile(e.target.files[0])
+    }
   }
 
   return (
@@ -361,7 +416,7 @@ export function WithdrawalRequestsTable({
                                 setIsApproveDialogOpen(true)
                               }}
                             >
-                              <Check className="w-4 h-4 mr-1" /> Approve
+                              <Upload className="w-4 h-4 mr-1" /> Upload Receipt
                             </Button>
                             <Button
                               variant="outline"
@@ -444,12 +499,12 @@ export function WithdrawalRequestsTable({
             <DialogTitle>
               {selectedRequest?.withdrawalRequest.status === "approved"
                 ? "Withdrawal Request Details"
-                : "Approve Withdrawal Request"}
+                : "Upload Transaction Receipt"}
             </DialogTitle>
             <DialogDescription>
               {selectedRequest?.withdrawalRequest.status === "approved"
                 ? "This withdrawal request has been approved."
-                : "Are you sure you want to approve this withdrawal request?"}
+                : "Upload a receipt for the bank transaction to approve this withdrawal request."}
             </DialogDescription>
           </DialogHeader>
 
@@ -495,13 +550,51 @@ export function WithdrawalRequestsTable({
               </div>
 
               {selectedRequest.withdrawalRequest.status === "approved" && (
+                <>
+                  <div>
+                    <Label>Approved Date</Label>
+                    <p>
+                      {selectedRequest.withdrawalRequest.approvedAt
+                        ? formatDate(selectedRequest.withdrawalRequest.approvedAt)
+                        : "N/A"}
+                    </p>
+                  </div>
+                  
+                  {selectedRequest.withdrawalRequest.receiptUrl && (
+                    <div>
+                      <Label>Transaction Receipt</Label>
+                      <div className="mt-1 flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center"
+                          onClick={() => window.open(selectedRequest.withdrawalRequest.receiptUrl!, '_blank')}
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          View Receipt
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {selectedRequest.withdrawalRequest.status === "pending" && (
                 <div>
-                  <Label>Approved Date</Label>
-                  <p>
-                    {selectedRequest.withdrawalRequest.approvedAt
-                      ? formatDate(selectedRequest.withdrawalRequest.approvedAt)
-                      : "N/A"}
-                  </p>
+                  <Label htmlFor="receipt">Transaction Receipt</Label>
+                  <div className="mt-1">
+                    <Input
+                      id="receipt"
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleFileChange}
+                      className="mt-1"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Upload a receipt of the bank transaction. Accepted formats: images, PDF
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -510,7 +603,10 @@ export function WithdrawalRequestsTable({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsApproveDialogOpen(false)}
+              onClick={() => {
+                setIsApproveDialogOpen(false)
+                setReceiptFile(null)
+              }}
             >
               {selectedRequest?.withdrawalRequest.status === "approved"
                 ? "Close"
@@ -520,8 +616,15 @@ export function WithdrawalRequestsTable({
               <Button
                 onClick={handleApprove}
                 className="bg-emerald-600 hover:bg-emerald-700"
+                disabled={!receiptFile || uploadingReceipt}
               >
-                <Check className="w-4 h-4 mr-1" /> Approve Withdrawal
+                {uploadingReceipt ? (
+                  "Uploading..."
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-1" /> Approve with Receipt
+                  </>
+                )}
               </Button>
             )}
           </DialogFooter>

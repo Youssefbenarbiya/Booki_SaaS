@@ -718,6 +718,7 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   rejectionReason: text("rejection_reason"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDetails: text("payment_details"),
+  receiptUrl: text("receipt_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })

@@ -28,7 +28,7 @@ export async function PATCH(
     const userId = session.user.id
     const withdrawalId = Number.parseInt(params.id)
     const body = await request.json()
-    const { status, rejectionReason } = body
+    const { status, rejectionReason, receiptUrl } = body
 
     if (!status || !["approved", "rejected"].includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 })
@@ -65,6 +65,14 @@ export async function PATCH(
 
     // Process based on status
     if (status === "approved") {
+      // Ensure receipt URL is provided for approval
+      if (!receiptUrl) {
+        return NextResponse.json(
+          { error: "Receipt URL is required for approval" },
+          { status: 400 }
+        )
+      }
+      
       // Update wallet balance
       const newBalance =
         Number.parseFloat(userWallet.balance.toString()) -
@@ -104,6 +112,7 @@ export async function PATCH(
           status: "approved",
           approvedBy: userId,
           approvedAt: new Date(),
+          receiptUrl: receiptUrl,
           updatedAt: new Date(),
         })
         .where(eq(withdrawalRequests.id, withdrawalId))
