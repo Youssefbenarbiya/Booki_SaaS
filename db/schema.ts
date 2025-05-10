@@ -670,3 +670,90 @@ export const supportMessagesRelations = relations(support_messages, ({ one }) =>
     references: [support_tickets.id],
   }),
 }));
+
+// Wallet table to store balance information
+export const wallet = pgTable("wallet", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  currency: varchar("currency", { length: 10 }).default("TND").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Transaction types: deposit, withdrawal, payment, refund, etc.
+export const walletTransactions = pgTable("wallet_transactions", {
+  id: serial("id").primaryKey(),
+  walletId: serial("wallet_id")
+    .notNull()
+    .references(() => wallet.id, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // deposit, withdrawal, payment, refund
+  status: varchar("status", { length: 50 }).notNull().default("completed"),
+  description: text("description"),
+  reference: text("reference"), // Reference to external transaction (booking ID, etc.)
+  referenceType: varchar("reference_type", { length: 50 }), // trip_booking, room_booking, car_booking
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Withdrawal requests table
+export const withdrawalRequests = pgTable("withdrawal_requests", {
+  id: serial("id").primaryKey(),
+  walletId: serial("wallet_id")
+    .notNull()
+    .references(() => wallet.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, approved, rejected
+  approvedBy: text("approved_by").references(() => user.id),
+  approvedAt: timestamp("approved_at"),
+  rejectedBy: text("rejected_by").references(() => user.id),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  paymentMethod: varchar("payment_method", { length: 50 }),
+  paymentDetails: text("payment_details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Relations
+export const walletRelations = relations(wallet, ({ one, many }) => ({
+  user: one(user, {
+    fields: [wallet.userId],
+    references: [user.id],
+  }),
+  transactions: many(walletTransactions),
+  withdrawalRequests: many(withdrawalRequests),
+}))
+
+export const walletTransactionsRelations = relations(walletTransactions, ({ one }) => ({
+  wallet: one(wallet, {
+    fields: [walletTransactions.walletId],
+    references: [wallet.id],
+  }),
+}))
+
+export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one }) => ({
+  wallet: one(wallet, {
+    fields: [withdrawalRequests.walletId],
+    references: [wallet.id],
+  }),
+  user: one(user, {
+    fields: [withdrawalRequests.userId],
+    references: [user.id],
+  }),
+  approver: one(user, {
+    fields: [withdrawalRequests.approvedBy],
+    references: [user.id],
+  }),
+  rejecter: one(user, {
+    fields: [withdrawalRequests.rejectedBy],
+    references: [user.id],
+  }),
+}))
