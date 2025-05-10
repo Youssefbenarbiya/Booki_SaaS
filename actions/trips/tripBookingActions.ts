@@ -32,6 +32,7 @@ export async function createBooking({
   paymentMethod,
   convertedPricePerSeat,
   paymentCurrency,
+  pricePerSeat,
 }: CreateBookingParams & {
   pricePerSeat: number
   convertedPricePerSeat?: number
