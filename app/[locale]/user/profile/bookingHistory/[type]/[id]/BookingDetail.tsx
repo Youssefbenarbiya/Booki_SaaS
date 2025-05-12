@@ -2,14 +2,19 @@
 "use client"
 
 import Image from "next/image"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, AlertCircle, CheckCircle, Info } from "lucide-react"
 import Link from "next/link"
 import { BookingDetailType } from "@/actions/users/getBookingDetail"
+
+// Extend the BookingDetailType with additional properties we need
+interface ExtendedBookingDetailType extends BookingDetailType {
+  paymentMethod?: string;
+}
 
 export default function BookingDetailClient({
   booking,
 }: {
-  booking: BookingDetailType
+  booking: ExtendedBookingDetailType
 }) {
   // Format dates nicely
   const formatDate = (dateStr: string) => {
@@ -38,6 +43,8 @@ export default function BookingDetailClient({
       case "cancelled":
       case "refunded":
         return "bg-red-100 text-red-800"
+      case "partially_paid":
+        return "bg-blue-100 text-blue-800"
       default:
         return "bg-blue-100 text-blue-800"
     }
@@ -65,6 +72,29 @@ export default function BookingDetailClient({
     if (!data || !Array.isArray(data)) return "None"
     return data.join(", ")
   }
+  
+  // Check if this is a partial/advance payment
+  const isPartialPayment = 
+    booking.status?.toLowerCase() === "partially_paid" || 
+    (booking.paymentMethod && booking.paymentMethod.includes("ADVANCE")) ||
+    (booking.additionalInfo?.paymentMethod && booking.additionalInfo.paymentMethod.includes("ADVANCE"))
+  
+  // Calculate percentage for advance payment (default to 30% if not specified)
+  const advancePercentage = booking.additionalInfo?.advancePaymentPercentage || 30
+  const remainingPercentage = 100 - advancePercentage
+  
+  // Calculate advance payment amount
+  const totalAmount = parseFloat(booking.totalPrice.replace(/[^0-9.]/g, ""))
+  const advanceAmount = totalAmount * (advancePercentage / 100)
+  const remainingAmount = totalAmount * (remainingPercentage / 100)
+  
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return `$${amount.toFixed(2)}`
+  }
+  
+  // Get payment method from either direct property or additionalInfo
+  const paymentMethod = booking.paymentMethod || booking.additionalInfo?.paymentMethod || "Not specified"
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -97,7 +127,7 @@ export default function BookingDetailClient({
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${statusClass}`}
                 >
-                  {booking.status}
+                  {booking.status === "partially_paid" ? "Partially Paid" : booking.status}
                 </span>
               </div>
             </div>
@@ -109,6 +139,38 @@ export default function BookingDetailClient({
           <h2 className="text-2xl font-semibold mb-4">
             {typeDetails.title} Details
           </h2>
+          
+          {/* Show advance payment notice if applicable */}
+          {isPartialPayment && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <Info className="w-5 h-5 text-blue-500 mr-3 mt-0.5" />
+                <div>
+                  <h3 className="font-medium text-blue-800">Advance Payment Made</h3>
+                  <p className="text-sm text-blue-700 mt-1">
+                    You've made an advance payment of {advancePercentage}% ({formatCurrency(advanceAmount)}). 
+                    The remaining {remainingPercentage}% ({formatCurrency(remainingAmount)}) 
+                    will need to be paid in cash upon arrival.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Payment completed notice */}
+          {booking.status === "completed" && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <CheckCircle className="w-5 h-5 text-green-500 mr-3 mt-0.5" />
+                <div>
+                  <h3 className="font-medium text-green-800">Payment Completed</h3>
+                  <p className="text-sm text-green-700 mt-1">
+                    Your payment has been fully completed and confirmed. Thank you for your business!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -152,13 +214,40 @@ export default function BookingDetailClient({
                 </div>
               )}
 
+              {/* Payment details */}
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-1">Payment Information</p>
+                <div className="space-y-1">
+                  <p><span className="font-medium">Method:</span> {paymentMethod}</p>
+                  <p><span className="font-medium">Status:</span> {booking.status}</p>
+                  {isPartialPayment && (
+                    <div className="mt-2 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Paid online:</span>
+                        <span className="font-medium">
+                          {formatCurrency(advanceAmount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-blue-800">
+                        <span>Remaining to pay in cash:</span>
+                        <span className="font-medium">
+                          {formatCurrency(remainingAmount)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {booking.additionalInfo &&
                 Object.entries(booking.additionalInfo)
-                  .filter(([value]) => value !== undefined && value !== null)
+                  .filter(([key, value]) => 
+                    value !== undefined && 
+                    value !== null && 
+                    key !== 'advancePaymentPercentage' && 
+                    key !== 'specialRequests' && 
+                    !key.includes('payment'))
                   .map(([key, value]) => {
-                    // Skip certain technical fields or empty values
-                    if (key === "specialRequests" && !value) return null
-
                     return (
                       <div key={key} className="mb-2">
                         <p className="text-sm text-gray-500 capitalize">

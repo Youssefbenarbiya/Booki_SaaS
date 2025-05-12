@@ -5,6 +5,15 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import {
   Card,
   CardContent,
   CardDescription,
@@ -26,12 +35,13 @@ import {
   AlertCircle,
   MapPin,
   Info,
+  CheckCircle,
 } from "lucide-react"
 import { format } from "date-fns"
 import Image from "next/image"
 import Link from "next/link"
 import { Separator } from "@/components/ui/separator"
-import { cancelBooking, BookingType } from "@/actions/bookings"
+import { cancelBooking, completePayment, BookingType } from "@/actions/bookings"
 
 // Update type definitions for different booking types
 type CarBooking = {
@@ -198,6 +208,13 @@ export default async function BookingDetailsPage({
       await cancelBooking(normalizedType, id)
       redirect(`/${locale}/agency/dashboard/bookings`)
     }
+    
+    const handleCompletePayment = async () => {
+      "use server"
+      
+      await completePayment(normalizedType, id)
+      redirect(`/${locale}/agency/dashboard/bookings/${urlType}/${urlId}`)
+    }
 
     // Extract user info from the booking
     const user = booking.user
@@ -210,6 +227,11 @@ export default async function BookingDetailsPage({
     const userPhone = isCarBooking(booking)
       ? booking.phone || user?.phoneNumber
       : user?.phoneNumber
+      
+    // Check if this is a partial payment (advance payment)
+    const isPartialPayment = booking.status === "partially_paid" || 
+      (isCarBooking(booking) && booking.paymentMethod?.includes("ADVANCE")) ||
+      (isTripBooking(booking) && booking.paymentMethod?.includes("ADVANCE"))
 
     return (
       <div className="container py-10">
@@ -586,10 +608,57 @@ export default async function BookingDetailsPage({
                         : Number(booking.totalPrice).toFixed(2)}
                     </span>
                   </div>
+                  
+                  {/* Display advance payment information */}
+                  {isPartialPayment && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                      <h4 className="font-medium text-amber-800 flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Advance Payment Only
+                      </h4>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Customer has made an advance payment. The remaining balance 
+                        needs to be collected in cash upon arrival.
+                      </p>
+                      
+                      {/* Calculate remaining amount based on payment method info */}
+                      {booking.paymentMethod && (
+                        <div className="mt-3 space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span>Paid online:</span>
+                            <span className="font-medium">
+                              ${isCarBooking(booking) 
+                                ? (Number(booking.total_price) * 0.3).toFixed(2) 
+                                : (Number(booking.totalPrice) * 0.3).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-amber-800">
+                            <span>Remaining to collect:</span>
+                            <span className="font-medium">
+                              ${isCarBooking(booking) 
+                                ? (Number(booking.total_price) * 0.7).toFixed(2) 
+                                : (Number(booking.totalPrice) * 0.7).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Button to mark payment as complete */}
+                      <form action={handleCompletePayment} className="mt-3">
+                        <Button 
+                          type="submit" 
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Mark Payment Complete
+                        </Button>
+                      </form>
+                    </div>
+                  )}
                 </div>
               </CardContent>
-              <CardFooter>
-                <div className="text-sm text-muted-foreground">
+              <CardFooter className="flex flex-col items-start">
+                <div className="text-sm text-muted-foreground w-full">
                   <p>
                     Payment Method: {booking.paymentMethod || "Not specified"}
                   </p>
@@ -600,11 +669,6 @@ export default async function BookingDetailsPage({
                       : "Not paid yet"}
                   </p>
                 </div>
-                {booking.status !== "cancelled" &&
-                  booking.status !== "completed" &&
-                  booking.paymentStatus !== "completed" && (
-                    <Button className="w-full">Make Payment</Button>
-                  )}
               </CardFooter>
             </Card>
           </div>
@@ -643,6 +707,10 @@ function StatusBadge({ status }: { status: string }) {
       variant: "destructive",
       icon: <AlertCircle className="h-3 w-3 mr-1" />,
     },
+    partially_paid: {
+      variant: "secondary",
+      icon: <AlertCircle className="h-3 w-3 mr-1" />,
+    },
   }
 
   const { variant, icon } = statusMap[status.toLowerCase()] || {
@@ -653,7 +721,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <Badge variant={variant as any} className="flex items-center">
       {icon}
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {status === "partially_paid" ? "Partially Paid" : status.charAt(0).toUpperCase() + status.slice(1)}
     </Badge>
   )
 }

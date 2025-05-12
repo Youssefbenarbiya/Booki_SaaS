@@ -431,3 +431,58 @@ export async function updateBookingStatus(
     throw new Error(`Failed to update ${type} booking status`);
   }
 }
+
+// Mark a booking payment as complete (for advance payments)
+export async function completePayment(type: BookingType, bookingId: number) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated");
+  }
+
+  try {
+    switch (type) {
+      case "car":
+        await db
+          .update(carBookings)
+          .set({ 
+            status: "completed", 
+            paymentStatus: "completed" 
+          })
+          .where(eq(carBookings.id, bookingId));
+        break;
+
+      case "trip":
+        await db
+          .update(tripBookings)
+          .set({ 
+            status: "completed",
+            paymentStatus: "completed" 
+          })
+          .where(eq(tripBookings.id, bookingId));
+        break;
+
+      case "hotel":
+        await db
+          .update(roomBookings)
+          .set({ 
+            status: "completed",
+            paymentStatus: "completed" 
+          })
+          .where(eq(roomBookings.id, bookingId));
+        break;
+
+      default:
+        throw new Error("Invalid booking type");
+    }
+
+    revalidatePath("/[locale]/user/profile/bookingHistory");
+    revalidatePath("/[locale]/agency/dashboard/bookings");
+    return { success: true, message: "Payment marked as completed successfully" };
+  } catch (error) {
+    console.error(`Error completing payment for ${type} booking:`, error);
+    throw new Error(`Failed to complete payment for ${type} booking`);
+  }
+}

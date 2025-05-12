@@ -14,6 +14,7 @@ type BookingDisplay = {
   endDate: string
   status: string
   totalPrice: string
+  paymentMethod?: string
 }
 
 export async function getBookingHistory(
@@ -88,6 +89,7 @@ export async function getBookingHistory(
     endDate: booking.trip?.endDate || new Date().toISOString(),
     status: booking.status,
     totalPrice: booking.totalPrice,
+    paymentMethod: booking.paymentMethod || undefined,
   }))
 
   // Transform room bookings
@@ -100,6 +102,7 @@ export async function getBookingHistory(
     endDate: booking.checkOut,
     status: booking.status,
     totalPrice: booking.totalPrice,
+    paymentMethod: booking.paymentMethod || undefined,
   }))
 
   // Transform car bookings
@@ -112,6 +115,7 @@ export async function getBookingHistory(
     endDate: booking.end_date?.toISOString() || new Date().toISOString(),
     status: booking.status,
     totalPrice: booking.total_price,
+    paymentMethod: booking.paymentMethod || undefined,
   }))
 
   // Combine and sort all bookings by start date (most recent first)
