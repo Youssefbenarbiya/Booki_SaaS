@@ -104,7 +104,10 @@ async function getAgencyId(userId: string) {
 }
 
 export async function createTrip(tripData: TripInput) {
-  const session = await auth()
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
 
   if (!session?.user?.id) {
     throw new Error("Unauthorized")
@@ -128,8 +131,8 @@ export async function createTrip(tripData: TripInput) {
         name: tripData.name,
         description: tripData.description || null,
         destination: tripData.destination,
-        startDate: tripData.startDate,
-        endDate: tripData.endDate,
+        startDate: tripData.startDate.toISOString(),
+        endDate: tripData.endDate.toISOString(),
         originalPrice: tripData.originalPrice.toString(),
         discountPercentage: tripData.discountPercentage || null,
         priceAfterDiscount: tripData.priceAfterDiscount
@@ -161,7 +164,7 @@ export async function createTrip(tripData: TripInput) {
         // Add advance payment fields
         advancePaymentEnabled: tripData.advancePaymentEnabled || false,
         advancePaymentPercentage: tripData.advancePaymentPercentage || null,
-      })
+      } as any)
       .returning({
         id: trips.id,
       })
@@ -188,8 +191,8 @@ export async function createTrip(tripData: TripInput) {
             tripId: tripId,
             activityName: activity.activityName,
             description: activity.description || null,
-            scheduledDate: activity.scheduledDate || null,
-          })
+            scheduledDate: activity.scheduledDate ? activity.scheduledDate.toISOString() : null,
+          } as any)
         )
       )
     }
@@ -291,8 +294,8 @@ export async function updateTrip(tripId: number, tripData: TripInput) {
         name: validatedData.name,
         description: validatedData.description || null,
         destination: validatedData.destination,
-        startDate: validatedData.startDate,
-        endDate: validatedData.endDate,
+        startDate: validatedData.startDate.toISOString(),
+        endDate: validatedData.endDate.toISOString(),
         originalPrice: validatedData.originalPrice.toString(),
         discountPercentage: validatedData.discountPercentage ?? null,
         priceAfterDiscount:
@@ -350,8 +353,8 @@ export async function updateTrip(tripId: number, tripData: TripInput) {
           tripId: tripId,
           activityName: activity.activityName,
           description: activity.description,
-          scheduledDate: activity.scheduledDate?.toISOString(),
-        }))
+          scheduledDate: activity.scheduledDate ? activity.scheduledDate.toISOString() : null,
+        } as any))
       );
     }
 
