@@ -25,6 +25,8 @@ export type BookingDetailType = {
   description?: string
   location?: string
   additionalInfo?: Record<string, any>
+  advancePaymentPercentage?: number
+  discountPercentage?: number
 }
 
 export async function getBookingDetail(
@@ -45,10 +47,13 @@ export async function getBookingDetail(
                 destination: true,
                 startDate: true,
                 endDate: true,
-                originalPrice: true, // Changed from price to originalPrice
-                priceAfterDiscount: true, // Added priceAfterDiscount
+                originalPrice: true,
+                priceAfterDiscount: true,
                 capacity: true,
                 isAvailable: true,
+                discountPercentage: true,
+                advancePaymentEnabled: true,
+                advancePaymentPercentage: true,
               },
               with: {
                 images: true,
@@ -92,7 +97,11 @@ export async function getBookingDetail(
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
             activities: activities.length > 0 ? activities : undefined,
+            advancePaymentPercentage: booking.trip.advancePaymentPercentage,
+            discountPercentage: booking.trip.discountPercentage,
           },
+          advancePaymentPercentage: booking.trip.advancePaymentPercentage,
+          discountPercentage: booking.trip.discountPercentage,
         }
       }
 
@@ -158,6 +167,8 @@ export async function getBookingDetail(
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
           },
+          advancePaymentPercentage: undefined,
+          discountPercentage: undefined,
         }
       }
 
@@ -165,7 +176,20 @@ export async function getBookingDetail(
         const booking = await db.query.carBookings.findFirst({
           where: eq(carBookings.id, bookingId),
           with: {
-            car: true,
+            car: {
+              columns: {
+                brand: true,
+                model: true,
+                year: true,
+                color: true,
+                plateNumber: true,
+                originalPrice: true,
+                discountPercentage: true,
+                images: true,
+                advancePaymentEnabled: true,
+                advancePaymentPercentage: true,
+              },
+            },
           },
         })
 
@@ -197,7 +221,11 @@ export async function getBookingDetail(
             dailyRate: booking.car.originalPrice,
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
+            discountPercentage: booking.car.discountPercentage,
+            advancePaymentPercentage: booking.car.advancePaymentPercentage,
           },
+          advancePaymentPercentage: booking.car.advancePaymentPercentage,
+          discountPercentage: booking.car.discountPercentage,
         }
       }
 

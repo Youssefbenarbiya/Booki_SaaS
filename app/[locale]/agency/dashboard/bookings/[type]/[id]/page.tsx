@@ -104,6 +104,7 @@ type TripBooking = {
     }[]
     originalPrice: string
     discountPercentage: number
+    advancePaymentPercentage?: number
   }
   user?: {
     id: string
@@ -233,6 +234,68 @@ export default async function BookingDetailsPage({
       (isCarBooking(booking) && booking.paymentMethod?.includes("ADVANCE")) ||
       (isTripBooking(booking) && booking.paymentMethod?.includes("ADVANCE"))
 
+    // Calculate the advance percentage (default to 30% if not specified)
+    const advancePercentage = 
+      (isTripBooking(booking) && booking.trip.advancePaymentPercentage) 
+        ? booking.trip.advancePaymentPercentage 
+        : 30
+
+    // Calculate the total amount and advance amounts 
+    const getTotalAndAdvanceAmount = () => {
+      try {
+        if (isCarBooking(booking)) {
+          const total = parseFloat(booking.total_price)
+          return {
+            total,
+            advanceAmount: total * (advancePercentage / 100),
+            remainingAmount: total * (1 - advancePercentage / 100)
+          }
+        } else if (isTripBooking(booking)) {
+          // For trips, we need to calculate based on seats and original price
+          const originalPrice = parseFloat(booking.trip.originalPrice)
+          const seats = booking.seatsBooked
+          
+          // Calculate discount if applicable
+          let discountAmount = 0
+          if (booking.trip.discountPercentage) {
+            discountAmount = originalPrice * seats * (booking.trip.discountPercentage / 100)
+          }
+          
+          const totalAfterDiscount = originalPrice * seats - discountAmount
+          return {
+            total: totalAfterDiscount,
+            advanceAmount: totalAfterDiscount * (advancePercentage / 100),
+            remainingAmount: totalAfterDiscount * (1 - advancePercentage / 100)
+          }
+        } else if (isHotelBooking(booking)) {
+          const total = parseFloat(booking.totalPrice)
+          return {
+            total,
+            advanceAmount: total * (advancePercentage / 100),
+            remainingAmount: total * (1 - advancePercentage / 100)
+          }
+        }
+        
+        // Default fallback
+        const total = parseFloat(booking.totalPrice || booking.total_price)
+        return {
+          total,
+          advanceAmount: total * (advancePercentage / 100),
+          remainingAmount: total * (1 - advancePercentage / 100)
+        }
+      } catch (error) {
+        console.error("Error calculating amounts:", error)
+        return { total: 0, advanceAmount: 0, remainingAmount: 0 }
+      }
+    }
+    
+    const amounts = getTotalAndAdvanceAmount()
+    
+    // Format currency
+    const formatCurrency = (amount: number) => {
+      return `$${amount.toFixed(2)}`
+    }
+
     return (
       <div className="container py-10">
         <div className="mb-8">
@@ -264,6 +327,37 @@ export default async function BookingDetailsPage({
             </div>
           </div>
         </div>
+
+        {/* Show prominent alert for advance payment */}
+        {isPartialPayment && (
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-medium text-amber-800">
+                  Advance Payment Only
+                </h3>
+                <div className="mt-2 text-amber-700">
+                  <p>
+                    Customer has only paid {advancePercentage}% of the total amount. 
+                    Remaining amount of {formatCurrency(amounts.remainingAmount)} needs to be collected in cash.
+                  </p>
+                  <form action={handleCompletePayment} className="mt-4">
+                    <Button 
+                      type="submit" 
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Mark Payment Complete
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
@@ -614,45 +708,29 @@ export default async function BookingDetailsPage({
                     <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
                       <h4 className="font-medium text-amber-800 flex items-center">
                         <AlertCircle className="h-4 w-4 mr-1" />
-                        Advance Payment Only
+                        Advance Payment Details
                       </h4>
-                      <p className="text-sm text-amber-700 mt-1">
-                        Customer has made an advance payment. The remaining balance 
-                        needs to be collected in cash upon arrival.
-                      </p>
                       
-                      {/* Calculate remaining amount based on payment method info */}
-                      {booking.paymentMethod && (
-                        <div className="mt-3 space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span>Paid online:</span>
-                            <span className="font-medium">
-                              ${isCarBooking(booking) 
-                                ? (Number(booking.total_price) * 0.3).toFixed(2) 
-                                : (Number(booking.totalPrice) * 0.3).toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-amber-800">
-                            <span>Remaining to collect:</span>
-                            <span className="font-medium">
-                              ${isCarBooking(booking) 
-                                ? (Number(booking.total_price) * 0.7).toFixed(2) 
-                                : (Number(booking.totalPrice) * 0.7).toFixed(2)}
-                            </span>
-                          </div>
+                      <div className="mt-3 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span>Total amount:</span>
+                          <span className="font-medium">
+                            {formatCurrency(amounts.total)}
+                          </span>
                         </div>
-                      )}
-                      
-                      {/* Button to mark payment as complete */}
-                      <form action={handleCompletePayment} className="mt-3">
-                        <Button 
-                          type="submit" 
-                          className="w-full bg-green-600 hover:bg-green-700"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Mark Payment Complete
-                        </Button>
-                      </form>
+                        <div className="flex justify-between">
+                          <span>Paid online ({advancePercentage}%):</span>
+                          <span className="font-medium">
+                            {formatCurrency(amounts.advanceAmount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-amber-800 font-semibold">
+                          <span>Remaining to collect:</span>
+                          <span>
+                            {formatCurrency(amounts.remainingAmount)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

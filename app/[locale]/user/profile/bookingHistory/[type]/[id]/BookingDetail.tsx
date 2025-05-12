@@ -2,7 +2,7 @@
 "use client"
 
 import Image from "next/image"
-import { ChevronLeft, AlertCircle, CheckCircle, Info } from "lucide-react"
+import { ChevronLeft, AlertCircle, CheckCircle, Info, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { BookingDetailType } from "@/actions/users/getBookingDetail"
 
@@ -79,14 +79,85 @@ export default function BookingDetailClient({
     (booking.paymentMethod && booking.paymentMethod.includes("ADVANCE")) ||
     (booking.additionalInfo?.paymentMethod && booking.additionalInfo.paymentMethod.includes("ADVANCE"))
   
-  // Calculate percentage for advance payment (default to 30% if not specified)
-  const advancePercentage = booking.additionalInfo?.advancePaymentPercentage || 30
-  const remainingPercentage = 100 - advancePercentage
+  // Get payment information from the booking
+  const getPaymentDetails = () => {
+    try {
+      // Parse the total price string to number
+      const displayedTotal = parseFloat(booking.totalPrice.replace(/[^0-9.]/g, ""))
+      
+      // Get information about original price and discount
+      let originalPrice = displayedTotal
+      let seats = 1
+      let discountAmount = 0
+      let discountPercentage = 0
+      
+      // If we have additionalInfo with more details, use them
+      if (booking.additionalInfo) {
+        // For trips, we may have more detailed pricing info
+        if (booking.type === "trip") {
+          // Get original price per seat if available
+          if (booking.additionalInfo.price) {
+            originalPrice = parseFloat(String(booking.additionalInfo.price).replace(/[^0-9.]/g, ""))
+          }
+          
+          // Get number of seats
+          seats = booking.additionalInfo.participants || 1
+          
+          // Get discount percentage
+          if (booking.additionalInfo.discountPercentage) {
+            discountPercentage = parseFloat(String(booking.additionalInfo.discountPercentage))
+            discountAmount = originalPrice * seats * (discountPercentage / 100)
+          }
+        }
+      }
+      
+      // Calculate subtotal (price × quantity) before discount
+      const subtotal = originalPrice * seats
+      
+      // Calculate total after discount
+      const totalAfterDiscount = subtotal - discountAmount
+      
+      // Default advance payment percentage is 30% if not specified
+      const advancePercentage = booking.additionalInfo?.advancePaymentPercentage || 30
+      const remainingPercentage = 100 - advancePercentage
+      
+      // Calculate advance and remaining amounts
+      const advanceAmount = totalAfterDiscount * (advancePercentage / 100)
+      const remainingAmount = totalAfterDiscount * (remainingPercentage / 100)
+      
+      return {
+        originalPrice,
+        subtotal,
+        seats,
+        discountPercentage,
+        discountAmount,
+        totalAfterDiscount,
+        advancePercentage,
+        advanceAmount,
+        remainingPercentage,
+        remainingAmount
+      }
+    } catch (error) {
+      console.error("Error calculating payment details:", error)
+      const totalPrice = parseFloat(booking.totalPrice.replace(/[^0-9.]/g, "")) || 0
+      
+      // Default values
+      return {
+        originalPrice: totalPrice,
+        subtotal: totalPrice,
+        seats: 1,
+        discountPercentage: 0,
+        discountAmount: 0,
+        totalAfterDiscount: totalPrice,
+        advancePercentage: 30,
+        advanceAmount: totalPrice * 0.3,
+        remainingPercentage: 70,
+        remainingAmount: totalPrice * 0.7
+      }
+    }
+  }
   
-  // Calculate advance payment amount
-  const totalAmount = parseFloat(booking.totalPrice.replace(/[^0-9.]/g, ""))
-  const advanceAmount = totalAmount * (advancePercentage / 100)
-  const remainingAmount = totalAmount * (remainingPercentage / 100)
+  const paymentDetails = getPaymentDetails()
   
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -140,16 +211,66 @@ export default function BookingDetailClient({
             {typeDetails.title} Details
           </h2>
           
+          {/* Payment Summary Card */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-6 border">
+            <h3 className="font-medium text-lg mb-3">Payment Summary</h3>
+            <div className="space-y-2 text-sm">
+              {booking.type === "trip" && (
+                <>
+                  <div className="flex justify-between">
+                    <span>Trip Cost (per seat)</span>
+                    <span>{formatCurrency(paymentDetails.originalPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Seats</span>
+                    <span>x {paymentDetails.seats}</span>
+                  </div>
+                  {paymentDetails.discountAmount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount ({paymentDetails.discountPercentage}%)</span>
+                      <span>-{formatCurrency(paymentDetails.discountAmount)}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              <div className="border-t pt-2 mt-2">
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>{formatCurrency(paymentDetails.totalAfterDiscount)}</span>
+                </div>
+              </div>
+              
+              {isPartialPayment && (
+                <div className="border-t pt-2 mt-2 space-y-1">
+                  <div className="flex justify-between text-blue-600">
+                    <span>Advance Payment ({paymentDetails.advancePercentage}%)</span>
+                    <span>{formatCurrency(paymentDetails.advanceAmount)}</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span>Remaining (to pay in cash)</span>
+                    <span>{formatCurrency(paymentDetails.remainingAmount)}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-xs text-gray-500 mt-3 space-y-1">
+                <p>Payment Method: {paymentMethod}</p>
+                <p>Payment Status: {booking.status}</p>
+              </div>
+            </div>
+          </div>
+
           {/* Show advance payment notice if applicable */}
           {isPartialPayment && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <div className="flex items-start">
-                <Info className="w-5 h-5 text-blue-500 mr-3 mt-0.5" />
+                <DollarSign className="w-5 h-5 text-blue-500 mr-3 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-blue-800">Advance Payment Made</h3>
                   <p className="text-sm text-blue-700 mt-1">
-                    You've made an advance payment of {advancePercentage}% ({formatCurrency(advanceAmount)}). 
-                    The remaining {remainingPercentage}% ({formatCurrency(remainingAmount)}) 
+                    You've made an advance payment of {paymentDetails.advancePercentage}% ({formatCurrency(paymentDetails.advanceAmount)}). 
+                    The remaining {paymentDetails.remainingPercentage}% ({formatCurrency(paymentDetails.remainingAmount)}) 
                     will need to be paid in cash upon arrival.
                   </p>
                 </div>
@@ -190,10 +311,6 @@ export default function BookingDetailClient({
                   <p className="text-sm text-gray-500">End Date</p>
                   <p className="font-medium">{formatDate(booking.endDate)}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Total Price</p>
-                  <p className="font-medium text-lg">{booking.totalPrice}</p>
-                </div>
                 {booking.location && (
                   <div>
                     <p className="text-sm text-gray-500">Location</p>
@@ -214,31 +331,6 @@ export default function BookingDetailClient({
                 </div>
               )}
 
-              {/* Payment details */}
-              <div className="mb-4">
-                <p className="text-sm text-gray-500 mb-1">Payment Information</p>
-                <div className="space-y-1">
-                  <p><span className="font-medium">Method:</span> {paymentMethod}</p>
-                  <p><span className="font-medium">Status:</span> {booking.status}</p>
-                  {isPartialPayment && (
-                    <div className="mt-2 space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span>Paid online:</span>
-                        <span className="font-medium">
-                          {formatCurrency(advanceAmount)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-blue-800">
-                        <span>Remaining to pay in cash:</span>
-                        <span className="font-medium">
-                          {formatCurrency(remainingAmount)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {booking.additionalInfo &&
                 Object.entries(booking.additionalInfo)
                   .filter(([key, value]) => 
@@ -246,7 +338,10 @@ export default function BookingDetailClient({
                     value !== null && 
                     key !== 'advancePaymentPercentage' && 
                     key !== 'specialRequests' && 
-                    !key.includes('payment'))
+                    !key.includes('payment') &&
+                    key !== 'price' &&
+                    key !== 'discountPercentage'
+                  )
                   .map(([key, value]) => {
                     return (
                       <div key={key} className="mb-2">
