@@ -265,13 +265,15 @@ export default function BookingDetailClient({
           {isPartialPayment && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <div className="flex items-start">
-                <DollarSign className="w-5 h-5 text-blue-500 mr-3 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-blue-500 mr-3 mt-0.5" />
                 <div>
-                  <h3 className="font-medium text-blue-800">Advance Payment Made</h3>
+                  <h3 className="font-medium text-blue-800 text-lg">Important: Visit Agency To Complete Payment</h3>
                   <p className="text-sm text-blue-700 mt-1">
                     You've made an advance payment of {paymentDetails.advancePercentage}% ({formatCurrency(paymentDetails.advanceAmount)}). 
-                    The remaining {paymentDetails.remainingPercentage}% ({formatCurrency(paymentDetails.remainingAmount)}) 
-                    will need to be paid in cash upon arrival.
+                    <strong className="block mt-2">Please visit the agency as soon as possible to pay the remaining {formatCurrency(paymentDetails.remainingAmount)} in cash to complete your booking.</strong>
+                  </p>
+                  <p className="text-xs text-blue-600 mt-3 italic">
+                    Your booking is confirmed, but final documentation and services may require complete payment.
                   </p>
                 </div>
               </div>

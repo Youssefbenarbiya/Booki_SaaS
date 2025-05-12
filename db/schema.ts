@@ -382,6 +382,9 @@ export const cars = pgTable("cars", {
   seats: integer("seats").notNull().default(4),
   category: text("category").notNull(),
   location: text("location").notNull(),
+  // Add advance payment fields
+  advancePaymentEnabled: boolean("advance_payment_enabled").default(false),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
 });
 
 // Car Bookings table
@@ -404,6 +407,7 @@ export const carBookings = pgTable("car_bookings", {
   paymentCurrency: varchar("payment_currency", { length: 10 }),
   originalCurrency: varchar("original_currency", { length: 10 }),
   originalPrice: numeric("original_price"),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
   fullName: text("full_name"),
   email: text("email"),
   phone: text("phone"),

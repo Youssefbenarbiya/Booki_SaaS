@@ -277,7 +277,9 @@ export default async function BookingDetailsPage({
         }
         
         // Default fallback
-        const total = parseFloat(booking.totalPrice || booking.total_price)
+        const total = parseFloat(
+          (booking as any).totalPrice || (booking as any).total_price || '0'
+        )
         return {
           total,
           advanceAmount: total * (advancePercentage / 100),
@@ -330,28 +332,32 @@ export default async function BookingDetailsPage({
 
         {/* Show prominent alert for advance payment */}
         {isPartialPayment && (
-          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded mb-6">
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-lg mb-8 shadow-md">
             <div className="flex">
               <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <AlertCircle className="h-6 w-6 text-amber-500" />
               </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-medium text-amber-800">
-                  Advance Payment Only
+              <div className="ml-4">
+                <h3 className="text-xl font-bold text-amber-800">
+                  Cash Payment Required
                 </h3>
                 <div className="mt-2 text-amber-700">
-                  <p>
-                    Customer has only paid {advancePercentage}% of the total amount. 
-                    Remaining amount of {formatCurrency(amounts.remainingAmount)} needs to be collected in cash.
+                  <p className="text-lg">
+                    Customer has only paid {advancePercentage}% advance payment ({formatCurrency(amounts.advanceAmount)}).
                   </p>
-                  <form action={handleCompletePayment} className="mt-4">
+                  <p className="mt-2 font-medium">
+                    Remaining amount to collect: <span className="text-lg font-bold">{formatCurrency(amounts.remainingAmount)}</span>
+                  </p>
+                  <form action={handleCompletePayment} className="mt-6">
                     <Button 
                       type="submit" 
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 hover:bg-green-700 text-white py-6 px-8 text-lg font-semibold"
+                      size="lg"
                     >
-                      <CheckCircle className="mr-2 h-4 w-4" />
+                      <CheckCircle className="mr-2 h-5 w-5" />
                       Mark Payment Complete
                     </Button>
+                    <p className="text-sm text-amber-600 mt-2">Click this button after collecting the remaining payment in cash</p>
                   </form>
                 </div>
               </div>
