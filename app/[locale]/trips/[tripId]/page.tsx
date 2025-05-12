@@ -410,62 +410,7 @@ export default function TripDetailsPage({ params }: TripPageProps) {
           </CardContent>
         </Card>
 
-        {/* Itinerary Section */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-2xl font-semibold mb-6" id="itinerary">
-              Trip Itinerary
-            </h2>
-            {Object.keys(activitiesByDay).length > 0 ? (
-              <div className="space-y-6">
-                {Object.entries(activitiesByDay).map(
-                  ([date, activities], index) => (
-                    <div
-                      key={date}
-                      className="relative pl-8 border-l-2 border-primary-100 pb-6"
-                    >
-                      <div className="absolute left-[-9px] top-0 bg-primary rounded-full w-4 h-4" />
-                      <div className="mb-2">
-                        <h3 className="text-lg font-medium flex items-center">
-                          <span className="bg-primary text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center mr-2">
-                            {index + 1}
-                          </span>
-                          {new Date(date).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </h3>
-                      </div>
-                      <div className="space-y-3">
-                        {activities.map((activity) => (
-                          <div
-                            key={activity.id}
-                            className="bg-gray-50 rounded-lg p-4 border-l-2 border-primary"
-                          >
-                            <h4 className="font-medium text-gray-900">
-                              {activity.activityName}
-                            </h4>
-                            {activity.description && (
-                              <p className="text-sm text-gray-600 mt-1">
-                                {activity.description}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            ) : (
-              <div className="text-center p-6">
-                <p className="text-gray-500">
-                  No detailed itinerary available for this trip.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        
 
         {/* Destination Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
