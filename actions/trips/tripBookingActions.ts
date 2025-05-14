@@ -33,11 +33,15 @@ export async function createBooking({
   convertedPricePerSeat,
   paymentCurrency,
   pricePerSeat,
+  paymentType = "full",
+  advancePaymentPercentage = 0,
 }: CreateBookingParams & {
   pricePerSeat: number
   convertedPricePerSeat?: number
   paymentCurrency?: string
   paymentMethod?: string
+  paymentType?: "full" | "advance"
+  advancePaymentPercentage?: number
 }) {
   try {
     // Get trip to check capacity
@@ -59,7 +63,13 @@ export async function createBooking({
 
     // Use the converted price for calculating total if provided
     const effectivePricePerSeat = convertedPricePerSeat || pricePerSeat
-    const totalPrice = seatsBooked * effectivePricePerSeat
+    const fullTotalPrice = seatsBooked * effectivePricePerSeat
+
+    // Calculate the actual amount to store based on payment type
+    const isAdvancePayment = paymentType === "advance" && advancePaymentPercentage > 0
+    const amountToStore = isAdvancePayment 
+      ? fullTotalPrice * (advancePaymentPercentage / 100)
+      : fullTotalPrice
 
     console.log(
       `Creating booking with price per seat: ${effectivePricePerSeat} ${
@@ -67,7 +77,7 @@ export async function createBooking({
       }`
     )
     console.log(
-      `Total price: ${totalPrice} ${paymentCurrency || trip.currency}`
+      `Total price: ${amountToStore} ${paymentCurrency || trip.currency}`
     )
 
     const [booking] = await db
@@ -76,12 +86,15 @@ export async function createBooking({
         tripId: tripId,
         userId: userId,
         seatsBooked: seatsBooked,
-        totalPrice: sql`${totalPrice}::decimal`,
+        totalPrice: sql`${amountToStore}::decimal`,
         status: "confirmed",
         bookingDate: new Date(),
-        paymentCurrency: paymentCurrency || trip.currency, // Store the payment currency
-        originalCurrency: trip.currency, // Store the original currency for reference
-        originalPricePerSeat: sql`${pricePerSeat}::decimal`, // Store the original price
+        paymentCurrency: paymentCurrency || trip.currency,
+        originalCurrency: trip.currency,
+        originalPricePerSeat: sql`${pricePerSeat}::decimal`,
+        paymentType: paymentType,
+        advancePaymentPercentage: isAdvancePayment ? advancePaymentPercentage : undefined,
+        fullPrice: sql`${fullTotalPrice}::decimal`,
       })
       .returning()
 
@@ -183,6 +196,8 @@ export async function createBookingWithPayment({
           convertedPricePerSeat: pricePerSeatInUSD,
           paymentCurrency: "USD",
           paymentMethod: "STRIPE_USD",
+          paymentType: paymentType,
+          advancePaymentPercentage: isAdvancePayment ? advancePaymentPercentage : undefined,
         })
 
         if (!booking) {
@@ -283,6 +298,8 @@ export async function createBookingWithPayment({
         convertedPricePerSeat: pricePerSeatInTND,
         paymentCurrency: "TND",
         paymentMethod: "FLOUCI_TND",
+        paymentType: paymentType,
+        advancePaymentPercentage: isAdvancePayment ? advancePaymentPercentage : undefined,
       })
 
       if (!booking) {

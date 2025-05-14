@@ -182,6 +182,9 @@ export const tripBookings = pgTable("trip_bookings", {
     precision: 10,
     scale: 2,
   }),
+  paymentType: varchar("payment_type", { length: 20 }).default("full"),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
+  fullPrice: decimal("full_price", { precision: 10, scale: 2 }),
 });
 
 // Trip Relations
