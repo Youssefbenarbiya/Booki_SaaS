@@ -5,6 +5,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { TripApprovalActions } from "@/components/dashboard/admin/TripApprovalActions"
 import Image from "next/image"
+import { CheckCircle, XCircle } from "lucide-react"
 
 export default async function TripDetailsPage({
   params,
@@ -18,9 +19,16 @@ export default async function TripDetailsPage({
     return notFound()
   }
 
-  // Fetch trip details
+  // Fetch trip details with agency information
   const trip = await db.query.trips.findFirst({
     where: eq(trips.id, tripId),
+    with: {
+      agency: {
+        with: {
+          user: true,
+        },
+      },
+    },
   })
 
   if (!trip) {
@@ -43,6 +51,12 @@ export default async function TripDetailsPage({
   const discountedPrice = hasDiscount
     ? parseFloat(trip.priceAfterDiscount!.toString()).toFixed(2)
     : null
+
+  // Calculate duration in days
+  const durationInDays = Math.ceil(
+    (new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) /
+      (1000 * 60 * 60 * 24)
+  )
 
   return (
     <div className="space-y-6">
@@ -86,8 +100,36 @@ export default async function TripDetailsPage({
             to {new Date(trip.endDate).toLocaleDateString()}
           </p>
 
+          {/* Agency Information */}
+          {trip.agency && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg flex items-center">
+              <div className="flex-grow">
+                <h3 className="font-medium">Agency Information</h3>
+                <p className="text-sm text-gray-700">
+                  {trip.agency.agencyName}{" "}
+                  <span className="ml-2 inline-flex items-center">
+                    {trip.agency.isVerified ? (
+                      <span className="text-green-600 flex items-center">
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Verified
+                      </span>
+                    ) : (
+                      <span className="text-yellow-600 flex items-center">
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Not Verified
+                      </span>
+                    )}
+                  </span>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Contact: {trip.agency.contactEmail || trip.agency.user.email}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Image Gallery */}
-          {images.length > 0 && (
+          {images.length > 0 ? (
             <div className="my-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-3">
                 Trip Images
@@ -96,7 +138,7 @@ export default async function TripDetailsPage({
                 {images.map((image) => (
                   <div
                     key={image.id}
-                    className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg relative"
+                    className="overflow-hidden rounded-lg relative h-64"
                   >
                     <Image
                       src={image.imageUrl}
@@ -109,6 +151,10 @@ export default async function TripDetailsPage({
                   </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="my-6 p-4 bg-gray-100 rounded-lg text-center">
+              <p className="text-gray-500">No images available for this trip</p>
             </div>
           )}
 
@@ -142,14 +188,7 @@ export default async function TripDetailsPage({
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Duration</p>
-                    <p className="font-medium">
-                      {Math.ceil(
-                        (new Date(trip.endDate).getTime() -
-                          new Date(trip.startDate).getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      )}{" "}
-                      days
-                    </p>
+                    <p className="font-medium">{durationInDays} days</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Price</p>
@@ -157,20 +196,52 @@ export default async function TripDetailsPage({
                       {hasDiscount ? (
                         <>
                           <span className="line-through text-gray-400">
-                            ${originalPrice}
+                            {trip.currency} {originalPrice}
                           </span>{" "}
                           <span className="text-green-600">
-                            ${discountedPrice}
+                            {trip.currency} {discountedPrice}
                           </span>
                           <span className="ml-1 text-xs text-green-600">
                             ({trip.discountPercentage}% off)
                           </span>
                         </>
                       ) : (
-                        <span>${originalPrice}</span>
+                        <span>
+                          {trip.currency} {originalPrice}
+                        </span>
                       )}
                     </p>
                   </div>
+
+                  {/* Display discount details */}
+                  {trip.groupDiscountEnabled && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500">Group Discount</p>
+                      <p className="font-medium">
+                        {trip.groupDiscountPercentage}% off for groups of{" "}
+                        {trip.groupDiscountMinPeople}+ people
+                      </p>
+                    </div>
+                  )}
+
+                  {trip.childDiscountEnabled && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500">Child Discount</p>
+                      <p className="font-medium">
+                        {trip.childDiscountPercentage}% off for children
+                      </p>
+                    </div>
+                  )}
+
+                  {trip.advancePaymentEnabled && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500">Advance Payment</p>
+                      <p className="font-medium">
+                        {trip.advancePaymentPercentage}% required as advance
+                        payment
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
