@@ -105,16 +105,16 @@ export default async function TripDetailsPage({
             <div className="mb-6 p-4 bg-blue-50 rounded-lg flex items-center">
               <div className="flex-grow">
                 <h3 className="font-medium">Agency Information</h3>
-                <p className="text-sm text-gray-700">
+                <p className=" text-blue-900">
                   {trip.agency.agencyName}{" "}
                   <span className="ml-2 inline-flex items-center">
                     {trip.agency.isVerified ? (
                       <span className="text-green-600 flex items-center">
-                        <CheckCircle className="h-4 w-4 mr-1" />
+                        <CheckCircle className="h-4 w-4 mr-1 text-sm" />
                         Verified
                       </span>
                     ) : (
-                      <span className="text-yellow-600 flex items-center">
+                      <span className="text-red-600 flex items-center text-sm">
                         <XCircle className="h-4 w-4 mr-1" />
                         Not Verified
                       </span>
