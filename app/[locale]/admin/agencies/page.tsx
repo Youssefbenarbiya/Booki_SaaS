@@ -10,10 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Eye, Search, CheckCircle2, XCircle, Clock, User } from "lucide-react"
-import Image from "next/image"
+import { Eye, Search, CheckCircle2, XCircle, Clock } from "lucide-react"
 import { getAgencies, searchAgencies } from "@/actions/admin/agencies"
 import { Badge } from "@/components/ui/badge"
+import { ProfileImageWithFallback } from "@/components/ui/profile-image-with-fallback"
 
 export default async function AgenciesPage({
   searchParams,
@@ -114,35 +114,10 @@ export default async function AgenciesPage({
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center">
-                        {agency.user?.image ? (
-                          <div className="relative h-8 w-8 rounded-full mr-2 overflow-hidden bg-gray-100">
-                            <Image
-                              src={agency.user.image}
-                              alt={agency.user.name || "Agency owner"}
-                              width={32}
-                              height={32}
-                              className="h-8 w-8 rounded-full object-cover"
-                              onError={(e) => {
-                                // Replace with user icon when image fails to load
-                                e.currentTarget.style.display = "none"
-                                e.currentTarget.parentElement?.classList.add(
-                                  "flex",
-                                  "items-center",
-                                  "justify-center"
-                                )
-                                const userIcon = document.createElement("span")
-                                userIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`
-                                e.currentTarget.parentElement?.appendChild(
-                                  userIcon
-                                )
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-8 w-8 rounded-full mr-2 bg-gray-100 flex items-center justify-center">
-                            <User className="h-4 w-4 text-gray-400" />
-                          </div>
-                        )}
+                        <ProfileImageWithFallback
+                          src={agency.user?.image || null}
+                          alt={agency.user?.name || "Agency owner"}
+                        />
                         <span className="text-sm text-gray-800">
                           {agency.user?.name || "Unknown"}
                         </span>
