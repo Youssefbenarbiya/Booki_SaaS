@@ -71,6 +71,22 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
         >
           <span>supportChat</span>
         </Link>
+        <Link
+          href={`/${currentLocale}/admin/supportChat`}
+          className={`flex items-center px-4 py-2 rounded-md ${isActive(
+            `/${currentLocale}/admin/supportChat`
+          )}`}
+        >
+          <span>Support Chat</span>
+        </Link>
+        <Link
+          href={`/${currentLocale}/admin/withdrawals`}
+          className={`flex items-center px-4 py-2 rounded-md ${isActive(
+            `/${currentLocale}/admin/withdrawals`
+          )}`}
+        >
+          <span>Withdrawals</span>
+        </Link>
       </nav>
     </div>
   )

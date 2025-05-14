@@ -87,6 +87,11 @@ export function Sidebar({ locale }: SidebarProps) {
       icon: CalendarCheck,
     },
     {
+      name: "Wallet",
+      href: `/${locale}/agency/dashboard/wallet`,
+      icon: CalendarCheck,
+    },
+    {
       name: "Messages",
       href: `/${locale}/agency/dashboard/messages`,
       icon: MessageCircle,

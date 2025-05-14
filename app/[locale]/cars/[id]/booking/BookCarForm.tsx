@@ -72,15 +72,15 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "flouci" | "stripe"
   >("flouci")
-  
+
   // Add state for payment type (full or advance)
   const [paymentType, setPaymentType] = useState<"full" | "advance">("full")
-  const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(30)
+  const [advancePaymentPercentage, setAdvancePaymentPercentage] =
+    useState<number>(30)
 
   // State for payment method specific pricing
   const [stripePrice, setStripePrice] = useState<number | null>(null)
   const [flouciPrice, setFlouciPrice] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
 
   const defaultFormValues: BookingFormValues = {
     fullName: session?.user?.name || "",
@@ -148,21 +148,19 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
     if (!car || isNaN(days) || !convertedEffectivePrice) return 0
     return parseFloat((days * convertedEffectivePrice).toFixed(2))
   }, [convertedEffectivePrice, totalDays])
-  
+
   // Calculate advance payment amount
   const advancePaymentAmount = useMemo(() => {
-    return paymentType === "advance" 
-      ? totalPrice * (advancePaymentPercentage / 100) 
+    return paymentType === "advance"
+      ? totalPrice * (advancePaymentPercentage / 100)
       : 0
   }, [totalPrice, paymentType, advancePaymentPercentage])
-    
+
   // Calculate remaining amount to be paid in cash
   const remainingCashAmount = useMemo(() => {
-    return paymentType === "advance" 
-      ? totalPrice - advancePaymentAmount 
-      : 0
+    return paymentType === "advance" ? totalPrice - advancePaymentAmount : 0
   }, [totalPrice, paymentType, advancePaymentAmount])
-  
+
   // Amount to actually charge
   const amountToCharge = useMemo(() => {
     return paymentType === "full" ? totalPrice : advancePaymentAmount
@@ -254,9 +252,10 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
         setIsSubmitting(true)
 
         // Calculate price based on payment type
-        const paymentAmount = paymentType === "full" 
-          ? priceInOriginalCurrency 
-          : priceInOriginalCurrency * (advancePaymentPercentage / 100)
+        const paymentAmount =
+          paymentType === "full"
+            ? priceInOriginalCurrency
+            : priceInOriginalCurrency * (advancePaymentPercentage / 100)
 
         // Add more detailed logging
         console.log("Submitting booking with data:", {
@@ -267,7 +266,8 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
           totalPrice: priceInOriginalCurrency,
           paymentMethod: selectedPaymentMethod,
           paymentType: paymentType,
-          advancePaymentPercentage: paymentType === "advance" ? advancePaymentPercentage : undefined,
+          advancePaymentPercentage:
+            paymentType === "advance" ? advancePaymentPercentage : undefined,
           paymentAmount: paymentAmount,
         })
 
@@ -281,7 +281,8 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
           paymentMethod: selectedPaymentMethod,
           locale: locale,
           paymentType: paymentType,
-          advancePaymentPercentage: paymentType === "advance" ? advancePaymentPercentage : undefined,
+          advancePaymentPercentage:
+            paymentType === "advance" ? advancePaymentPercentage : undefined,
           paymentAmount: paymentAmount,
         })
 
@@ -494,23 +495,38 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
               {/* Payment Type Selection */}
               <div className="space-y-3 pt-2">
                 <FormLabel className="font-medium">Payment Option</FormLabel>
-                <RadioGroup 
-                  value={paymentType} 
-                  onValueChange={(value) => setPaymentType(value as "full" | "advance")}
+                <RadioGroup
+                  value={paymentType}
+                  onValueChange={(value) =>
+                    setPaymentType(value as "full" | "advance")
+                  }
                   className="space-y-2"
                 >
                   <div className="flex items-center space-x-2 border rounded-md p-3">
                     <RadioGroupItem value="full" id="full-payment" />
-                    <Label htmlFor="full-payment" className="cursor-pointer flex-1">
+                    <Label
+                      htmlFor="full-payment"
+                      className="cursor-pointer flex-1"
+                    >
                       <span className="font-medium">Pay Full Amount</span>
-                      <p className="text-sm text-muted-foreground">Pay the entire amount online</p>
+                      <p className="text-sm text-muted-foreground">
+                        Pay the entire amount online
+                      </p>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2 border rounded-md p-3">
                     <RadioGroupItem value="advance" id="advance-payment" />
-                    <Label htmlFor="advance-payment" className="cursor-pointer flex-1">
-                      <span className="font-medium">Pay {advancePaymentPercentage}% Advance</span>
-                      <p className="text-sm text-muted-foreground">Pay {advancePaymentPercentage}% now and the rest in cash at pickup</p>
+                    <Label
+                      htmlFor="advance-payment"
+                      className="cursor-pointer flex-1"
+                    >
+                      <span className="font-medium">
+                        Pay {advancePaymentPercentage}% Advance
+                      </span>
+                      <p className="text-sm text-muted-foreground">
+                        Pay {advancePaymentPercentage}% now and the rest in cash
+                        at pickup
+                      </p>
                     </Label>
                   </div>
                 </RadioGroup>
@@ -556,18 +572,21 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
                     <>
                       <div className="flex justify-between items-center text-sm">
                         <span>Total Rental Cost:</span>
-                        <span>
-                          {formatPrice(totalPrice, { currency })}
-                        </span>
+                        <span>{formatPrice(totalPrice, { currency })}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm text-muted-foreground">
-                        <span>Online Advance Payment ({advancePaymentPercentage}%):</span>
+                        <span>
+                          Online Advance Payment ({advancePaymentPercentage}%):
+                        </span>
                         <span>
                           {formatPrice(advancePaymentAmount, { currency })}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-sm text-muted-foreground">
-                        <span>Remaining Cash Payment ({100 - advancePaymentPercentage}%):</span>
+                        <span>
+                          Remaining Cash Payment (
+                          {100 - advancePaymentPercentage}%):
+                        </span>
                         <span>
                           {formatPrice(remainingCashAmount, { currency })}
                         </span>
@@ -575,10 +594,12 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
                       <Separator className="my-2" />
                     </>
                   )}
-                  
+
                   {/* Show amount being charged now */}
                   <div className="text-lg font-semibold w-full flex justify-between items-center">
-                    <span>{paymentType === "advance" ? "Pay Now:" : "Total Price:"}</span>
+                    <span>
+                      {paymentType === "advance" ? "Pay Now:" : "Total Price:"}
+                    </span>
                     <span className="text-primary">
                       {formatPrice(amountToCharge, { currency })}
                     </span>
