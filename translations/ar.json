@@ -10,6 +10,14 @@
     "agencies": "الوكالات",
     "users": "المستخدمين"
   },
+  "terms": {
+    "title": "الشروط وسياسات الخصوصية",
+    "backToSignUp": "العودة إلى التسجيل",
+    "termsOfService": "شروط الخدمة",
+    "privacyPolicy": "سياسة الخصوصية",
+    "serviceSpecificTerms": "شروط خاصة بالخدمة",
+    "lastUpdated": "آخر تحديث"
+  },
   "SupportChat": {
     "supportTitle": "دردشة دعم الوكالة",
     "yourTickets": "تذاكر الدعم الخاصة بك",

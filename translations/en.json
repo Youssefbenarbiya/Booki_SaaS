@@ -10,6 +10,14 @@
     "agencies": "Agencies",
     "users": "Users"
   },
+  "terms": {
+    "title": "Terms and Privacy Policies",
+    "backToSignUp": "Back to Sign Up",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "serviceSpecificTerms": "Service Specific Terms",
+    "lastUpdated": "Last updated"
+  },
   "SupportChat": {
     "supportTitle": "Agency Support Chat",
     "yourTickets": "Your Support Tickets",

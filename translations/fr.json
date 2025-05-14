@@ -10,6 +10,14 @@
     "agencies": "Agences",
     "users": "Utilisateurs"
   },
+  "terms": {
+    "title": "Conditions Générales et Politiques de Confidentialité",
+    "backToSignUp": "Retour à l'inscription",
+    "termsOfService": "Conditions d'Utilisation",
+    "privacyPolicy": "Politique de Confidentialité",
+    "serviceSpecificTerms": "Conditions Spécifiques du Service",
+    "lastUpdated": "Dernière mise à jour"
+  },
   "SupportChat": {
     "supportTitle": "Chat de Support Agence",
     "yourTickets": "Vos tickets de support",

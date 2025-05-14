@@ -1,10 +1,16 @@
-import Link from "next/link"
-import { Facebook, Instagram, X } from "lucide-react"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import FooterGallery from "./footerGalory"
+"use client";
+import Link from "next/link";
+import { Facebook, Instagram, X } from "lucide-react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import FooterGallery from "./footerGalory";
+import { useParams } from "next/navigation";
+
 export function Footer() {
+  const params = useParams();
+  const currentLocale = (params.locale as string) || "en";
+
   return (
     <div>
       <FooterGallery />
@@ -62,6 +68,14 @@ export function Footer() {
                 <li>
                   <Link href="#" className="hover:text-white">
                     Menu
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`/${currentLocale}/terms`}
+                    className="hover:text-white"
+                  >
+                    Terms & Privacy
                   </Link>
                 </li>
               </ul>
@@ -174,5 +188,5 @@ export function Footer() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

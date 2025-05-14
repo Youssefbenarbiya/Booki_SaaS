@@ -626,8 +626,8 @@ export default function SignUp() {
                                   form.formState.errors.agencyName
                                     ? "border-red-500 focus-visible:ring-red-500"
                                     : field.value && field.value.length >= 3
-                                    ? "border-green-500 focus-visible:ring-green-500"
-                                    : ""
+                                      ? "border-green-500 focus-visible:ring-green-500"
+                                      : ""
                                 }`}
                                 onBlur={(e) => {
                                   field.onBlur();
@@ -715,12 +715,11 @@ export default function SignUp() {
                 <Checkbox id="terms" />
                 <label htmlFor="terms" className="text-sm text-gray-600">
                   {t("agreeToTerms")}{" "}
-                  <Link href="#" className="text-orange-500 hover:underline">
-                    {t("terms")}
-                  </Link>{" "}
-                  {t("and")}{" "}
-                  <Link href="#" className="text-orange-500 hover:underline">
-                    {t("privacyPolicies")}
+                  <Link
+                    href={`/${currentLocale}/terms`}
+                    className="text-orange-500 hover:underline"
+                  >
+                    {t("terms")} {t("and")} {t("privacyPolicies")}
                   </Link>
                 </label>
               </div>
