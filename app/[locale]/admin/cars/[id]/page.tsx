@@ -3,7 +3,7 @@ import { cars } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { CarApprovalActions } from "@/components/dashboard/admin/CarApprovalActions"
@@ -19,6 +19,13 @@ export default async function CarDetailsPage({
 
   const car = await db.query.cars.findFirst({
     where: eq(cars.id, parseInt(carId, 10)),
+    with: {
+      agency: {
+        with: {
+          user: true,
+        }
+      }
+    }
   })
 
   if (!car) {
@@ -63,6 +70,36 @@ export default async function CarDetailsPage({
             </div>
           </div>
         </div>
+
+        {/* Agency Information */}
+        {car.agency && (
+          <div className="p-6 border-b">
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg flex items-center">
+              <div className="flex-grow">
+                <h3 className="font-medium">Agency Information</h3>
+                <p className="text-blue-900">
+                  {car.agency.agencyName}{" "}
+                  <span className="ml-2 inline-flex items-center">
+                    {car.agency.isVerified ? (
+                      <span className="text-green-600 flex items-center">
+                        <CheckCircle className="h-4 w-4 mr-1 text-sm" />
+                        Verified
+                      </span>
+                    ) : (
+                      <span className="text-red-600 flex items-center text-sm">
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Not Verified
+                      </span>
+                    )}
+                  </span>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Contact: {car.agency.contactEmail || car.agency.user.email}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Car images */}
         {car.images && car.images.length > 0 && (
@@ -121,6 +158,18 @@ export default async function CarDetailsPage({
                     {car.isAvailable ? "Available" : "Not Available"}
                   </p>
                 </div>
+                <div>
+                  <p className="text-sm text-gray-500">Category</p>
+                  <p className="font-medium">{car.category}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Seats</p>
+                  <p className="font-medium">{car.seats}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Pickup Location</p>
+                  <p className="font-medium">{car.location}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -139,7 +188,7 @@ export default async function CarDetailsPage({
                         : "font-medium"
                     }
                   >
-                    $
+                    {car.currency || "$"}
                     {parseFloat(car.originalPrice?.toString() || "0").toFixed(
                       2
                     )}
@@ -157,13 +206,47 @@ export default async function CarDetailsPage({
                     <div className="flex justify-between text-lg font-bold">
                       <span>Final Price</span>
                       <span>
-                        $
+                        {car.currency || "$"}
                         {parseFloat(
                           car.priceAfterDiscount?.toString() || "0"
                         ).toFixed(2)}
                       </span>
                     </div>
                   </>
+                )}
+                
+                {/* Add Advance Payment Information */}
+                {car.advancePaymentEnabled && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between text-gray-600">
+                      <span>Advance Payment</span>
+                      <span className="font-medium text-indigo-600">
+                        {car.advancePaymentPercentage}% required
+                      </span>
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      <span className="text-xs">Amount Due at Booking</span>
+                      <span className="text-xs font-medium">
+                        {car.currency || "$"}
+                        {((car.discountPercentage && car.priceAfterDiscount
+                          ? parseFloat(car.priceAfterDiscount.toString())
+                          : parseFloat(car.originalPrice.toString())) *
+                          (car.advancePaymentPercentage || 0) /
+                          100).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-xs">Remaining at Pickup</span>
+                      <span className="text-xs font-medium">
+                        {car.currency || "$"}
+                        {((car.discountPercentage && car.priceAfterDiscount
+                          ? parseFloat(car.priceAfterDiscount.toString())
+                          : parseFloat(car.originalPrice.toString())) *
+                          (100 - (car.advancePaymentPercentage || 0)) /
+                          100).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
