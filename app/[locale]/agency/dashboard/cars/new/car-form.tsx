@@ -24,7 +24,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Percent } from "lucide-react"
+import { Percent, DollarSign, Info } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -32,6 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 // --- Image upload imports ---
 import { ImageUploadSection } from "@/components/ImageUploadSection"
@@ -39,6 +45,7 @@ import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
 // ----------------------------------
 import { Locale } from "@/i18n/routing"
+import { Separator } from "@/components/ui/separator"
 
 // Extend the schema to include discount fields.
 const carFormSchema = z.object({
@@ -63,6 +70,9 @@ const carFormSchema = z.object({
     .max(20, "Car cannot have more than 20 seats"),
   category: z.string().min(1, "Category is required"),
   location: z.string().min(1, "Pickup location is required"),
+  // Add advance payment options
+  advancePaymentEnabled: z.boolean().optional().default(false),
+  advancePaymentPercentage: z.coerce.number().min(1).max(99).optional(),
 })
 
 type CarFormProps = {
@@ -113,6 +123,11 @@ export function CarForm({
   const [priceAfterDiscount, setPriceAfterDiscount] = useState<number>(0)
   const [customPercentage, setCustomPercentage] = useState(false)
 
+  // Advance payment state variables
+  const [advancePaymentEnabled, setAdvancePaymentEnabled] = useState<boolean>(false)
+  const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(20)
+  const [customAdvancePercentage, setCustomAdvancePercentage] = useState<boolean>(false)
+
   // Currency options
   const currencyOptions = [
     { value: "USD", label: "USD - US Dollar" },
@@ -145,6 +160,9 @@ export function CarForm({
           seats: initialData.seats ?? 4,
           category: initialData.category ?? "",
           location: initialData.location ?? "",
+          // Add advance payment options
+          advancePaymentEnabled: initialData.advancePaymentEnabled ?? false,
+          advancePaymentPercentage: initialData.advancePaymentPercentage ?? 20,
         }
       : {
           brand: "",
@@ -160,6 +178,9 @@ export function CarForm({
           seats: 4,
           category: "",
           location: "",
+          // Add advance payment options
+          advancePaymentEnabled: false,
+          advancePaymentPercentage: 20,
         },
   })
 
@@ -206,6 +227,18 @@ export function CarForm({
         )
       }
     }
+    
+    // Initialize advance payment options if they exist
+    if (initialData?.advancePaymentEnabled) {
+      setAdvancePaymentEnabled(true)
+      if (initialData.advancePaymentPercentage) {
+        setAdvancePaymentPercentage(initialData.advancePaymentPercentage)
+        
+        // Set customAdvancePercentage based on whether it matches standard percentages
+        const stdAdvance = [20, 30, 50]
+        setCustomAdvancePercentage(!stdAdvance.includes(initialData.advancePaymentPercentage))
+      }
+    }
   }, [initialData])
 
   // Function to update discount percentage and recalc price
@@ -250,6 +283,9 @@ export function CarForm({
         discountPercentage: hasDiscount ? discountPercentage : undefined,
         priceAfterDiscount: hasDiscount ? priceAfterDiscount : undefined,
         images: finalImageUrls,
+        // Include advance payment fields
+        advancePaymentEnabled: advancePaymentEnabled,
+        advancePaymentPercentage: advancePaymentEnabled ? advancePaymentPercentage : undefined,
       }
 
       if (isEditing && initialData) {
@@ -619,6 +655,164 @@ export function CarForm({
                 </FormItem>
               )}
             />
+
+            {/* Payment Options Card */}
+            <div className="md:col-span-2">
+              <Card className="border-2 border-muted">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <DollarSign className="h-5 w-5 mr-1" />
+                    Payment Options
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="advancePaymentEnabled"
+                      checked={advancePaymentEnabled}
+                      onCheckedChange={(checked) => {
+                        setAdvancePaymentEnabled(!!checked)
+                        form.setValue("advancePaymentEnabled", !!checked)
+                        if (!checked) {
+                          setAdvancePaymentPercentage(20)
+                          form.setValue("advancePaymentPercentage", undefined)
+                          setCustomAdvancePercentage(false)
+                        }
+                      }}
+                    />
+                    <Label htmlFor="advancePaymentEnabled" className="font-medium">
+                      Allow Partial Advance Payment
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Customers can pay a percentage in advance and the rest in cash at pickup</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+
+                  {advancePaymentEnabled && (
+                    <div className="space-y-4 pl-6 border-l-2 border-muted">
+                      <div className="space-y-3">
+                        <Label>Advance Payment Percentage</Label>
+                        <RadioGroup
+                          value={
+                            customAdvancePercentage
+                              ? "custom"
+                              : advancePaymentPercentage.toString()
+                          }
+                          onValueChange={(value) => {
+                            if (value === "custom") {
+                              setCustomAdvancePercentage(true)
+                              return
+                            }
+
+                            setCustomAdvancePercentage(false)
+                            const percentage = Number.parseInt(value, 10)
+                            setAdvancePaymentPercentage(percentage)
+                            form.setValue("advancePaymentPercentage", percentage)
+                          }}
+                          className="flex flex-wrap gap-2"
+                        >
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="20" id="p20" />
+                            <Label htmlFor="p20">20%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="30" id="p30" />
+                            <Label htmlFor="p30">30%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="50" id="p50" />
+                            <Label htmlFor="p50">50%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="custom" id="pcustom" />
+                            <Label htmlFor="pcustom">Custom</Label>
+                          </div>
+                        </RadioGroup>
+
+                        {customAdvancePercentage && (
+                          <div className="flex items-center space-x-2 mt-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="99"
+                              value={advancePaymentPercentage || ""}
+                              onChange={(e) => {
+                                const value = Number.parseInt(
+                                  e.target.value,
+                                  10
+                                )
+                                if (
+                                  !isNaN(value) &&
+                                  value >= 1 &&
+                                  value <= 99
+                                ) {
+                                  setAdvancePaymentPercentage(value)
+                                  form.setValue("advancePaymentPercentage", value)
+                                }
+                              }}
+                              className="w-24"
+                            />
+                            <Percent className="h-4 w-4" />
+                          </div>
+                        )}
+
+                        <div className="bg-muted p-4 rounded-md space-y-2 mt-4">
+                          <div className="flex justify-between">
+                            <span>Original Price:</span>
+                            <span>
+                              {currencyOptions.find(
+                                option => option.value === form.getValues("currency")
+                              )?.value || "USD"} {" "}
+                              {hasDiscount && priceAfterDiscount 
+                                ? priceAfterDiscount.toFixed(2) 
+                                : Number(form.getValues("originalPrice")).toFixed(2)}
+                            </span>
+                          </div>
+                          
+                          {/* Show actual calculated amounts */}
+                          <div className="flex justify-between">
+                            <span>Advance Payment ({advancePaymentPercentage}%):</span>
+                            <span className="font-medium">
+                              {currencyOptions.find(
+                                option => option.value === form.getValues("currency")
+                              )?.value || "USD"} {" "}
+                              {((hasDiscount && priceAfterDiscount 
+                                ? priceAfterDiscount 
+                                : Number(form.getValues("originalPrice"))) * advancePaymentPercentage / 100).toFixed(2)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between">
+                            <span>Remaining Payment (Cash):</span>
+                            <span className="font-medium">
+                              {currencyOptions.find(
+                                option => option.value === form.getValues("currency")
+                              )?.value || "USD"} {" "}
+                              {((hasDiscount && priceAfterDiscount 
+                                ? priceAfterDiscount 
+                                : Number(form.getValues("originalPrice"))) * (100 - advancePaymentPercentage) / 100).toFixed(2)}
+                            </span>
+                          </div>
+
+                          <input
+                            type="hidden"
+                            {...form.register("advancePaymentPercentage")}
+                            value={advancePaymentPercentage}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Car Images Upload Section */}
             <ImageUploadSection

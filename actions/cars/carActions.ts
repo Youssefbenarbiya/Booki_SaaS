@@ -178,6 +178,9 @@ export async function createCar(data: CarFormValues) {
         category: data.category,
         location: data.location,
         status: "pending", // Always set to pending for admin approval
+        // Add advance payment options
+        advancePaymentEnabled: data.advancePaymentEnabled || false,
+        advancePaymentPercentage: data.advancePaymentEnabled ? data.advancePaymentPercentage : undefined,
       })
       .returning()
 
@@ -255,6 +258,9 @@ export async function updateCar(id: number, data: CarFormValues) {
         category: data.category,
         location: data.location,
         status: data.status || undefined, // Preserve existing status if not provided
+        // Add advance payment options
+        advancePaymentEnabled: data.advancePaymentEnabled !== undefined ? data.advancePaymentEnabled : false,
+        advancePaymentPercentage: data.advancePaymentEnabled && data.advancePaymentPercentage ? data.advancePaymentPercentage : null,
       })
       .where(eq(cars.id, id))
       .returning()

@@ -25,6 +25,10 @@ export interface CarBookingData {
   paymentMethod: string
   paymentDate?: Date | string
   paymentId?: string
+  paymentType?: "full" | "advance"
+  advancePaymentPercentage?: number
+  amountPaid?: number
+  remainingAmount?: number
 }
 
 export interface CustomerData {
@@ -195,6 +199,21 @@ export function generateCarBookingPDF(carData: CarData, bookingData: CarBookingD
   if (bookingData.paymentId) {
     drawInfoItem("Payment ID:", bookingData.paymentId)
   }
+  
+  // Add advance payment information if applicable
+  if (bookingData.paymentType === "advance" && bookingData.advancePaymentPercentage) {
+    drawInfoItem("Payment Type:", "Advance Payment")
+    drawInfoItem("Advance Percentage:", `${bookingData.advancePaymentPercentage}%`)
+    
+    if (bookingData.amountPaid !== undefined) {
+      drawInfoItem("Amount Paid:", `$${Number(bookingData.amountPaid).toFixed(2)}`)
+    }
+    
+    if (bookingData.remainingAmount !== undefined) {
+      drawInfoItem("Remaining Balance:", `$${Number(bookingData.remainingAmount).toFixed(2)} (to be paid at pickup)`)
+    }
+  }
+  
   currentY += 10
 
   // Section: Customer Information
