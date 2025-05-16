@@ -7,5 +7,5 @@ export default async function AdminPage({
 }) {
   const { locale } = await params
 
-  return redirect(`/${locale}/admin`)
+  return redirect(`/${locale}/admin/dashboard`)
 }

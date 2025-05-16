@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname, useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { LayoutDashboard, ShieldCheck, Users, Building, MessageSquare, CreditCard } from "lucide-react"
 
 interface SidebarProps {
   locale?: string
@@ -31,13 +32,15 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
         <span className="text-xl font-bold text-white">{t("panel")}</span>
       </div>
       <nav className="flex-1 px-2 py-4 space-y-1">
+        
         <Link
-          href={`/${currentLocale}/admin`}
+          href={`/${currentLocale}/admin/dashboard`}
           className={`flex items-center px-4 py-2 rounded-md ${isActive(
-            `/${currentLocale}/admin`
+            `/${currentLocale}/admin/dashboard`
           )}`}
         >
-          <span>{t("dashboard")}</span>
+          <LayoutDashboard className="mr-3 h-5 w-5" />
+          <span>Dashboard</span>
         </Link>
         <Link
           href={`/${currentLocale}/admin/verify-offers`}
@@ -45,6 +48,7 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
             `/${currentLocale}/admin/verify-offers`
           )}`}
         >
+          <ShieldCheck className="mr-3 h-5 w-5" />
           <span>{t("verifyOffers")}</span>
         </Link>
         <Link
@@ -53,6 +57,7 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
             `/${currentLocale}/admin/agencies`
           )}`}
         >
+          <Building className="mr-3 h-5 w-5" />
           <span>{t("agencies")}</span>
         </Link>
         <Link
@@ -61,6 +66,7 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
             `/${currentLocale}/admin/users`
           )}`}
         >
+          <Users className="mr-3 h-5 w-5" />
           <span>{t("users")}</span>
         </Link>
         <Link
@@ -69,14 +75,7 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
             `/${currentLocale}/admin/supportChat`
           )}`}
         >
-          <span>supportChat</span>
-        </Link>
-        <Link
-          href={`/${currentLocale}/admin/supportChat`}
-          className={`flex items-center px-4 py-2 rounded-md ${isActive(
-            `/${currentLocale}/admin/supportChat`
-          )}`}
-        >
+          <MessageSquare className="mr-3 h-5 w-5" />
           <span>Support Chat</span>
         </Link>
         <Link
@@ -85,6 +84,7 @@ export function Sidebar({ locale = "en" }: SidebarProps) {
             `/${currentLocale}/admin/withdrawals`
           )}`}
         >
+          <CreditCard className="mr-3 h-5 w-5" />
           <span>Withdrawals</span>
         </Link>
       </nav>
