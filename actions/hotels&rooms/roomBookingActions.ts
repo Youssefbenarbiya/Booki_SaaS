@@ -206,7 +206,7 @@ export async function createRoomBooking({
             .update(roomBookings)
             .set({
               paymentId: session.id,
-              paymentStatus: "completed",
+              paymentStatus: paymentType === "advance" ? "partially_paid" : "completed",
               paymentMethod: "STRIPE_USD",
             })
             .where(eq(roomBookings.id, booking.id))
@@ -286,7 +286,7 @@ export async function createRoomBooking({
           .update(roomBookings)
           .set({
             paymentId: paymentData.paymentId,
-            paymentStatus: "completed",
+            paymentStatus: paymentType === "advance" ? "partially_paid" : "completed",
             paymentMethod: "FLOUCI_TND",
           })
           .where(eq(roomBookings.id, booking.id))
@@ -425,7 +425,10 @@ export async function getBookedDatesForRoom(roomId: string) {
     const bookings = await db.query.roomBookings.findMany({
       where: and(
         eq(roomBookings.roomId, roomId),
-        eq(roomBookings.status, "confirmed") // Only confirmed bookings
+        or(
+          eq(roomBookings.status, "confirmed"),
+          eq(roomBookings.status, "partially_paid")
+        ) // Include both confirmed and partially_paid bookings
       ),
       columns: {
         checkIn: true,

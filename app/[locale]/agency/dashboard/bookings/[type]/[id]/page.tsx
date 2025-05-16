@@ -136,15 +136,20 @@ export default async function BookingDetailsPage({
   params,
   searchParams
 }: {
-  params: { type: string; id: string; locale: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{
+    [key: string]: string | string[] | undefined
+  }>
+  params: Promise<{ type: string; id: string; locale: string }>
 }) {
+  // Await the promises
+  const sp = await searchParams
+  const { type: urlType, id: urlId, locale } = await params
+  
   // Check for success or error messages in the URL
-  const isUpdated = searchParams.updated === "true";
-  const hasError = searchParams.error === "payment_failed";
+  const isUpdated = sp.updated === "true";
+  const hasError = sp.error === "payment_failed";
   
   // Fetch data using our server action
-  const { type: urlType, id: urlId, locale } = params;
   const data = await fetchBookingData(urlType, urlId, locale);
   
   // Handle invalid booking type
