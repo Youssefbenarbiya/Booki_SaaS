@@ -95,6 +95,8 @@ export async function createHotel(data: HotelInput) {
           roomType: roomData.roomType,
           amenities: roomData.amenities,
           images: roomData.images || [],
+          advancePaymentEnabled: roomData.advancePaymentEnabled || false,
+          advancePaymentPercentage: roomData.advancePaymentEnabled ? roomData.advancePaymentPercentage || 20 : null,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -171,6 +173,8 @@ export async function updateHotel(hotelId: string, data: HotelInput) {
             roomType: roomData.roomType,
             amenities: roomData.amenities,
             images: roomData.images || [],
+            advancePaymentEnabled: roomData.advancePaymentEnabled || false,
+            advancePaymentPercentage: roomData.advancePaymentEnabled ? roomData.advancePaymentPercentage || 20 : null,
             updatedAt: new Date(),
           })
           .where(eq(room.id, roomData.id))
@@ -192,6 +196,8 @@ export async function updateHotel(hotelId: string, data: HotelInput) {
             roomType: roomData.roomType,
             amenities: roomData.amenities,
             images: roomData.images || [],
+            advancePaymentEnabled: roomData.advancePaymentEnabled || false,
+            advancePaymentPercentage: roomData.advancePaymentEnabled ? roomData.advancePaymentPercentage || 20 : null,
             createdAt: new Date(),
             updatedAt: new Date(),
           })

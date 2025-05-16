@@ -70,6 +70,8 @@ export default async function BookRoomPage({
           capacity={room.capacity}
           currency={room.currency}
           locale={locale}
+          advancePaymentEnabled={room.advancePaymentEnabled || false}
+          advancePaymentPercentage={room.advancePaymentPercentage || 20}
         />
       </div>
     </div>

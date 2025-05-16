@@ -21,6 +21,8 @@ interface CreateRoomBookingParams {
   childCount?: number
   infantCount?: number
   paymentMethod?: "flouci" | "stripe"
+  paymentType?: "full" | "advance"
+  advancePaymentPercentage?: number
 }
 
 interface CreateRoomBookingWithPaymentParams extends CreateRoomBookingParams {
@@ -38,6 +40,8 @@ export async function createRoomBooking({
   childCount = 0,
   paymentMethod = "flouci", // default to flouci
   locale = "en", // Add locale parameter with default
+  paymentType = "full", // Add payment type parameter with default
+  advancePaymentPercentage = 0, // Add advance payment percentage parameter with default
 }: CreateRoomBookingWithPaymentParams & {
   locale?: string
 }): Promise<RoomBookingWithPayment> {
@@ -93,16 +97,28 @@ export async function createRoomBooking({
       `Creating booking with original total price: ${finalTotalPrice} ${roomCurrency}`
     )
 
+    // Calculate the payment amount based on the payment type
+    let paymentAmount = finalTotalPrice
+    let fullPrice = finalTotalPrice
+    
+    // If it's an advance payment, calculate the amount to pay now
+    if (paymentType === "advance" && advancePaymentPercentage > 0) {
+      paymentAmount = (finalTotalPrice * advancePaymentPercentage) / 100
+      console.log(
+        `Advance payment (${advancePaymentPercentage}%): ${paymentAmount} ${roomCurrency}`
+      )
+    }
+
     // Handle different payment methods
     if (paymentMethod === "stripe") {
       // Convert price to USD for Stripe
-      const totalPriceInUSD = await convertCurrency(
-        finalTotalPrice,
+      const paymentAmountInUSD = await convertCurrency(
+        paymentAmount,
         roomCurrency,
         "USD"
       )
       console.log(
-        `Converting room price from ${roomCurrency} to USD: ${finalTotalPrice} -> ${totalPriceInUSD}`
+        `Converting room price from ${roomCurrency} to USD: ${paymentAmount} -> ${paymentAmountInUSD}`
       )
 
       // Insert booking record with USD price
@@ -113,15 +129,18 @@ export async function createRoomBooking({
           userId,
           checkIn: checkIn.toISOString(),
           checkOut: checkOut.toISOString(),
-          totalPrice: sql`${totalPriceInUSD}::decimal`,
+          totalPrice: sql`${paymentAmountInUSD}::decimal`,
           status: "confirmed", // initial status until payment is confirmed
-          paymentStatus: "confirmed",
+          paymentStatus: "completed",
           paymentMethod: "STRIPE_USD",
           paymentCurrency: "USD",
           originalPrice: `${finalTotalPrice}`,
           originalCurrency: roomCurrency,
           adultCount,
           childCount,
+          paymentType,
+          advancePaymentPercentage: paymentType === "advance" ? advancePaymentPercentage : null,
+          fullPrice: paymentType === "advance" ? `${fullPrice}` : null,
         })
         .returning()
 
@@ -160,9 +179,9 @@ export async function createRoomBooking({
                     description: `${adultCount} Adult(s), ${childCount} Child(ren) - ${formatDateRange(
                       checkIn,
                       checkOut
-                    )}`,
+                    )} ${paymentType === "advance" ? `(${advancePaymentPercentage}% Advance Payment)` : ""}`,
                   },
-                  unit_amount: Math.round(totalPriceInUSD * 100), // Stripe expects cents
+                  unit_amount: Math.round(paymentAmountInUSD * 100), // Stripe expects cents
                 },
                 quantity: 1,
               },
@@ -175,6 +194,8 @@ export async function createRoomBooking({
               bookingType: "hotel",
               originalCurrency: roomCurrency,
               originalPrice: finalTotalPrice.toString(),
+              paymentType,
+              advancePaymentPercentage: paymentType === "advance" ? advancePaymentPercentage.toString() : null,
             },
           })
 
@@ -211,13 +232,13 @@ export async function createRoomBooking({
       return booking
     } else {
       // Flouci payment flow - convert price to TND
-      const totalPriceInTND = await convertCurrency(
-        finalTotalPrice,
+      const paymentAmountInTND = await convertCurrency(
+        paymentAmount,
         roomCurrency,
         "TND"
       )
       console.log(
-        `Converting room price from ${roomCurrency} to TND: ${finalTotalPrice} -> ${totalPriceInTND}`
+        `Converting room price from ${roomCurrency} to TND: ${paymentAmount} -> ${paymentAmountInTND}`
       )
 
       // Insert booking record with TND price
@@ -228,15 +249,18 @@ export async function createRoomBooking({
           userId,
           checkIn: checkIn.toISOString(),
           checkOut: checkOut.toISOString(),
-          totalPrice: sql`${totalPriceInTND}::decimal`,
+          totalPrice: sql`${paymentAmountInTND}::decimal`,
           status: "confirmed", // initial status until payment is confirmed
-          paymentStatus: "confirmed",
+          paymentStatus: "completed",
           paymentMethod: "FLOUCI_TND",
           paymentCurrency: "TND",
           originalPrice: `${finalTotalPrice}`,
           originalCurrency: roomCurrency,
           adultCount,
           childCount,
+          paymentType,
+          advancePaymentPercentage: paymentType === "advance" ? advancePaymentPercentage : null,
+          fullPrice: paymentType === "advance" ? `${fullPrice}` : null,
         })
         .returning()
 
@@ -244,7 +268,7 @@ export async function createRoomBooking({
 
       if (initiatePayment) {
         const paymentData = await generatePaymentLink({
-          amount: totalPriceInTND,
+          amount: paymentAmountInTND,
           bookingId: booking.id,
           developerTrackingId: `room_booking_${booking.id}`,
           locale: locale, // Pass locale to payment link generator

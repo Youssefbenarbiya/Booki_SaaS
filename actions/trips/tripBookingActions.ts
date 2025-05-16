@@ -87,7 +87,7 @@ export async function createBooking({
         userId: userId,
         seatsBooked: seatsBooked,
         totalPrice: sql`${amountToStore}::decimal`,
-        status: isAdvancePayment ? "partially_paid" : "confirmed",
+        status: isAdvancePayment ? "partially_paid" : "completed",
         bookingDate: new Date(),
         paymentCurrency: paymentCurrency || trip.currency,
         originalCurrency: trip.currency,
