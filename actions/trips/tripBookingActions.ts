@@ -87,7 +87,7 @@ export async function createBooking({
         userId: userId,
         seatsBooked: seatsBooked,
         totalPrice: sql`${amountToStore}::decimal`,
-        status: "confirmed",
+        status: isAdvancePayment ? "partially_paid" : "confirmed",
         bookingDate: new Date(),
         paymentCurrency: paymentCurrency || trip.currency,
         originalCurrency: trip.currency,
@@ -327,6 +327,7 @@ export async function createBookingWithPayment({
           .update(tripBookings)
           .set({
             paymentStatus: "pending", // Set as pending until callback
+            status: "partially_paid", // Set the status to partially_paid
           })
           .where(eq(tripBookings.id, booking.id))
       }

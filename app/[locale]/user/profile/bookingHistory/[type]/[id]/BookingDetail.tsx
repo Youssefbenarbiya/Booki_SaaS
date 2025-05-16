@@ -65,7 +65,6 @@ export default function BookingDetailClient({
   }
 
   const typeDetails = getTypeDetails(booking.type)
-  const statusClass = getStatusColor(booking.status)
 
   // Format array data for display
   const formatArrayData = (data: any[] | undefined) => {
@@ -79,6 +78,10 @@ export default function BookingDetailClient({
     (booking.paymentMethod && booking.paymentMethod.includes("ADVANCE")) ||
     (booking.additionalInfo?.paymentMethod && booking.additionalInfo.paymentMethod.includes("ADVANCE"))
   
+  // Display status should be "pending" when it's a partial payment
+  const displayStatus = isPartialPayment ? "pending" : booking.status
+  const statusClass = getStatusColor(displayStatus)
+
   // Get payment information from the booking
   const getPaymentDetails = () => {
     try {
@@ -198,7 +201,7 @@ export default function BookingDetailClient({
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${statusClass}`}
                 >
-                  {booking.status === "partially_paid" ? "Partially Paid" : booking.status}
+                  {isPartialPayment ? "Pending" : displayStatus === "partially_paid" ? "Partially Paid" : displayStatus}
                 </span>
               </div>
             </div>
@@ -256,24 +259,24 @@ export default function BookingDetailClient({
               
               <div className="text-xs text-gray-500 mt-3 space-y-1">
                 <p>Payment Method: {paymentMethod}</p>
-                <p>Payment Status: {booking.status}</p>
+                <p>Payment Status: {isPartialPayment ? "Pending - Advance Payment Only" : booking.status}</p>
               </div>
             </div>
           </div>
 
           {/* Show advance payment notice if applicable */}
           {isPartialPayment && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4 mb-6 shadow-md">
               <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-blue-500 mr-3 mt-0.5" />
+                <AlertCircle className="w-6 h-6 text-yellow-500 mr-3 mt-0.5" />
                 <div>
-                  <h3 className="font-medium text-blue-800 text-lg">Important: Visit Agency To Complete Payment</h3>
-                  <p className="text-sm text-blue-700 mt-1">
-                    You've made an advance payment of {paymentDetails.advancePercentage}% ({formatCurrency(paymentDetails.advanceAmount)}). 
-                    <strong className="block mt-2">Please visit the agency as soon as possible to pay the remaining {formatCurrency(paymentDetails.remainingAmount)} in cash to complete your booking.</strong>
+                  <h3 className="font-bold text-yellow-800 text-xl">Action Required: Visit Agency To Complete Payment</h3>
+                  <p className="text-md text-yellow-700 mt-2">
+                    You've only made an advance payment of {paymentDetails.advancePercentage}% ({formatCurrency(paymentDetails.advanceAmount)}). 
+                    <strong className="block mt-2 text-lg">Please visit the agency as soon as possible to pay the remaining {formatCurrency(paymentDetails.remainingAmount)} in cash to complete your booking.</strong>
                   </p>
-                  <p className="text-xs text-blue-600 mt-3 italic">
-                    Your booking is confirmed, but final documentation and services may require complete payment.
+                  <p className="text-sm text-yellow-600 mt-3 font-medium">
+                    Your booking is not fully confirmed until the remaining amount is paid. Please keep this in mind when planning your trip.
                   </p>
                 </div>
               </div>

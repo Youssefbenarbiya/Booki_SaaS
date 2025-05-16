@@ -9,6 +9,9 @@ import {
   room,
   cars,
   user,
+  agencies,
+  wallet,
+  walletTransactions,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
@@ -434,22 +437,105 @@ export async function updateBookingStatus(
 
 // Mark a booking payment as complete (for advance payments)
 export async function completePayment(type: BookingType, bookingId: number) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user?.id) {
-    throw new Error("User not authenticated");
-  }
-
   try {
+    console.log(`completePayment called with type=${type}, id=${bookingId}`);
+    
+    // Use the correct auth method for server components
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    console.log("Session in completePayment:", {
+      userId: session?.user?.id,
+      userRole: session?.user?.role,
+    });
+    
+    // First check if user is authenticated
+    if (!session?.user?.id) {
+      console.log("Authentication failed in completePayment");
+      throw new Error("Unauthorized: Authentication required");
+    }
+    
+    // Check if user has the required role
+    const allowedRoles = ["admin", "agency owner", "employee"];
+    const userRole = session.user.role as string;
+    
+    if (!allowedRoles.includes(userRole)) {
+      console.log(`Authorization failed in completePayment: User role '${userRole}' not in allowed roles`);
+      throw new Error(`Unauthorized: Only ${allowedRoles.join(", ")} can complete payments`);
+    }
+    
+    // Check if the booking exists before updating
+    let booking;
+    let paymentAmount = 0;
+    let agencyId = '';
+    
+    switch (type) {
+      case "car":
+        booking = await db.query.carBookings.findFirst({
+          where: eq(carBookings.id, bookingId),
+          with: {
+            car: true,
+          }
+        });
+        if (booking && booking.car && booking.car.agencyId) {
+          paymentAmount = Number(booking.total_price);
+          agencyId = booking.car.agencyId;
+        }
+        break;
+      case "trip":
+        booking = await db.query.tripBookings.findFirst({
+          where: eq(tripBookings.id, bookingId),
+          with: {
+            trip: true,
+          }
+        });
+        if (booking && booking.trip && booking.trip.agencyId) {
+          paymentAmount = Number(booking.totalPrice);
+          agencyId = booking.trip.agencyId;
+        }
+        break;
+      case "hotel":
+        booking = await db.query.roomBookings.findFirst({
+          where: eq(roomBookings.id, bookingId),
+          with: {
+            room: {
+              with: {
+                hotel: true
+              }
+            }
+          }
+        });
+        if (booking && booking.room && booking.room.hotel && booking.room.hotel.agencyId) {
+          paymentAmount = Number(booking.totalPrice);
+          agencyId = booking.room.hotel.agencyId;
+        }
+        break;
+      default:
+        throw new Error(`Invalid booking type: ${type}`);
+    }
+    
+    if (!booking) {
+      console.log(`Booking not found: type=${type}, id=${bookingId}`);
+      throw new Error(`${type} booking with ID ${bookingId} not found`);
+    }
+    
+    if (!agencyId) {
+      console.log(`Agency ID not found for booking: type=${type}, id=${bookingId}`);
+      throw new Error('Agency not found for this booking');
+    }
+    
+    console.log(`Booking found, updating status: type=${type}, id=${bookingId}`);
+
+    // Update the booking status and payment status
     switch (type) {
       case "car":
         await db
           .update(carBookings)
           .set({ 
             status: "completed", 
-            paymentStatus: "completed" 
+            paymentStatus: "completed",
+            paymentDate: new Date()
           })
           .where(eq(carBookings.id, bookingId));
         break;
@@ -459,7 +545,8 @@ export async function completePayment(type: BookingType, bookingId: number) {
           .update(tripBookings)
           .set({ 
             status: "completed",
-            paymentStatus: "completed" 
+            paymentStatus: "completed",
+            paymentDate: new Date()
           })
           .where(eq(tripBookings.id, bookingId));
         break;
@@ -469,7 +556,8 @@ export async function completePayment(type: BookingType, bookingId: number) {
           .update(roomBookings)
           .set({ 
             status: "completed",
-            paymentStatus: "completed" 
+            paymentStatus: "completed",
+            paymentDate: new Date()
           })
           .where(eq(roomBookings.id, bookingId));
         break;
@@ -478,11 +566,80 @@ export async function completePayment(type: BookingType, bookingId: number) {
         throw new Error("Invalid booking type");
     }
 
+    console.log(`Successfully updated booking: type=${type}, id=${bookingId}`);
+    
+    // Find the agency's user information
+    const agency = await db.query.agencies.findFirst({
+      where: eq(agencies.userId, agencyId),
+    });
+    
+    if (!agency) {
+      console.log(`Agency not found for ID: ${agencyId}`);
+      throw new Error('Agency not found with the given ID');
+    }
+    
+    // Find or create wallet for this agency
+    let agencyWallet = await db.query.wallet.findFirst({
+      where: eq(wallet.userId, agencyId),
+    });
+    
+    if (!agencyWallet) {
+      console.log("No wallet found for agency, creating one");
+      const newWallet = await db
+        .insert(wallet)
+        .values({
+          userId: agencyId,
+          balance: "0",
+        })
+        .returning();
+        
+      agencyWallet = newWallet[0];
+    }
+    
+    // Get current wallet balance
+    const currentBalance = parseFloat(agencyWallet.balance || "0");
+    const validatedPaymentAmount = isNaN(paymentAmount) ? 0 : paymentAmount;
+    const newBalance = currentBalance + validatedPaymentAmount;
+
+    console.log(`Wallet balance calculation:`, {
+      currentBalance,
+      paymentAmount: validatedPaymentAmount,
+      newBalance
+    });
+
+    // Update wallet balance
+    await db
+      .update(wallet)
+      .set({
+        balance: newBalance.toString(),
+        updatedAt: new Date(),
+      })
+      .where(eq(wallet.id, agencyWallet.id));
+      
+    // Record transaction in wallet_transactions
+    await db
+      .insert(walletTransactions)
+      .values({
+        walletId: agencyWallet.id,
+        amount: validatedPaymentAmount.toString(),
+        type: "booking_payment",
+        status: "completed",
+        description: `Payment received for ${type} booking #${bookingId}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    
+    console.log(`Added ${validatedPaymentAmount} to agency wallet. New balance: ${newBalance}`);
+    
+    // Revalidate relevant paths
     revalidatePath("/[locale]/user/profile/bookingHistory");
     revalidatePath("/[locale]/agency/dashboard/bookings");
+    revalidatePath(`/[locale]/agency/dashboard/bookings/${type}/${bookingId}`);
+    revalidatePath(`/[locale]/agency/dashboard/wallet`);
+    
     return { success: true, message: "Payment marked as completed successfully" };
   } catch (error) {
     console.error(`Error completing payment for ${type} booking:`, error);
-    throw new Error(`Failed to complete payment for ${type} booking`);
+    throw new Error(`Failed to complete payment: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
