@@ -469,6 +469,8 @@ export async function completePayment(type: BookingType, bookingId: number) {
     let booking;
     let paymentAmount = 0;
     let agencyId = '';
+    let isAdvancePayment = false;
+    let advancePercentage = 0;
     
     switch (type) {
       case "car":
@@ -479,7 +481,26 @@ export async function completePayment(type: BookingType, bookingId: number) {
           }
         });
         if (booking && booking.car && booking.car.agencyId) {
-          paymentAmount = Number(booking.total_price);
+          const total = Number(booking.total_price);
+          
+          // Check if this was an advance payment
+          isAdvancePayment = booking.paymentStatus === "partial" || 
+                            (booking.paymentMethod && booking.paymentMethod.includes("ADVANCE")) || 
+                            booking.advancePaymentPercentage !== null;
+          
+          advancePercentage = booking.advancePaymentPercentage || 
+                             (booking.car.advancePaymentEnabled ? booking.car.advancePaymentPercentage || 30 : 30);
+          
+          if (isAdvancePayment) {
+            // For advance payments, only add the remaining amount (typically 70%)
+            const advanceAmount = total * (advancePercentage / 100);
+            paymentAmount = total - advanceAmount; // Only the remaining amount
+            console.log(`Car booking: Advance payment detected. Adding only remaining amount: ${paymentAmount}`);
+          } else {
+            paymentAmount = total;
+            console.log(`Car booking: Full payment: ${paymentAmount}`);
+          }
+          
           agencyId = booking.car.agencyId;
         }
         break;
@@ -491,7 +512,40 @@ export async function completePayment(type: BookingType, bookingId: number) {
           }
         });
         if (booking && booking.trip && booking.trip.agencyId) {
-          paymentAmount = Number(booking.totalPrice);
+          const total = Number(booking.totalPrice);
+          
+          // Check if this was an advance payment - for trips we need to check more conditions
+          isAdvancePayment = booking.paymentStatus === "partial" || 
+                            booking.status === "partially_paid" || // Add this condition
+                            booking.paymentType === "advance" ||
+                            (booking.paymentMethod && booking.paymentMethod.includes("ADVANCE")) || 
+                            booking.advancePaymentPercentage !== null;
+          
+          // Calculate advance percentage - for trips, check multiple sources
+          advancePercentage = booking.advancePaymentPercentage || 
+                              (booking.trip.advancePaymentEnabled ? booking.trip.advancePaymentPercentage || 30 : 30);
+          
+          if (isAdvancePayment) {
+            // For advance payments, we need to calculate the correct remaining amount
+            // If fullPrice is available, use that for the total instead of totalPrice
+            const fullAmount = booking.fullPrice ? Number(booking.fullPrice) : total;
+            
+            if (booking.fullPrice) {
+              // If fullPrice exists, the totalPrice is just the advance payment
+              // So remaining amount is fullPrice minus advance payment
+              paymentAmount = fullAmount - total;
+              console.log(`Trip booking with fullPrice: Using remaining amount = fullPrice(${fullAmount}) - totalPrice(${total}) = ${paymentAmount}`);
+            } else {
+              // Otherwise calculate based on percentage
+              const advanceAmount = fullAmount * (advancePercentage / 100);
+              paymentAmount = fullAmount - advanceAmount;
+              console.log(`Trip booking: Advance payment detected. Adding remaining amount: ${paymentAmount}`);
+            }
+          } else {
+            paymentAmount = total;
+            console.log(`Trip booking: Full payment: ${paymentAmount}`);
+          }
+          
           agencyId = booking.trip.agencyId;
         }
         break;
@@ -507,7 +561,23 @@ export async function completePayment(type: BookingType, bookingId: number) {
           }
         });
         if (booking && booking.room && booking.room.hotel && booking.room.hotel.agencyId) {
-          paymentAmount = Number(booking.totalPrice);
+          const total = Number(booking.totalPrice);
+          
+          // Check if this was an advance payment
+          isAdvancePayment = booking.paymentStatus === "partial" || 
+                            (booking.paymentMethod && booking.paymentMethod.includes("ADVANCE"));
+          
+          if (isAdvancePayment) {
+            // For advance payments, only add the remaining amount (typically 70%)
+            advancePercentage = 30; // Default for hotel bookings
+            const advanceAmount = total * (advancePercentage / 100);
+            paymentAmount = total - advanceAmount; // Only the remaining amount
+            console.log(`Hotel booking: Advance payment detected. Adding only remaining amount: ${paymentAmount}`);
+          } else {
+            paymentAmount = total;
+            console.log(`Hotel booking: Full payment: ${paymentAmount}`);
+          }
+          
           agencyId = booking.room.hotel.agencyId;
         }
         break;
