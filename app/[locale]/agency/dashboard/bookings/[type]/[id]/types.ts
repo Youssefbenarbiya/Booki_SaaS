@@ -81,6 +81,9 @@ export type HotelBooking = {
   paymentStatus?: string;
   paymentMethod?: string;
   paymentDate?: Date;
+  paymentType?: "full" | "advance";
+  advancePaymentPercentage?: number;
+  fullPrice?: string;
   room: {
     name: string;
     roomType: string;
@@ -92,6 +95,8 @@ export type HotelBooking = {
       city: string;
       images: string[];
     };
+    advancePaymentEnabled?: boolean;
+    advancePaymentPercentage?: number;
   };
   user?: {
     id: string;

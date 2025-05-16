@@ -80,12 +80,19 @@ export async function fetchBookingData(
     const isPartialPayment =
       booking.status === "partially_paid" ||
       booking.paymentStatus === "partial" ||
+      booking.paymentStatus === "partially_paid" ||
       (isCarBooking(booking) && booking.paymentMethod?.includes("ADVANCE")) ||
       (isTripBooking(booking) && booking.paymentMethod?.includes("ADVANCE")) ||
       // Check paymentType field for trips
       (isTripBooking(booking) &&
         booking.trip.advancePaymentPercentage &&
         booking.trip.advancePaymentPercentage > 0 &&
+        booking.status !== "completed") ||
+      // Add check for hotel rooms with advance payment
+      (isHotelBooking(booking) &&
+        booking.paymentType === "advance" &&
+        booking.advancePaymentPercentage &&
+        booking.advancePaymentPercentage > 0 &&
         booking.status !== "completed") ||
       // For cases where the payment amount is less than the full amount (indicating partial payment)
       (isTripBooking(booking) &&
@@ -95,10 +102,12 @@ export async function fetchBookingData(
           parseFloat(booking.trip.originalPrice) * booking.seatsBooked);
 
     // Calculate the advance percentage (default to 30% if not specified)
-    const advancePercentage = isTripBooking(booking) &&
-      booking.trip.advancePaymentPercentage
-      ? booking.trip.advancePaymentPercentage
-      : 30;
+    const advancePercentage = 
+      (isHotelBooking(booking) && booking.advancePaymentPercentage) 
+        ? booking.advancePaymentPercentage 
+        : isTripBooking(booking) && booking.trip.advancePaymentPercentage
+          ? booking.trip.advancePaymentPercentage
+          : 30;
 
     // Calculate amounts
     const amounts = calculateAmounts(booking, advancePercentage);

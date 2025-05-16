@@ -130,8 +130,8 @@ export async function createRoomBooking({
           checkIn: checkIn.toISOString(),
           checkOut: checkOut.toISOString(),
           totalPrice: sql`${paymentAmountInUSD}::decimal`,
-          status: "confirmed", // initial status until payment is confirmed
-          paymentStatus: "completed",
+          status: paymentType === "advance" ? "partially_paid" : "confirmed", // Change status based on payment type
+          paymentStatus: paymentType === "advance" ? "partially_paid" : "completed", // Change payment status for advance payments
           paymentMethod: "STRIPE_USD",
           paymentCurrency: "USD",
           originalPrice: `${finalTotalPrice}`,
@@ -250,8 +250,8 @@ export async function createRoomBooking({
           checkIn: checkIn.toISOString(),
           checkOut: checkOut.toISOString(),
           totalPrice: sql`${paymentAmountInTND}::decimal`,
-          status: "confirmed", // initial status until payment is confirmed
-          paymentStatus: "completed",
+          status: paymentType === "advance" ? "partially_paid" : "confirmed", // Change status based on payment type
+          paymentStatus: paymentType === "advance" ? "partially_paid" : "completed", // Change payment status for advance payments
           paymentMethod: "FLOUCI_TND",
           paymentCurrency: "TND",
           originalPrice: `${finalTotalPrice}`,
@@ -327,13 +327,27 @@ export async function updateBookingPaymentStatus(
   paymentMethod?: string
 ) {
   try {
+    // First check if this is an advance payment
+    const booking = await db.query.roomBookings.findFirst({
+      where: eq(roomBookings.id, bookingId)
+    });
+    
+    // Determine the correct status based on payment type
+    let bookingStatus = paymentStatus === "completed" ? "confirmed" : "pending";
+    
+    // If it's an advance payment and payment is completed, mark as partially paid
+    if (booking?.paymentType === "advance" && paymentStatus === "completed") {
+      bookingStatus = "partially_paid";
+      paymentStatus = "partially_paid";
+    }
+    
     const [updatedBooking] = await db
       .update(roomBookings)
       .set({
         paymentStatus,
         paymentMethod,
         paymentDate: new Date(),
-        status: paymentStatus === "completed" ? "confirmed" : "pending",
+        status: bookingStatus,
       })
       .where(eq(roomBookings.id, bookingId))
       .returning()
