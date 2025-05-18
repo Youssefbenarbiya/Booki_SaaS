@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export type CarType = {
+  rejectionReason: any;
   id: number;
   brand: string;
   model: string;
