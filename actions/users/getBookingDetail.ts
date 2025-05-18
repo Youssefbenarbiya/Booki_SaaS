@@ -97,11 +97,13 @@ export async function getBookingDetail(
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
             activities: activities.length > 0 ? activities : undefined,
-            advancePaymentPercentage: booking.trip.advancePaymentPercentage,
-            discountPercentage: booking.trip.discountPercentage,
+            advancePaymentPercentage:
+              booking.trip.advancePaymentPercentage ?? undefined,
+            discountPercentage: booking.trip.discountPercentage ?? undefined,
           },
-          advancePaymentPercentage: booking.trip.advancePaymentPercentage,
-          discountPercentage: booking.trip.discountPercentage,
+          advancePaymentPercentage:
+            booking.trip.advancePaymentPercentage ?? undefined,
+          discountPercentage: booking.trip.discountPercentage ?? undefined,
         }
       }
 
@@ -221,11 +223,13 @@ export async function getBookingDetail(
             dailyRate: booking.car.originalPrice,
             paymentStatus: booking.paymentStatus,
             paymentMethod: booking.paymentMethod,
-            discountPercentage: booking.car.discountPercentage,
-            advancePaymentPercentage: booking.car.advancePaymentPercentage,
+            discountPercentage: booking.car.discountPercentage ?? undefined,
+            advancePaymentPercentage:
+              booking.car.advancePaymentPercentage ?? undefined,
           },
-          advancePaymentPercentage: booking.car.advancePaymentPercentage,
-          discountPercentage: booking.car.discountPercentage,
+          advancePaymentPercentage:
+            booking.car.advancePaymentPercentage ?? undefined,
+          discountPercentage: booking.car.discountPercentage ?? undefined,
         }
       }
 
