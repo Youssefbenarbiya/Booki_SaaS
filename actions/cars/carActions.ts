@@ -155,35 +155,36 @@ export async function createCar(data: CarFormValues) {
       ? data.images.map((img) => (typeof img === "string" ? img : img.imageUrl))
       : []
 
-    const newCar = await db
-      .insert(cars)
-      .values({
-        model: data.model,
-        brand: data.brand,
-        year: data.year,
-        plateNumber: data.plateNumber,
-        color: data.color,
-        originalPrice: data.originalPrice.toString(),
-        currency: data.currency || "TND",
-        discountPercentage: discountPercentage ?? undefined,
-        priceAfterDiscount:
-          priceAfterDiscount !== undefined && priceAfterDiscount !== null
-            ? priceAfterDiscount.toString()
-            : undefined,
-        isAvailable: isAvailable,
-        images: processedImages,
-        agencyId: agencyId,
-        seats: data.seats || 4,
-        category: data.category,
-        location: data.location,
-        status: "pending", // Always set to pending for admin approval
-        // Add advance payment options
-        advancePaymentEnabled: data.advancePaymentEnabled || false,
-        advancePaymentPercentage: data.advancePaymentEnabled
-          ? data.advancePaymentPercentage
+    // Créer d'abord un objet avec toutes les valeurs
+    const carData = {
+      model: data.model,
+      brand: data.brand,
+      year: data.year,
+      plateNumber: data.plateNumber,
+      color: data.color,
+      originalPrice: data.originalPrice.toString(),
+      currency: data.currency || "TND",
+      discountPercentage: discountPercentage ?? undefined,
+      priceAfterDiscount:
+        priceAfterDiscount !== undefined && priceAfterDiscount !== null
+          ? priceAfterDiscount.toString()
           : undefined,
-      })
-      .returning()
+      isAvailable: isAvailable,
+      images: processedImages,
+      agencyId: agencyId,
+      seats: data.seats || 4,
+      category: data.category || "Other", // Provide a default value to avoid undefined
+      location: data.location || "", // Ensure location is never undefined
+      status: "pending", // Always set to pending for admin approval
+      // Add advance payment options
+      advancePaymentEnabled: data.advancePaymentEnabled || false,
+      advancePaymentPercentage: data.advancePaymentEnabled
+        ? data.advancePaymentPercentage
+        : undefined,
+    }
+
+    // Utiliser la méthode .values() avec l'objet unique
+    const newCar = await db.insert(cars).values(carData).returning()
 
     // Always send notification email to admin for new cars
     await sendCarApprovalRequest(newCar[0].id)
