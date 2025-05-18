@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import db from "@/db/drizzle"
 import { cars, carBookings, trips, tripBookings, hotel, room, roomBookings, user, agencies } from "@/db/schema"
-import { count, sql, eq, and, gte, desc } from "drizzle-orm"
+import { count, sql, eq, gte, desc } from "drizzle-orm"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 
@@ -22,7 +22,6 @@ export async function GET() {
     // Get current date info for filtering
     const now = new Date()
     const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth() + 1 // JavaScript months are 0-indexed
     
     // Calculate first day of current month for monthly comparisons
     const firstDayOfMonth = new Date(currentYear, now.getMonth(), 1)

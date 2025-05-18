@@ -65,10 +65,6 @@ export default function NewHotelPage() {
   const locale = params.locale as string;
   const [isPending, startTransition] = useTransition();
 
-  // Add advance payment state variables
-  const [advancePaymentEnabled, setAdvancePaymentEnabled] = useState<boolean>(false);
-  const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(20);
-  const [customAdvancePercentage, setCustomAdvancePercentage] = useState<boolean>(false);
 
   const {
     register,
@@ -169,7 +165,7 @@ export default function NewHotelPage() {
         advancePaymentEnabled: room.advancePaymentEnabled || false,
         advancePaymentPercentage: room.advancePaymentEnabled 
           ? room.advancePaymentPercentage || 20
-          : null,
+          : undefined,
       }));
 
       // Prepare final data with image URLs

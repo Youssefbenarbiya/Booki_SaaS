@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { fetchBookingData } from "./data";
 import { Booking, isCarBooking, isTripBooking, isHotelBooking } from "./types";
 import { format } from "date-fns";

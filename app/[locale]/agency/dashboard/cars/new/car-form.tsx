@@ -45,7 +45,6 @@ import { fileToFormData } from "@/lib/utils"
 import { uploadImages } from "@/actions/uploadActions"
 // ----------------------------------
 import { Locale } from "@/i18n/routing"
-import { Separator } from "@/components/ui/separator"
 
 // Extend the schema to include discount fields.
 const carFormSchema = z.object({

@@ -15,8 +15,6 @@ import {
   Hotel
 } from "lucide-react"
 import { CalendarDateRangePicker } from "@/components/dashboard/admin/date-range-picker"
-import { Overview } from "@/components/dashboard/admin/overview"
-import { RecentTransactions } from "@/components/dashboard/admin/recent-transactions"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
@@ -64,9 +62,9 @@ const fallbackStats = {
 export default async function DashboardPage({
   params,
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
-  const locale = params.locale
+  const { locale } = await params
   
   // Check if user is authenticated and is an admin
   const session =  await auth.api.getSession({

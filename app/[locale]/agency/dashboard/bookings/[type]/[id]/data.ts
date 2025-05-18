@@ -171,9 +171,11 @@ function calculateAmounts(booking: Booking, advancePercentage: number) {
       };
     }
     
+    // Add a type assertion for the fallback case
     const total = parseFloat(
-      // @ts-ignore
-      booking.totalPrice || booking.total_price || "0"
+      (booking as { totalPrice?: string; total_price?: string }).totalPrice || 
+      (booking as { totalPrice?: string; total_price?: string }).total_price || 
+      "0"
     );
     return {
       total,

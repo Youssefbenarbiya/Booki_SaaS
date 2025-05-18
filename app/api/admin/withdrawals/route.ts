@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { withdrawalRequests, user } from "@/db/schema"
+import { withdrawalRequests } from "@/db/schema"
 import { eq, desc, sql } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { auth } from "@/auth"

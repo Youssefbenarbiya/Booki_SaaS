@@ -1,7 +1,6 @@
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import { Card } from "@/components/ui/card"
 import { useEffect, useState } from "react"
 
 // Data structure for the chart

@@ -155,7 +155,6 @@ export async function createCar(data: CarFormValues) {
       ? data.images.map((img) => (typeof img === "string" ? img : img.imageUrl))
       : []
 
-    // Create car with discount fields included and always set status to "pending" for new cars
     const newCar = await db
       .insert(cars)
       .values({
@@ -180,7 +179,9 @@ export async function createCar(data: CarFormValues) {
         status: "pending", // Always set to pending for admin approval
         // Add advance payment options
         advancePaymentEnabled: data.advancePaymentEnabled || false,
-        advancePaymentPercentage: data.advancePaymentEnabled ? data.advancePaymentPercentage : undefined,
+        advancePaymentPercentage: data.advancePaymentEnabled
+          ? data.advancePaymentPercentage
+          : undefined,
       })
       .returning()
 
@@ -259,8 +260,14 @@ export async function updateCar(id: number, data: CarFormValues) {
         location: data.location,
         status: data.status || undefined, // Preserve existing status if not provided
         // Add advance payment options
-        advancePaymentEnabled: data.advancePaymentEnabled !== undefined ? data.advancePaymentEnabled : false,
-        advancePaymentPercentage: data.advancePaymentEnabled && data.advancePaymentPercentage ? data.advancePaymentPercentage : null,
+        advancePaymentEnabled:
+          data.advancePaymentEnabled !== undefined
+            ? data.advancePaymentEnabled
+            : false,
+        advancePaymentPercentage:
+          data.advancePaymentEnabled && data.advancePaymentPercentage
+            ? data.advancePaymentPercentage
+            : null,
       })
       .where(eq(cars.id, id))
       .returning()

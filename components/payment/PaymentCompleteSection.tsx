@@ -19,7 +19,6 @@ export default function PaymentCompleteSection({
   bookingId,
   locale,
   advancePercentage,
-  advanceAmount,
   remainingAmount,
   formattedAdvanceAmount,
   formattedRemainingAmount

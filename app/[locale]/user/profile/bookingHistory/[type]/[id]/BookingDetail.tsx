@@ -2,7 +2,7 @@
 "use client"
 
 import Image from "next/image"
-import { ChevronLeft, AlertCircle, CheckCircle, Info, DollarSign } from "lucide-react"
+import { ChevronLeft, AlertCircle, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { BookingDetailType } from "@/actions/users/getBookingDetail"
 
@@ -272,7 +272,7 @@ export default function BookingDetailClient({
                 <div>
                   <h3 className="font-bold text-yellow-800 text-xl">Action Required: Visit Agency To Complete Payment</h3>
                   <p className="text-md text-yellow-700 mt-2">
-                    You've only made an advance payment of {paymentDetails.advancePercentage}% ({formatCurrency(paymentDetails.advanceAmount)}). 
+                    You&apos;ve only made an advance payment of {paymentDetails.advancePercentage}% ({formatCurrency(paymentDetails.advanceAmount)}). 
                     <strong className="block mt-2 text-lg">Please visit the agency as soon as possible to pay the remaining {formatCurrency(paymentDetails.remainingAmount)} in cash to complete your booking.</strong>
                   </p>
                   <p className="text-sm text-yellow-600 mt-3 font-medium">

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { useState, FormEvent, useTransition, useEffect } from "react"
@@ -21,7 +22,6 @@ import {
 } from "@/actions/hotels&rooms/roomBookingActions"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import PaymentSelector from "@/components/payment/PaymentSelector"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
 
 interface RoomBookingRecord {
