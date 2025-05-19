@@ -15,6 +15,7 @@ import {
   Hotel
 } from "lucide-react"
 import { CalendarDateRangePicker } from "@/components/dashboard/admin/date-range-picker"
+import { NotificationBell } from "@/components/dashboard/admin/notification-bell"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
@@ -101,6 +102,7 @@ export default async function DashboardPage({
       <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <div className="flex items-center space-x-2">
+          <NotificationBell />
           <CalendarDateRangePicker />
           <Button variant="outline">Download Report</Button>
         </div>

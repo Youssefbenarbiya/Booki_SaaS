@@ -774,3 +774,20 @@ export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one 
     references: [user.id],
   }),
 }))
+
+// Admin Notifications
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // agency_verification, new_trip, new_car, new_hotel, new_blog
+  entityId: text("entity_id").notNull(), // ID of the related entity (agency, trip, car, hotel, blog)
+  entityType: varchar("entity_type", { length: 50 }).notNull(), // agency, trip, car, hotel, blog
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const adminNotificationsRelations = relations(adminNotifications, ({ one }) => ({
+  // Relations can be added if needed
+}));
