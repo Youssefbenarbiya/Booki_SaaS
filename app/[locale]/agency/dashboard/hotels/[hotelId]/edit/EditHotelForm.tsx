@@ -1,34 +1,52 @@
 // EditHotelForm.tsx
-"use client";
-import Image from "next/image";
-import { useTransition, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { hotelSchema, type HotelInput } from "@/lib/validations/hotelSchema";
-import { useRouter } from "next/navigation";
-import { updateHotel } from "@/actions/hotels&rooms/hotelActions";
-import { ImageUploadSection } from "@/components/ImageUploadSection";
-import { fileToFormData } from "@/lib/utils";
-import { uploadImages } from "@/actions/uploadActions";
-import { Building, BedDouble, Plus, Trash2, MapPin } from "lucide-react";
-import dynamic from "next/dynamic";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+"use client"
+import Image from "next/image"
+import { useTransition, useState } from "react"
+import { useFieldArray, useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { hotelSchema, type HotelInput } from "@/lib/validations/hotelSchema"
+import { useRouter } from "next/navigation"
+import { updateHotel } from "@/actions/hotels&rooms/hotelActions"
+import { ImageUploadSection } from "@/components/ImageUploadSection"
+import { fileToFormData } from "@/lib/utils"
+import { uploadImages } from "@/actions/uploadActions"
+import {
+  Building,
+  BedDouble,
+  Plus,
+  Trash2,
+  MapPin,
+  Info,
+  Percent,
+  DollarSign,
+} from "lucide-react"
+import dynamic from "next/dynamic"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Locale } from "@/i18n/routing";
+} from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Locale } from "@/i18n/routing"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const LocationMapSelector = dynamic(
   () => import("@/components/LocationMapSelector"),
   { ssr: false }
-);
+)
 
 // Available amenities for hotels and rooms
 const HOTEL_AMENITIES = [
@@ -40,7 +58,7 @@ const HOTEL_AMENITIES = [
   "Air Conditioning",
   "Restaurant",
   "Pet Friendly",
-];
+]
 
 const ROOM_AMENITIES = [
   "Air Conditioning",
@@ -50,50 +68,52 @@ const ROOM_AMENITIES = [
   "Safe",
   "Bathtub",
   "Shower",
-];
+]
 
 // Update the interface to include status property
 interface EditHotelFormProps {
   hotel: {
-    id: string;
-    name: string;
-    description: string;
-    address: string;
-    city: string;
-    country: string;
-    rating: number;
-    amenities: string[];
-    images: string[];
-    latitude?: string | null;
-    longitude?: string | null;
-    status: string;
+    id: string
+    name: string
+    description: string
+    address: string
+    city: string
+    country: string
+    rating: number
+    amenities: string[]
+    images: string[]
+    latitude?: string | null
+    longitude?: string | null
+    status: string
     rooms: Array<{
-      id: string;
-      name: string;
-      description: string;
-      capacity: number;
-      pricePerNightAdult: string;
-      pricePerNightChild: string;
-      currency?: string;
-      roomType: string;
-      amenities: string[];
-      images: string[];
-    }>;
-  };
-  locale: Locale;
+      id: string
+      name: string
+      description: string
+      capacity: number
+      pricePerNightAdult: string
+      pricePerNightChild: string
+      currency?: string
+      roomType: string
+      amenities: string[]
+      images: string[]
+      advancePaymentEnabled?: boolean
+      advancePaymentPercentage?: number
+    }>
+  }
+  locale: Locale
 }
 
 export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   // Convert string coordinates to numbers
   const initialLatitude = hotel.latitude
     ? parseFloat(hotel.latitude)
-    : undefined;
+    : undefined
   const initialLongitude = hotel.longitude
     ? parseFloat(hotel.longitude)
-    : undefined;
+    : undefined
 
   // Initialize react-hook-form with default values.
   const {
@@ -133,54 +153,56 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
         roomType: room.roomType as "single" | "double" | "suite" | "family",
         amenities: room.amenities,
         images: room.images, // will be updated on submit
+        advancePaymentEnabled: room.advancePaymentEnabled || false,
+        advancePaymentPercentage: room.advancePaymentPercentage || 20,
       })),
     },
-  });
+  })
 
   // Get current values for latitude and longitude
-  const latitude = watch("latitude");
-  const longitude = watch("longitude");
+  const latitude = watch("latitude")
+  const longitude = watch("longitude")
 
   // Handle location selection
   const handleLocationSelected = (lat: number, lng: number) => {
-    setValue("latitude", lat);
-    setValue("longitude", lng);
-    console.log(`Map location selected: ${lat}, ${lng}`);
-  };
+    setValue("latitude", lat)
+    setValue("longitude", lng)
+    console.log(`Map location selected: ${lat}, ${lng}`)
+  }
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: "rooms",
-  });
+  })
 
   // --------------------------------------------------
   // EXISTING IMAGES (state so they can be modified)
   // --------------------------------------------------
   const [existingHotelImages, setExistingHotelImages] = useState<string[]>(
     hotel.images
-  );
+  )
   const [existingRoomImages, setExistingRoomImages] = useState<string[][]>(
     hotel.rooms.map((room) => room.images)
-  );
+  )
 
   // --------------------------------------------------
   // NEW UPLOADS (for hotel and room images)
   // --------------------------------------------------
-  const [newHotelImages, setNewHotelImages] = useState<File[]>([]);
+  const [newHotelImages, setNewHotelImages] = useState<File[]>([])
   const [newHotelImagePreviews, setNewHotelImagePreviews] = useState<string[]>(
     []
-  );
-  const [hotelUploadError, setHotelUploadError] = useState<string>("");
+  )
+  const [hotelUploadError, setHotelUploadError] = useState<string>("")
 
   const [newRoomImages, setNewRoomImages] = useState<File[][]>(
     hotel.rooms.map(() => [])
-  );
+  )
   const [newRoomImagePreviews, setNewRoomImagePreviews] = useState<string[][]>(
     hotel.rooms.map(() => [])
-  );
+  )
   const [roomUploadErrors, setRoomUploadErrors] = useState<string[]>(
     hotel.rooms.map(() => "")
-  );
+  )
 
   async function onSubmit(data: HotelInput) {
     startTransition(async () => {
@@ -189,22 +211,22 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
         // Process Hotel Images
         // ----------------------------
         // Start with the remaining (not removed) existing images.
-        let hotelImageUrls: string[] = [...existingHotelImages];
+        let hotelImageUrls: string[] = [...existingHotelImages]
 
         // Upload any new hotel images.
         if (newHotelImages.length > 0) {
           try {
             const newUrls = await Promise.all(
               newHotelImages.map(async (file) => {
-                const formData = await fileToFormData(file);
-                return uploadImages(formData);
+                const formData = await fileToFormData(file)
+                return uploadImages(formData)
               })
-            );
-            hotelImageUrls = [...existingHotelImages, ...newUrls];
+            )
+            hotelImageUrls = [...existingHotelImages, ...newUrls]
           } catch (error) {
-            console.error("Error uploading hotel images:", error);
-            setHotelUploadError("Failed to upload hotel images");
-            return;
+            console.error("Error uploading hotel images:", error)
+            setHotelUploadError("Failed to upload hotel images")
+            return
           }
         }
 
@@ -214,29 +236,29 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
         const roomImageUrlsPromises = newRoomImages.map(
           async (newRoomImageArray, index) => {
             // Use the remaining existing images for this room.
-            const currentExistingImages = existingRoomImages[index] || [];
+            const currentExistingImages = existingRoomImages[index] || []
             if (
               !Array.isArray(newRoomImageArray) ||
               newRoomImageArray.length === 0
             ) {
-              return currentExistingImages;
+              return currentExistingImages
             }
             try {
               const newUrls = await Promise.all(
                 newRoomImageArray.map(async (file) => {
-                  const formData = await fileToFormData(file);
-                  return uploadImages(formData);
+                  const formData = await fileToFormData(file)
+                  return uploadImages(formData)
                 })
-              );
-              return [...currentExistingImages, ...newUrls];
+              )
+              return [...currentExistingImages, ...newUrls]
             } catch (error) {
-              console.error("Error uploading room images:", error);
-              throw error;
+              console.error("Error uploading room images:", error)
+              throw error
             }
           }
-        );
+        )
 
-        const roomImageUrls = await Promise.all(roomImageUrlsPromises);
+        const roomImageUrls = await Promise.all(roomImageUrlsPromises)
 
         // ----------------------------
         // Prepare Final Data
@@ -250,23 +272,28 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
             images: roomImageUrls[index] || [],
             pricePerNightAdult: Number(room.pricePerNightAdult),
             pricePerNightChild: Number(room.pricePerNightChild),
+            // Ensure advance payment fields are properly handled
+            advancePaymentEnabled: room.advancePaymentEnabled || false,
+            advancePaymentPercentage: room.advancePaymentEnabled
+              ? room.advancePaymentPercentage || 20
+              : null,
           })),
-        };
+        }
 
-        const cleanedData = JSON.parse(JSON.stringify(formattedData));
+        const cleanedData = JSON.parse(JSON.stringify(formattedData))
 
-        await updateHotel(hotel.id, cleanedData);
-        router.push(`/${locale}/agency/dashboard/hotels`);
-        router.refresh();
+        await updateHotel(hotel.id, cleanedData)
+        router.push(`/${locale}/agency/dashboard/hotels`)
+        router.refresh()
       } catch (error) {
-        console.error("Error updating hotel:", error);
+        console.error("Error updating hotel:", error)
         if (error instanceof Error) {
-          setHotelUploadError(error.message);
+          setHotelUploadError(error.message)
         } else {
-          setHotelUploadError("Failed to update hotel");
+          setHotelUploadError("Failed to update hotel")
         }
       }
-    });
+    })
   }
 
   return (
@@ -401,14 +428,14 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                         value={amenity}
                         defaultChecked={hotel.amenities.includes(amenity)}
                         onCheckedChange={(checked) => {
-                          const amenities = watch("amenities") || [];
+                          const amenities = watch("amenities") || []
                           if (checked) {
-                            setValue("amenities", [...amenities, amenity]);
+                            setValue("amenities", [...amenities, amenity])
                           } else {
                             setValue(
                               "amenities",
                               amenities.filter((a) => a !== amenity)
-                            );
+                            )
                           }
                         }}
                       />
@@ -463,7 +490,7 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                           onClick={() => {
                             setExistingHotelImages((prev) =>
                               prev.filter((_, index) => index !== i)
-                            );
+                            )
                           }}
                           className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs"
                         >
@@ -514,12 +541,14 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                     pricePerNightChild: 0,
                     currency: "TND",
                     roomType: "double",
-                  });
-                  setNewRoomImages((prev) => [...prev, []]);
-                  setNewRoomImagePreviews((prev) => [...prev, []]);
-                  setRoomUploadErrors((prev) => [...prev, ""]);
+                    advancePaymentEnabled: false,
+                    advancePaymentPercentage: 20,
+                  })
+                  setNewRoomImages((prev) => [...prev, []])
+                  setNewRoomImagePreviews((prev) => [...prev, []])
+                  setRoomUploadErrors((prev) => [...prev, ""])
                   // Also add an empty array for existing images for the new room.
-                  setExistingRoomImages((prev) => [...prev, []]);
+                  setExistingRoomImages((prev) => [...prev, []])
                 }}
                 className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
@@ -539,27 +568,27 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                     <button
                       type="button"
                       onClick={() => {
-                        remove(index);
+                        remove(index)
                         setNewRoomImages((prev) => {
-                          const newImages = [...prev];
-                          newImages.splice(index, 1);
-                          return newImages;
-                        });
+                          const newImages = [...prev]
+                          newImages.splice(index, 1)
+                          return newImages
+                        })
                         setNewRoomImagePreviews((prev) => {
-                          const newPreviews = [...prev];
-                          newPreviews.splice(index, 1);
-                          return newPreviews;
-                        });
+                          const newPreviews = [...prev]
+                          newPreviews.splice(index, 1)
+                          return newPreviews
+                        })
                         setRoomUploadErrors((prev) => {
-                          const newErrors = [...prev];
-                          newErrors.splice(index, 1);
-                          return newErrors;
-                        });
+                          const newErrors = [...prev]
+                          newErrors.splice(index, 1)
+                          return newErrors
+                        })
                         setExistingRoomImages((prev) => {
-                          const newExisting = [...prev];
-                          newExisting.splice(index, 1);
-                          return newExisting;
-                        });
+                          const newExisting = [...prev]
+                          newExisting.splice(index, 1)
+                          return newExisting
+                        })
                       }}
                       className="btn btn-sm btn-error"
                     >
@@ -724,17 +753,17 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                               ]?.amenities.includes(amenity)}
                               onCheckedChange={(checked) => {
                                 const amenities =
-                                  watch(`rooms.${index}.amenities`) || [];
+                                  watch(`rooms.${index}.amenities`) || []
                                 if (checked) {
                                   setValue(`rooms.${index}.amenities`, [
                                     ...amenities,
                                     amenity,
-                                  ]);
+                                  ])
                                 } else {
                                   setValue(
                                     `rooms.${index}.amenities`,
                                     amenities.filter((a) => a !== amenity)
-                                  );
+                                  )
                                 }
                               }}
                             />
@@ -747,6 +776,162 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Add Advance Payment Option */}
+                    <div className="md:col-span-2 mt-4">
+                      <Card className="border-2 border-muted">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg flex items-center">
+                            <DollarSign className="h-5 w-5 mr-1" />
+                            Payment Options
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`room-${index}-advancePaymentEnabled`}
+                              checked={watch(
+                                `rooms.${index}.advancePaymentEnabled`
+                              )}
+                              onCheckedChange={(checked) => {
+                                setValue(
+                                  `rooms.${index}.advancePaymentEnabled`,
+                                  !!checked
+                                )
+                                if (!checked) {
+                                  setValue(
+                                    `rooms.${index}.advancePaymentPercentage`,
+                                    undefined
+                                  )
+                                }
+                              }}
+                            />
+                            <Label
+                              htmlFor={`room-${index}-advancePaymentEnabled`}
+                              className="font-medium"
+                            >
+                              Allow Partial Advance Payment
+                            </Label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>
+                                    Customers can pay a percentage in advance
+                                    and the rest in cash at the agency
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+
+                          {watch(`rooms.${index}.advancePaymentEnabled`) && (
+                            <div className="space-y-4 pl-6 border-l-2 border-muted">
+                              <div className="space-y-3">
+                                <Label>Advance Payment Percentage</Label>
+                                <RadioGroup
+                                  value={
+                                    watch(
+                                      `rooms.${index}.advancePaymentPercentage`
+                                    )?.toString() || "20"
+                                  }
+                                  onValueChange={(value) => {
+                                    const percentage = Number.parseInt(
+                                      value,
+                                      10
+                                    )
+                                    if (!isNaN(percentage)) {
+                                      setValue(
+                                        `rooms.${index}.advancePaymentPercentage`,
+                                        percentage
+                                      )
+                                    }
+                                  }}
+                                  className="flex flex-wrap gap-2"
+                                >
+                                  <div className="flex items-center space-x-2 border rounded-md p-2">
+                                    <RadioGroupItem
+                                      value="20"
+                                      id={`p20-${index}`}
+                                    />
+                                    <Label htmlFor={`p20-${index}`}>20%</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2 border rounded-md p-2">
+                                    <RadioGroupItem
+                                      value="30"
+                                      id={`p30-${index}`}
+                                    />
+                                    <Label htmlFor={`p30-${index}`}>30%</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2 border rounded-md p-2">
+                                    <RadioGroupItem
+                                      value="50"
+                                      id={`p50-${index}`}
+                                    />
+                                    <Label htmlFor={`p50-${index}`}>50%</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2 border rounded-md p-2">
+                                    <RadioGroupItem
+                                      value="custom"
+                                      id={`pcustom-${index}`}
+                                    />
+                                    <Label htmlFor={`pcustom-${index}`}>
+                                      Custom
+                                    </Label>
+                                  </div>
+                                </RadioGroup>
+
+                                {watch(
+                                  `rooms.${index}.advancePaymentPercentage`
+                                )?.toString() === "custom" && (
+                                  <div className="flex items-center space-x-2 mt-2">
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      max="99"
+                                      onChange={(e) => {
+                                        const value = Number.parseInt(
+                                          e.target.value,
+                                          10
+                                        )
+                                        if (
+                                          !isNaN(value) &&
+                                          value >= 1 &&
+                                          value <= 99
+                                        ) {
+                                          setValue(
+                                            `rooms.${index}.advancePaymentPercentage`,
+                                            value
+                                          )
+                                        }
+                                      }}
+                                      className="w-24"
+                                    />
+                                    <Percent className="h-4 w-4" />
+                                  </div>
+                                )}
+
+                                <div className="bg-muted p-4 rounded-md space-y-2 mt-4">
+                                  <div className="text-sm text-muted-foreground">
+                                    <p>
+                                      With advance payment enabled, customers
+                                      will have the option to pay
+                                      {watch(
+                                        `rooms.${index}.advancePaymentPercentage`
+                                      )}
+                                      % of the total price online and the
+                                      remaining amount in cash at the hotel.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
                     </div>
 
                     {/* Existing Room Images */}
@@ -770,12 +955,12 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                                   type="button"
                                   onClick={() => {
                                     setExistingRoomImages((prev) => {
-                                      const newImages = [...prev];
+                                      const newImages = [...prev]
                                       newImages[index] = newImages[
                                         index
-                                      ].filter((_, k) => k !== j);
-                                      return newImages;
-                                    });
+                                      ].filter((_, k) => k !== j)
+                                      return newImages
+                                    })
                                   }}
                                   className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs"
                                 >
@@ -794,32 +979,32 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
                         images={newRoomImages[index] || []}
                         setImages={(action) => {
                           setNewRoomImages((prev) => {
-                            const newRoomImagesCopy = [...prev];
-                            const current = newRoomImagesCopy[index] || [];
+                            const newRoomImagesCopy = [...prev]
+                            const current = newRoomImagesCopy[index] || []
                             newRoomImagesCopy[index] =
                               typeof action === "function"
                                 ? action(current)
-                                : action;
-                            return newRoomImagesCopy;
-                          });
+                                : action
+                            return newRoomImagesCopy
+                          })
                         }}
                         previewUrls={newRoomImagePreviews[index] || []}
                         setPreviewUrls={(action) => {
                           setNewRoomImagePreviews((prev) => {
-                            const newRoomPreviewsCopy = [...prev];
-                            const current = newRoomPreviewsCopy[index] || [];
+                            const newRoomPreviewsCopy = [...prev]
+                            const current = newRoomPreviewsCopy[index] || []
                             newRoomPreviewsCopy[index] =
                               typeof action === "function"
                                 ? action(current)
-                                : action;
-                            return newRoomPreviewsCopy;
-                          });
+                                : action
+                            return newRoomPreviewsCopy
+                          })
                         }}
                         uploadError={roomUploadErrors[index] || ""}
                         setUploadError={(error) => {
-                          const newErrors = [...roomUploadErrors];
-                          newErrors[index] = error;
-                          setRoomUploadErrors(newErrors);
+                          const newErrors = [...roomUploadErrors]
+                          newErrors[index] = error
+                          setRoomUploadErrors(newErrors)
                         }}
                       />
                     </div>
@@ -855,5 +1040,5 @@ export default function EditHotelForm({ hotel, locale }: EditHotelFormProps) {
         </div>
       </form>
     </div>
-  );
+  )
 }

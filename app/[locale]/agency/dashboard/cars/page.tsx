@@ -19,6 +19,7 @@ export default async function CarsPage({ params }: CarsPageProps) {
   // Transform the cars data so that price fields are numbers
   const formattedCars = cars.map((car) => ({
     ...car,
+    agencyId: car.agencyId || "",
     originalPrice: Number(car.originalPrice),
     priceAfterDiscount: car.priceAfterDiscount
       ? Number(car.priceAfterDiscount)
@@ -26,8 +27,10 @@ export default async function CarsPage({ params }: CarsPageProps) {
     discountPercentage:
       car.discountPercentage !== null ? car.discountPercentage : undefined,
     isAvailable: car.isAvailable ?? false,
-    createdAt: car.createdAt ? car.createdAt.toISOString() : undefined,
-    updatedAt: car.updatedAt ? car.updatedAt.toISOString() : undefined,
+    createdAt: car.createdAt || undefined,
+    updatedAt: car.updatedAt || undefined,
+    advancePaymentEnabled: car.advancePaymentEnabled || undefined,
+    advancePaymentPercentage: car.advancePaymentPercentage || undefined,
   }))
 
   return (

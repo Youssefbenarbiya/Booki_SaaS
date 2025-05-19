@@ -3,7 +3,7 @@ import { hotel } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { HotelApprovalActions } from "@/components/dashboard/admin/HotelApprovalActions"
@@ -21,6 +21,11 @@ export default async function HotelDetailsPage({
     where: eq(hotel.id, hotelId),
     with: {
       rooms: true,
+      agency: {
+        with: {
+          user: true,
+        },
+      },
     },
   })
 
@@ -79,6 +84,38 @@ export default async function HotelDetailsPage({
             <Badge className={statusColor}>{hotelDetails.status}</Badge>
           </div>
         </div>
+
+        {/* Agency Information */}
+        {hotelDetails.agency && (
+          <div className="p-6 border-b">
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg flex items-center">
+              <div className="flex-grow">
+                <h3 className="font-medium">Agency Information</h3>
+                <p className="text-blue-900">
+                  {hotelDetails.agency.agencyName}{" "}
+                  <span className="ml-2 inline-flex items-center">
+                    {hotelDetails.agency.isVerified ? (
+                      <span className="text-green-600 flex items-center">
+                        <CheckCircle className="h-4 w-4 mr-1 text-sm" />
+                        Verified
+                      </span>
+                    ) : (
+                      <span className="text-red-600 flex items-center text-sm">
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Not Verified
+                      </span>
+                    )}
+                  </span>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Contact:{" "}
+                  {hotelDetails.agency.contactEmail ||
+                    hotelDetails.agency.user.email}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Hotel Images */}
         {hotelDetails.images && hotelDetails.images.length > 0 && (
@@ -163,6 +200,26 @@ export default async function HotelDetailsPage({
                               per night
                             </span>
                           </div>
+
+                          {room.advancePaymentEnabled && (
+                            <div className="mt-2 text-sm bg-green-50 text-green-700 p-1 rounded">
+                              <span className="font-medium">
+                                Advance Payment:{" "}
+                              </span>
+                              {room.advancePaymentPercentage}% required
+                              <span className="block">
+                                ($
+                                {parseFloat(
+                                  (
+                                    (parseFloat(room.pricePerNightAdult.toString()) *
+                                      (room.advancePaymentPercentage ?? 0)) /
+                                    100
+                                  ).toString()
+                                ).toFixed(2)}{" "}
+                                per adult)
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
 

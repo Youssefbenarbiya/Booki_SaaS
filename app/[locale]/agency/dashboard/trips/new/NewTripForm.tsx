@@ -73,6 +73,9 @@ interface ExtendedTripInput extends TripInput {
   timeSpecificDiscountDays?: string[]
   timeSpecificDiscountPercentage?: number
   childDiscountPercentage?: number
+  // Add advance payment option
+  advancePaymentEnabled: boolean
+  advancePaymentPercentage?: number
 }
 
 export default function NewTripForm() {
@@ -128,6 +131,11 @@ export default function NewTripForm() {
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
 
+  // New advance payment states
+  const [advancePaymentEnabled, setAdvancePaymentEnabled] = useState<boolean>(false)
+  const [advancePaymentPercentage, setAdvancePaymentPercentage] = useState<number>(20)
+  const [customAdvancePercentage, setCustomAdvancePercentage] = useState<boolean>(false)
+
   const {
     register,
     handleSubmit,
@@ -150,6 +158,9 @@ export default function NewTripForm() {
       timeSpecificDiscountPercentage: 15,
       childDiscountEnabled: false,
       childDiscountPercentage: 25,
+      // Initialize advance payment fields
+      advancePaymentEnabled: false,
+      advancePaymentPercentage: 20,
     },
   })
 
@@ -239,6 +250,8 @@ export default function NewTripForm() {
         timeSpecificDiscountPercentage,
         childDiscountEnabled,
         childDiscountPercentage,
+        advancePaymentEnabled,
+        advancePaymentPercentage,
       })
 
       // Create trip with image URLs, discount info, and currency
@@ -279,6 +292,12 @@ export default function NewTripForm() {
         childDiscountEnabled: childDiscountEnabled,
         childDiscountPercentage: childDiscountEnabled
           ? childDiscountPercentage
+          : null,
+        
+        // Add advance payment options
+        advancePaymentEnabled: advancePaymentEnabled,
+        advancePaymentPercentage: advancePaymentEnabled
+          ? advancePaymentPercentage
           : null,
       }
 
@@ -1158,6 +1177,158 @@ export default function NewTripForm() {
                 <Checkbox id="isAvailable" {...register("isAvailable")} />
                 <Label htmlFor="isAvailable">Available for Booking</Label>
               </div>
+            </div>
+
+            {/* Add the advance payment section before the Trip Images section */}
+            <div className="md:col-span-2">
+              <Card className="border-2 border-muted">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <DollarSign className="h-5 w-5 mr-1" />
+                    Payment Options
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="advancePaymentEnabled"
+                      checked={advancePaymentEnabled}
+                      onCheckedChange={(checked) => {
+                        setAdvancePaymentEnabled(!!checked)
+                        setValue("advancePaymentEnabled", !!checked)
+                        if (!checked) {
+                          setAdvancePaymentPercentage(20)
+                          setValue("advancePaymentPercentage", undefined)
+                          setCustomAdvancePercentage(false)
+                        }
+                      }}
+                    />
+                    <Label htmlFor="advancePaymentEnabled" className="font-medium">
+                      Allow Partial Advance Payment
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Customers can pay a percentage in advance and the rest in cash at the agency</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+
+                  {advancePaymentEnabled && (
+                    <div className="space-y-4 pl-6 border-l-2 border-muted">
+                      <div className="space-y-3">
+                        <Label>Advance Payment Percentage</Label>
+                        <RadioGroup
+                          value={
+                            customAdvancePercentage
+                              ? "custom"
+                              : advancePaymentPercentage.toString()
+                          }
+                          onValueChange={(value) => {
+                            if (value === "custom") {
+                              setCustomAdvancePercentage(true)
+                              return
+                            }
+
+                            setCustomAdvancePercentage(false)
+                            const percentage = Number.parseInt(value, 10)
+                            setAdvancePaymentPercentage(percentage)
+                            setValue("advancePaymentPercentage", percentage)
+                          }}
+                          className="flex flex-wrap gap-2"
+                        >
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="20" id="p20" />
+                            <Label htmlFor="p20">20%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="30" id="p30" />
+                            <Label htmlFor="p30">30%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="50" id="p50" />
+                            <Label htmlFor="p50">50%</Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-md p-2">
+                            <RadioGroupItem value="custom" id="pcustom" />
+                            <Label htmlFor="pcustom">Custom</Label>
+                          </div>
+                        </RadioGroup>
+
+                        {customAdvancePercentage && (
+                          <div className="flex items-center space-x-2 mt-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="99"
+                              value={advancePaymentPercentage || ""}
+                              onChange={(e) => {
+                                const value = Number.parseInt(
+                                  e.target.value,
+                                  10
+                                )
+                                if (
+                                  !isNaN(value) &&
+                                  value >= 1 &&
+                                  value <= 99
+                                ) {
+                                  setAdvancePaymentPercentage(value)
+                                  setValue("advancePaymentPercentage", value)
+                                }
+                              }}
+                              className="w-24"
+                            />
+                            <Percent className="h-4 w-4" />
+                          </div>
+                        )}
+
+                        <div className="bg-muted p-4 rounded-md space-y-2 mt-4">
+                          <div className="flex justify-between">
+                            <span>Original Price:</span>
+                            <span>
+                              {currencies.find(
+                                (c: Currency) => c.code === selectedCurrency
+                              )?.symbol || ""}
+                              {originalPrice.toFixed(2)} {selectedCurrency}
+                            </span>
+                          </div>
+                          
+                          {/* Show actual calculated amounts */}
+                          <div className="flex justify-between">
+                            <span>Advance Payment ({advancePaymentPercentage}%):</span>
+                            <span className="font-medium">
+                              {currencies.find(
+                                (c: Currency) => c.code === selectedCurrency
+                              )?.symbol || ""}
+                              {((hasDiscount && priceAfterDiscount ? priceAfterDiscount : originalPrice) * advancePaymentPercentage / 100).toFixed(2)} {selectedCurrency}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between">
+                            <span>Remaining Payment (Cash):</span>
+                            <span className="font-medium">
+                              {currencies.find(
+                                (c: Currency) => c.code === selectedCurrency
+                              )?.symbol || ""}
+                              {((hasDiscount && priceAfterDiscount ? priceAfterDiscount : originalPrice) * (100 - advancePaymentPercentage) / 100).toFixed(2)} {selectedCurrency}
+                            </span>
+                          </div>
+
+                          <input
+                            type="hidden"
+                            {...register("advancePaymentPercentage")}
+                            value={advancePaymentPercentage}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Trip Images */}

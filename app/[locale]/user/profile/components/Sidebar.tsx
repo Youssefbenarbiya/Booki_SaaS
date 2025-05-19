@@ -3,6 +3,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { LayoutDashboard, User, Heart, Clock, Phone, Mail } from "lucide-react"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 
 interface UserProfile {
   name?: string
@@ -21,7 +22,14 @@ export function Sidebar({ user }: SidebarProps) {
   const email = user.email || "No email provided"
   const phone = user.phoneNumber || "No phone number"
   const role = user.role || "Client"
-  const profileImage = user.image || "/placeholder.svg?height=60&width=60"
+  const profileImage = user.image || ""
+
+  const [imageError, setImageError] = useState(false)
+
+  // Reset image error state if profile image changes
+  useEffect(() => {
+    setImageError(false)
+  }, [profileImage])
 
   const menuItems = [
     {
@@ -92,13 +100,20 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Profile Section */}
       <div className="mb-4 bg-white rounded-lg border border-gray-100 p-3">
         <div className="flex items-center space-x-3">
-          <Image
-            src={profileImage}
-            alt={`${name}'s profile`}
-            width={60}
-            height={60}
-            className="rounded-full"
-          />
+          <div className="w-[60px] h-[60px] rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
+            {profileImage && !imageError ? (
+              <Image
+                src={profileImage}
+                alt={`${name}'s profile`}
+                width={60}
+                height={60}
+                className="rounded-full object-cover w-full h-full"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <User className="h-8 w-8 text-gray-400" />
+            )}
+          </div>
           <div>
             <h2 className="text-lg font-semibold">{name}</h2>
             <p className="text-xs text-gray-500">{role}</p>

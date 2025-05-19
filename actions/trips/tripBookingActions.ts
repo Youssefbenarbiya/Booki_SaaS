@@ -13,25 +13,35 @@ interface CreateBookingParams {
   tripId: number
   userId: string
   seatsBooked: number
+  pricePerSeat?: number
   totalPrice?: number
   status?: string
   paymentMethod?: "flouci" | "stripe" | "STRIPE_USD" | "FLOUCI_TND"
   convertedPricePerSeat?: number
   paymentCurrency?: string
+  paymentType?: "full" | "advance"
+  advancePaymentPercentage?: number
 }
 
 export async function createBooking({
   tripId,
   userId,
   seatsBooked,
-  pricePerSeat,
+  totalPrice,
+  status,
+  paymentMethod,
   convertedPricePerSeat,
   paymentCurrency,
+  pricePerSeat,
+  paymentType = "full",
+  advancePaymentPercentage = 0,
 }: CreateBookingParams & {
   pricePerSeat: number
   convertedPricePerSeat?: number
   paymentCurrency?: string
   paymentMethod?: string
+  paymentType?: "full" | "advance"
+  advancePaymentPercentage?: number
 }) {
   try {
     // Get trip to check capacity
@@ -53,7 +63,13 @@ export async function createBooking({
 
     // Use the converted price for calculating total if provided
     const effectivePricePerSeat = convertedPricePerSeat || pricePerSeat
-    const totalPrice = seatsBooked * effectivePricePerSeat
+    const fullTotalPrice = seatsBooked * effectivePricePerSeat
+
+    // Calculate the actual amount to store based on payment type
+    const isAdvancePayment = paymentType === "advance" && advancePaymentPercentage > 0
+    const amountToStore = isAdvancePayment 
+      ? fullTotalPrice * (advancePaymentPercentage / 100)
+      : fullTotalPrice
 
     console.log(
       `Creating booking with price per seat: ${effectivePricePerSeat} ${
@@ -61,7 +77,7 @@ export async function createBooking({
       }`
     )
     console.log(
-      `Total price: ${totalPrice} ${paymentCurrency || trip.currency}`
+      `Total price: ${amountToStore} ${paymentCurrency || trip.currency}`
     )
 
     const [booking] = await db
@@ -70,12 +86,15 @@ export async function createBooking({
         tripId: tripId,
         userId: userId,
         seatsBooked: seatsBooked,
-        totalPrice: sql`${totalPrice}::decimal`,
-        status: "confirmed", 
+        totalPrice: sql`${amountToStore}::decimal`,
+        status: isAdvancePayment ? "partially_paid" : "completed",
         bookingDate: new Date(),
-        paymentCurrency: paymentCurrency || trip.currency, // Store the payment currency
-        originalCurrency: trip.currency, // Store the original currency for reference
-        originalPricePerSeat: sql`${pricePerSeat}::decimal`, // Store the original price
+        paymentCurrency: paymentCurrency || trip.currency,
+        originalCurrency: trip.currency,
+        originalPricePerSeat: sql`${pricePerSeat}::decimal`,
+        paymentType: paymentType,
+        advancePaymentPercentage: isAdvancePayment ? advancePaymentPercentage : undefined,
+        fullPrice: sql`${fullTotalPrice}::decimal`,
       })
       .returning()
 
@@ -102,7 +121,18 @@ export async function createBookingWithPayment({
   pricePerSeat,
   paymentMethod = "flouci", // Default to flouci if not specified
   locale = "en", // Add locale parameter with default
-}: CreateBookingParams & { pricePerSeat: number; locale?: string }) {
+  paymentType = "full", // Default to full payment
+  advancePaymentPercentage = 0, // Default to 0 if not specified
+}: {
+  tripId: number;
+  userId: string;
+  seatsBooked: number;
+  pricePerSeat: number;
+  paymentMethod?: "flouci" | "stripe";
+  locale?: string;
+  paymentType?: "full" | "advance";
+  advancePaymentPercentage?: number;
+}) {
   try {
     // Get trip to check details
     const trip = await db.query.trips.findFirst({
@@ -122,6 +152,17 @@ export async function createBookingWithPayment({
 
     // Calculate total price in the trip's original currency
     const totalPriceInOriginalCurrency = seatsBooked * pricePerSeat
+    
+    // Calculate the payment amount based on payment type
+    const isAdvancePayment = paymentType === "advance" && advancePaymentPercentage > 0
+    
+    // Amount to charge is the full price or just the advance amount
+    const amountToCharge = isAdvancePayment 
+      ? totalPriceInOriginalCurrency * (advancePaymentPercentage / 100)
+      : totalPriceInOriginalCurrency
+      
+    console.log(`Payment type: ${paymentType}${isAdvancePayment ? `, Advance payment: ${advancePaymentPercentage}%` : ''}`)
+    console.log(`Original full amount: ${totalPriceInOriginalCurrency} ${tripCurrency}, Amount to charge: ${amountToCharge} ${tripCurrency}`)
 
     // Handle payment based on selected method
     if (paymentMethod === "stripe") {
@@ -132,19 +173,31 @@ export async function createBookingWithPayment({
           tripCurrency,
           "USD"
         )
+        
+        // Calculate the amount to charge in USD
+        const amountToChargeInUSD = isAdvancePayment
+          ? pricePerSeatInUSD * seatsBooked * (advancePaymentPercentage / 100)
+          : pricePerSeatInUSD * seatsBooked
+          
         console.log(
           `Converting from ${tripCurrency} to USD: ${pricePerSeat} -> ${pricePerSeatInUSD}`
         )
+        console.log(
+          `Amount to charge in USD: ${amountToChargeInUSD}`
+        )
 
         // Create the initial booking with the CONVERTED USD price
+        // Keep track of the full price and advance payment info
         const booking = await createBooking({
           tripId,
           userId,
           seatsBooked,
-          pricePerSeat,
+          pricePerSeat: pricePerSeat,
           convertedPricePerSeat: pricePerSeatInUSD,
           paymentCurrency: "USD",
           paymentMethod: "STRIPE_USD",
+          paymentType: paymentType,
+          advancePaymentPercentage: isAdvancePayment ? advancePaymentPercentage : undefined,
         })
 
         if (!booking) {
@@ -155,6 +208,11 @@ export async function createBookingWithPayment({
           `Booking created: #${booking.id}, processing payment via Stripe in USD`
         )
 
+        // Product name should indicate if it's an advance payment
+        const productName = isAdvancePayment
+          ? `${trip.name} - ${advancePaymentPercentage}% Advance Payment`
+          : trip.name
+
         // Create Stripe checkout session with USD
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
@@ -163,12 +221,12 @@ export async function createBookingWithPayment({
               price_data: {
                 currency: "usd", // Stripe payment always in USD
                 product_data: {
-                  name: trip.name,
-                  description: `Trip to ${trip.destination}`,
+                  name: productName,
+                  description: `Trip to ${trip.destination}${isAdvancePayment ? ` - ${advancePaymentPercentage}% advance payment` : ''}`,
                 },
-                unit_amount: Math.round(pricePerSeatInUSD * 100), // Stripe uses cents
+                unit_amount: Math.round(amountToChargeInUSD * 100), // Stripe uses cents
               },
-              quantity: seatsBooked,
+              quantity: 1, // Since we're using the total amount, quantity is 1
             },
           ],
           mode: "payment",
@@ -179,12 +237,15 @@ export async function createBookingWithPayment({
             originalCurrency: tripCurrency,
             convertedFromPrice: pricePerSeat.toString(),
             locale: locale, // Store locale in metadata
+            paymentType: paymentType, // Store payment type
+            advancePaymentPercentage: isAdvancePayment ? advancePaymentPercentage.toString() : null, // Store advance percentage
           },
         })
 
         console.log(`Stripe session created: ${session.id}`)
 
-        // Update booking with Stripe payment ID
+        // Update booking with additional metadata
+        // Use a type that matches the database schema
         await db
           .update(tripBookings)
           .set({
@@ -210,19 +271,22 @@ export async function createBookingWithPayment({
       }
     } else {
       // For Flouci, ensure the amount is in TND
-      const totalPriceInTND = await convertCurrency(
-        totalPriceInOriginalCurrency,
-        tripCurrency,
-        "TND"
-      )
       const pricePerSeatInTND = await convertCurrency(
         pricePerSeat,
         tripCurrency,
         "TND"
       )
+      
+      // Calculate the amount to charge in TND
+      const amountToChargeInTND = isAdvancePayment
+        ? pricePerSeatInTND * seatsBooked * (advancePaymentPercentage / 100)
+        : pricePerSeatInTND * seatsBooked
 
       console.log(
         `Converting from ${tripCurrency} to TND: ${pricePerSeat} -> ${pricePerSeatInTND}`
+      )
+      console.log(
+        `Amount to charge in TND: ${amountToChargeInTND}`
       )
 
       // Create the initial booking with the CONVERTED TND price
@@ -230,10 +294,12 @@ export async function createBookingWithPayment({
         tripId,
         userId,
         seatsBooked,
-        pricePerSeat,
+        pricePerSeat: pricePerSeat,
         convertedPricePerSeat: pricePerSeatInTND,
         paymentCurrency: "TND",
         paymentMethod: "FLOUCI_TND",
+        paymentType: paymentType,
+        advancePaymentPercentage: isAdvancePayment ? advancePaymentPercentage : undefined,
       })
 
       if (!booking) {
@@ -245,26 +311,26 @@ export async function createBookingWithPayment({
       )
 
       // Format the amount to ensure it's accepted by the payment API
-      const formattedAmount = parseFloat(totalPriceInTND.toFixed(2))
+      const formattedAmount = parseFloat(amountToChargeInTND.toFixed(2))
 
+      // For Flouci payment
       const paymentData = await generateTripPaymentLink({
         amount: formattedAmount,
         bookingId: booking.id,
-        locale: locale, // Pass locale to payment link generator
+        locale: locale,
       })
-
-      if (!paymentData || !paymentData.paymentId) {
-        throw new Error("Failed to generate payment link")
+      
+      // Update the booking description when it's an advance payment
+      if (isAdvancePayment) {
+        // Store the payment type and percentage information in the booking
+        await db
+          .update(tripBookings)
+          .set({
+            paymentStatus: "pending", // Set as pending until callback
+            status: "partially_paid", // Set the status to partially_paid
+          })
+          .where(eq(tripBookings.id, booking.id))
       }
-
-      await db
-        .update(tripBookings)
-        .set({
-          paymentId: paymentData.paymentId,
-          paymentStatus: "pending",
-          paymentMethod: "FLOUCI_TND",
-        })
-        .where(eq(tripBookings.id, booking.id))
 
       return {
         booking,

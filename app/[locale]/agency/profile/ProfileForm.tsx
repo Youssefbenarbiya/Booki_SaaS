@@ -72,7 +72,9 @@ export default function AgencyProfileForm({
 }: AgencyProfileFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [currentUploadField, setCurrentUploadField] = useState<string | null>(null)
+  const [currentUploadField, setCurrentUploadField] = useState<string | null>(
+    null
+  )
   const [previewImage, setPreviewImage] = useState<string | null>(
     initialData?.logo || null
   )
@@ -150,8 +152,23 @@ export default function AgencyProfileForm({
   }
 
   // Handle document upload
-  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
-    if (!e.target.files?.[0]) return
+  const handleDocumentUpload = async (
+    e:
+      | React.ChangeEvent<HTMLInputElement>
+      | { target: { files: (File | null)[] } },
+    fieldName: string
+  ) => {
+    if (!e.target.files?.[0]) {
+      // If no file selected, this is a re-upload button click
+      // Just open the file dialog
+      const fileInput = document.getElementById(
+        `${fieldName.replace("Document", "")}-upload`
+      ) as HTMLInputElement
+      if (fileInput) {
+        fileInput.click()
+      }
+      return
+    }
 
     const file = e.target.files[0]
     setIsUploading(true)
@@ -159,7 +176,10 @@ export default function AgencyProfileForm({
 
     try {
       // Validate file type
-      if (!file.type.includes("image/") && !file.type.includes("application/pdf")) {
+      if (
+        !file.type.includes("image/") &&
+        !file.type.includes("application/pdf")
+      ) {
         toast.error("Please upload an image or PDF file")
         return
       }
@@ -200,9 +220,10 @@ export default function AgencyProfileForm({
         rneDocument: data.rneDocument,
         patenteDocument: data.patenteDocument,
         cinDocument: data.cinDocument,
-        verificationSubmittedAt: (data.rneDocument || data.patenteDocument || data.cinDocument) 
-          ? new Date().toISOString() 
-          : undefined,
+        verificationSubmittedAt:
+          data.rneDocument || data.patenteDocument || data.cinDocument
+            ? new Date().toISOString()
+            : undefined,
       }
 
       // Call the server action to update the agency profile
@@ -458,19 +479,24 @@ export default function AgencyProfileForm({
 
             {/* Verification Documents Section */}
             <div className="mt-8">
-              <h3 className="text-lg font-medium mb-4">Verification Documents</h3>
+              <h3 className="text-lg font-medium mb-4">
+                Verification Documents
+              </h3>
               <p className="text-sm text-gray-500 mb-4">
-                Upload your business documents for agency verification. These documents will be reviewed by our admin team.
+                Upload your business documents for agency verification. These
+                documents will be reviewed by our admin team.
               </p>
-              
+
               {initialData?.verificationStatus && (
-                <div className={`p-4 rounded-md mb-6 ${
-                  initialData.verificationStatus === "approved" 
-                    ? "bg-green-50 border border-green-200" 
-                    : initialData.verificationStatus === "rejected"
-                    ? "bg-red-50 border border-red-200"
-                    : "bg-yellow-50 border border-yellow-200"
-                }`}>
+                <div
+                  className={`p-4 rounded-md mb-6 ${
+                    initialData.verificationStatus === "approved"
+                      ? "bg-green-50 border border-green-200"
+                      : initialData.verificationStatus === "rejected"
+                        ? "bg-red-50 border border-red-200"
+                        : "bg-yellow-50 border border-yellow-200"
+                  }`}
+                >
                   <div className="flex items-start gap-3">
                     {initialData.verificationStatus === "approved" ? (
                       <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
@@ -481,17 +507,22 @@ export default function AgencyProfileForm({
                     )}
                     <div>
                       <h4 className="font-medium text-sm">
-                        {initialData.verificationStatus === "approved" 
-                          ? "Agency Verified" 
+                        {initialData.verificationStatus === "approved"
+                          ? "Agency Verified"
                           : initialData.verificationStatus === "rejected"
-                          ? "Verification Rejected"
-                          : "Verification Pending"}
+                            ? "Verification Rejected"
+                            : "Verification Pending"}
                       </h4>
-                      {initialData.verificationStatus === "rejected" && initialData.verificationRejectionReason && (
-                        <p className="text-sm text-red-700 mt-1">{initialData.verificationRejectionReason}</p>
-                      )}
+                      {initialData.verificationStatus === "rejected" &&
+                        initialData.verificationRejectionReason && (
+                          <p className="text-sm text-red-700 mt-1">
+                            {initialData.verificationRejectionReason}
+                          </p>
+                        )}
                       {initialData.verificationStatus === "pending" && (
-                        <p className="text-sm text-yellow-700 mt-1">Your documents are being reviewed by our team.</p>
+                        <p className="text-sm text-yellow-700 mt-1">
+                          Your documents are being reviewed by our team.
+                        </p>
                       )}
                     </div>
                   </div>
@@ -515,44 +546,68 @@ export default function AgencyProfileForm({
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="flex flex-col items-center">
                                 <FileText className="h-10 w-10 text-green-500" />
-                                <span className="text-xs text-gray-500 mt-2">Document uploaded</span>
-                                <a 
-                                  href={field.value} 
-                                  target="_blank" 
+                                <span className="text-xs text-gray-500 mt-2">
+                                  Document uploaded
+                                </span>
+                                <a
+                                  href={field.value}
+                                  target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-blue-500 underline mt-1"
+                                  className="text-xs text-blue-500 underline mt-1 z-10 relative"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   View document
                                 </a>
                               </div>
+                              <button
+                                type="button"
+                                className="absolute top-2 right-2 p-1 bg-gray-100 rounded-full hover:bg-gray-200 z-10"
+                                onClick={() =>
+                                  handleDocumentUpload(
+                                    { target: { files: [null] } } as any,
+                                    "rneDocument"
+                                  )
+                                }
+                              >
+                                <Upload className="h-4 w-4 text-gray-600" />
+                              </button>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center">
                               <Upload className="h-8 w-8 text-gray-400 group-hover:text-gray-500" />
-                              <span className="text-xs text-gray-500 mt-1">Click to upload</span>
+                              <span className="text-xs text-gray-500 mt-1">
+                                Click to upload
+                              </span>
                             </div>
                           )}
                           <FormControl>
                             <Input
                               type="file"
                               accept="image/*,application/pdf"
-                              onChange={(e) => handleDocumentUpload(e, "rneDocument")}
+                              onChange={(e) =>
+                                handleDocumentUpload(e, "rneDocument")
+                              }
                               className="hidden"
                               id="rne-upload"
                               disabled={isUploading}
                             />
                           </FormControl>
-                          <label
-                            htmlFor="rne-upload"
-                            className="absolute inset-0 cursor-pointer"
-                          >
-                            <span className="sr-only">Upload RNE document</span>
-                          </label>
-                          {isUploading && currentUploadField === "rneDocument" && (
-                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
-                              <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
-                            </div>
+                          {!field.value && (
+                            <label
+                              htmlFor="rne-upload"
+                              className="absolute inset-0 cursor-pointer"
+                            >
+                              <span className="sr-only">
+                                Upload RNE document
+                              </span>
+                            </label>
                           )}
+                          {isUploading &&
+                            currentUploadField === "rneDocument" && (
+                              <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                                <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
+                              </div>
+                            )}
                         </div>
                       </div>
                       <FormDescription className="text-xs mt-2">
@@ -579,44 +634,68 @@ export default function AgencyProfileForm({
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="flex flex-col items-center">
                                 <FileText className="h-10 w-10 text-green-500" />
-                                <span className="text-xs text-gray-500 mt-2">Document uploaded</span>
-                                <a 
-                                  href={field.value} 
-                                  target="_blank" 
+                                <span className="text-xs text-gray-500 mt-2">
+                                  Document uploaded
+                                </span>
+                                <a
+                                  href={field.value}
+                                  target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-blue-500 underline mt-1"
+                                  className="text-xs text-blue-500 underline mt-1 z-10 relative"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   View document
                                 </a>
                               </div>
+                              <button
+                                type="button"
+                                className="absolute top-2 right-2 p-1 bg-gray-100 rounded-full hover:bg-gray-200 z-10"
+                                onClick={() =>
+                                  handleDocumentUpload(
+                                    { target: { files: [null] } } as any,
+                                    "patenteDocument"
+                                  )
+                                }
+                              >
+                                <Upload className="h-4 w-4 text-gray-600" />
+                              </button>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center">
                               <Upload className="h-8 w-8 text-gray-400 group-hover:text-gray-500" />
-                              <span className="text-xs text-gray-500 mt-1">Click to upload</span>
+                              <span className="text-xs text-gray-500 mt-1">
+                                Click to upload
+                              </span>
                             </div>
                           )}
                           <FormControl>
                             <Input
                               type="file"
                               accept="image/*,application/pdf"
-                              onChange={(e) => handleDocumentUpload(e, "patenteDocument")}
+                              onChange={(e) =>
+                                handleDocumentUpload(e, "patenteDocument")
+                              }
                               className="hidden"
                               id="patente-upload"
                               disabled={isUploading}
                             />
                           </FormControl>
-                          <label
-                            htmlFor="patente-upload"
-                            className="absolute inset-0 cursor-pointer"
-                          >
-                            <span className="sr-only">Upload Patente document</span>
-                          </label>
-                          {isUploading && currentUploadField === "patenteDocument" && (
-                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
-                              <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
-                            </div>
+                          {!field.value && (
+                            <label
+                              htmlFor="patente-upload"
+                              className="absolute inset-0 cursor-pointer"
+                            >
+                              <span className="sr-only">
+                                Upload Patente document
+                              </span>
+                            </label>
                           )}
+                          {isUploading &&
+                            currentUploadField === "patenteDocument" && (
+                              <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                                <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
+                              </div>
+                            )}
                         </div>
                       </div>
                       <FormDescription className="text-xs mt-2">
@@ -643,44 +722,68 @@ export default function AgencyProfileForm({
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="flex flex-col items-center">
                                 <FileText className="h-10 w-10 text-green-500" />
-                                <span className="text-xs text-gray-500 mt-2">Document uploaded</span>
-                                <a 
-                                  href={field.value} 
-                                  target="_blank" 
+                                <span className="text-xs text-gray-500 mt-2">
+                                  Document uploaded
+                                </span>
+                                <a
+                                  href={field.value}
+                                  target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-blue-500 underline mt-1"
+                                  className="text-xs text-blue-500 underline mt-1 z-10 relative"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   View document
                                 </a>
                               </div>
+                              <button
+                                type="button"
+                                className="absolute top-2 right-2 p-1 bg-gray-100 rounded-full hover:bg-gray-200 z-10"
+                                onClick={() =>
+                                  handleDocumentUpload(
+                                    { target: { files: [null] } } as any,
+                                    "cinDocument"
+                                  )
+                                }
+                              >
+                                <Upload className="h-4 w-4 text-gray-600" />
+                              </button>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center">
                               <Upload className="h-8 w-8 text-gray-400 group-hover:text-gray-500" />
-                              <span className="text-xs text-gray-500 mt-1">Click to upload</span>
+                              <span className="text-xs text-gray-500 mt-1">
+                                Click to upload
+                              </span>
                             </div>
                           )}
                           <FormControl>
                             <Input
                               type="file"
                               accept="image/*,application/pdf"
-                              onChange={(e) => handleDocumentUpload(e, "cinDocument")}
+                              onChange={(e) =>
+                                handleDocumentUpload(e, "cinDocument")
+                              }
                               className="hidden"
                               id="cin-upload"
                               disabled={isUploading}
                             />
                           </FormControl>
-                          <label
-                            htmlFor="cin-upload"
-                            className="absolute inset-0 cursor-pointer"
-                          >
-                            <span className="sr-only">Upload CIN document</span>
-                          </label>
-                          {isUploading && currentUploadField === "cinDocument" && (
-                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
-                              <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
-                            </div>
+                          {!field.value && (
+                            <label
+                              htmlFor="cin-upload"
+                              className="absolute inset-0 cursor-pointer"
+                            >
+                              <span className="sr-only">
+                                Upload CIN document
+                              </span>
+                            </label>
                           )}
+                          {isUploading &&
+                            currentUploadField === "cinDocument" && (
+                              <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                                <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
+                              </div>
+                            )}
                         </div>
                       </div>
                       <FormDescription className="text-xs mt-2">

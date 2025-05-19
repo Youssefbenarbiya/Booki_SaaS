@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
@@ -30,6 +31,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
 
 const bookingFormSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -70,6 +73,13 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "flouci" | "stripe"
   >("flouci")
+
+  // Add state for payment type (full or advance)
+  const [paymentType, setPaymentType] = useState<"full" | "advance">("full")
+  const [advancePaymentPercentage, setAdvancePaymentPercentage] =
+    useState<number>(30)
+
+
 
   const defaultFormValues: BookingFormValues = {
     fullName: session?.user?.name || "",
@@ -137,6 +147,23 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
     if (!car || isNaN(days) || !convertedEffectivePrice) return 0
     return parseFloat((days * convertedEffectivePrice).toFixed(2))
   }, [convertedEffectivePrice, totalDays])
+
+  // Calculate advance payment amount
+  const advancePaymentAmount = useMemo(() => {
+    return paymentType === "advance"
+      ? totalPrice * (advancePaymentPercentage / 100)
+      : 0
+  }, [totalPrice, paymentType, advancePaymentPercentage])
+
+  // Calculate remaining amount to be paid in cash
+  const remainingCashAmount = useMemo(() => {
+    return paymentType === "advance" ? totalPrice - advancePaymentAmount : 0
+  }, [totalPrice, paymentType, advancePaymentAmount])
+
+  // Amount to actually charge
+  const amountToCharge = useMemo(() => {
+    return paymentType === "full" ? totalPrice : advancePaymentAmount
+  }, [paymentType, totalPrice, advancePaymentAmount])
 
   useEffect(() => {
     let isMounted = true
@@ -223,6 +250,12 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
       try {
         setIsSubmitting(true)
 
+        // Calculate price based on payment type
+        const paymentAmount =
+          paymentType === "full"
+            ? priceInOriginalCurrency
+            : priceInOriginalCurrency * (advancePaymentPercentage / 100)
+
         // Add more detailed logging
         console.log("Submitting booking with data:", {
           carId: numericCarId,
@@ -231,6 +264,10 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
           endDate: dateRange.to,
           totalPrice: priceInOriginalCurrency,
           paymentMethod: selectedPaymentMethod,
+          paymentType: paymentType,
+          advancePaymentPercentage:
+            paymentType === "advance" ? advancePaymentPercentage : undefined,
+          paymentAmount: paymentAmount,
         })
 
         const result = await bookCar({
@@ -242,6 +279,10 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
           customerInfo: data,
           paymentMethod: selectedPaymentMethod,
           locale: locale,
+          paymentType: paymentType,
+          advancePaymentPercentage:
+            paymentType === "advance" ? advancePaymentPercentage : undefined,
+          paymentAmount: paymentAmount,
         })
 
         console.log("Booking result:", result) // Add this log to see the result
@@ -281,7 +322,9 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
       session,
       selectedPaymentMethod,
       locale,
-      priceInOriginalCurrency, // Add this to the dependency array
+      priceInOriginalCurrency,
+      paymentType,
+      advancePaymentPercentage,
     ]
   )
 
@@ -447,6 +490,47 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
                   </FormItem>
                 )}
               />
+
+              {/* Payment Type Selection */}
+              <div className="space-y-3 pt-2">
+                <FormLabel className="font-medium">Payment Option</FormLabel>
+                <RadioGroup
+                  value={paymentType}
+                  onValueChange={(value) =>
+                    setPaymentType(value as "full" | "advance")
+                  }
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                    <RadioGroupItem value="full" id="full-payment" />
+                    <Label
+                      htmlFor="full-payment"
+                      className="cursor-pointer flex-1"
+                    >
+                      <span className="font-medium">Pay Full Amount</span>
+                      <p className="text-sm text-muted-foreground">
+                        Pay the entire amount online
+                      </p>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                    <RadioGroupItem value="advance" id="advance-payment" />
+                    <Label
+                      htmlFor="advance-payment"
+                      className="cursor-pointer flex-1"
+                    >
+                      <span className="font-medium">
+                        Pay {advancePaymentPercentage}% Advance
+                      </span>
+                      <p className="text-sm text-muted-foreground">
+                        Pay {advancePaymentPercentage}% now and the rest in cash
+                        at pickup
+                      </p>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
               <Separator />
               <FormField
                 control={form.control}
@@ -478,6 +562,50 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
                   setSelectedPaymentMethod={setSelectedPaymentMethod}
                 />
               </div>
+
+              {/* Payment Breakdown */}
+              {dateRange && totalPrice > 0 && (
+                <div className="mt-4 space-y-2 pt-4 px-0 border-t">
+                  {/* Show payment breakdown if advance payment selected */}
+                  {paymentType === "advance" && (
+                    <>
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Total Rental Cost:</span>
+                        <span>{formatPrice(totalPrice, { currency })}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm text-muted-foreground">
+                        <span>
+                          Online Advance Payment ({advancePaymentPercentage}%):
+                        </span>
+                        <span>
+                          {formatPrice(advancePaymentAmount, { currency })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm text-muted-foreground">
+                        <span>
+                          Remaining Cash Payment (
+                          {100 - advancePaymentPercentage}%):
+                        </span>
+                        <span>
+                          {formatPrice(remainingCashAmount, { currency })}
+                        </span>
+                      </div>
+                      <Separator className="my-2" />
+                    </>
+                  )}
+
+                  {/* Show amount being charged now */}
+                  <div className="text-lg font-semibold w-full flex justify-between items-center">
+                    <span>
+                      {paymentType === "advance" ? "Pay Now:" : "Total Price:"}
+                    </span>
+                    <span className="text-primary">
+                      {formatPrice(amountToCharge, { currency })}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white mt-4"

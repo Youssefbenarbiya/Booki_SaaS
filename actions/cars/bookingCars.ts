@@ -24,7 +24,11 @@ interface BookCarParams {
   totalPrice: number
   customerInfo?: CustomerInfo
   paymentMethod?: "flouci" | "stripe"
-  locale?: string // Add locale parameter
+  locale?: string
+  // Add advance payment options
+  paymentType?: "full" | "advance"
+  advancePaymentPercentage?: number
+  paymentAmount?: number
 }
 
 interface BookingResult {
@@ -42,6 +46,9 @@ export async function bookCar({
   customerInfo,
   paymentMethod = "flouci", // Default to flouci if not specified
   locale = "en", // Default to English
+  paymentType = "full", // Default to full payment
+  advancePaymentPercentage = 30, // Default to 30% for advance payment
+  paymentAmount, // Amount being paid (used for advance payments)
 }: BookCarParams): Promise<BookingResult> {
   try {
     console.log("Booking car with params:", {
@@ -52,6 +59,9 @@ export async function bookCar({
       totalPrice,
       paymentMethod,
       locale,
+      paymentType,
+      advancePaymentPercentage,
+      paymentAmount,
     })
 
     if (!userId) {
@@ -77,19 +87,26 @@ export async function bookCar({
     const carCurrency = car.currency || "TND"
 
     console.log(
-      `Car currency: ${carCurrency}, Original total price: ${totalPrice}`
+      `Car currency: ${carCurrency}, Original total price: ${totalPrice}, Payment type: ${paymentType}`
+    )
+
+    // Calculate the payment amount if not provided
+    const amountToPay = paymentAmount || (
+      paymentType === "advance" 
+        ? totalPrice * (advancePaymentPercentage / 100) 
+        : totalPrice
     )
 
     // Handle payment based on selected method
     if (paymentMethod === "stripe") {
       // Convert price to USD for Stripe
-      const totalPriceInUSD = await convertCurrency(
-        totalPrice,
+      const amountToPayInUSD = await convertCurrency(
+        amountToPay,
         carCurrency,
         "USD"
       )
       console.log(
-        `Converting car price from ${carCurrency} to USD: ${totalPrice} -> ${totalPriceInUSD}`
+        `Converting car price from ${carCurrency} to USD: ${amountToPay} -> ${amountToPayInUSD}`
       )
 
       // Create booking with the USD price
@@ -100,16 +117,16 @@ export async function bookCar({
           user_id: userId,
           start_date: startDate,
           end_date: endDate,
-          total_price: totalPriceInUSD.toString(),
+          total_price: totalPrice.toString(), // Store the full price
           paymentDate: new Date(),
-          status: "confirmed",
-          paymentStatus: "confirmed",
+          status: paymentType === "advance" ? "partially_paid" : "confirmed",
+          paymentStatus: "pending",
           fullName: customerInfo?.fullName || null,
           email: customerInfo?.email || null,
           phone: customerInfo?.phone || null,
           address: customerInfo?.address || null,
           drivingLicense: customerInfo?.drivingLicense || null,
-          paymentMethod: "STRIPE_USD",
+          paymentMethod: paymentType === "advance" ? "STRIPE_USD_ADVANCE" : "STRIPE_USD",
           paymentCurrency: "USD",
           originalCurrency: carCurrency,
           originalPrice: totalPrice.toString(),
@@ -119,10 +136,15 @@ export async function bookCar({
 
       const newBooking = bookingResults[0]
       console.log(
-        `Car booking created: #${newBooking.id}, processing payment via Stripe in USD`
+        `Car booking created: #${newBooking.id}, processing ${paymentType} payment via Stripe in USD`
       )
 
       try {
+        // Determine product name based on payment type
+        const productName = paymentType === "advance" 
+          ? `Car Rental #${carId} - ${advancePaymentPercentage}% Advance Payment` 
+          : `Car Rental #${carId}`
+
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           line_items: [
@@ -130,10 +152,14 @@ export async function bookCar({
               price_data: {
                 currency: "usd", // Always USD for Stripe
                 product_data: {
-                  name: `Car Rental #${carId}`,
-                  description: `Rental from ${startDate.toDateString()} to ${endDate.toDateString()}`,
+                  name: productName,
+                  description: `Rental from ${startDate.toDateString()} to ${endDate.toDateString()}${
+                    paymentType === "advance" 
+                      ? ` (${advancePaymentPercentage}% advance payment, remainder to be paid at pickup)` 
+                      : ""
+                  }`,
                 },
-                unit_amount: Math.round(totalPriceInUSD * 100), // Stripe uses cents
+                unit_amount: Math.round(amountToPayInUSD * 100), // Stripe uses cents
               },
               quantity: 1,
             },
@@ -145,8 +171,11 @@ export async function bookCar({
             bookingId: newBooking.id.toString(),
             bookingType: "car",
             originalCurrency: carCurrency,
-            convertedFromPrice: totalPrice.toString(),
+            convertedFromPrice: amountToPay.toString(),
             locale: locale, // Store locale in metadata
+            paymentType: paymentType,
+            advancePaymentPercentage: paymentType === "advance" ? String(advancePaymentPercentage) : null,
+            totalPrice: totalPrice.toString(),
           },
         })
 
@@ -167,13 +196,13 @@ export async function bookCar({
       }
     } else {
       // Convert to TND for Flouci
-      const totalPriceInTND = await convertCurrency(
-        totalPrice,
+      const amountToPayInTND = await convertCurrency(
+        amountToPay,
         carCurrency,
         "TND"
       )
       console.log(
-        `Converting car price from ${carCurrency} to TND: ${totalPrice} -> ${totalPriceInTND}`
+        `Converting car price from ${carCurrency} to TND: ${amountToPay} -> ${amountToPayInTND}`
       )
 
       // Create booking with the TND price
@@ -184,16 +213,16 @@ export async function bookCar({
           user_id: userId,
           start_date: startDate,
           end_date: endDate,
-          total_price: totalPriceInTND.toString(),
+          total_price: totalPrice.toString(), // Store the full price
           paymentDate: new Date(),
-          status: "confirmed",
-          paymentStatus: "confirmed",
+          status: paymentType === "advance" ? "partially_paid" : "confirmed",
+          paymentStatus: "pending",
           fullName: customerInfo?.fullName || null,
           email: customerInfo?.email || null,
           phone: customerInfo?.phone || null,
           address: customerInfo?.address || null,
           drivingLicense: customerInfo?.drivingLicense || null,
-          paymentMethod: "FLOUCI_TND",
+          paymentMethod: paymentType === "advance" ? "FLOUCI_TND_ADVANCE" : "FLOUCI_TND",
           paymentCurrency: "TND",
           originalCurrency: carCurrency,
           originalPrice: totalPrice.toString(),
@@ -203,13 +232,19 @@ export async function bookCar({
 
       const newBooking = bookingResults[0]
       console.log(
-        `Car booking created: #${newBooking.id}, processing payment via Flouci in TND`
+        `Car booking created: #${newBooking.id}, processing ${paymentType} payment via Flouci in TND`
       )
 
+      // Determine custom tracking id with payment type information
+      const trackingId = paymentType === "advance" 
+        ? `car_advance_${newBooking.id}_${advancePaymentPercentage}pct` 
+        : `car_full_${newBooking.id}`
+
       const { paymentLink, paymentId } = await generateCarPaymentLink({
-        amount: totalPriceInTND,
+        amount: amountToPayInTND,
         bookingId: newBooking.id,
-        locale: locale, // Pass locale to payment link generator
+        locale: locale,
+        developerTrackingId: trackingId,
       })
 
       await db

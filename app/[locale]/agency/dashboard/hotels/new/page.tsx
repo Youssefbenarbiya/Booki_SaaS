@@ -9,7 +9,7 @@ import { createHotel } from "@/actions/hotels&rooms/hotelActions";
 import { ImageUploadSection } from "@/components/ImageUploadSection";
 import { fileToFormData } from "@/lib/utils";
 import { uploadImages } from "@/actions/uploadActions";
-import { Building, BedDouble, Plus, Trash2, MapPin } from "lucide-react";
+import { Building, BedDouble, Plus, Trash2, MapPin, Info, Percent, DollarSign } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const LocationMapSelector = dynamic(
@@ -56,6 +65,7 @@ export default function NewHotelPage() {
   const locale = params.locale as string;
   const [isPending, startTransition] = useTransition();
 
+
   const {
     register,
     control,
@@ -76,6 +86,8 @@ export default function NewHotelPage() {
           pricePerNightChild: 0,
           currency: "TND",
           availabilities: [],
+          advancePaymentEnabled: false,
+          advancePaymentPercentage: 20,
         },
       ],
     },
@@ -145,15 +157,23 @@ export default function NewHotelPage() {
 
       const roomImageUrls = await Promise.all(roomImageUrlsPromises);
 
+      // Update rooms with advance payment settings
+      const updatedRooms = data.rooms.map((room, index) => ({
+        ...room,
+        images: roomImageUrls[index] || [],
+        // Make sure each room has the advance payment settings
+        advancePaymentEnabled: room.advancePaymentEnabled || false,
+        advancePaymentPercentage: room.advancePaymentEnabled 
+          ? room.advancePaymentPercentage || 20
+          : undefined,
+      }));
+
       // Prepare final data with image URLs
       const formattedData = {
         ...data,
         status: "pending" as "pending" | "approved" | "rejected",
         images: hotelImageUrls,
-        rooms: data.rooms.map((room, index) => ({
-          ...room,
-          images: roomImageUrls[index] || [],
-        })),
+        rooms: updatedRooms,
       };
 
       // Create hotel with all data
@@ -352,6 +372,8 @@ export default function NewHotelPage() {
                     pricePerNightChild: 0,
                     currency: "TND",
                     roomType: "double",
+                    advancePaymentEnabled: false,
+                    advancePaymentPercentage: 20,
                   });
                   setRoomImages((prev) => [...prev, []]);
                   setRoomImagePreviews((prev) => [...prev, []]);
@@ -575,6 +597,109 @@ export default function NewHotelPage() {
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Advance Payment Option */}
+                    <div className="md:col-span-2 mt-4">
+                      <Card className="border-2 border-muted">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg flex items-center">
+                            <DollarSign className="h-5 w-5 mr-1" />
+                            Payment Options
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`room-${index}-advancePaymentEnabled`}
+                              checked={watch(`rooms.${index}.advancePaymentEnabled`)}
+                              onCheckedChange={(checked) => {
+                                setValue(`rooms.${index}.advancePaymentEnabled`, !!checked);
+                                if (!checked) {
+                                  setValue(`rooms.${index}.advancePaymentPercentage`, undefined);
+                                }
+                              }}
+                            />
+                            <Label
+                              htmlFor={`room-${index}-advancePaymentEnabled`}
+                              className="font-medium"
+                            >
+                              Allow Partial Advance Payment
+                            </Label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Customers can pay a percentage in advance and the rest in cash at the agency</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+
+                          {watch(`rooms.${index}.advancePaymentEnabled`) && (
+                            <div className="space-y-4 pl-6 border-l-2 border-muted">
+                              <div className="space-y-3">
+                                <Label>Advance Payment Percentage</Label>
+                                <RadioGroup
+                                  value={watch(`rooms.${index}.advancePaymentPercentage`)?.toString() || "20"}
+                                  onValueChange={(value) => {
+                                    const percentage = Number.parseInt(value, 10);
+                                    if (!isNaN(percentage)) {
+                                      setValue(`rooms.${index}.advancePaymentPercentage`, percentage);
+                                    }
+                                  }}
+                                  className="flex flex-wrap gap-2"
+                                >
+                                  <div className="flex items-center space-x-2 border rounded-md p-2">
+                                    <RadioGroupItem value="20" id={`p20-${index}`} />
+                                    <Label htmlFor={`p20-${index}`}>20%</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2 border rounded-md p-2">
+                                    <RadioGroupItem value="30" id={`p30-${index}`} />
+                                    <Label htmlFor={`p30-${index}`}>30%</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2 border rounded-md p-2">
+                                    <RadioGroupItem value="50" id={`p50-${index}`} />
+                                    <Label htmlFor={`p50-${index}`}>50%</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2 border rounded-md p-2">
+                                    <RadioGroupItem value="custom" id={`pcustom-${index}`} />
+                                    <Label htmlFor={`pcustom-${index}`}>Custom</Label>
+                                  </div>
+                                </RadioGroup>
+
+                                {watch(`rooms.${index}.advancePaymentPercentage`)?.toString() === "custom" && (
+                                  <div className="flex items-center space-x-2 mt-2">
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      max="99"
+                                      onChange={(e) => {
+                                        const value = Number.parseInt(e.target.value, 10);
+                                        if (!isNaN(value) && value >= 1 && value <= 99) {
+                                          setValue(`rooms.${index}.advancePaymentPercentage`, value);
+                                        }
+                                      }}
+                                      className="w-24"
+                                    />
+                                    <Percent className="h-4 w-4" />
+                                  </div>
+                                )}
+
+                                <div className="bg-muted p-4 rounded-md space-y-2 mt-4">
+                                  <div className="text-sm text-muted-foreground">
+                                    <p>With advance payment enabled, customers will have the option to pay 
+                                    {watch(`rooms.${index}.advancePaymentPercentage`)}% of the total price online
+                                    and the remaining amount in cash at the hotel.</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
                     </div>
 
                     {/* Room Images */}

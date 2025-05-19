@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
-import { ChevronRight, Plane, Building, Car } from "lucide-react"
+import { ChevronRight, Plane, Building, Car, Info, Clock, CheckCircle } from "lucide-react"
 
 type BookingDisplay = {
   id: number
@@ -14,6 +14,7 @@ type BookingDisplay = {
   endDate: string
   status: string
   totalPrice: string
+  paymentMethod?: string
 }
 
 export default function BookingHistoryClient({
@@ -71,9 +72,46 @@ export default function BookingHistoryClient({
         return "text-red-600 bg-red-50 border-red-200"
       case "completed":
         return "text-blue-600 bg-blue-50 border-blue-200"
+      case "partially_paid":
+        return "text-indigo-600 bg-indigo-50 border-indigo-200"
       default:
         return "text-gray-600 bg-gray-50 border-gray-200"
     }
+  }
+  
+  // Get status icon based on status
+  const getStatusIcon = (status: string, paymentMethod?: string) => {
+    // Check if this is an advance payment
+    const isAdvancePayment = paymentMethod?.includes("ADVANCE")
+    
+    if (isAdvancePayment && status.toLowerCase() !== "completed") {
+      return <Info className="h-3.5 w-3.5 mr-1" />
+    }
+    
+    switch (status.toLowerCase()) {
+      case "completed":
+        return <CheckCircle className="h-3.5 w-3.5 mr-1" />
+      case "pending":
+        return <Clock className="h-3.5 w-3.5 mr-1" />
+      default:
+        return null
+    }
+  }
+  
+  // Get display status text
+  const getStatusText = (status: string, paymentMethod?: string) => {
+    // Check if this is an advance payment
+    const isAdvancePayment = paymentMethod?.includes("ADVANCE")
+    
+    if (isAdvancePayment && status.toLowerCase() !== "completed") {
+      return "Advance Paid"
+    }
+    
+    if (status === "partially_paid") {
+      return "Advance Paid"
+    }
+    
+    return status
   }
 
   return (
@@ -190,11 +228,12 @@ export default function BookingHistoryClient({
                   </p>
                   <div className="flex items-center justify-between mt-2">
                     <span
-                      className={`text-sm px-2 py-0.5 rounded-full border ${getStatusColor(
+                      className={`text-sm px-2 py-0.5 rounded-full border flex items-center ${getStatusColor(
                         booking.status
                       )}`}
                     >
-                      {booking.status}
+                      {getStatusIcon(booking.status, booking.paymentMethod)}
+                      {getStatusText(booking.status, booking.paymentMethod)}
                     </span>
                     <p className="font-medium">{booking.totalPrice}</p>
                   </div>
@@ -236,11 +275,12 @@ export default function BookingHistoryClient({
                   </p>
                   <div className="mt-auto flex items-center justify-between">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full border ${getStatusColor(
+                      className={`text-xs px-2 py-0.5 rounded-full border flex items-center ${getStatusColor(
                         booking.status
                       )}`}
                     >
-                      {booking.status}
+                      {getStatusIcon(booking.status, booking.paymentMethod)}
+                      {getStatusText(booking.status, booking.paymentMethod)}
                     </span>
                     <p className="font-medium">{booking.totalPrice}</p>
                   </div>

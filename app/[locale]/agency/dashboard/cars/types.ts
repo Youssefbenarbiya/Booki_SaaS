@@ -1,24 +1,47 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export type CarType = {
+  rejectionReason: any;
   id: number;
   brand: string;
   model: string;
   year: number;
   plateNumber: string;
   color: string;
-  originalPrice: string | number;
+  originalPrice: number;
   discountPercentage?: number | null;
-  priceAfterDiscount?: string | number | null;
+  priceAfterDiscount?: number | null;
   isAvailable: boolean;
-  status?: string;
-  rejectionReason?: string | null;
   images: string[] | { imageUrl: string }[];
-  seats: number;
-  category: string;
+  agencyId: string;
   currency?: string;
-  location: string;
+  seats?: number;
+  category?: string;
+  location?: string;
+  status?: string;
+  bookings?: any[];
+  createdAt?: Date;
+  updatedAt?: Date;
+  advancePaymentEnabled?: boolean;
+  advancePaymentPercentage?: number;
 };
 
-export type CarFormValues = Omit<
-  CarType,
-  "id" | "createdAt" | "updatedAt" | "bookings"
->;
+export type CarFormValues = {
+  model: string
+  brand: string
+  year: number
+  plateNumber: string
+  color: string
+  originalPrice: number
+  discountPercentage?: number
+  priceAfterDiscount?: number
+  isAvailable: boolean
+  images: string[] | { imageUrl: string }[]
+  currency?: string
+  seats?: number
+  category?: string
+  location?: string
+  status?: string
+  advancePaymentEnabled?: boolean
+  advancePaymentPercentage?: number
+}

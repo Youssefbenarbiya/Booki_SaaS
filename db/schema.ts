@@ -125,6 +125,9 @@ export const trips = pgTable("trips", {
   // Child discount fields
   childDiscountEnabled: boolean("child_discount_enabled").default(false),
   childDiscountPercentage: integer("child_discount_percentage"),
+  // Advance payment fields
+  advancePaymentEnabled: boolean("advance_payment_enabled").default(false),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
   capacity: integer("capacity").notNull(),
   isAvailable: boolean("is_available").default(true),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
@@ -179,6 +182,9 @@ export const tripBookings = pgTable("trip_bookings", {
     precision: 10,
     scale: 2,
   }),
+  paymentType: varchar("payment_type", { length: 20 }).default("full"),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
+  fullPrice: decimal("full_price", { precision: 10, scale: 2 }),
 });
 
 // Trip Relations
@@ -267,6 +273,9 @@ export const room = pgTable("room", {
   roomType: varchar("room_type").notNull(), // e.g., "single", "double", "suite"
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
+  // Add advance payment fields
+  advancePaymentEnabled: boolean("advance_payment_enabled").default(false),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -311,6 +320,9 @@ export const roomBookings = pgTable("room_bookings", {
   adultCount: integer("adult_count").default(1),
   childCount: integer("child_count").default(0),
   infantCount: integer("infant_count").default(0),
+  paymentType: varchar("payment_type", { length: 20 }).default("full"),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
+  fullPrice: decimal("full_price", { precision: 10, scale: 2 }),
 });
 
 // Hotel & Room Relations
@@ -379,6 +391,9 @@ export const cars = pgTable("cars", {
   seats: integer("seats").notNull().default(4),
   category: text("category").notNull(),
   location: text("location").notNull(),
+  // Add advance payment fields
+  advancePaymentEnabled: boolean("advance_payment_enabled").default(false),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
 });
 
 // Car Bookings table
@@ -401,6 +416,7 @@ export const carBookings = pgTable("car_bookings", {
   paymentCurrency: varchar("payment_currency", { length: 10 }),
   originalCurrency: varchar("original_currency", { length: 10 }),
   originalPrice: numeric("original_price"),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
   fullName: text("full_name"),
   email: text("email"),
   phone: text("phone"),
@@ -670,3 +686,91 @@ export const supportMessagesRelations = relations(support_messages, ({ one }) =>
     references: [support_tickets.id],
   }),
 }));
+
+// Wallet table to store balance information
+export const wallet = pgTable("wallet", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  currency: varchar("currency", { length: 10 }).default("TND").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Transaction types: deposit, withdrawal, payment, refund, etc.
+export const walletTransactions = pgTable("wallet_transactions", {
+  id: serial("id").primaryKey(),
+  walletId: serial("wallet_id")
+    .notNull()
+    .references(() => wallet.id, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // deposit, withdrawal, payment, refund
+  status: varchar("status", { length: 50 }).notNull().default("completed"),
+  description: text("description"),
+  reference: text("reference"), // Reference to external transaction (booking ID, etc.)
+  referenceType: varchar("reference_type", { length: 50 }), // trip_booking, room_booking, car_booking
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Withdrawal requests table
+export const withdrawalRequests = pgTable("withdrawal_requests", {
+  id: serial("id").primaryKey(),
+  walletId: serial("wallet_id")
+    .notNull()
+    .references(() => wallet.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, approved, rejected
+  approvedBy: text("approved_by").references(() => user.id),
+  approvedAt: timestamp("approved_at"),
+  rejectedBy: text("rejected_by").references(() => user.id),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  paymentMethod: varchar("payment_method", { length: 50 }),
+  paymentDetails: text("payment_details"),
+  receiptUrl: text("receipt_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Relations
+export const walletRelations = relations(wallet, ({ one, many }) => ({
+  user: one(user, {
+    fields: [wallet.userId],
+    references: [user.id],
+  }),
+  transactions: many(walletTransactions),
+  withdrawalRequests: many(withdrawalRequests),
+}))
+
+export const walletTransactionsRelations = relations(walletTransactions, ({ one }) => ({
+  wallet: one(wallet, {
+    fields: [walletTransactions.walletId],
+    references: [wallet.id],
+  }),
+}))
+
+export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one }) => ({
+  wallet: one(wallet, {
+    fields: [withdrawalRequests.walletId],
+    references: [wallet.id],
+  }),
+  user: one(user, {
+    fields: [withdrawalRequests.userId],
+    references: [user.id],
+  }),
+  approver: one(user, {
+    fields: [withdrawalRequests.approvedBy],
+    references: [user.id],
+  }),
+  rejecter: one(user, {
+    fields: [withdrawalRequests.rejectedBy],
+    references: [user.id],
+  }),
+}))

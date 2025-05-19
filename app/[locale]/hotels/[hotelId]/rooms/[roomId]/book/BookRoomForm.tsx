@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { useState, FormEvent, useTransition, useEffect } from "react"
@@ -21,7 +22,6 @@ import {
 } from "@/actions/hotels&rooms/roomBookingActions"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import PaymentSelector from "@/components/payment/PaymentSelector"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
 
 interface RoomBookingRecord {
@@ -57,6 +57,8 @@ interface BookRoomFormProps {
   capacity: number
   currency?: string
   locale?: string // Add locale parameter
+  advancePaymentEnabled?: boolean // Add advancePaymentEnabled parameter
+  advancePaymentPercentage?: number // Add advancePaymentPercentage parameter
 }
 
 export default function BookRoomForm({
@@ -68,6 +70,8 @@ export default function BookRoomForm({
   capacity,
   currency = "TND",
   locale = "en", // Default to English
+  advancePaymentEnabled = false, // Default to false
+  advancePaymentPercentage = 20, // Default to 20%
 }: BookRoomFormProps) {
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined
@@ -92,6 +96,11 @@ export default function BookRoomForm({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "flouci" | "stripe"
   >("flouci")
+
+  // Add new state variables for advance payment
+  const [paymentType, setPaymentType] = useState<"full" | "advance">("full")
+  const [advanceAmount, setAdvanceAmount] = useState<number>(0)
+  const [remainingAmount, setRemainingAmount] = useState<number>(0)
 
   // Use the currency context for conversion
   const { currency: selectedCurrency, convertPrice } = useCurrency()
@@ -177,6 +186,15 @@ export default function BookRoomForm({
     }
   }, [roomId])
 
+  // Calculate advance payment amount when total price changes
+  useEffect(() => {
+    if (advancePaymentEnabled && advancePaymentPercentage > 0) {
+      const advance = (basePrice * advancePaymentPercentage) / 100
+      setAdvanceAmount(advance)
+      setRemainingAmount(basePrice - advance)
+    }
+  }, [basePrice, advancePaymentEnabled, advancePaymentPercentage])
+
   // Function to check if a date should be disabled
   const isDateDisabled = (date: Date) => {
     // Disable dates before today
@@ -230,7 +248,7 @@ export default function BookRoomForm({
     setInfantCount(newCount)
   }
 
-  // Modified handleSubmit to handle different payment methods
+  // Modified handleSubmit to handle different payment methods and advance payment
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setDateError("")
@@ -267,6 +285,7 @@ export default function BookRoomForm({
     startTransition(async () => {
       try {
         console.log(`Starting booking with ${selectedPaymentMethod} payment...`)
+        console.log(`Payment type: ${paymentType}`)
 
         // Create booking with selected payment method - uses the original price
         const booking = await createRoomBooking({
@@ -281,6 +300,8 @@ export default function BookRoomForm({
           initiatePayment: true,
           paymentMethod: selectedPaymentMethod,
           locale: locale, // Pass locale to the server action
+          paymentType: paymentType, // Pass payment type
+          advancePaymentPercentage: paymentType === "advance" ? advancePaymentPercentage : undefined, // Pass advance payment percentage
         })
 
         console.log("Booking response:", booking)
@@ -562,10 +583,157 @@ export default function BookRoomForm({
         </div>
 
         {/* Payment Information */}
-        <PaymentSelector
-          selectedPaymentMethod={selectedPaymentMethod}
-          setSelectedPaymentMethod={setSelectedPaymentMethod}
-        />
+        <div className="space-y-4 mt-8">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#FF8A00] text-white font-bold">
+              2
+            </div>
+            <h2 className="text-[#FF8A00] font-medium">Payment Information</h2>
+          </div>
+
+          <div className="space-y-4">
+            {/* Payment Method Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="payment-method">Payment Method</Label>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Flouci Payment Option */}
+                <div
+                  className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${
+                    selectedPaymentMethod === "flouci"
+                      ? "border-[#FF8A00] bg-[#FFF8EE]"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => setSelectedPaymentMethod("flouci")}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      selectedPaymentMethod === "flouci"
+                        ? "border-[#FF8A00]"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {selectedPaymentMethod === "flouci" && (
+                      <div className="w-3 h-3 rounded-full bg-[#FF8A00]"></div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium">Flouci</p>
+                    <p className="text-xs text-gray-500">TND</p>
+                  </div>
+                </div>
+
+                {/* Stripe Payment Option */}
+                <div
+                  className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${
+                    selectedPaymentMethod === "stripe"
+                      ? "border-[#FF8A00] bg-[#FFF8EE]"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => setSelectedPaymentMethod("stripe")}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      selectedPaymentMethod === "stripe"
+                        ? "border-[#FF8A00]"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {selectedPaymentMethod === "stripe" && (
+                      <div className="w-3 h-3 rounded-full bg-[#FF8A00]"></div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium">Stripe</p>
+                    <p className="text-xs text-gray-500">USD</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Advance Payment Option - Only show if enabled */}
+            {advancePaymentEnabled && (
+              <div className="space-y-3 mt-4 p-4 bg-gray-50 rounded-md">
+                <h3 className="font-medium">Payment Options</h3>
+                
+                {/* Full Payment Option */}
+                <div
+                  className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${
+                    paymentType === "full"
+                      ? "border-[#FF8A00] bg-[#FFF8EE]"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => setPaymentType("full")}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      paymentType === "full"
+                        ? "border-[#FF8A00]"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {paymentType === "full" && (
+                      <div className="w-3 h-3 rounded-full bg-[#FF8A00]"></div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Pay full amount</p>
+                    <p className="text-xs text-gray-500">Pay entire booking amount now</p>
+                  </div>
+                  <div className="font-medium">
+                    {formatPriceWithCurrency(convertedTotalPrice)}
+                  </div>
+                </div>
+                
+                {/* Advance Payment Option */}
+                <div
+                  className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${
+                    paymentType === "advance"
+                      ? "border-[#FF8A00] bg-[#FFF8EE]"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => setPaymentType("advance")}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      paymentType === "advance"
+                        ? "border-[#FF8A00]"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {paymentType === "advance" && (
+                      <div className="w-3 h-3 rounded-full bg-[#FF8A00]"></div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Pay {advancePaymentPercentage}% now</p>
+                    <p className="text-xs text-gray-500">Pay remaining amount at check-in</p>
+                  </div>
+                  <div className="font-medium">
+                    {formatPriceWithCurrency((convertedTotalPrice * advancePaymentPercentage) / 100)}
+                  </div>
+                </div>
+                
+                {/* Show payment breakdown for advance payment */}
+                {paymentType === "advance" && (
+                  <div className="mt-3 p-3 bg-white rounded-md border border-gray-200">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span>Pay now ({advancePaymentPercentage}%):</span>
+                      <span className="font-medium">
+                        {formatPriceWithCurrency((convertedTotalPrice * advancePaymentPercentage) / 100)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Pay at check-in:</span>
+                      <span className="font-medium">
+                        {formatPriceWithCurrency(convertedTotalPrice - (convertedTotalPrice * advancePaymentPercentage) / 100)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Submission Error */}
         {submissionError && (
@@ -573,6 +741,60 @@ export default function BookRoomForm({
             {submissionError}
           </div>
         )}
+
+        {/* Order Summary */}
+        <div className="mt-8 bg-gray-50 p-6 rounded-md">
+          <h3 className="font-medium text-lg mb-4">Order Summary</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span>Adults:</span>
+              <span>
+                {adultCount} × {formatPriceWithCurrency(convertedPricePerNightAdult)} × {nights}{" "}
+                nights
+              </span>
+            </div>
+            {childCount > 0 && (
+              <div className="flex justify-between">
+                <span>Children:</span>
+                <span>
+                  {childCount} × {formatPriceWithCurrency(convertedPricePerNightChild)} × {nights}{" "}
+                  nights
+                </span>
+              </div>
+            )}
+            {infantCount > 0 && (
+              <div className="flex justify-between">
+                <span>Infants:</span>
+                <span>
+                  {infantCount} × Free
+                </span>
+              </div>
+            )}
+            <div className="border-t border-gray-300 my-2 py-2"></div>
+            <div className="flex justify-between font-bold">
+              <span>Total:</span>
+              <span>{formatPriceWithCurrency(convertedTotalPrice)}</span>
+            </div>
+            
+            {/* Show payment breakdown for advance payment in order summary */}
+            {advancePaymentEnabled && paymentType === "advance" && (
+              <div className="mt-2 pt-2 border-t border-gray-300">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">Pay now ({advancePaymentPercentage}%):</span>
+                  <span className="font-medium">
+                    {formatPriceWithCurrency((convertedTotalPrice * advancePaymentPercentage) / 100)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Pay at check-in:</span>
+                  <span>
+                    {formatPriceWithCurrency(convertedTotalPrice - (convertedTotalPrice * advancePaymentPercentage) / 100)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Total and Submit */}
         <div className="pt-4 border-t">

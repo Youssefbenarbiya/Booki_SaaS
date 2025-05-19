@@ -87,6 +87,11 @@ export function Sidebar({ locale }: SidebarProps) {
       icon: CalendarCheck,
     },
     {
+      name: "Wallet",
+      href: `/${locale}/agency/dashboard/wallet`,
+      icon: CalendarCheck,
+    },
+    {
       name: "Messages",
       href: `/${locale}/agency/dashboard/messages`,
       icon: MessageCircle,
@@ -173,7 +178,7 @@ export function Sidebar({ locale }: SidebarProps) {
             ) : (
               <div className="h-16 w-16 rounded-full overflow-hidden relative bg-gray-800">
                 <Image
-                  src="/images/default-logo.png"
+                  src="/assets/icons/logo-blank.png?height=128&width=128"
                   alt="Default Agency Logo"
                   fill
                   sizes="4rem"
@@ -253,14 +258,12 @@ export function Sidebar({ locale }: SidebarProps) {
               Verification Required!
             </AlertTitle>
             <AlertDescription className="text-sm">
-              Your agency is not verified.
               <Link
                 href={`/${locale}/agency/profile`}
                 className="underline ml-1 font-semibold hover:text-white"
               >
                 Complete your profile now
               </Link>{" "}
-              to unlock all features.
             </AlertDescription>
           </Alert>
         )}

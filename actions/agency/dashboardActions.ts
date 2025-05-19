@@ -480,18 +480,14 @@ export const getDashboardStats = cache(async (): Promise<DashboardStats> => {
 
     // Query car booking revenue by month
     const carRevenueByMonth = await Promise.all(
-      months.map(async ({  monthName }) => {
+      months.map(async ({ monthName }) => {
         const result = await db
           .select({
             total: sql<number>`COALESCE(SUM(${carBookings.total_price}), 0)`,
           })
           .from(carBookings)
           .innerJoin(cars, eq(carBookings.car_id, cars.id))
-          .where(
-            and(
-              eq(cars.agencyId, agencyId),
-            )
-          )
+          .where(and(eq(cars.agencyId, agencyId)))
 
         return {
           name: monthName,
