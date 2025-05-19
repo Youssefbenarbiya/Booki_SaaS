@@ -9,6 +9,7 @@ import fs from "fs/promises"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
 import { sendBlogApprovalRequest } from "../admin/adminNotifications"
+import { createNewBlogNotification } from "../admin/notificationActions"
 
 // ===== HELPER FUNCTIONS =====
 
@@ -274,6 +275,23 @@ export async function createBlog(formData: FormData, authorId: string) {
 
     // Send notification email to admin
     await sendBlogApprovalRequest(newBlog.id)
+    
+    // Create admin notification for the new blog
+    try {
+      // Get agency name for the notification
+      const agency = await db.query.agencies.findFirst({
+        where: eq(agencies.userId, agencyId),
+      })
+      
+      await createNewBlogNotification(
+        newBlog.id,
+        title,
+        agency?.agencyName || "Agency"
+      )
+    } catch (error) {
+      console.error("Failed to create admin notification:", error)
+      // Continue even if notification creation fails
+    }
 
     revalidatePath("/agency/dashboard/blogs")
     revalidatePath("/blog")

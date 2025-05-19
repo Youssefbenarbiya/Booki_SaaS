@@ -6,6 +6,7 @@ import db from "@/db/drizzle";
 import { auth } from "@/auth";
 import { headers } from "next/headers";
 import { notifyAdminOfDocumentSubmission } from "@/lib/verifyAgencyEmail";
+import { createAgencyVerificationNotification } from "../admin/notificationActions";
 
 // Helper function to get the current session
 async function getSession() {
@@ -136,6 +137,7 @@ export async function updateAgencyProfile(data: {
       // Notify admin if ANY documents were submitted or updated
       if (shouldNotifyAdmin && (rneDocument || patenteDocument || cinDocument)) {
         try {
+          // Send email notification
           await notifyAdminOfDocumentSubmission({
             agencyName: data.name,
             agencyId: agency.id,
@@ -145,6 +147,9 @@ export async function updateAgencyProfile(data: {
             patenteDocument: patenteDocument || undefined,
             cinDocument: cinDocument || undefined,
           })
+          
+          // Create admin notification in database
+          await createAgencyVerificationNotification(agency.id.toString(), data.name)
         } catch (error) {
           console.error("Failed to send admin notification:", error);
           // Continue even if notification fails

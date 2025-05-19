@@ -16,6 +16,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { headers } from "next/headers";
 import { sendTripApprovalRequest } from "../admin/adminNotifications";
+import { createNewTripNotification } from "../admin/notificationActions";
 
 const tripSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -196,6 +197,18 @@ export async function createTrip(tripData: TripInput) {
           } as any)
         )
       )
+    }
+
+    // Create an admin notification for the new trip
+    try {
+      await createNewTripNotification(
+        tripId,
+        tripData.name,
+        agency.agencyName || "Agency"
+      )
+    } catch (error) {
+      console.error("Failed to create admin notification:", error)
+      // Continue even if notification creation fails
     }
 
     return { id: tripId }
