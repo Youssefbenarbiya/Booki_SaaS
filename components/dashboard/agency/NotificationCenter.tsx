@@ -36,8 +36,17 @@ export default function NotificationCenter({
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
   const [hasNewNotifications, setHasNewNotifications] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const session = useSession()
   const userId = session.data?.user.id
+
+  // Initialize notification sound
+  useEffect(() => {
+    audioRef.current = new Audio("/assets/notification.wav")
+    return () => {
+      audioRef.current = null
+    }
+  }, [])
 
   // Fetch notifications periodically
   useEffect(() => {
@@ -64,6 +73,13 @@ export default function NotificationCenter({
               setHasNewNotifications(true)
             }
 
+            // Play notification sound
+            if (audioRef.current) {
+              audioRef.current.play().catch((err) => {
+                console.error("Failed to play notification sound:", err)
+              })
+            }
+
             // Update notifications and count
             setNotifications(data.notifications)
             setUnreadCount(data.unreadCount)
@@ -74,7 +90,7 @@ export default function NotificationCenter({
       }
     }
 
-    // Set up polling interval (every 1seconds)
+    // Set up polling interval (every 5 seconds)
     const intervalId = setInterval(fetchNotifications, 5000)
 
     // Clean up on component unmount
