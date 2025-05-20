@@ -8,6 +8,7 @@ import { auth } from "@/auth"
 import { headers } from "next/headers"
 import { CarFormValues } from "@/app/[locale]/agency/dashboard/cars/types"
 import { sendCarApprovalRequest } from "../admin/adminNotifications"
+import { createNewCarNotification } from "../admin/notificationActions"
 
 // Helper function to get the current session
 async function getSession() {
@@ -155,34 +156,56 @@ export async function createCar(data: CarFormValues) {
       ? data.images.map((img) => (typeof img === "string" ? img : img.imageUrl))
       : []
 
-    // Create car with discount fields included and always set status to "pending" for new cars
-    const newCar = await db
-      .insert(cars)
-      .values({
-        model: data.model,
-        brand: data.brand,
-        year: data.year,
-        plateNumber: data.plateNumber,
-        color: data.color,
-        originalPrice: data.originalPrice.toString(),
-        currency: data.currency || "TND",
-        discountPercentage: discountPercentage ?? undefined,
-        priceAfterDiscount:
-          priceAfterDiscount !== undefined && priceAfterDiscount !== null
-            ? priceAfterDiscount.toString()
-            : undefined,
-        isAvailable: isAvailable,
-        images: processedImages,
-        agencyId: agencyId,
-        seats: data.seats || 4,
-        category: data.category,
-        location: data.location,
-        status: "pending", // Always set to pending for admin approval
-      })
-      .returning()
+    // Créer d'abord un objet avec toutes les valeurs
+    const carData = {
+      model: data.model,
+      brand: data.brand,
+      year: data.year,
+      plateNumber: data.plateNumber,
+      color: data.color,
+      originalPrice: data.originalPrice.toString(),
+      currency: data.currency || "TND",
+      discountPercentage: discountPercentage ?? undefined,
+      priceAfterDiscount:
+        priceAfterDiscount !== undefined && priceAfterDiscount !== null
+          ? priceAfterDiscount.toString()
+          : undefined,
+      isAvailable: isAvailable,
+      images: processedImages,
+      agencyId: agencyId,
+      seats: data.seats || 4,
+      category: data.category || "Other", // Provide a default value to avoid undefined
+      location: data.location || "", // Ensure location is never undefined
+      status: "pending", // Always set to pending for admin approval
+      // Add advance payment options
+      advancePaymentEnabled: data.advancePaymentEnabled || false,
+      advancePaymentPercentage: data.advancePaymentEnabled
+        ? data.advancePaymentPercentage
+        : undefined,
+    }
+
+    // Utiliser la méthode .values() avec l'objet unique
+    const newCar = await db.insert(cars).values(carData).returning()
 
     // Always send notification email to admin for new cars
     await sendCarApprovalRequest(newCar[0].id)
+    
+    // Create admin notification for new car
+    try {
+      // Get agency name
+      const agency = await db.query.agencies.findFirst({
+        where: eq(agencies.userId, agencyId),
+      })
+      
+      await createNewCarNotification(
+        newCar[0].id,
+        `${newCar[0].brand} ${newCar[0].model}`,
+        agency?.agencyName || "Agency"
+      )
+    } catch (error) {
+      console.error("Failed to create admin notification:", error)
+      // Continue even if notification creation fails
+    }
 
     revalidatePath("/agency/dashboard/cars")
     return { car: newCar[0] }
@@ -255,6 +278,15 @@ export async function updateCar(id: number, data: CarFormValues) {
         category: data.category,
         location: data.location,
         status: data.status || undefined, // Preserve existing status if not provided
+        // Add advance payment options
+        advancePaymentEnabled:
+          data.advancePaymentEnabled !== undefined
+            ? data.advancePaymentEnabled
+            : false,
+        advancePaymentPercentage:
+          data.advancePaymentEnabled && data.advancePaymentPercentage
+            ? data.advancePaymentPercentage
+            : null,
       })
       .where(eq(cars.id, id))
       .returning()

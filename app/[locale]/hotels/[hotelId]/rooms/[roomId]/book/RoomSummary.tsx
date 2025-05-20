@@ -3,6 +3,7 @@
 
 import Image from "next/image"
 import { useCurrency } from "@/lib/contexts/CurrencyContext"
+import { Info } from "lucide-react"
 
 interface RoomSummaryProps {
   room: any // Replace with your Room type
@@ -77,6 +78,22 @@ export default function RoomSummary({ room }: RoomSummaryProps) {
             {formatPriceWithCurrency(childPrice)}
           </span>
         </p>
+
+        {/* Add advance payment information if enabled */}
+        {room.advancePaymentEnabled && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+            <div className="flex items-start gap-2">
+              <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-medium text-blue-700">Advance Payment Available</h3>
+                <p className="text-sm text-blue-600 mt-1">
+                  This room offers a flexible payment option! You can pay {room.advancePaymentPercentage}% now
+                  and the remaining amount at check-in.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {room.amenities && room.amenities.length > 0 && (
           <div className="mt-4">

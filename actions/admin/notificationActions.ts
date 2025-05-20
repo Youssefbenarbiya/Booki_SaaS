@@ -2,8 +2,8 @@
 "use server"
 
 import db from "@/db/drizzle"
-import { notifications, trips, cars, hotel, blogs } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { notifications, trips, cars, hotel, blogs, adminNotifications } from "@/db/schema"
+import { eq, desc, and, count } from "drizzle-orm"
 
 export async function sendTripStatusNotification(
   tripId: number,
@@ -55,6 +55,213 @@ export async function sendTripStatusNotification(
     }
   } catch (error) {
     return { success: false, message: "Failed to send notification" }
+  }
+}
+
+// Admin notification functions
+
+/**
+ * Create a notification for admin when an agency submits verification documents
+ */
+export async function createAgencyVerificationNotification(agencyId: string, agencyName: string) {
+  try {
+    await db.insert(adminNotifications).values({
+      title: "New Agency Verification",
+      message: `${agencyName} has submitted verification documents for review.`,
+      type: "agency_verification",
+      entityId: agencyId,
+      entityType: "agency",
+      isRead: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to create admin notification:", error)
+    return { success: false, message: "Failed to create admin notification" }
+  }
+}
+
+/**
+ * Create a notification for admin when a new trip is created
+ */
+export async function createNewTripNotification(tripId: number, tripName: string, agencyName: string) {
+  try {
+    await db.insert(adminNotifications).values({
+      title: "New Trip Posted",
+      message: `${agencyName} has posted a new trip: ${tripName}.`,
+      type: "new_trip",
+      entityId: tripId.toString(),
+      entityType: "trip",
+      isRead: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to create admin notification:", error)
+    return { success: false, message: "Failed to create admin notification" }
+  }
+}
+
+/**
+ * Create a notification for admin when a new car is created
+ */
+export async function createNewCarNotification(carId: number, carDetails: string, agencyName: string) {
+  try {
+    await db.insert(adminNotifications).values({
+      title: "New Car Posted",
+      message: `${agencyName} has posted a new car: ${carDetails}.`,
+      type: "new_car",
+      entityId: carId.toString(),
+      entityType: "car",
+      isRead: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to create admin notification:", error)
+    return { success: false, message: "Failed to create admin notification" }
+  }
+}
+
+/**
+ * Create a notification for admin when a new hotel is created
+ */
+export async function createNewHotelNotification(hotelId: string | number, hotelName: string, agencyName: string) {
+  try {
+    await db.insert(adminNotifications).values({
+      title: "New Hotel Posted",
+      message: `${agencyName} has posted a new hotel: ${hotelName}.`,
+      type: "new_hotel",
+      entityId: hotelId.toString(),
+      entityType: "hotel",
+      isRead: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to create admin notification:", error)
+    return { success: false, message: "Failed to create admin notification" }
+  }
+}
+
+/**
+ * Create a notification for admin when a new blog is created
+ */
+export async function createNewBlogNotification(blogId: number, blogTitle: string, agencyName: string) {
+  try {
+    await db.insert(adminNotifications).values({
+      title: "New Blog Posted",
+      message: `${agencyName} has posted a new blog: ${blogTitle}.`,
+      type: "new_blog",
+      entityId: blogId.toString(),
+      entityType: "blog",
+      isRead: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to create admin notification:", error)
+    return { success: false, message: "Failed to create admin notification" }
+  }
+}
+
+/**
+ * Fetch admin notifications
+ */
+export async function getAdminNotifications(page = 1, limit = 10) {
+  try {
+    const offset = (page - 1) * limit
+    
+    // Get total count
+    const [countResult] = await db
+      .select({ value: count() })
+      .from(adminNotifications)
+    
+    const total = countResult?.value || 0
+    
+    // Get paginated notifications
+    const notifications = await db.query.adminNotifications.findMany({
+      orderBy: [desc(adminNotifications.createdAt)],
+      limit,
+      offset,
+    })
+    
+    return {
+      success: true,
+      data: notifications,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    }
+  } catch (error) {
+    console.error("Failed to fetch admin notifications:", error)
+    return { success: false, message: "Failed to fetch admin notifications" }
+  }
+}
+
+/**
+ * Get unread notification count
+ */
+export async function getUnreadNotificationCount() {
+  try {
+    const [result] = await db
+      .select({ count: count() })
+      .from(adminNotifications)
+      .where(eq(adminNotifications.isRead, false))
+    
+    return { success: true, count: result?.count || 0 }
+  } catch (error) {
+    console.error("Failed to get unread notification count:", error)
+    return { success: false, message: "Failed to get unread notification count" }
+  }
+}
+
+/**
+ * Mark notification as read
+ */
+export async function markNotificationAsRead(id: number | string) {
+  try {
+    const notificationId = typeof id === 'string' ? parseInt(id, 10) : id;
+    
+    // Make sure we have a valid ID
+    if (isNaN(notificationId)) {
+      return { success: false, message: "Invalid notification ID" }
+    }
+    
+    await db
+      .update(adminNotifications)
+      .set({ isRead: true, updatedAt: new Date() })
+      .where(eq(adminNotifications.id, notificationId))
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to mark notification as read:", error)
+    return { success: false, message: "Failed to mark notification as read" }
+  }
+}
+
+/**
+ * Mark all notifications as read
+ */
+export async function markAllNotificationsAsRead() {
+  try {
+    await db
+      .update(adminNotifications)
+      .set({ isRead: true, updatedAt: new Date() })
+      .where(eq(adminNotifications.isRead, false))
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to mark all notifications as read:", error)
+    return { success: false, message: "Failed to mark all notifications as read" }
   }
 }
 

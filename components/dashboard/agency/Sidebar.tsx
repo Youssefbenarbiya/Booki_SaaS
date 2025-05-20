@@ -178,7 +178,7 @@ export function Sidebar({ locale }: SidebarProps) {
             ) : (
               <div className="h-16 w-16 rounded-full overflow-hidden relative bg-gray-800">
                 <Image
-                  src="/images/default-logo.png"
+                  src="/assets/icons/logo-blank.png?height=128&width=128"
                   alt="Default Agency Logo"
                   fill
                   sizes="4rem"

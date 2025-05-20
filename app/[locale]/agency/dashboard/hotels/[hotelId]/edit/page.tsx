@@ -12,7 +12,6 @@ interface EditHotelPageProps {
   }>
 }
 
-
 export default async function EditHotelPage({ params }: EditHotelPageProps) {
   const { hotelId, locale } = await params
 
@@ -22,5 +21,14 @@ export default async function EditHotelPage({ params }: EditHotelPageProps) {
     notFound()
   }
 
-  return <EditHotelForm hotel={hotel} locale={locale} />
+  const formattedHotel = {
+    ...hotel,
+    rooms: hotel.rooms.map((room) => ({
+      ...room,
+      advancePaymentEnabled: room.advancePaymentEnabled || undefined,
+      advancePaymentPercentage: room.advancePaymentPercentage || undefined,
+    })),
+  }
+
+  return <EditHotelForm hotel={formattedHotel} locale={locale} />
 }

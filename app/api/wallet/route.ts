@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { wallet, walletTransactions, tripBookings, trips, carBookings, cars, roomBookings, room, hotel, agencies } from "@/db/schema"
-import { eq, sum, and } from "drizzle-orm"
+import { eq, sum, and, or } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
@@ -15,18 +15,48 @@ function getErrorMessage(error: unknown): string {
 async function calculateEarnings(agencyId: string) {
   try {
     // Get sum of trip bookings for this agency with status "completed"
-    const tripBookingsSum = await db
+    // First, query for all completed trips to get their IDs
+    const completedTrips = await db
       .select({
-        total: sum(tripBookings.totalPrice),
+        id: tripBookings.id,
+        totalPrice: tripBookings.totalPrice,
+        paymentStatus: tripBookings.paymentStatus,
+        status: tripBookings.status,
+        fullPrice: tripBookings.fullPrice,
+        advancePaymentPercentage: tripBookings.advancePaymentPercentage,
+        paymentType: tripBookings.paymentType
       })
       .from(tripBookings)
       .innerJoin(trips, eq(tripBookings.tripId, trips.id))
       .where(
         and(
           eq(trips.agencyId, agencyId),
-          eq(tripBookings.paymentStatus, "completed")
+          or(
+            eq(tripBookings.paymentStatus, "completed"),
+            eq(tripBookings.status, "completed")
+          )
         )
-      )
+      );
+      
+    console.log(`Found ${completedTrips.length} completed trip bookings`);
+    
+    // Calculate correct totals for trip bookings considering advance payments
+    let tripTotal = 0;
+    for (const booking of completedTrips) {
+      // Check if this was an advance payment that was completed later
+      const isAdvancePayment = booking.paymentType === "advance" || 
+                              booking.advancePaymentPercentage !== null;
+      
+      if (isAdvancePayment && booking.fullPrice) {
+        // If it was an advance payment with fullPrice, use that 
+        console.log(`Trip booking #${booking.id}: Using fullPrice ${booking.fullPrice}`);
+        tripTotal += parseFloat(booking.fullPrice.toString());
+      } else {
+        // Otherwise use the totalPrice field
+        console.log(`Trip booking #${booking.id}: Using totalPrice ${booking.totalPrice}`);
+        tripTotal += parseFloat(booking.totalPrice.toString());
+      }
+    }
 
     // Get sum of car bookings for this agency with status "completed"
     const carBookingsSum = await db
@@ -38,7 +68,10 @@ async function calculateEarnings(agencyId: string) {
       .where(
         and(
           eq(cars.agencyId, agencyId),
-          eq(carBookings.paymentStatus, "completed")
+          or(
+            eq(carBookings.paymentStatus, "completed"),
+            eq(carBookings.status, "completed")
+          )
         )
       )
 
@@ -53,15 +86,14 @@ async function calculateEarnings(agencyId: string) {
       .where(
         and(
           eq(hotel.agencyId, agencyId),
-          eq(roomBookings.paymentStatus, "completed")
+          or(
+            eq(roomBookings.paymentStatus, "completed"),
+            eq(roomBookings.status, "completed")
+          )
         )
       )
-
+      
     // Parse values and handle nulls
-    const tripTotal = tripBookingsSum[0]?.total 
-      ? parseFloat(tripBookingsSum[0].total.toString()) 
-      : 0
-    
     const carTotal = carBookingsSum[0]?.total 
       ? parseFloat(carBookingsSum[0].total.toString()) 
       : 0
@@ -71,6 +103,13 @@ async function calculateEarnings(agencyId: string) {
       : 0
 
     const totalEarnings = tripTotal + carTotal + roomTotal
+    
+    console.log("Earnings calculation result:", {
+      tripBookings: tripTotal,
+      carBookings: carTotal,
+      roomBookings: roomTotal,
+      totalEarnings
+    });
     
     return {
       tripBookings: tripTotal,
@@ -87,6 +126,11 @@ async function calculateEarnings(agencyId: string) {
 // Get wallet for a user
 export async function GET(request: NextRequest) {
   try {
+    // Add force refresh parameter for completely recalculating the balance
+    const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true';
+    const revalidationTimestamp = new Date().toISOString();
+    console.log(`Wallet API called with forceRefresh: ${forceRefresh}, timestamp: ${revalidationTimestamp}`);
+
     // Get session from auth
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -179,14 +223,15 @@ export async function GET(request: NextRequest) {
         .where(eq(wallet.id, userWallet.id))
         .returning()
         
-      console.log("Updated wallet balance:", updatedWallet[0])
+      console.log("Updated wallet balance:", updatedWallet[0], "Revalidation timestamp:", revalidationTimestamp)
 
       return NextResponse.json({
         wallet: updatedWallet[0],
         calculations: {
           ...earnings,
           totalWithdrawals,
-          balance
+          balance,
+          revalidationTimestamp
         }
       })
     } catch (dbError) {

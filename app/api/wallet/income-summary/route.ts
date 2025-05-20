@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { type NextRequest, NextResponse } from "next/server"
-import { tripBookings, trips, carBookings, cars, roomBookings, room, hotel, agencies, user } from "@/db/schema"
+import { tripBookings, trips, carBookings, cars, roomBookings, room, hotel, agencies } from "@/db/schema"
 import { eq, sum, and } from "drizzle-orm"
 import db from "@/db/drizzle"
 import { auth } from "@/auth"

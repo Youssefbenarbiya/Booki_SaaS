@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
@@ -78,9 +79,7 @@ const BookCarForm: React.FC<BookCarFormProps> = ({
   const [advancePaymentPercentage, setAdvancePaymentPercentage] =
     useState<number>(30)
 
-  // State for payment method specific pricing
-  const [stripePrice, setStripePrice] = useState<number | null>(null)
-  const [flouciPrice, setFlouciPrice] = useState<number | null>(null)
+
 
   const defaultFormValues: BookingFormValues = {
     fullName: session?.user?.name || "",

@@ -19,6 +19,8 @@ export const roomSchema = z.object({
   amenities: z.array(z.string()),
   images: z.array(z.string()).default([]),
   availabilities: z.array(availabilitySchema).optional(),
+  advancePaymentEnabled: z.boolean().default(false).optional(),
+  advancePaymentPercentage: z.number().int().min(1).max(99).optional(),
 })
 
 export const hotelSchema = z.object({

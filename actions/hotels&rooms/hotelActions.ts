@@ -14,6 +14,7 @@ import { eq, inArray } from "drizzle-orm"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 import { sendHotelApprovalRequest } from "../admin/adminNotifications"
+import { createNewHotelNotification } from "../admin/notificationActions"
 
 // Helper function to get agency ID
 async function getAgencyId(userId: string) {
@@ -95,6 +96,8 @@ export async function createHotel(data: HotelInput) {
           roomType: roomData.roomType,
           amenities: roomData.amenities,
           images: roomData.images || [],
+          advancePaymentEnabled: roomData.advancePaymentEnabled || false,
+          advancePaymentPercentage: roomData.advancePaymentEnabled ? roomData.advancePaymentPercentage || 20 : null,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -123,6 +126,26 @@ export async function createHotel(data: HotelInput) {
     // If hotel status is pending, send notification to admin
     if (newHotel.status === "pending") {
       await sendHotelApprovalRequest(hotelId)
+
+      // Also create in-app admin notification
+      try {
+        // Get agency name for the notification
+        const agency = await db.query.user.findFirst({
+          where: eq(user.id, agencyId),
+          with: {
+            agency: true,
+          },
+        })
+
+        await createNewHotelNotification(
+          hotelId,
+          validatedData.name,
+          agency?.agency?.agencyName || "Agency"
+        )
+      } catch (error) {
+        console.error("Failed to create admin notification:", error)
+        // Continue even if notification creation fails
+      }
     }
     
     return { ...newHotel, rooms }
@@ -171,6 +194,8 @@ export async function updateHotel(hotelId: string, data: HotelInput) {
             roomType: roomData.roomType,
             amenities: roomData.amenities,
             images: roomData.images || [],
+            advancePaymentEnabled: roomData.advancePaymentEnabled || false,
+            advancePaymentPercentage: roomData.advancePaymentEnabled ? roomData.advancePaymentPercentage || 20 : null,
             updatedAt: new Date(),
           })
           .where(eq(room.id, roomData.id))
@@ -192,6 +217,8 @@ export async function updateHotel(hotelId: string, data: HotelInput) {
             roomType: roomData.roomType,
             amenities: roomData.amenities,
             images: roomData.images || [],
+            advancePaymentEnabled: roomData.advancePaymentEnabled || false,
+            advancePaymentPercentage: roomData.advancePaymentEnabled ? roomData.advancePaymentPercentage || 20 : null,
             createdAt: new Date(),
             updatedAt: new Date(),
           })

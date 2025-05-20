@@ -5,13 +5,11 @@ import { wallet, walletTransactions, withdrawalRequests } from "@/db/schema"
 import { auth } from "@/auth"
 import { headers } from "next/headers"
 
-// Update withdrawal request status (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Get session from auth
     const session = await auth.api.getSession({
       headers: await headers(),
     })
@@ -24,9 +22,10 @@ export async function PATCH(
     if (session.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
+    const { id } = await params 
 
     const userId = session.user.id
-    const withdrawalId = Number.parseInt(params.id)
+    const withdrawalId = Number.parseInt(id)
     const body = await request.json()
     const { status, rejectionReason, receiptUrl } = body
 
@@ -72,7 +71,7 @@ export async function PATCH(
           { status: 400 }
         )
       }
-      
+
       // Update wallet balance
       const newBalance =
         Number.parseFloat(userWallet.balance.toString()) -

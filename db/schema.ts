@@ -182,6 +182,9 @@ export const tripBookings = pgTable("trip_bookings", {
     precision: 10,
     scale: 2,
   }),
+  paymentType: varchar("payment_type", { length: 20 }).default("full"),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
+  fullPrice: decimal("full_price", { precision: 10, scale: 2 }),
 });
 
 // Trip Relations
@@ -270,6 +273,9 @@ export const room = pgTable("room", {
   roomType: varchar("room_type").notNull(), // e.g., "single", "double", "suite"
   amenities: text("amenities").array().default([]).notNull(),
   images: text("images").array().default([]).notNull(),
+  // Add advance payment fields
+  advancePaymentEnabled: boolean("advance_payment_enabled").default(false),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -314,6 +320,9 @@ export const roomBookings = pgTable("room_bookings", {
   adultCount: integer("adult_count").default(1),
   childCount: integer("child_count").default(0),
   infantCount: integer("infant_count").default(0),
+  paymentType: varchar("payment_type", { length: 20 }).default("full"),
+  advancePaymentPercentage: integer("advance_payment_percentage"),
+  fullPrice: decimal("full_price", { precision: 10, scale: 2 }),
 });
 
 // Hotel & Room Relations
@@ -765,3 +774,20 @@ export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one 
     references: [user.id],
   }),
 }))
+
+// Admin Notifications
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // agency_verification, new_trip, new_car, new_hotel, new_blog
+  entityId: text("entity_id").notNull(), // ID of the related entity (agency, trip, car, hotel, blog)
+  entityType: varchar("entity_type", { length: 50 }).notNull(), // agency, trip, car, hotel, blog
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const adminNotificationsRelations = relations(adminNotifications, ({ one }) => ({
+  // Relations can be added if needed
+}));

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -148,7 +151,23 @@ export function WalletDashboard() {
   const refreshWalletBalance = async () => {
     setIsRefreshing(true)
     try {
-      await fetchWallet()
+      // Add refresh=true parameter to force recalculating the balance
+      const response = await fetch('/api/wallet?refresh=true')
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || error.error || 'Failed to fetch wallet')
+      }
+      
+      const data = await response.json()
+      setWalletBalance(parseFloat(data.wallet.balance))
+      
+      // Store calculation details if available
+      if (data.calculations) {
+        setCalculations(data.calculations)
+      }
+      
+      await fetchTransactions()
       await fetchIncomeSummary()
       toast.success('Wallet balance updated')
     } catch (error) {

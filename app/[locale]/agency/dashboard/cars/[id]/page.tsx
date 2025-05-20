@@ -1,31 +1,31 @@
-import { notFound } from "next/navigation";
-import { CarForm } from "../new/car-form";
-import { Locale } from "@/i18n/routing";
-import { getCarById } from "@/actions/cars/carActions";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { notFound } from "next/navigation"
+import { CarForm } from "../new/car-form"
+import { Locale } from "@/i18n/routing"
+import { getCarById } from "@/actions/cars/carActions"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Eye } from "lucide-react"
 
 interface CarEditPageProps {
   params: Promise<{
-    id: string;
-    locale: Locale;
-  }>;
+    id: string
+    locale: Locale
+  }>
 }
 
 export default async function CarEditPage({ params }: CarEditPageProps) {
   const { id: paramId, locale } = await params
 
-  const id = Number(paramId);
+  const id = Number(paramId)
 
   if (isNaN(id)) {
-    notFound();
+    notFound()
   }
 
-  const { car } = await getCarById(id).catch(() => ({ car: null }));
+  const { car } = await getCarById(id).catch(() => ({ car: null }))
 
   if (!car) {
-    notFound();
+    notFound()
   }
 
   // Convert string prices to numbers and ensure proper type conversion for CarType
@@ -37,13 +37,20 @@ export default async function CarEditPage({ params }: CarEditPageProps) {
       ? Number(car.priceAfterDiscount)
       : undefined,
     isAvailable: Boolean(car.isAvailable !== false), // Convert to boolean
+    advancePaymentEnabled: car.advancePaymentEnabled ?? undefined, // Convert null to undefined
+    advancePaymentPercentage: car.advancePaymentPercentage ?? undefined, // Convert null to undefined
     seats: car.seats || 4, // Ensure seats has a default value
     category: car.category || "", // Ensure category has a default value
     location: car.location || "", // Ensure location has a default value
-    // Handle date fields properly
-    createdAt: car.createdAt ? car.createdAt.toISOString() : undefined,
-    updatedAt: car.updatedAt ? car.updatedAt.toISOString() : undefined,
-  };
+    // Handle agencyId to ensure it's not null
+    agencyId: car.agencyId || "",
+    // Convert null dates to undefined to match CarType
+    createdAt: car.createdAt || undefined, // Convert null to undefined
+    updatedAt: car.updatedAt || undefined, // Convert null to undefined
+    // Ensure other potential nullable fields match CarType expectations
+    images: car.images || [],
+    agency: car.agency || null,
+  }
 
   return (
     <div className="space-y-4">
@@ -58,5 +65,5 @@ export default async function CarEditPage({ params }: CarEditPageProps) {
       </div>
       <CarForm initialData={carWithNumberPrices} isEditing locale={locale} />
     </div>
-  );
+  )
 }
