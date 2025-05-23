@@ -291,9 +291,7 @@ export function NotificationBell() {
               </ScrollArea>
             </CardContent>
             <CardFooter className="flex justify-center p-4">
-              <Button variant="outline" size="sm" className="w-full" asChild>
-                <a href="/admin/notifications">View all notifications</a>
-              </Button>
+            
             </CardFooter>
           </Card>
         </PopoverContent>

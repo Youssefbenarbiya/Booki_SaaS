@@ -3,8 +3,9 @@ import { Footer } from "@/components/footer/footer";
 import { SearchResults } from "./search-results";
 import TopVacations from "@/components/home/topVacations";
 import TopDestinations from "@/components/home/topDestinations";
-import { ChatScript } from "@/components/chatbot/ChatScript";
+
 import HeroCarousel from "@/components/home/HeroCarousel";
+import { ChatScript } from "@/components/chatbot/ChatScript";
 
 interface SearchParams {
   type?: string;
