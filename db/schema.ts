@@ -136,7 +136,7 @@ export const trips = pgTable("trips", {
   createdBy: text("created_by").references(() => user.id), // Added new field to track creator
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-})
+});
 // Trip Images table
 export const tripImages = pgTable("trip_images", {
   id: serial("id").primaryKey(),
@@ -583,6 +583,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
     fields: [user.id],
     references: [agencies.userId],
   }),
+  paymentMethods: many(paymentMethods),
   // ...other existing relations...
 }));
 
@@ -635,7 +636,7 @@ export const chatMessages = pgTable("chat_messages", {
   type: varchar("type", { length: 20 }).notNull().default("text"), // 'text', 'image', 'notification'
   isRead: boolean("is_read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  customerId: varchar("customer_id")
+  customerId: varchar("customer_id"),
 });
 
 // Chat messages relations
@@ -676,16 +677,22 @@ export const support_messages = pgTable("support_messages", {
 });
 
 // Support tables relations
-export const supportTicketsRelations = relations(support_tickets, ({ many }) => ({
-  messages: many(support_messages),
-}));
+export const supportTicketsRelations = relations(
+  support_tickets,
+  ({ many }) => ({
+    messages: many(support_messages),
+  })
+);
 
-export const supportMessagesRelations = relations(support_messages, ({ one }) => ({
-  ticket: one(support_tickets, {
-    fields: [support_messages.ticketId],
-    references: [support_tickets.id],
-  }),
-}));
+export const supportMessagesRelations = relations(
+  support_messages,
+  ({ one }) => ({
+    ticket: one(support_tickets, {
+      fields: [support_messages.ticketId],
+      references: [support_tickets.id],
+    }),
+  })
+);
 
 // Wallet table to store balance information
 export const wallet = pgTable("wallet", {
@@ -693,12 +700,14 @@ export const wallet = pgTable("wallet", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  balance: decimal("balance", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
   currency: varchar("currency", { length: 10 }).default("TND").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
+});
 
 // Transaction types: deposit, withdrawal, payment, refund, etc.
 export const walletTransactions = pgTable("wallet_transactions", {
@@ -714,9 +723,23 @@ export const walletTransactions = pgTable("wallet_transactions", {
   referenceType: varchar("reference_type", { length: 50 }), // trip_booking, room_booking, car_booking
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
+});
 
-// Withdrawal requests table
+// Payment Methods table
+export const paymentMethods = pgTable("payment_methods", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 50 }).notNull(), // bank_account, flouci
+  name: varchar("name", { length: 100 }).notNull(), // User-friendly name for this payment method
+  details: text("details").notNull(), // JSON string or specific details
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Update withdrawal requests table to reference payment method
 export const withdrawalRequests = pgTable("withdrawal_requests", {
   id: serial("id").primaryKey(),
   walletId: serial("wallet_id")
@@ -734,10 +757,13 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   rejectionReason: text("rejection_reason"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDetails: text("payment_details"),
+  paymentMethodId: integer("payment_method_id").references(
+    () => paymentMethods.id
+  ), // Add reference to payment method
   receiptUrl: text("receipt_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
+});
 
 // Relations
 export const walletRelations = relations(wallet, ({ one, many }) => ({
@@ -747,33 +773,55 @@ export const walletRelations = relations(wallet, ({ one, many }) => ({
   }),
   transactions: many(walletTransactions),
   withdrawalRequests: many(withdrawalRequests),
-}))
+}));
 
-export const walletTransactionsRelations = relations(walletTransactions, ({ one }) => ({
-  wallet: one(wallet, {
-    fields: [walletTransactions.walletId],
-    references: [wallet.id],
-  }),
-}))
+export const walletTransactionsRelations = relations(
+  walletTransactions,
+  ({ one }) => ({
+    wallet: one(wallet, {
+      fields: [walletTransactions.walletId],
+      references: [wallet.id],
+    }),
+  })
+);
 
-export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one }) => ({
-  wallet: one(wallet, {
-    fields: [withdrawalRequests.walletId],
-    references: [wallet.id],
-  }),
-  user: one(user, {
-    fields: [withdrawalRequests.userId],
-    references: [user.id],
-  }),
-  approver: one(user, {
-    fields: [withdrawalRequests.approvedBy],
-    references: [user.id],
-  }),
-  rejecter: one(user, {
-    fields: [withdrawalRequests.rejectedBy],
-    references: [user.id],
-  }),
-}))
+// Add payment methods relations
+export const paymentMethodsRelations = relations(
+  paymentMethods,
+  ({ one, many }) => ({
+    user: one(user, {
+      fields: [paymentMethods.userId],
+      references: [user.id],
+    }),
+    withdrawalRequests: many(withdrawalRequests),
+  })
+);
+
+export const withdrawalRequestsRelations = relations(
+  withdrawalRequests,
+  ({ one }) => ({
+    wallet: one(wallet, {
+      fields: [withdrawalRequests.walletId],
+      references: [wallet.id],
+    }),
+    user: one(user, {
+      fields: [withdrawalRequests.userId],
+      references: [user.id],
+    }),
+    approver: one(user, {
+      fields: [withdrawalRequests.approvedBy],
+      references: [user.id],
+    }),
+    rejecter: one(user, {
+      fields: [withdrawalRequests.rejectedBy],
+      references: [user.id],
+    }),
+    paymentMethod: one(paymentMethods, {
+      fields: [withdrawalRequests.paymentMethodId],
+      references: [paymentMethods.id],
+    }),
+  })
+);
 
 // Admin Notifications
 export const adminNotifications = pgTable("admin_notifications", {
@@ -788,6 +836,9 @@ export const adminNotifications = pgTable("admin_notifications", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const adminNotificationsRelations = relations(adminNotifications, ({ one }) => ({
-  // Relations can be added if needed
-}));
+export const adminNotificationsRelations = relations(
+  adminNotifications,
+  ({ one }) => ({
+    // Relations can be added if needed
+  })
+);
