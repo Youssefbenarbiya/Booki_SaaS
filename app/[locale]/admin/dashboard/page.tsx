@@ -111,8 +111,6 @@ export default async function DashboardPage({
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
@@ -277,37 +275,7 @@ export default async function DashboardPage({
           </div>
         </TabsContent>
         
-        <TabsContent value="analytics" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle>Analytics Content</CardTitle>
-                <CardDescription>
-                  This tab will contain detailed analytics
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Analytics content will be implemented here</p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="reports" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle>Reports Content</CardTitle>
-                <CardDescription>
-                  This tab will contain various reports
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Reports content will be implemented here</p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+ 
       </Tabs>
     </div>
   )
