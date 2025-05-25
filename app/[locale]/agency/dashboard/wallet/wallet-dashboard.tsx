@@ -332,6 +332,10 @@ export function WalletDashboard() {
         return
       }
 
+      // Log the payment method and details before sending the request
+      console.log('Submitting withdrawal with payment method:', paymentMethod)
+      console.log('Payment details:', paymentDetails)
+      
       const response = await fetch("/api/wallet/withdraw", {
         method: "POST",
         headers: {
@@ -339,7 +343,7 @@ export function WalletDashboard() {
         },
         body: JSON.stringify({
           amount,
-          paymentMethod,
+          paymentMethod: paymentMethod, // Ensure this is explicitly the selected payment method
           paymentDetails,
           paymentMethodId: selectedPaymentMethodId,
         }),
@@ -361,11 +365,12 @@ export function WalletDashboard() {
       await fetchWallet()
       await fetchWithdrawalRequests()
 
-      // Reset form
+      // Reset form but don't change the payment method to avoid confusion
       setWithdrawalAmount("")
       setWithdrawalType("fixed")
       setSelectedFixedAmount("100")
-      setPaymentMethod("bank_transfer")
+      // Don't reset payment method to bank_transfer
+      // setPaymentMethod("bank_transfer") 
       setPaymentDetails("")
       setSelectedPaymentMethodId(null)
     } catch (error) {
@@ -498,6 +503,7 @@ export function WalletDashboard() {
     setSelectedPaymentMethodId(id)
     const selectedMethod = paymentMethods.find((method) => method.id === id)
     if (selectedMethod) {
+      // Ensure the payment method is set correctly (bank_transfer or flouci)
       setPaymentMethod(selectedMethod.type)
       setPaymentDetails(selectedMethod.details)
     }
@@ -761,14 +767,19 @@ export function WalletDashboard() {
                         </Label>
                         <Select
                           value={paymentMethod}
-                          onValueChange={setPaymentMethod}
+                          onValueChange={(value) => {
+                            console.log('Selected payment method:', value) // Debug log
+                            setPaymentMethod(value)
+                            // Clear payment details when changing payment method type
+                            setPaymentDetails('')
+                          }}
                         >
                           <SelectTrigger id="payment-method-type">
                             <SelectValue placeholder="Select payment method" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="bank_transfer">
-                              Bank Transfer
+                              Bank account
                             </SelectItem>
                             <SelectItem value="flouci">flouci</SelectItem>
                           </SelectContent>

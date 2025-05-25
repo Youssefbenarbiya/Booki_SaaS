@@ -370,6 +370,7 @@ export function WithdrawalRequestsTable({
                     <th className="text-left py-3 px-4">ID</th>
                     <th className="text-left py-3 px-4">Agency</th>
                     <th className="text-left py-3 px-4">Amount</th>
+                    <th className="text-left py-3 px-4">Payment Info</th>
                     <th className="text-left py-3 px-4">Status</th>
                     <th className="text-left py-3 px-4">Date</th>
                     <th className="text-left py-3 px-4">Actions</th>
@@ -397,6 +398,20 @@ export function WithdrawalRequestsTable({
                         {Number.parseFloat(
                           withdrawal.withdrawalRequest.amount
                         ).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="font-medium capitalize">
+                            {withdrawal.withdrawalRequest.paymentMethod === "bank_transfer" 
+                              ? "Bank account" 
+                              : withdrawal.withdrawalRequest.paymentMethod === "flouci" 
+                                ? "Flouci" 
+                                : withdrawal.withdrawalRequest.paymentMethod || "Bank account"}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[150px]" title={withdrawal.withdrawalRequest.paymentDetails || ""}>
+                            {withdrawal.withdrawalRequest.paymentDetails || "No details provided"}
+                          </p>
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         {getStatusBadge(withdrawal.withdrawalRequest.status)}
@@ -533,7 +548,7 @@ export function WithdrawalRequestsTable({
                 <Label>Payment Method</Label>
                 <p className="capitalize">
                   {selectedRequest.withdrawalRequest.paymentMethod ||
-                    "Bank Transfer"}
+                    "Bank account"}
                 </p>
               </div>
 

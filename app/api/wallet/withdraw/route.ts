@@ -57,9 +57,15 @@ export async function POST(request: NextRequest) {
         walletId: userWallet.id,
         userId,
         amount: amount.toString(),
-        paymentMethod: paymentMethod || "bank_transfer",
+        // Use the exact payment method provided in the request (flouci or bank_transfer)
+        paymentMethod: paymentMethod,
+        // Store the payment details (bank account info or Flouci ID)
         paymentDetails: paymentDetails || "",
       }
+      
+      // Log the payment method and details for debugging
+      console.log('Payment method:', paymentMethod)
+      console.log('Payment details:', paymentDetails)
 
       // Add payment method ID if provided
       if (paymentMethodId) {
