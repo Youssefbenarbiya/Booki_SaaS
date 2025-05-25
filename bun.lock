@@ -51,6 +51,7 @@
         "cmdk": "^1.1.1",
         "country-region-data": "^3.1.0",
         "date-fns": "^4.1.0",
+        "degachejs": "^0.2.0",
         "dotenv": "^16.4.7",
         "drizzle-orm": "^0.39.1",
         "embla-carousel-react": "^8.6.0",
@@ -834,6 +835,8 @@
     "define-properties": ["define-properties@1.2.1", "", { "dependencies": { "define-data-property": "^1.0.1", "has-property-descriptors": "^1.0.0", "object-keys": "^1.1.1" } }, "sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg=="],
 
     "defu": ["defu@6.1.4", "", {}, "sha512-mEQCMmwJu317oSz8CwdIOdwf3xMif1ttiM8LTufzc3g6kR+9Pe236twL8j3IYT1F7GfRgGcW6MWxzZjLIkuHIg=="],
+
+    "degachejs": ["degachejs@0.2.0", "", {}, "sha512-shvERaey7vT+ZYUPpYymkNk/WaucGkc1Hvp7+/SqypNLavtnoE158p0MKqaC4UnLTJ18XkZXeJBguKVfKTtZVQ=="],
 
     "delegates": ["delegates@1.0.0", "", {}, "sha512-bd2L678uiWATM6m5Z1VzNCErI3jiGzt6HGY8OVICs40JQq/HALfbyNJmp0UDakEY4pMMaN0Ly5om/B1VI/+xfQ=="],
 

@@ -9,8 +9,8 @@ import {
   date,
   decimal,
   numeric,
-} from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+} from "drizzle-orm/pg-core"
+import { relations } from "drizzle-orm"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -27,7 +27,7 @@ export const user = pgTable("user", {
   banReason: text("ban_reason"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-});
+})
 
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
@@ -40,7 +40,7 @@ export const session = pgTable("session", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id),
-});
+})
 
 export const account = pgTable("account", {
   id: text("id").primaryKey(),
@@ -58,7 +58,7 @@ export const account = pgTable("account", {
   password: text("password"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-});
+})
 
 export const verification = pgTable("verification", {
   id: text("id").primaryKey(),
@@ -67,7 +67,7 @@ export const verification = pgTable("verification", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),
-});
+})
 
 // --------------
 // Trip Related
@@ -145,7 +145,7 @@ export const tripImages = pgTable("trip_images", {
     .references(() => trips.id, { onDelete: "cascade" }),
   imageUrl: text("image_url").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+})
 
 // Trip Activities table
 export const tripActivities = pgTable("trip_activities", {
@@ -157,7 +157,7 @@ export const tripActivities = pgTable("trip_activities", {
   description: text("description"),
   scheduledDate: date("scheduled_date"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+})
 
 // Trip Bookings table
 export const tripBookings = pgTable("trip_bookings", {
@@ -185,7 +185,7 @@ export const tripBookings = pgTable("trip_bookings", {
   paymentType: varchar("payment_type", { length: 20 }).default("full"),
   advancePaymentPercentage: integer("advance_payment_percentage"),
   fullPrice: decimal("full_price", { precision: 10, scale: 2 }),
-});
+})
 
 // Trip Relations
 export const tripsRelations = relations(trips, ({ many, one }) => ({
@@ -201,21 +201,21 @@ export const tripsRelations = relations(trips, ({ many, one }) => ({
     fields: [trips.createdBy],
     references: [user.id],
   }),
-}));
+}))
 
 export const tripImagesRelations = relations(tripImages, ({ one }) => ({
   trip: one(trips, {
     fields: [tripImages.tripId],
     references: [trips.id],
   }),
-}));
+}))
 
 export const tripActivitiesRelations = relations(tripActivities, ({ one }) => ({
   trip: one(trips, {
     fields: [tripActivities.tripId],
     references: [trips.id],
   }),
-}));
+}))
 
 export const tripBookingsRelations = relations(tripBookings, ({ one }) => ({
   trip: one(trips, {
@@ -226,7 +226,7 @@ export const tripBookingsRelations = relations(tripBookings, ({ one }) => ({
     fields: [tripBookings.userId],
     references: [user.id],
   }),
-}));
+}))
 
 // -------------------
 // Hotel & Room Related
@@ -250,7 +250,7 @@ export const hotel = pgTable("hotel", {
   agencyId: text("agency_id").references(() => agencies.userId),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+})
 
 // Room table
 export const room = pgTable("room", {
@@ -278,7 +278,7 @@ export const room = pgTable("room", {
   advancePaymentPercentage: integer("advance_payment_percentage"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+})
 
 // Room Availability table
 export const roomAvailability = pgTable("room_availability", {
@@ -291,7 +291,7 @@ export const roomAvailability = pgTable("room_availability", {
   isAvailable: boolean("is_available").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+})
 
 // Room Bookings table (new)
 export const roomBookings = pgTable("room_bookings", {
@@ -323,7 +323,7 @@ export const roomBookings = pgTable("room_bookings", {
   paymentType: varchar("payment_type", { length: 20 }).default("full"),
   advancePaymentPercentage: integer("advance_payment_percentage"),
   fullPrice: decimal("full_price", { precision: 10, scale: 2 }),
-});
+})
 
 // Hotel & Room Relations
 export const hotelRelations = relations(hotel, ({ many, one }) => ({
@@ -333,7 +333,7 @@ export const hotelRelations = relations(hotel, ({ many, one }) => ({
     fields: [hotel.agencyId],
     references: [agencies.userId],
   }),
-}));
+}))
 
 export const roomRelations = relations(room, ({ one, many }) => ({
   hotel: one(hotel, {
@@ -341,7 +341,7 @@ export const roomRelations = relations(room, ({ one, many }) => ({
     references: [hotel.id],
   }),
   availabilities: many(roomAvailability),
-}));
+}))
 
 export const roomAvailabilityRelations = relations(
   roomAvailability,
@@ -351,7 +351,7 @@ export const roomAvailabilityRelations = relations(
       references: [room.id],
     }),
   })
-);
+)
 
 export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
   room: one(room, {
@@ -362,7 +362,7 @@ export const roomBookingsRelations = relations(roomBookings, ({ one }) => ({
     fields: [roomBookings.userId],
     references: [user.id],
   }),
-}));
+}))
 
 export const cars = pgTable("cars", {
   id: serial("id").primaryKey(),
@@ -394,7 +394,7 @@ export const cars = pgTable("cars", {
   // Add advance payment fields
   advancePaymentEnabled: boolean("advance_payment_enabled").default(false),
   advancePaymentPercentage: integer("advance_payment_percentage"),
-});
+})
 
 // Car Bookings table
 export const carBookings = pgTable("car_bookings", {
@@ -424,7 +424,7 @@ export const carBookings = pgTable("car_bookings", {
   drivingLicense: text("driving_license"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+})
 
 export const carsRelations = relations(cars, ({ many, one }) => ({
   bookings: many(carBookings),
@@ -432,7 +432,7 @@ export const carsRelations = relations(cars, ({ many, one }) => ({
     fields: [cars.agencyId],
     references: [agencies.userId],
   }),
-}));
+}))
 
 // Car Bookings Relations
 export const carBookingsRelations = relations(carBookings, ({ one }) => ({
@@ -444,7 +444,7 @@ export const carBookingsRelations = relations(carBookings, ({ one }) => ({
     fields: [carBookings.user_id],
     references: [user.id],
   }),
-}));
+}))
 
 // Blog Categories table
 export const blogCategories = pgTable("blog_categories", {
@@ -453,7 +453,7 @@ export const blogCategories = pgTable("blog_categories", {
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+})
 // Blogs table
 export const blogs = pgTable("blogs", {
   id: serial("id").primaryKey(),
@@ -474,7 +474,7 @@ export const blogs = pgTable("blogs", {
   tags: text("tags").array().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+})
 // Blog Relations
 export const blogRelations = relations(blogs, ({ one }) => ({
   category: one(blogCategories, {
@@ -485,13 +485,13 @@ export const blogRelations = relations(blogs, ({ one }) => ({
     fields: [blogs.authorId],
     references: [user.id],
   }),
-}));
+}))
 export const blogCategoriesRelations = relations(
   blogCategories,
   ({ many }) => ({
     blogs: many(blogs),
   })
-);
+)
 
 // User Favorites table
 export const favorites = pgTable("favorites", {
@@ -502,13 +502,13 @@ export const favorites = pgTable("favorites", {
   itemType: varchar("item_type", { length: 50 }).notNull(), // "trip", "hotel", "car"
   itemId: varchar("item_id", { length: 100 }).notNull(), // The ID of the favorited item
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+})
 
 // Add unique constraint to prevent duplicate favorites
 export const favoritesConstraint = pgTable("favorites_constraint", {
   id: serial("id").primaryKey(),
   userId_itemType_itemId: varchar("user_id_item_type_item_id").unique(),
-});
+})
 
 // Favorites Relations
 export const favoritesRelations = relations(favorites, ({ one }) => ({
@@ -516,7 +516,7 @@ export const favoritesRelations = relations(favorites, ({ one }) => ({
     fields: [favorites.userId],
     references: [user.id],
   }),
-}));
+}))
 
 // Notifications table
 export const notifications = pgTable("notifications", {
@@ -531,7 +531,7 @@ export const notifications = pgTable("notifications", {
   relatedItemType: varchar("related_item_type", { length: 50 }), // 'trip', 'booking', etc.
   relatedItemId: integer("related_item_id"), // ID of the related item
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+})
 
 // Notification Relations
 export const notificationsRelations = relations(notifications, ({ one }) => ({
@@ -539,7 +539,7 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
     fields: [notifications.userId],
     references: [user.id],
   }),
-}));
+}))
 
 // Agencies table
 export const agencies = pgTable("agencies", {
@@ -572,7 +572,7 @@ export const agencies = pgTable("agencies", {
   verificationReviewedAt: timestamp("verification_reviewed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+})
 
 export const userRelations = relations(user, ({ many, one }) => ({
   favorites: many(favorites),
@@ -583,8 +583,9 @@ export const userRelations = relations(user, ({ many, one }) => ({
     fields: [user.id],
     references: [agencies.userId],
   }),
+  paymentMethods: many(paymentMethods),
   // ...other existing relations...
-}));
+}))
 
 export const agenciesRelations = relations(agencies, ({ one, many }) => ({
   user: one(user, {
@@ -592,7 +593,7 @@ export const agenciesRelations = relations(agencies, ({ one, many }) => ({
     references: [user.id],
   }),
   hotels: many(hotel), // Added hotels relation
-}));
+}))
 
 export const agencyEmployees = pgTable("agency_employees", {
   id: serial("id").primaryKey(),
@@ -603,7 +604,7 @@ export const agencyEmployees = pgTable("agency_employees", {
     .notNull()
     .references(() => agencies.userId, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
-});
+})
 
 // Add relations for agencyEmployees
 export const agencyEmployeesRelations = relations(
@@ -618,7 +619,7 @@ export const agencyEmployeesRelations = relations(
       references: [agencies.userId],
     }),
   })
-);
+)
 
 // Chat messages table
 export const chatMessages = pgTable("chat_messages", {
@@ -635,8 +636,8 @@ export const chatMessages = pgTable("chat_messages", {
   type: varchar("type", { length: 20 }).notNull().default("text"), // 'text', 'image', 'notification'
   isRead: boolean("is_read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  customerId: varchar("customer_id")
-});
+  customerId: varchar("customer_id"),
+})
 
 // Chat messages relations
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
@@ -648,7 +649,7 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
     fields: [chatMessages.receiverId],
     references: [user.id],
   }),
-}));
+}))
 
 // Support Chat System
 export const support_tickets = pgTable("support_tickets", {
@@ -659,7 +660,7 @@ export const support_tickets = pgTable("support_tickets", {
   agencyName: text("agency_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+})
 
 export const support_messages = pgTable("support_messages", {
   id: text("id").primaryKey(),
@@ -673,19 +674,25 @@ export const support_messages = pgTable("support_messages", {
   isRead: boolean("is_read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   senderRole: text("sender_role").notNull(), // "agency" or "admin"
-});
+})
 
 // Support tables relations
-export const supportTicketsRelations = relations(support_tickets, ({ many }) => ({
-  messages: many(support_messages),
-}));
+export const supportTicketsRelations = relations(
+  support_tickets,
+  ({ many }) => ({
+    messages: many(support_messages),
+  })
+)
 
-export const supportMessagesRelations = relations(support_messages, ({ one }) => ({
-  ticket: one(support_tickets, {
-    fields: [support_messages.ticketId],
-    references: [support_tickets.id],
-  }),
-}));
+export const supportMessagesRelations = relations(
+  support_messages,
+  ({ one }) => ({
+    ticket: one(support_tickets, {
+      fields: [support_messages.ticketId],
+      references: [support_tickets.id],
+    }),
+  })
+)
 
 // Wallet table to store balance information
 export const wallet = pgTable("wallet", {
@@ -693,7 +700,9 @@ export const wallet = pgTable("wallet", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  balance: decimal("balance", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
   currency: varchar("currency", { length: 10 }).default("TND").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -716,7 +725,21 @@ export const walletTransactions = pgTable("wallet_transactions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
-// Withdrawal requests table
+// Payment Methods table
+export const paymentMethods = pgTable("payment_methods", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 50 }).notNull(), // bank_account, flouci
+  name: varchar("name", { length: 100 }).notNull(), // User-friendly name for this payment method
+  details: text("details").notNull(), // JSON string or specific details
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Update withdrawal requests table to reference payment method
 export const withdrawalRequests = pgTable("withdrawal_requests", {
   id: serial("id").primaryKey(),
   walletId: serial("wallet_id")
@@ -734,6 +757,9 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   rejectionReason: text("rejection_reason"),
   paymentMethod: varchar("payment_method", { length: 50 }),
   paymentDetails: text("payment_details"),
+  paymentMethodId: integer("payment_method_id").references(
+    () => paymentMethods.id
+  ), // Add reference to payment method
   receiptUrl: text("receipt_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -749,31 +775,53 @@ export const walletRelations = relations(wallet, ({ one, many }) => ({
   withdrawalRequests: many(withdrawalRequests),
 }))
 
-export const walletTransactionsRelations = relations(walletTransactions, ({ one }) => ({
-  wallet: one(wallet, {
-    fields: [walletTransactions.walletId],
-    references: [wallet.id],
-  }),
-}))
+export const walletTransactionsRelations = relations(
+  walletTransactions,
+  ({ one }) => ({
+    wallet: one(wallet, {
+      fields: [walletTransactions.walletId],
+      references: [wallet.id],
+    }),
+  })
+)
 
-export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one }) => ({
-  wallet: one(wallet, {
-    fields: [withdrawalRequests.walletId],
-    references: [wallet.id],
-  }),
-  user: one(user, {
-    fields: [withdrawalRequests.userId],
-    references: [user.id],
-  }),
-  approver: one(user, {
-    fields: [withdrawalRequests.approvedBy],
-    references: [user.id],
-  }),
-  rejecter: one(user, {
-    fields: [withdrawalRequests.rejectedBy],
-    references: [user.id],
-  }),
-}))
+// Add payment methods relations
+export const paymentMethodsRelations = relations(
+  paymentMethods,
+  ({ one, many }) => ({
+    user: one(user, {
+      fields: [paymentMethods.userId],
+      references: [user.id],
+    }),
+    withdrawalRequests: many(withdrawalRequests),
+  })
+)
+
+export const withdrawalRequestsRelations = relations(
+  withdrawalRequests,
+  ({ one }) => ({
+    wallet: one(wallet, {
+      fields: [withdrawalRequests.walletId],
+      references: [wallet.id],
+    }),
+    user: one(user, {
+      fields: [withdrawalRequests.userId],
+      references: [user.id],
+    }),
+    approver: one(user, {
+      fields: [withdrawalRequests.approvedBy],
+      references: [user.id],
+    }),
+    rejecter: one(user, {
+      fields: [withdrawalRequests.rejectedBy],
+      references: [user.id],
+    }),
+    paymentMethod: one(paymentMethods, {
+      fields: [withdrawalRequests.paymentMethodId],
+      references: [paymentMethods.id],
+    }),
+  })
+)
 
 // Admin Notifications
 export const adminNotifications = pgTable("admin_notifications", {
@@ -786,8 +834,5 @@ export const adminNotifications = pgTable("admin_notifications", {
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+})
 
-export const adminNotificationsRelations = relations(adminNotifications, ({ one }) => ({
-  // Relations can be added if needed
-}));
