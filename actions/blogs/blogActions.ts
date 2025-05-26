@@ -42,7 +42,7 @@ async function uploadToCloudinary(
     return new Promise((resolve, reject) => {
       // Upload stream to Cloudinary
       const uploadOptions = {
-        resource_type: "auto",
+        resource_type: "auto" as "image" | "raw" | "video" | "auto",
         folder: folder,
         public_id: fileName.split(".")[0], // Remove extension from public_id
         overwrite: true,
