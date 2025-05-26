@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { type NextRequest, NextResponse } from "next/server";
 import { paymentMethods } from "@/db/schema";
 import { eq, and } from "drizzle-orm";

@@ -1,49 +1,50 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { paymentMethods } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import db from "@/db/drizzle";
-import { auth } from "@/auth";
-import { headers } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server"
+import { paymentMethods } from "@/db/schema"
+import { eq, and } from "drizzle-orm"
+import db from "@/db/drizzle"
+import { auth } from "@/auth"
+import { headers } from "next/headers"
 
 // Helper function to extract error message
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
+  if (error instanceof Error) return error.message
+  return String(error)
 }
 
 // PUT: Update a payment method
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get session from auth
     const session = await auth.api.getSession({
       headers: await headers(),
-    });
+    })
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+    const { id } = await params
 
-    const userId = session.user.id;
-    const methodId = parseInt(params.id);
+    const userId = session.user.id
+    const methodId = parseInt(id)
 
     if (isNaN(methodId)) {
       return NextResponse.json(
         { error: "Invalid payment method ID" },
         { status: 400 }
-      );
+      )
     }
 
-    const data = await request.json();
+    const data = await request.json()
 
     // Validate required fields
     if (!data.type || !data.name || !data.details) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
-      );
+      )
     }
 
     // Check if the payment method exists and belongs to the user
@@ -52,13 +53,13 @@ export async function PUT(
         eq(paymentMethods.id, methodId),
         eq(paymentMethods.userId, userId)
       ),
-    });
+    })
 
     if (!existingMethod) {
       return NextResponse.json(
         { error: "Payment method not found" },
         { status: 404 }
-      );
+      )
     }
 
     // If this is being set as default, unset any existing default
@@ -71,7 +72,7 @@ export async function PUT(
             eq(paymentMethods.userId, userId),
             eq(paymentMethods.isDefault, true)
           )
-        );
+        )
     }
 
     // Update the payment method
@@ -85,46 +86,47 @@ export async function PUT(
         updatedAt: new Date(),
       })
       .where(eq(paymentMethods.id, methodId))
-      .returning();
+      .returning()
 
     return NextResponse.json({
       paymentMethod: updatedMethod[0],
-    });
+    })
   } catch (error) {
-    console.error("Error updating payment method:", error);
+    console.error("Error updating payment method:", error)
     return NextResponse.json(
       {
         error: "Error updating payment method",
         details: getErrorMessage(error),
       },
       { status: 500 }
-    );
+    )
   }
 }
 
 // DELETE: Delete a payment method
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // Changed this line to match PUT
 ) {
   try {
     // Get session from auth
     const session = await auth.api.getSession({
       headers: await headers(),
-    });
+    })
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = session.user.id;
-    const methodId = parseInt(params.id);
+    const { id } = await params // Added await here
+    const userId = session.user.id
+    const methodId = parseInt(id)
 
     if (isNaN(methodId)) {
       return NextResponse.json(
         { error: "Invalid payment method ID" },
         { status: 400 }
-      );
+      )
     }
 
     // Check if the payment method exists and belongs to the user
@@ -133,30 +135,30 @@ export async function DELETE(
         eq(paymentMethods.id, methodId),
         eq(paymentMethods.userId, userId)
       ),
-    });
+    })
 
     if (!existingMethod) {
       return NextResponse.json(
         { error: "Payment method not found" },
         { status: 404 }
-      );
+      )
     }
 
     // Delete the payment method
-    await db.delete(paymentMethods).where(eq(paymentMethods.id, methodId));
+    await db.delete(paymentMethods).where(eq(paymentMethods.id, methodId))
 
     return NextResponse.json({
       success: true,
       message: "Payment method deleted successfully",
-    });
+    })
   } catch (error) {
-    console.error("Error deleting payment method:", error);
+    console.error("Error deleting payment method:", error)
     return NextResponse.json(
       {
         error: "Error deleting payment method",
         details: getErrorMessage(error),
       },
       { status: 500 }
-    );
+    )
   }
 }
