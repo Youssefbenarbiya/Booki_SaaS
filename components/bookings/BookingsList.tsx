@@ -35,6 +35,7 @@ interface BookingsListProps {
   tripBookings: any[]
   hotelBookings: any[]
   locale?: Locale
+  agencyType?: string
 }
 
 export function BookingsList({
@@ -42,6 +43,7 @@ export function BookingsList({
   tripBookings,
   hotelBookings,
   locale,
+  agencyType,
 }: BookingsListProps) {
   const params = useParams()
   const currentLocale = locale || (params.locale as Locale) || "en"
@@ -100,26 +102,50 @@ export function BookingsList({
     )
   }
 
+  // Determine which tabs to show based on agency type
+  const showTravelTabs = !agencyType || agencyType === "travel";
+  const showCarTab = !agencyType || agencyType === "car_rental";
+  
+  // Calculate number of tabs to determine grid columns
+  const numTabs = (showTravelTabs ? 2 : 0) + (showCarTab ? 1 : 0);
+  const gridColsClass = `grid-cols-${numTabs}`;
+  
+  // Set default tab based on agency type
+  const defaultTab = showTravelTabs ? "trip" : "car";
+  
+  // If the active tab is not available for this agency type, reset it
+  if ((activeTab === "trip" || activeTab === "hotel") && !showTravelTabs) {
+    setActiveTab("car");
+  } else if (activeTab === "car" && !showCarTab) {
+    setActiveTab("trip");
+  }
+
   return (
     <div className="space-y-6">
       <Tabs
-        defaultValue="trip"
+        defaultValue={defaultTab}
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as BookingType)}
       >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="trip" className="flex items-center gap-2">
-            <Plane className="h-4 w-4" />
-            Trips
-          </TabsTrigger>
-          <TabsTrigger value="hotel" className="flex items-center gap-2">
-            <Home className="h-4 w-4" />
-            Hotels
-          </TabsTrigger>
-          <TabsTrigger value="car" className="flex items-center gap-2">
-            <Car className="h-4 w-4" />
-            Cars
-          </TabsTrigger>
+        <TabsList className={`grid w-full ${gridColsClass}`}>
+          {showTravelTabs && (
+            <>
+              <TabsTrigger value="trip" className="flex items-center gap-2">
+                <Plane className="h-4 w-4" />
+                Trips
+              </TabsTrigger>
+              <TabsTrigger value="hotel" className="flex items-center gap-2">
+                <Home className="h-4 w-4" />
+                Hotels
+              </TabsTrigger>
+            </>
+          )}
+          {showCarTab && (
+            <TabsTrigger value="car" className="flex items-center gap-2">
+              <Car className="h-4 w-4" />
+              Cars
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Trip Bookings */}
