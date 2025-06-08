@@ -1,40 +1,41 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-} from "@/components/ui/form"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import PhoneInput from "react-phone-input-2"
-import "react-phone-input-2/lib/style.css"
-import { ParseError, parsePhoneNumber } from "libphonenumber-js"
+} from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+import { ParseError, parsePhoneNumber } from "libphonenumber-js";
 
 // Import the server action to send the email
-import { sendContactForm } from "./actions"
+import { sendContactForm } from "./actions";
 
 // Define the form schema using Zod
 const formSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
+  email: z.string().email("Valid email is required"),
   countryCode: z.string().min(1, "Country code is required"),
   phone: z.string().min(6, "Phone number is required"),
   subject: z.enum(["general-inquiry", "Hotels", "Trips", "Cars"]),
   message: z.string().min(10, "Message is required"),
-})
+});
 
 export function ContactForm() {
   // State for submission feedback
-  const [submitMessage, setSubmitMessage] = useState<string | null>(null)
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
   // Initialize the form with React Hook Form and Zod validation
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,23 +43,24 @@ export function ContactForm() {
     defaultValues: {
       firstName: "",
       lastName: "",
+      email: "",
       countryCode: "+216", // Default to Tunisia
       phone: "",
       subject: "general-inquiry",
       message: "",
     },
-  })
+  });
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const result = await sendContactForm(values)
+    const result = await sendContactForm(values);
     if (result?.success) {
-      form.reset() // Reset form fields
-      setSubmitMessage(result.message) // Show success message
+      form.reset(); // Reset form fields
+      setSubmitMessage(result.message); // Show success message
     } else {
-      setSubmitMessage(result?.message || "An error occurred.") // Show error message
+      setSubmitMessage(result?.message || "An error occurred."); // Show error message
     }
-  }
+  };
 
   return (
     <Form {...form}>
@@ -98,23 +100,37 @@ export function ContactForm() {
           )}
         />
 
+        {/* Email */}
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="Your email" {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
         {/* Phone Number */}
         <FormItem>
           <FormLabel>Phone Number</FormLabel>
           <PhoneInput
             country={"tn"} // Default to Tunisia
             onChange={(value) => {
-              const fullNumber = `+${value}` // Prepend the "+" to the input value
+              const fullNumber = `+${value}`; // Prepend the "+" to the input value
               try {
-                const phoneNumber = parsePhoneNumber(fullNumber)
+                const phoneNumber = parsePhoneNumber(fullNumber);
                 if (phoneNumber) {
                   // If parsing succeeds, update the form fields
                   form.setValue(
                     "countryCode",
                     `+${phoneNumber.countryCallingCode}`
-                  )
-                  form.setValue("phone", phoneNumber.nationalNumber)
-                  form.clearErrors("phone") // Remove any previous error messages
+                  );
+                  form.setValue("phone", phoneNumber.nationalNumber);
+                  form.clearErrors("phone"); // Remove any previous error messages
                 }
               } catch (error) {
                 // Handle the TOO_SHORT error gracefully
@@ -125,10 +141,10 @@ export function ContactForm() {
                   form.setError("phone", {
                     type: "manual",
                     message: "Phone number is too short",
-                  })
+                  });
                 } else {
                   // Log other unexpected errors for debugging (optional)
-                  console.error("Invalid phone number:", error)
+                  console.error("Invalid phone number:", error);
                 }
               }
             }}
@@ -197,5 +213,5 @@ export function ContactForm() {
         <Button type="submit">Send Message</Button>
       </form>
     </Form>
-  )
+  );
 }

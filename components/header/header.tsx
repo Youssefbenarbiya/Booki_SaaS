@@ -35,8 +35,8 @@ export default async function Header({ locale = "en" }: HeaderProps) {
               <Image
                 src="/assets/icons/logo.png"
                 alt="Logo"
-                width={50}
-                height={50}
+                width={150}
+                height={150}
                 priority
               />
             </div>

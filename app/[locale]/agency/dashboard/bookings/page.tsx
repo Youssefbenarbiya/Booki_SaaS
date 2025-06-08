@@ -3,6 +3,11 @@ import { BookingsList } from "@/components/bookings/BookingsList"
 import { getAllBookings } from "@/actions/bookings"
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { auth } from "@/auth"
+import db from "@/db/drizzle"
+import { user } from "@/db/schema"
+import { eq } from "drizzle-orm"
+import { headers } from "next/headers"
 
 
 export default async function AgencyBookingsPage({
@@ -15,6 +20,26 @@ const {locale} = await params
 
 
   try {
+    // Get the current user's session
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+  
+    
+    // Get the agency type from the database
+    let agencyType = ""
+    if (session?.user?.id) {
+      const userWithAgency = await db.query.user.findFirst({
+        where: eq(user.id, session.user.id),
+        with: {
+          agency: true,
+        },
+      })
+      
+      agencyType = userWithAgency?.agency?.agencyType || ""
+      console.log("Agency type:", agencyType)
+    }
+    
     // Fetch all customer bookings for this agency's offerings
     const [tripBookings, hotelBookings, carBookings] = await Promise.all([
       getAllBookings("trip").catch((error) => {
@@ -52,6 +77,7 @@ const {locale} = await params
             tripBookings={tripBookings || []}
             hotelBookings={hotelBookings || []}
             carBookings={carBookings || []}
+            agencyType={agencyType}
           />
         </Suspense>
       </div>

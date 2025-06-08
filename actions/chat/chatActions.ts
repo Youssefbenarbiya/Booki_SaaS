@@ -1,10 +1,11 @@
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server"
 
 import { chatMessages, agencies, agencyEmployees } from "@/db/schema"
 import { eq, and, desc, or, count, inArray } from "drizzle-orm"
 import { ChatMessage } from "@/lib/types/chat"
 import db from "@/db/drizzle"
-import { getChatApiUrl } from "@/lib/config/chatConfig"
 
 /**
  * Save a chat message to the database

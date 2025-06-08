@@ -61,6 +61,7 @@
     "cmdk": "^1.1.1",
     "country-region-data": "^3.1.0",
     "date-fns": "^4.1.0",
+    "degachejs": "^0.2.0",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.39.1",
     "embla-carousel-react": "^8.6.0",

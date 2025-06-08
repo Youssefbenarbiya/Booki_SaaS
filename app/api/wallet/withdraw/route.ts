@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { type NextRequest, NextResponse } from "next/server"
 import { wallet, withdrawalRequests } from "@/db/schema"
@@ -8,8 +9,8 @@ import { headers } from "next/headers"
 
 // Helper function to extract error message
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
+  if (error instanceof Error) return error.message
+  return String(error)
 }
 
 // Create a withdrawal request
@@ -25,9 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id
-    
+
     const body = await request.json()
-    const { amount, paymentMethod, paymentDetails } = body
+    const { amount, paymentMethod, paymentDetails, paymentMethodId } = body
 
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
@@ -51,16 +52,30 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Create withdrawal request - only providing required fields
+      // Create withdrawal request values
+      const withdrawalValues: any = {
+        walletId: userWallet.id,
+        userId,
+        amount: amount.toString(),
+        // Use the exact payment method provided in the request (flouci or bank_transfer)
+        paymentMethod: paymentMethod,
+        // Store the payment details (bank account info or Flouci ID)
+        paymentDetails: paymentDetails || "",
+      }
+      
+      // Log the payment method and details for debugging
+      console.log('Payment method:', paymentMethod)
+      console.log('Payment details:', paymentDetails)
+
+      // Add payment method ID if provided
+      if (paymentMethodId) {
+        withdrawalValues.paymentMethodId = paymentMethodId
+      }
+
+      // Create withdrawal request
       const newRequest = await db
         .insert(withdrawalRequests)
-        .values({
-          walletId: userWallet.id,
-          userId,
-          amount: amount.toString(),
-          paymentMethod: paymentMethod || "bank_transfer",
-          paymentDetails: paymentDetails || "",
-        })
+        .values(withdrawalValues)
         .returning()
 
       return NextResponse.json({
@@ -70,9 +85,9 @@ export async function POST(request: NextRequest) {
     } catch (dbError) {
       console.error("Database error:", dbError)
       return NextResponse.json(
-        { 
-          error: "Database error", 
-          details: getErrorMessage(dbError)
+        {
+          error: "Database error",
+          details: getErrorMessage(dbError),
         },
         { status: 500 }
       )
@@ -80,9 +95,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating withdrawal request:", error)
     return NextResponse.json(
-      { 
-        error: "Failed to create withdrawal request", 
-        details: getErrorMessage(error)
+      {
+        error: "Failed to create withdrawal request",
+        details: getErrorMessage(error),
       },
       { status: 500 }
     )
@@ -114,9 +129,9 @@ export async function GET(request: NextRequest) {
     } catch (dbError) {
       console.error("Database error:", dbError)
       return NextResponse.json(
-        { 
-          error: "Database error", 
-          details: getErrorMessage(dbError)
+        {
+          error: "Database error",
+          details: getErrorMessage(dbError),
         },
         { status: 500 }
       )
@@ -124,9 +139,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching withdrawal requests:", error)
     return NextResponse.json(
-      { 
-        error: "Failed to fetch withdrawal requests", 
-        details: getErrorMessage(error)
+      {
+        error: "Failed to fetch withdrawal requests",
+        details: getErrorMessage(error),
       },
       { status: 500 }
     )
