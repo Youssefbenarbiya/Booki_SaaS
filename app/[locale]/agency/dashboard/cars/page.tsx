@@ -5,6 +5,8 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 import { getCars } from "@/actions/cars/carActions"
 import { Locale } from "@/i18n/routing"
+import NotAllowed from '@/components/not-allowed'
+import { getAgencyProfile } from '@/actions/agency/agencyActions'
 
 interface CarsPageProps {
   params: Promise<{
@@ -14,6 +16,15 @@ interface CarsPageProps {
 
 export default async function CarsPage({ params }: CarsPageProps) {
   const { locale } = await params
+
+  // Fetch agency profile to get agencyType
+  const agencyProfile = await getAgencyProfile()
+  const agencyType = agencyProfile?.agency?.agencyType || ''
+
+  if (agencyType === 'travel') {
+    return <NotAllowed />
+  }
+
   const { cars } = await getCars()
 
   // Transform the cars data so that price fields are numbers

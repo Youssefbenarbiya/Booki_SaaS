@@ -3,6 +3,8 @@ import Link from "next/link"
 import { HotelsTable } from "./hotels-table"
 import { columns, HotelType } from "./columns"
 import { Locale } from "@/i18n/routing"
+import NotAllowed from '@/components/not-allowed'
+import { getAgencyProfile } from '@/actions/agency/agencyActions'
 
 interface HotelsPageProps {
   params: Promise<{
@@ -12,6 +14,14 @@ interface HotelsPageProps {
 
 export default async function HotelsPage({ params }: HotelsPageProps) {
   const { locale } = await params
+
+  // Fetch agency profile to get agencyType
+  const agencyProfile = await getAgencyProfile()
+  const agencyType = agencyProfile?.agency?.agencyType || ''
+
+  if (agencyType === 'car_rental') {
+    return <NotAllowed />
+  }
 
   const hotels = await getHotels()
 

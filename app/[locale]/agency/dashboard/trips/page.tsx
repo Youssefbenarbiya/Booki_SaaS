@@ -3,6 +3,10 @@ import { getTrips } from "@/actions/trips/tripActions"
 import { TripsTable } from "./trips-table"
 import { columns, TripType } from "./columns"
 import { Locale } from "@/i18n/routing"
+import { headers } from "next/headers"
+import { auth } from "@/auth"
+import NotAllowed from "@/components/not-allowed"
+import { getAgencyProfile } from '@/actions/agency/agencyActions'
 
 interface TripsPageProps {
   params: Promise<{
@@ -12,7 +16,23 @@ interface TripsPageProps {
 
 export default async function TripsPage({ params }: TripsPageProps) {
   const { locale } = await params
+
+  // Fetch agency profile to get agencyType
+  const agencyProfile = await getAgencyProfile()
+  const agencyType = agencyProfile?.agency?.agencyType || ''
+
+  if (agencyType === 'car_rental') {
+    return <NotAllowed />
+  }
+
   const trips = await getTrips()
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (!session || session.user.role !== "admin") {
+    return <NotAllowed />
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
