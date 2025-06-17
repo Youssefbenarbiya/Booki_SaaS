@@ -333,9 +333,9 @@ export function WalletDashboard() {
       }
 
       // Log the payment method and details before sending the request
-      console.log('Submitting withdrawal with payment method:', paymentMethod)
-      console.log('Payment details:', paymentDetails)
-      
+      console.log("Submitting withdrawal with payment method:", paymentMethod)
+      console.log("Payment details:", paymentDetails)
+
       const response = await fetch("/api/wallet/withdraw", {
         method: "POST",
         headers: {
@@ -370,7 +370,7 @@ export function WalletDashboard() {
       setWithdrawalType("fixed")
       setSelectedFixedAmount("100")
       // Don't reset payment method to bank_transfer
-      // setPaymentMethod("bank_transfer") 
+      // setPaymentMethod("bank_transfer")
       setPaymentDetails("")
       setSelectedPaymentMethodId(null)
     } catch (error) {
@@ -563,7 +563,7 @@ export function WalletDashboard() {
             <div className="flex flex-col items-center justify-center py-6">
               <Wallet className="h-12 w-12 text-primary mb-4" />
               <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-primary" />
+                TND{" "}
                 <span className="text-4xl font-bold">
                   {walletBalance.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
@@ -580,7 +580,7 @@ export function WalletDashboard() {
                     <div className="flex justify-between">
                       <span>Total Earnings:</span>
                       <span>
-                        $
+                        TND
                         {calculations.totalEarnings.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                         })}
@@ -589,7 +589,7 @@ export function WalletDashboard() {
                     <div className="flex justify-between">
                       <span>Withdrawals:</span>
                       <span>
-                        -$
+                        -TND
                         {calculations.totalWithdrawals.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                         })}
@@ -598,7 +598,7 @@ export function WalletDashboard() {
                     <div className="border-t pt-1 flex justify-between font-medium">
                       <span>Current Balance:</span>
                       <span>
-                        $
+                        TND
                         {calculations.balance.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                         })}
@@ -673,7 +673,7 @@ export function WalletDashboard() {
                           />
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Available balance: $
+                          Available balance: TND
                           {walletBalance.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                           })}
@@ -768,10 +768,10 @@ export function WalletDashboard() {
                         <Select
                           value={paymentMethod}
                           onValueChange={(value) => {
-                            console.log('Selected payment method:', value) // Debug log
+                            console.log("Selected payment method:", value) // Debug log
                             setPaymentMethod(value)
                             // Clear payment details when changing payment method type
-                            setPaymentDetails('')
+                            setPaymentDetails("")
                           }}
                         >
                           <SelectTrigger id="payment-method-type">
@@ -861,7 +861,7 @@ export function WalletDashboard() {
                         transaction.type === "payment"
                           ? "+"
                           : "-"}
-                        $
+                        TND
                         {transaction.amount.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                         })}
@@ -978,7 +978,7 @@ export function WalletDashboard() {
                           {new Date(request.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4">
-                          $
+                          TND
                           {parseFloat(request.amount).toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                           })}

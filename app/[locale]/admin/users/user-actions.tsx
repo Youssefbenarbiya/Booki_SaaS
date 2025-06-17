@@ -171,12 +171,12 @@ export function UserActions({ user }: { user: User }) {
           Make Admin
         </DropdownMenuItem>
       )}
-      {user.role !== "agency" && (
+      {/* {user.role !== "agency" && (
         <DropdownMenuItem onClick={() => openRoleDialog("agency")} disabled={isProcessing}>
           <Shield className="mr-2 h-4 w-4" />
           Make Agency
         </DropdownMenuItem>
-      )}
+      )} */}
       {user.role !== "customer" && (
         <DropdownMenuItem onClick={() => openRoleDialog("customer")} disabled={isProcessing}>
           <Shield className="mr-2 h-4 w-4" />

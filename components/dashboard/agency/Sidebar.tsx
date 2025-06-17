@@ -137,11 +137,13 @@ export function Sidebar({ locale }: SidebarProps) {
 
     fetchAgencyData()
   }, [session.data?.user?.email])
-
   // Filter navigation based on both user role and agency type
   const filteredNavigation = navigation.filter((item) => {
     // First filter by role
-    if (userRole === "employee" && item.name === "Employees") {
+    if (
+      userRole === "employee" &&
+      (item.name === "Employees" || item.name === "Wallet")
+    ) {
       return false
     }
 
